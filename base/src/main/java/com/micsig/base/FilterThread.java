@@ -1,123 +1,319 @@
-package com.micsig.base;
+package com.micsig.base; // 定义基础工具类包
 
-import android.os.Handler;
-import android.os.HandlerThread;
-import android.os.Message;
+import android.os.Handler; // 导入Android Handler类
+import android.os.HandlerThread; // 导入Android HandlerThread类
+import android.os.Message; // 导入Android Message类
 
 /**
- * Created by zhuzh on 2018-4-13.
+ * ┌──────────────────────────────────────────────────────────────────────────────┐
+ * │                           FilterThread 过滤线程类                            │
+ * │                          防抖动与延迟执行处理器                               │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【模块定位】                                                                 │
+ * │   MHO示波器基础工具模块 - 线程处理组件                                        │
+ * │   提供防抖动、延迟执行、定时执行等功能                                        │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【核心职责】                                                                 │
+ * │   1. 提供防抖动功能，避免频繁触发                                            │
+ * │   2. 支持延迟执行任务                                                       │
+ * │   3. 支持定时周期执行任务                                                   │
+ * │   4. 在独立线程中执行任务，不阻塞UI线程                                       │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【架构设计】                                                                 │
+ * │   基于HandlerThread实现后台线程                                             │
+ * │   使用Handler消息机制进行任务调度                                            │
+ * │   支持同步锁保护多线程访问                                                   │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【数据流向】                                                                 │
+ * │   run()调用 → 消息入队 → 延迟/立即执行 → Runnable执行                        │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【依赖关系】                                                                 │
+ * │   依赖: android.os.HandlerThread (后台线程)                                  │
+ * │   依赖: android.os.Handler (消息处理)                                        │
+ * │   被依赖: 示波器参数调节、测量更新、UI刷新等场景                              │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【使用示例】                                                                 │
+ * │   FilterThread thread = new FilterThread("MyThread", runnable, 100);       │
+ * │   thread.run(); // 触发执行（带防抖）                                        │
+ * │   thread.setDelayMillis(200); // 修改延迟时间                               │
+ * └──────────────────────────────────────────────────────────────────────────────┘
+ * 
+ * @author zhuzh
+ * @version 1.0
+ * @since 2018-4-13
  */
+public class FilterThread { // 过滤线程类
 
-public class FilterThread {
+    // ==================== 消息常量 ====================
+    private static final int MSG_RUN = 0x1001; // 立即执行消息标识
+    private static final int MSG_TIMER_RUN = 0x1002; // 定时执行消息标识
 
-    private static final int MSG_RUN = 0x1001;
-    private static final int MSG_TIMER_RUN = 0x1002;
-    private HandlerThread mHandlerThread;
-    private Handler mHandler;
-    private Runnable mRunable;
-    private volatile int mDelayMillis = 0;
-    private volatile boolean mDelayRun = false;
+    // ==================== 成员变量 ====================
+    private HandlerThread mHandlerThread; // HandlerThread后台线程
+    private Handler mHandler; // Handler消息处理器
+    private Runnable mRunable; // 待执行的任务
+    private volatile int mDelayMillis = 0; // 延迟时间（毫秒），volatile保证可见性
+    private volatile boolean mDelayRun = false; // 延迟执行标志，volatile保证可见性
+    private boolean bBeforeRun = true; // 执行前标志，控制定时执行逻辑
 
-    private boolean bBeforeRun = true;
-
-
-    public FilterThread(String threadName,Runnable runnable,int delayMillis){
-        mDelayMillis = delayMillis;
-        mRunable = runnable;
-        mHandlerThread = new HandlerThread(threadName);
-        mHandlerThread.start();
-        mHandler = new Handler(mHandlerThread.getLooper()){
+    /**
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 构造函数（完整参数）                                                    │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   创建FilterThread实例，初始化后台线程和消息处理器                        │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                            │
+     * │   @param threadName   线程名称，用于调试识别                             │
+     * │   @param runnable     待执行的任务                                      │
+     * │   @param delayMillis  延迟时间（毫秒），0表示立即执行                     │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【使用示例】                                                            │
+     * │   FilterThread thread = new FilterThread("UpdateThread", () -> {       │
+     * │       // 更新逻辑                                                       │
+     * │   }, 100); // 100ms防抖                                                 │
+     * └────────────────────────────────────────────────────────────────────────┘
+     */
+    public FilterThread(String threadName, Runnable runnable, int delayMillis){ // 构造函数
+        mDelayMillis = delayMillis; // 保存延迟时间
+        mRunable = runnable; // 保存待执行任务
+        mHandlerThread = new HandlerThread(threadName); // 创建HandlerThread
+        mHandlerThread.start(); // 启动后台线程
+        mHandler = new Handler(mHandlerThread.getLooper()){ // 创建Handler，绑定线程Looper
             @Override
-            public void handleMessage(Message msg) {
-                FilterThread.this.handleMessage(msg);
+            public void handleMessage(Message msg) { // 重写消息处理方法
+                FilterThread.this.handleMessage(msg); // 调用外部类的消息处理方法
             }
         };
     }
-    public FilterThread(String threadName){
-        this(threadName,null,0);
+
+    /**
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 构造函数（简化版）                                                      │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   创建FilterThread实例，使用默认参数                                     │
+     * │   延迟时间为0，任务为null                                                │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                            │
+     * │   @param threadName 线程名称                                            │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【使用示例】                                                            │
+     * │   FilterThread thread = new FilterThread("MyThread");                  │
+     * │   thread.setRunnable(() -> { /* 任务 *\/ });                            │
+     * └────────────────────────────────────────────────────────────────────────┘
+     */
+    public FilterThread(String threadName){ // 简化构造函数
+        this(threadName, null, 0); // 调用完整构造函数，使用默认值
     }
-    public boolean isSelfThread(){
-        return (Thread.currentThread() == mHandlerThread);
+
+    /**
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 判断当前是否在FilterThread线程中                                        │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   检查当前执行线程是否为FilterThread的后台线程                            │
+     * │   用于线程安全检查                                                      │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【返回值】                                                              │
+     * │   @return true表示当前在FilterThread线程中                               │
+     * └────────────────────────────────────────────────────────────────────────┘
+     */
+    public boolean isSelfThread(){ // 判断是否在自身线程
+        return (Thread.currentThread() == mHandlerThread); // 比较当前线程与HandlerThread
     }
-    protected void handleMessage(Message msg){
-        switch (msg.what){
-            case MSG_RUN:
-                msgRun();
-                break;
-            case MSG_TIMER_RUN:
-                timerRun();
-                break;
+
+    /**
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 处理消息                                                               │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   Handler消息处理回调，根据消息类型执行相应操作                            │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                            │
+     * │   @param msg 待处理的消息对象                                            │
+     * └────────────────────────────────────────────────────────────────────────┘
+     */
+    protected void handleMessage(Message msg){ // 消息处理方法
+        switch (msg.what){ // 根据消息类型分发
+            case MSG_RUN: // 立即执行消息
+                msgRun(); // 调用立即执行方法
+                break; // 跳出switch
+            case MSG_TIMER_RUN: // 定时执行消息
+                timerRun(); // 调用定时执行方法
+                break; // 跳出switch
         }
     }
-    private void timerRun(){
 
-        boolean bRun = false;
-        boolean br = true;
-        synchronized (this){
-            bRun = mDelayRun;
-            mDelayRun = false;
-            br = bBeforeRun;
-            if(br) {
-                if (!mHandler.hasMessages(MSG_TIMER_RUN)) {
-                    mHandler.sendEmptyMessageDelayed(MSG_TIMER_RUN, mDelayMillis);
+    /**
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 定时执行任务                                                           │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   处理定时执行逻辑，支持防抖动和周期执行                                   │
+     * │   根据bBeforeRun标志控制执行时机                                         │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【算法说明】                                                            │
+     * │   1. 检查是否有待执行的延迟任务                                          │
+     * │   2. 根据bBeforeRun决定执行时机（执行前/执行后发送下一次定时消息）         │
+     * │   3. 执行任务并安排下一次定时消息                                        │
+     * └────────────────────────────────────────────────────────────────────────┘
+     */
+    private void timerRun(){ // 定时执行方法
+        boolean bRun = false; // 是否执行任务标志
+        boolean br = true; // bBeforeRun的本地副本
+        synchronized (this){ // 同步块，保护共享变量
+            bRun = mDelayRun; // 获取延迟执行标志
+            mDelayRun = false; // 重置延迟执行标志
+            br = bBeforeRun; // 获取执行前标志
+            if(br) { // 如果在执行前发送定时消息
+                if (!mHandler.hasMessages(MSG_TIMER_RUN)) { // 检查是否已有定时消息
+                    mHandler.sendEmptyMessageDelayed(MSG_TIMER_RUN, mDelayMillis); // 发送延迟定时消息
                 }
             }
         }
-        if(bRun) {
-            if (mRunable != null) {
-                mRunable.run();
+        if(bRun) { // 如果有待执行的任务
+            if (mRunable != null) { // 检查任务是否有效
+                mRunable.run(); // 执行任务
             }
         }
-        if(!br){
-            if (!mHandler.hasMessages(MSG_TIMER_RUN)) {
-                mHandler.sendEmptyMessageDelayed(MSG_TIMER_RUN, mDelayMillis);
+        if(!br){ // 如果在执行后发送定时消息
+            if (!mHandler.hasMessages(MSG_TIMER_RUN)) { // 检查是否已有定时消息
+                mHandler.sendEmptyMessageDelayed(MSG_TIMER_RUN, mDelayMillis); // 发送延迟定时消息
             }
         }
     }
 
-    public void setBeforeRun(boolean bBeforeRun) {
-        synchronized (this) {
-            this.bBeforeRun = bBeforeRun;
+    /**
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 设置执行前标志                                                         │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   设置是否在任务执行前发送下一次定时消息                                   │
+     * │   true: 执行前发送（先等待再执行）                                        │
+     * │   false: 执行后发送（先执行再等待）                                       │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                            │
+     * │   @param bBeforeRun 执行前标志                                          │
+     * └────────────────────────────────────────────────────────────────────────┘
+     */
+    public void setBeforeRun(boolean bBeforeRun) { // 设置执行前标志
+        synchronized (this) { // 同步块
+            this.bBeforeRun = bBeforeRun; // 更新执行前标志
         }
     }
 
-    private void msgRun(){
-        if(mRunable != null){
-            mRunable.run();
+    /**
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 立即执行任务                                                           │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   立即执行Runnable任务（无延迟）                                          │
+     * └────────────────────────────────────────────────────────────────────────┘
+     */
+    private void msgRun(){ // 立即执行方法
+        if(mRunable != null){ // 检查任务是否有效
+            mRunable.run(); // 执行任务
         }
     }
 
-    public void setRunnable(Runnable runnable){
-        mRunable = runnable;
+    /**
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 设置待执行任务                                                         │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   设置或更新待执行的Runnable任务                                         │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                            │
+     * │   @param runnable 待执行的任务                                          │
+     * └────────────────────────────────────────────────────────────────────────┘
+     */
+    public void setRunnable(Runnable runnable){ // 设置任务方法
+        mRunable = runnable; // 更新任务引用
     }
 
-    public long getDelayMillis(){
-        synchronized (this){
-            return mDelayMillis;
+    /**
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 获取延迟时间                                                           │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   获取当前的延迟时间设置                                                │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【返回值】                                                              │
+     * │   @return 延迟时间（毫秒）                                              │
+     * └────────────────────────────────────────────────────────────────────────┘
+     */
+    public long getDelayMillis(){ // 获取延迟时间
+        synchronized (this){ // 同步块
+            return mDelayMillis; // 返回延迟时间
         }
     }
-    public void setDelayMillis(int delayMillis){
-        synchronized (this){
-            mDelayMillis = delayMillis;
-            if(mHandler.hasMessages(MSG_TIMER_RUN)) {
-                mHandler.removeMessages(MSG_TIMER_RUN);
+
+    /**
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 设置延迟时间                                                           │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   设置新的延迟时间，并重新安排定时消息                                    │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                            │
+     * │   @param delayMillis 新的延迟时间（毫秒）                                │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【算法说明】                                                            │
+     * │   1. 移除旧的定时消息                                                   │
+     * │   2. 发送新的定时消息                                                   │
+     * └────────────────────────────────────────────────────────────────────────┘
+     */
+    public void setDelayMillis(int delayMillis){ // 设置延迟时间
+        synchronized (this){ // 同步块
+            mDelayMillis = delayMillis; // 更新延迟时间
+            if(mHandler.hasMessages(MSG_TIMER_RUN)) { // 检查是否有待处理的定时消息
+                mHandler.removeMessages(MSG_TIMER_RUN); // 移除旧的定时消息
             }
-            mHandler.sendEmptyMessageDelayed(MSG_TIMER_RUN,mDelayMillis);
+            mHandler.sendEmptyMessageDelayed(MSG_TIMER_RUN, mDelayMillis); // 发送新的定时消息
         }
     }
 
-    public void run(){
-        synchronized (this){
-            if(mDelayMillis > 1){
-                mDelayRun = true;
-            }else{
-                if(!mHandler.hasMessages(MSG_RUN)){
-                    mHandler.sendEmptyMessage(MSG_RUN);
+    /**
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 触发执行（防抖动）                                                     │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   触发任务执行，支持防抖动功能                                           │
+     * │   如果设置了延迟时间，则标记延迟执行，等待定时器触发                        │
+     * │   如果未设置延迟时间，则立即执行                                          │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【使用示例】                                                            │
+     * │   // 用户快速点击多次，只会执行最后一次                                    │
+     * │   filterThread.run(); // 第一次调用                                     │
+     * │   filterThread.run(); // 第二次调用（取消第一次，重新计时）               │
+     * │   // 100ms后执行一次                                                    │
+     * └────────────────────────────────────────────────────────────────────────┘
+     */
+    public void run(){ // 触发执行方法（防抖动）
+        synchronized (this){ // 同步块
+            if(mDelayMillis > 1){ // 如果设置了延迟时间
+                mDelayRun = true; // 标记延迟执行
+            }else{ // 如果未设置延迟时间
+                if(!mHandler.hasMessages(MSG_RUN)){ // 检查是否已有立即执行消息
+                    mHandler.sendEmptyMessage(MSG_RUN); // 发送立即执行消息
                 }
             }
         }
     }
-    public void run(Runnable runnable){
-        mHandler.post(runnable);
+
+    /**
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 直接执行任务（无防抖）                                                 │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   直接在后台线程中执行指定的任务，不经过防抖逻辑                            │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                            │
+     * │   @param runnable 要执行的任务                                          │
+     * └────────────────────────────────────────────────────────────────────────┘
+     */
+    public void run(Runnable runnable){ // 直接执行任务方法
+        mHandler.post(runnable); // 将任务投递到后台线程执行
     }
 }

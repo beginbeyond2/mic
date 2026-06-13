@@ -1,36 +1,142 @@
-package com.micsig.base.filter;
+package com.micsig.base.filter; // 定义过滤器子包
 
-import android.text.InputFilter;
-import android.text.Spanned;
-import android.util.Log;
+import android.text.InputFilter; // 导入输入过滤器接口
+import android.text.Spanned; // 导入Spanned文本接口
+import android.util.Log; // 导入Android日志类
 
-import java.util.regex.Pattern;
+import java.util.regex.Pattern; // 导入正则表达式模式类
 
-public class UnitInputFilter implements InputFilter {
+/**
+ * ┌──────────────────────────────────────────────────────────────────────────────┐
+ * │                         UnitInputFilter 单位输入过滤器                       │
+ * │                          带单位后缀的数值输入验证                             │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【模块定位】                                                                 │
+ * │   MHO示波器基础工具模块 - 输入验证组件                                        │
+ * │   提供带单位后缀的数值输入验证功能                                           │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【核心职责】                                                                 │
+ * │   1. 验证数值输入的合法性                                                  │
+ * │   2. 支持可选的单位后缀                                                   │
+ * │   3. 支持负数输入                                                        │
+ * │   4. 支持小数输入                                                        │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【架构设计】                                                                 │
+ * │   实现Android InputFilter接口                                              │
+ * │   通过正则表达式验证数值+单位格式                                           │
+ * │   适用于示波器参数输入（如电压、频率等带单位的数值）                          │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【数据流向】                                                                 │
+ * │   用户输入 → filter方法 → 正则匹配 → 允许/拒绝                               │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【依赖关系】                                                                 │
+ * │   依赖: android.text.InputFilter (输入过滤器接口)                            │
+ * │   依赖: java.util.regex.Pattern (正则表达式)                                 │
+ * │   被依赖: 参数设置界面、测量值输入界面                                       │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【使用示例】                                                                 │
+ * │   // 创建电压输入过滤器（允许V、mV单位）                                     │
+ * │   UnitInputFilter filter = new UnitInputFilter("Vmv");                     │
+ * *   editText.setFilters(new InputFilter[]{filter});                          │
+ * │   // 输入示例：3.14V, 100mV, -5.5V                                         │
+ * └──────────────────────────────────────────────────────────────────────────────┘
+ * 
+ * @author Micsig R&D Team
+ * @version 1.0
+ * @since MHO Series Oscilloscope Software
+ */
+public class UnitInputFilter implements InputFilter { // 实现InputFilter接口
 
-    // 正则表达式：可选负号、数字（整数或小数）、后接单个指定字符
-    private static final String REGEX = "^(\\d+\\.?\\d*|\\.\\d+)$";
-    private Pattern mPattern = Pattern.compile(REGEX);
-    public UnitInputFilter(String units){
-        if(units == null
-                || units.isEmpty()){
-            mPattern = Pattern.compile("^-?($|(\\d+\\.?\\d*|\\.\\d+))$");
-        }else {
-            mPattern = Pattern.compile("^-?($|(\\d+\\.?\\d*|\\.\\d+))[" + units + "]?$");
+    // ==================== 成员变量 ====================
+    
+    /**
+     * 默认正则表达式：匹配纯数字（整数或小数）
+     * 格式：数字序列 + 可选小数点 + 数字序列
+     */
+    private static final String REGEX = "^(\\d+\\.?\\d*|\\.\\d+)$"; // 纯数字正则
+    
+    private Pattern mPattern = Pattern.compile(REGEX); // 正则表达式模式对象
+
+    /**
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 构造函数（带单位参数）                                                  │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   创建支持指定单位后缀的输入过滤器                                        │
+     * │   支持负数、小数和可选的单位字符                                          │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                            │
+     * │   @param units 允许的单位字符组合（如 "Vmv" 表示允许V、m、v）             │
+     * │                如果为null或空，则只允许纯数字                             │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【使用示例】                                                            │
+     * │   // 电压输入（允许V、m、v单位）                                         │
+     * │   UnitInputFilter filter = new UnitInputFilter("Vmv");                 │
+     * │   // 频率输入（允许H、z、K、M单位）                                       │
+     * │   UnitInputFilter filter = new UnitInputFilter("HzKM");                │
+     * │   // 纯数字输入（无单位）                                                │
+     * │   UnitInputFilter filter = new UnitInputFilter(null);                  │
+     * └────────────────────────────────────────────────────────────────────────┘
+     */
+    public UnitInputFilter(String units){ // 构造函数（带单位参数）
+        if(units == null || units.isEmpty()){ // 检查单位参数是否有效
+            mPattern = Pattern.compile("^-?($|(\\d+\\.?\\d*|\\.\\d+))$"); // 无单位：只允许负数和数字
+        }else { // 有单位
+            mPattern = Pattern.compile("^-?($|(\\d+\\.?\\d*|\\.\\d+))[" + units + "]?$"); // 允许可选的单位后缀
         }
     }
-    public UnitInputFilter(){
 
+    /**
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 构造函数（无参数）                                                      │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   创建默认的数值输入过滤器，只允许纯数字                                   │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【使用示例】                                                            │
+     * │   UnitInputFilter filter = new UnitInputFilter();                      │
+     * │   // 只允许输入数字和小数点                                              │
+     * └────────────────────────────────────────────────────────────────────────┘
+     */
+    public UnitInputFilter(){ // 默认构造函数
+        // 使用默认正则表达式（纯数字）
     }
+
+    /**
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 过滤输入内容                                                           │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   实现InputFilter接口方法，验证用户输入是否合法                           │
+     * │   构造输入后的完整字符串进行验证                                          │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                            │
+     * │   @param source 新输入的字符序列                                        │
+     * │   @param start  输入字符的起始位置                                       │
+     * │   @param end    输入字符的结束位置                                       │
+     * │   @param dest   原有文本内容                                            │
+     * │   @param dstart 替换区域的起始位置                                       │
+     * │   @param dend   替换区域的结束位置                                       │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【返回值】                                                              │
+     * │   @return null  表示允许输入                                            │
+     * │   @return ""    表示拒绝输入（返回空字符串）                             │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【验证格式】                                                            │
+     * │   有效格式示例：                                                        │
+     * │   - 纯数字：123, 3.14, .5                                               │
+     * │   - 带单位：123V, 3.14mV, -5.5K                                         │
+     * │   - 负数：-123, -3.14V                                                  │
+     * └────────────────────────────────────────────────────────────────────────┘
+     */
     @Override
-    public CharSequence filter(CharSequence source, int start, int end, Spanned dest, int dstart, int dend) {
-
-        // 构造输入后的新字符串
+    public CharSequence filter(CharSequence source, int start, int end, Spanned dest, int dstart, int dend) { // 过滤方法
+        // 构造输入后的新字符串：原文本前缀 + 新输入内容 + 原文本后缀
         String newString = dest.subSequence(0, dstart) + source.subSequence(start, end).toString() + dest.subSequence(dend, dest.length());
-        // 如果新字符串为空或符合正则，允许输入
-        if (newString.isEmpty() || mPattern.matcher(newString).matches()) {
-            return null; // 允许输入
+        // 如果新字符串为空或符合正则表达式，允许输入
+        if (newString.isEmpty() || mPattern.matcher(newString).matches()) { // 检查是否为空或匹配正则
+            return null; // 返回null表示允许输入
         }
-        return ""; // 拒绝输入
+        return ""; // 返回空字符串表示拒绝输入
     }
 }

@@ -1,27 +1,109 @@
-package com.micsig.base.filter;
+package com.micsig.base.filter; // 定义过滤器子包
 
-import android.text.InputFilter;
-import android.text.Spanned;
+import android.text.InputFilter; // 导入输入过滤器接口
+import android.text.Spanned; // 导入Spanned文本接口
+import android.util.Log; // 导入Android日志类
 
-import java.util.regex.Pattern;
+import java.util.regex.Pattern; // 导入正则表达式模式类
 
-public class CommonInputFilter implements InputFilter {
+/**
+ * ┌──────────────────────────────────────────────────────────────────────────────┐
+ * │                          CommonInputFilter 通用输入过滤器                     │
+ * │                            基于正则表达式的输入验证                            │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【模块定位】                                                                 │
+ * │   MHO示波器基础工具模块 - 输入验证组件                                        │
+ * │   提供基于正则表达式的输入内容验证功能                                        │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【核心职责】                                                                 │
+ * │   1. 实现InputFilter接口，拦截用户输入                                       │
+ * │   2. 使用正则表达式验证输入内容的合法性                                       │
+ * │   3. 支持自定义验证规则                                                      │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【架构设计】                                                                 │
+ * │   实现Android InputFilter接口                                               │
+ * │   通过正则表达式Pattern进行输入验证                                          │
+ * │   可与EditText等输入控件配合使用                                             │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【数据流向】                                                                 │
+ * │   用户输入 → filter方法 → 正则匹配 → 允许/拒绝                               │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【依赖关系】                                                                 │
+ * │   依赖: android.text.InputFilter (输入过滤器接口)                            │
+ * │   依赖: java.util.regex.Pattern (正则表达式)                                 │
+ * │   被依赖: FilterFactory (过滤器工厂)                                         │
+ * │   被依赖: 各输入框组件                                                       │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【使用示例】                                                                 │
+ * │   InputFilter filter = new CommonInputFilter("^[0-9]*$"); // 只允许数字     │
+ * │   editText.setFilters(new InputFilter[]{filter});                          │
+ * └──────────────────────────────────────────────────────────────────────────────┘
+ * 
+ * @author Micsig R&D Team
+ * @version 1.0
+ * @since MHO Series Oscilloscope Software
+ */
+public class CommonInputFilter implements InputFilter { // 实现InputFilter接口
 
-    private Pattern pattern;
+    // ==================== 成员变量 ====================
+    private Pattern pattern; // 正则表达式模式对象，用于验证输入
 
-    public CommonInputFilter(String regex) {
-        this.pattern = Pattern.compile(regex);
+    /**
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 构造函数                                                               │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   创建一个基于正则表达式的输入过滤器                                      │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                            │
+     * │   @param regex 正则表达式字符串，定义输入验证规则                         │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【使用示例】                                                            │
+     * │   // 只允许输入数字                                                     │
+     * │   CommonInputFilter filter = new CommonInputFilter("^[0-9]*$");        │
+     * │   // 只允许输入十六进制                                                 │
+     * │   CommonInputFilter filter = new CommonInputFilter("^[0-9A-Fa-f]*$");  │
+     * └────────────────────────────────────────────────────────────────────────┘
+     */
+    public CommonInputFilter(String regex) { // 构造函数，接收正则表达式字符串
+        this.pattern = Pattern.compile(regex); // 编译正则表达式为Pattern对象
     }
 
-
+    /**
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 过滤输入内容                                                           │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   实现InputFilter接口方法，验证用户输入是否合法                           │
+     * │   构造输入后的完整字符串进行验证                                          │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                            │
+     * │   @param source 新输入的字符序列                                        │
+     * │   @param start  输入字符的起始位置                                       │
+     * │   @param end    输入字符的结束位置                                       │
+     * │   @param dest   原有文本内容                                            │
+     * │   @param dstart 替换区域的起始位置                                       │
+     * │   @param dend   替换区域的结束位置                                       │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【返回值】                                                              │
+     * │   @return null  表示允许输入                                            │
+     * │   @return ""    表示拒绝输入（返回空字符串）                             │
+     * │   @return CharSequence 表示替换为指定内容                                │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【算法说明】                                                            │
+     * │   1. 构造输入后的新字符串：前缀 + 新输入 + 后缀                           │
+     * │   2. 如果新字符串为空或匹配正则，返回null允许输入                          │
+     * │   3. 否则返回空字符串拒绝输入                                            │
+     * └────────────────────────────────────────────────────────────────────────┘
+     */
     @Override
-    public CharSequence filter(CharSequence source, int start, int end, Spanned dest, int dstart, int dend) {
-        // 构造输入后的新字符串
+    public CharSequence filter(CharSequence source, int start, int end, Spanned dest, int dstart, int dend) { // 过滤方法
+        // 构造输入后的新字符串：原文本前缀 + 新输入内容 + 原文本后缀
         String newString = dest.subSequence(0, dstart) + source.subSequence(start, end).toString() + dest.subSequence(dend, dest.length());
-        // 如果新字符串为空或符合正则，允许输入
-        if (newString.isEmpty() || pattern.matcher(newString).matches()) {
-            return null; // 允许输入
+        // 如果新字符串为空或符合正则表达式，允许输入
+        if (newString.isEmpty() || pattern.matcher(newString).matches()) { // 检查是否为空或匹配正则
+            return null; // 返回null表示允许输入
         }
-        return ""; // 拒绝输入
+        return ""; // 返回空字符串表示拒绝输入
     }
 }

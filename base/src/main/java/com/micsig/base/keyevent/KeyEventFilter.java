@@ -1,65 +1,212 @@
-package com.micsig.base.keyevent;
+package com.micsig.base.keyevent; // 按键事件过滤包
 
-import android.view.KeyEvent;
-import android.view.View;
+import android.view.KeyEvent; // Android按键事件类
+import android.view.View; // Android视图基类
 
-import com.micsig.base.Logger;
+import com.micsig.base.Logger; // 统一日志工具
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashSet; // 哈希集合实现类
+import java.util.Set; // 集合接口
 
-public class KeyEventFilter implements View.OnKeyListener {
+/**
+ * ┌─────────────────────────────────────────────────────────────────────────────┐
+ * │                              KeyEventFilter                                 │
+ * │                           按键事件过滤器                                      │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 【模块定位】                                                                 │
+ * │   base模块 → keyevent子包 → 核心过滤组件                                      │
+ * │   MHO系列示波器软件按键事件处理基础设施                                         │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 【核心职责】                                                                 │
+ * │   1. 实现View.OnKeyListener接口，拦截并过滤特定按键事件                        │
+ * │   2. 支持动态配置需要过滤的按键码集合                                          │
+ * │   3. 可选择消费或传递被过滤的按键事件                                          │
+ * │   4. 保护原始监听器，确保非过滤按键正常传递                                     │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 【架构设计】                                                                 │
+ * │   ┌─────────────────────────────────────────────────────────────────────┐   │
+ * │   │                        装饰器模式                                    │   │
+ * │   │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐         │   │
+ * │   │  │ OnKeyListener│←───│KeyEventFilter│←───│  View组件    │         │   │
+ * │   │  │  (原始监听器) │    │  (装饰器)     │    │  (事件源)    │         │   │
+ * │   │  └──────────────┘    └──────────────┘    └──────────────┘         │   │
+ * │   │                              ↓                                    │   │
+ * │   │                    ┌──────────────────┐                          │   │
+ * │   │                    │过滤按键码集合     │                          │   │
+ * │   │                    │Set<Integer>      │                          │   │
+ * │   │                    └──────────────────┘                          │   │
+ * │   └─────────────────────────────────────────────────────────────────────┘   │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 【数据流向】                                                                 │
+ * │   View按键事件 → KeyEventFilter.onKey() → 检查过滤集合                        │
+ * │        ↓                                          ↓                         │
+ * │   [在过滤集合中] → 返回consumerFilteredKeys(消费/传递)                         │
+ * │        ↓                                                                     │
+ * │   [不在过滤集合中] → 调用原始监听器.onKey()                                    │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 【依赖关系】                                                                 │
+ * │   依赖:                                                                      │
+ * │     - android.view.KeyEvent: 按键事件数据类                                  │
+ * │     - android.view.View$OnKeyListener: 监听器接口                            │
+ * │     - com.micsig.base.Logger: 日志输出工具                                   │
+ * │     - java.util.Set/HashSet: 按键码集合存储                                  │
+ * │   被依赖:                                                                    │
+ * │     - KeyFilterBuilder: 通过建造者模式创建实例                                │
+ * │     - 各UI组件: 用于按键事件过滤                                              │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 【使用示例】                                                                  │
+ * │   // 方式1: 直接创建                                                          │
+ * │   Set<Integer> filteredKeys = new HashSet<>();                              │
+ * │   filteredKeys.add(KeyEvent.KEYCODE_BACK);                                  │
+ * │   KeyEventFilter filter = new KeyEventFilter(                               │
+ * │       originalListener, filteredKeys, true);                                │
+ * │   view.setOnKeyListener(filter);                                            │
+ * │                                                                              │
+ * │   // 方式2: 通过Builder创建(推荐)                                             │
+ * │   KeyEventFilter filter = new KeyFilterBuilder()                            │
+ * │       .setOriginalListener(originalListener)                                │
+ * │       .addKeyCode(KeyEvent.KEYCODE_BACK)                                    │
+ * │       .setConsumerFilteredKeys(true)                                        │
+ * │       .build();                                                             │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 【注意事项】                                                                  │
+ * │   1. 线程安全: 非线程安全，应在UI线程操作                                      │
+ * │   2. 内存管理: 持有原始监听器引用，注意生命周期                                 │
+ * │   3. 性能考虑: 使用HashSet实现O(1)查找效率                                    │
+ * │   4. 扩展性: 支持运行时动态修改过滤集合                                        │
+ * └─────────────────────────────────────────────────────────────────────────────┘
+ *
+ * @author MICSIG开发团队
+ * @version 1.0.0
+ * @since 2024-01-01
+ */
+public class KeyEventFilter implements View.OnKeyListener { // 实现按键监听接口
 
-    private static final String TAG = "KeyEventFilter";
-    private final View.OnKeyListener originalListener;
-    private final Set<Integer> filteredKeyCoders;
-    private final boolean consumerFilteredKeys;
+    /** 日志标签，用于标识当前类的日志输出 */ // 日志标签常量
+    private static final String TAG = "KeyEventFilter"; // TAG = "KeyEventFilter"
+
+    /** 原始的按键监听器，用于传递非过滤按键事件 */ // 原始监听器成员变量
+    private final View.OnKeyListener originalListener; // 保存原始监听器引用
+
+    /** 需要过滤的按键码集合，使用HashSet实现快速查找 */ // 过滤按键码集合
+    private final Set<Integer> filteredKeyCoders; // 存储需要过滤的按键码
+
+    /** 是否消费被过滤的按键事件，true=消费不传递，false=继续传递 */ // 消费标志位
+    private final boolean consumerFilteredKeys; // 控制过滤按键的处理方式
 
     /**
-     * @param onKeyListener        原始的监听器
-     * @param filteredKeyCoders    需要过滤的按键组合
-     * @param consumerFilteredKeys 是否消费过滤的按键(true:消费掉  false：继续传递)
+     * ┌─────────────────────────────────────────────────────────────────────────┐
+     * │ 构造方法：创建按键事件过滤器实例                                            │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                              │
+     * │   初始化按键过滤器，配置原始监听器、过滤按键集合和消费策略                    │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                              │
+     * │   @param onKeyListener        原始的按键监听器，接收非过滤按键事件          │
+     * │   @param filteredKeyCoders    需要过滤的按键码集合，可为null               │
+     * │   @param consumerFilteredKeys 是否消费过滤的按键                           │
+     * │                              true: 消费掉，事件不继续传递                  │
+     * │                              false: 不消费，事件继续传递                   │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【实现逻辑】                                                              │
+     * │   1. 保存原始监听器引用                                                   │
+     * │   2. 初始化过滤按键集合，null时创建空集合                                   │
+     * │   3. 保存消费策略标志                                                     │
+     * └─────────────────────────────────────────────────────────────────────────┘
      */
-    public KeyEventFilter(View.OnKeyListener onKeyListener, Set<Integer> filteredKeyCoders, boolean consumerFilteredKeys) {
-        this.originalListener = onKeyListener;
-        this.filteredKeyCoders = filteredKeyCoders != null ? filteredKeyCoders : new HashSet<>();
-        this.consumerFilteredKeys = consumerFilteredKeys;
-    }
+    public KeyEventFilter(View.OnKeyListener onKeyListener, Set<Integer> filteredKeyCoders, boolean consumerFilteredKeys) { // 构造方法开始
+        this.originalListener = onKeyListener; // 保存原始监听器引用
+        this.filteredKeyCoders = filteredKeyCoders != null ? filteredKeyCoders : new HashSet<>(); // 初始化过滤集合，null则创建空集合
+        this.consumerFilteredKeys = consumerFilteredKeys; // 保存消费策略标志
+    } // 构造方法结束
 
-
-    @Override
-    public boolean onKey(View v, int keyCode, KeyEvent event) {
-        //先检查是否为过滤的按键
-        boolean isContains = filteredKeyCoders.contains(keyCode);
-        Logger.d(TAG, "keyCode= " + keyCode + " ,keyInFilterKey= " + isContains + " ,consumer= " + consumerFilteredKeys);
-        if (isContains) {
-            return consumerFilteredKeys;//根据配置决定是否过滤按键事件
-        }
-        if (originalListener != null) {
-            return originalListener.onKey(v, keyCode, event);
-        }
-        return false;
-    }
 
     /**
-     * 添加新的过滤按键
+     * ┌─────────────────────────────────────────────────────────────────────────┐
+     * │ 方法：onKey - 按键事件处理                                                │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                              │
+     * │   实现OnKeyListener接口，拦截并处理按键事件                                │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                              │
+     * │   @param v        发生按键事件的视图                                       │
+     * │   @param keyCode  按键码，标识具体按键                                     │
+     * │   @param event    按键事件对象，包含事件详情                                │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【返回值说明】                                                            │
+     * │   @return true表示事件已处理，false表示事件未处理                          │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【处理流程】                                                              │
+     * │   1. 检查当前按键码是否在过滤集合中                                         │
+     * │   2. 记录调试日志                                                         │
+     * │   3. 如果在过滤集合中，根据consumerFilteredKeys返回结果                     │
+     * │   4. 如果不在过滤集合中，调用原始监听器处理                                  │
+     * │   5. 如果原始监听器为null，返回false                                        │
+     * └─────────────────────────────────────────────────────────────────────────┘
      */
-    private void addFilteredKeyCode(int keyCode) {
-        filteredKeyCoders.add(keyCode);
-    }
+    @Override // 重写接口方法
+    public boolean onKey(View v, int keyCode, KeyEvent event) { // onKey方法开始
+        //先检查是否为过滤的按键 // 检查按键是否需要过滤
+        boolean isContains = filteredKeyCoders.contains(keyCode); // 判断按键码是否在过滤集合中
+        Logger.d(TAG, "keyCode= " + keyCode + " ,keyInFilterKey= " + isContains + " ,consumer= " + consumerFilteredKeys); // 输出调试日志
+        if (isContains) { // 如果按键在过滤集合中
+            return consumerFilteredKeys;//根据配置决定是否过滤按键事件 // 返回消费策略，决定是否消费该按键
+        } // 过滤处理结束
+        if (originalListener != null) { // 如果原始监听器存在
+            return originalListener.onKey(v, keyCode, event); // 调用原始监听器处理按键事件
+        } // 原始监听器处理结束
+        return false; // 无原始监听器，返回false表示未处理
+    } // onKey方法结束
 
     /**
-     * 移除过滤的按键
+     * ┌─────────────────────────────────────────────────────────────────────────┐
+     * │ 方法：addFilteredKeyCode - 添加过滤按键                                   │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                              │
+     * │   向过滤集合中添加新的按键码                                               │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                              │
+     * │   @param keyCode 需要添加到过滤集合的按键码                                │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【访问权限】                                                              │
+     * │   private - 内部使用，暂未对外开放                                         │
+     * └─────────────────────────────────────────────────────────────────────────┘
      */
-    private void removeFilteredKeyCode(int keyCode) {
-        filteredKeyCoders.remove(keyCode);
-    }
+    private void addFilteredKeyCode(int keyCode) { // 添加过滤按键方法开始
+        filteredKeyCoders.add(keyCode); // 将按键码添加到过滤集合
+    } // 添加过滤按键方法结束
 
     /**
-     * 清空所有过滤的按键
+     * ┌─────────────────────────────────────────────────────────────────────────┐
+     * │ 方法：removeFilteredKeyCode - 移除过滤按键                               │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                              │
+     * │   从过滤集合中移除指定的按键码                                             │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                              │
+     * │   @param keyCode 需要从过滤集合移除的按键码                                │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【访问权限】                                                              │
+     * │   private - 内部使用，暂未对外开放                                         │
+     * └─────────────────────────────────────────────────────────────────────────┘
      */
-    private void clearFilteredKeyCode() {
-        filteredKeyCoders.clear();
-    }
+    private void removeFilteredKeyCode(int keyCode) { // 移除过滤按键方法开始
+        filteredKeyCoders.remove(keyCode); // 从过滤集合中移除按键码
+    } // 移除过滤按键方法结束
 
-}
+    /**
+     * ┌─────────────────────────────────────────────────────────────────────────┐
+     * │ 方法：clearFilteredKeyCode - 清空过滤按键集合                             │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                              │
+     * │   清空所有已配置的过滤按键码                                               │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【访问权限】                                                              │
+     * │   private - 内部使用，暂未对外开放                                         │
+     * └─────────────────────────────────────────────────────────────────────────┘
+     */
+    private void clearFilteredKeyCode() { // 清空过滤按键方法开始
+        filteredKeyCoders.clear(); // 清空过滤集合中的所有按键码
+    } // 清空过滤按键方法结束
+
+} // KeyEventFilter类结束

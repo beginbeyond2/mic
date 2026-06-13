@@ -1,69 +1,177 @@
-package com.micsig.base;
+package com.micsig.base; // 定义基础工具类包
 
-public class NumberUnitParser {
-    private String number;
-    private String unit;
+/**
+ * ┌──────────────────────────────────────────────────────────────────────────────┐
+ * │                        NumberUnitParser 数字单位解析器                       │
+ * │                          字符串数字与单位分离工具                              │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【模块定位】                                                                 │
+ * │   MHO示波器基础工具模块 - 字符串解析组件                                      │
+ * │   提供数字与单位分离解析功能                                                 │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【核心职责】                                                                 │
+ * │   1. 解析包含数字和单位的字符串                                              │
+ * │   2. 分离数字部分和单位部分                                                  │
+ * │   3. 支持负数和小数解析                                                     │
+ * │   4. 提供数值转换接口                                                       │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【架构设计】                                                                 │
+ * │   采用构造时解析模式，一次性完成解析                                          │
+ * │   支持格式：数字+单位（如 "3.14V"、"100mV"、"-5.5A"）                         │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【数据流向】                                                                 │
+ * │   输入字符串 → 解析处理 → number/unit分离 → getter获取                       │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【依赖关系】                                                                 │
+ * │   无外部依赖                                                                │
+ * │   被依赖: 参数输入解析、测量值显示、配置文件解析                              │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【使用示例】                                                                 │
+ * │   NumberUnitParser parser = new NumberUnitParser("3.14V");                 │
+ * │   String number = parser.getNumber();  // "3.14"                           │
+ * │   String unit = parser.getUnit();      // "V"                              │
+ * │   double value = parser.getNumberAsDouble();  // 3.14                      │
+ * └──────────────────────────────────────────────────────────────────────────────┘
+ * 
+ * @author Micsig R&D Team
+ * @version 1.0
+ * @since MHO Series Oscilloscope Software
+ */
+public class NumberUnitParser { // 数字单位解析器类
+    
+    // ==================== 成员变量 ====================
+    private String number; // 解析出的数字部分（字符串形式）
+    private String unit; // 解析出的单位部分（单个字符）
 
-    public NumberUnitParser(String input) {
-        parseInput(input);
+    /**
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 构造函数                                                               │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   创建解析器并立即解析输入字符串                                          │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                            │
+     * │   @param input 待解析的字符串（如 "3.14V"、"100mV"、"-5.5A"）            │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【使用示例】                                                            │
+     * │   NumberUnitParser parser = new NumberUnitParser("3.14V");             │
+     * │   NumberUnitParser parser2 = new NumberUnitParser("-100mV");           │
+     * └────────────────────────────────────────────────────────────────────────┘
+     */
+    public NumberUnitParser(String input) { // 构造函数
+        parseInput(input); // 调用解析方法
     }
 
-    private void parseInput(String input) {
-        String cleanInput = input.replaceAll("\\s+", "");
+    /**
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 解析输入字符串                                                          │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   核心解析逻辑，分离数字和单位                                            │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                            │
+     * │   @param input 待解析的字符串                                            │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【算法说明】                                                            │
+     * │   1. 去除空白字符                                                       │
+     * │   2. 处理负号                                                          │
+     * │   3. 遍历字符找到数字结束位置                                            │
+     * │   4. 分离数字和单位                                                     │
+     * └────────────────────────────────────────────────────────────────────────┘
+     */
+    private void parseInput(String input) { // 解析输入方法
+        String cleanInput = input.replaceAll("\\s+", ""); // 去除所有空白字符
 
         // 找到第一个非数字字符的位置（考虑小数点）
-        int unitStartIndex = 0;
-        boolean foundDecimal = false;
-        boolean bDigit = false;
-        boolean isNegative = false;
+        int unitStartIndex = 0; // 单位起始位置索引
+        boolean foundDecimal = false; // 是否已找到小数点
+        boolean bDigit = false; // 是否找到数字
+        boolean isNegative = false; // 是否为负数
 
-        if (cleanInput.startsWith("-")) {
-            cleanInput = cleanInput.replace("-", "");
-            isNegative = true;
+        if (cleanInput.startsWith("-")) { // 检查是否以负号开头
+            cleanInput = cleanInput.replace("-", ""); // 移除负号
+            isNegative = true; // 标记为负数
         }
 
-        for (int i = 0; i < cleanInput.length(); i++) {
-            char c = cleanInput.charAt(i);
-            if (Character.isDigit(c)) {
-                bDigit = true;
-                continue;
-            } else if (c == '.' && !foundDecimal) {
-                foundDecimal = true;
-                continue;
-            } else {
-                unitStartIndex = i;
-                break;
+        for (int i = 0; i < cleanInput.length(); i++) { // 遍历每个字符
+            char c = cleanInput.charAt(i); // 获取当前字符
+            if (Character.isDigit(c)) { // 如果是数字
+                bDigit = true; // 标记找到数字
+                continue; // 继续下一个字符
+            } else if (c == '.' && !foundDecimal) { // 如果是小数点且之前未找到
+                foundDecimal = true; // 标记找到小数点
+                continue; // 继续下一个字符
+            } else { // 非数字且非小数点，即单位开始
+                unitStartIndex = i; // 记录单位起始位置
+                break; // 跳出循环
             }
         }
 
-        if (unitStartIndex > 0) {
-            this.number = cleanInput.substring(0, unitStartIndex);
-            this.unit = cleanInput.substring(unitStartIndex,unitStartIndex+1);
-        } else {
-            if(!bDigit){
-                cleanInput = "0";
+        if (unitStartIndex > 0) { // 如果找到单位
+            this.number = cleanInput.substring(0, unitStartIndex); // 提取数字部分
+            this.unit = cleanInput.substring(unitStartIndex, unitStartIndex+1); // 提取单位部分（仅第一个字符）
+        } else { // 未找到单位
+            if(!bDigit){ // 如果没有数字
+                cleanInput = "0"; // 默认设为0
             }
-            this.number = cleanInput;
-            this.unit = "";
+            this.number = cleanInput; // 整个字符串作为数字
+            this.unit = ""; // 单位为空
         }
-        if (isNegative) {
-            this.number = "-" + this.number;
+        if (isNegative) { // 如果是负数
+            this.number = "-" + this.number; // 在数字前添加负号
         }
     }
 
-    public String getNumber() {
-        return number;
+    /**
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 获取数字部分（字符串）                                                  │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   返回解析出的数字部分字符串                                             │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【返回值】                                                              │
+     * │   @return 数字部分的字符串表示                                           │
+     * └────────────────────────────────────────────────────────────────────────┘
+     */
+    public String getNumber() { // 获取数字方法
+        return number; // 返回数字字符串
     }
 
-    public String getUnit() {
-        return unit;
+    /**
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 获取单位部分                                                            │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   返回解析出的单位部分（单个字符）                                        │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【返回值】                                                              │
+     * │   @return 单位字符，无单位时返回空字符串                                  │
+     * └────────────────────────────────────────────────────────────────────────┘
+     */
+    public String getUnit() { // 获取单位方法
+        return unit; // 返回单位字符串
     }
 
-    public double getNumberAsDouble() {
+    /**
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 获取数字的double值                                                      │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   将解析出的数字部分转换为double类型                                      │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【返回值】                                                              │
+     * │   @return 数字的double值，解析失败返回0.0                                │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【使用示例】                                                            │
+     * │   NumberUnitParser parser = new NumberUnitParser("3.14V");             │
+     * │   double value = parser.getNumberAsDouble();  // 3.14                  │
+     * └────────────────────────────────────────────────────────────────────────┘
+     */
+    public double getNumberAsDouble() { // 获取double值方法
         try {
-            return Double.parseDouble(number);
-        } catch (NumberFormatException e) {
-            return 0.0;
+            return Double.parseDouble(number); // 尝试解析为double
+        } catch (NumberFormatException e) { // 捕获格式异常
+            return 0.0; // 解析失败返回0.0
         }
     }
 

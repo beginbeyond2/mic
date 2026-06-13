@@ -1,57 +1,189 @@
-package com.micsig.base;
+package com.micsig.base; // 定义基础工具类包
 
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.graphics.Bitmap; // 导入位图类
+import android.graphics.BitmapFactory; // 导入位图工厂类
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.BufferedReader; // 导入缓冲读取器类
+import java.io.File; // 导入文件类
+import java.io.FileReader; // 导入文件读取器类
+import java.io.IOException; // 导入IO异常类
 
-public class OEM {
-    private static final String Splash_PATH = "/private/oem/smart_oscilloscope.png";
-    private static final String Logo_PATH = "/private/oem/logo.png";
-    private static final String OEM_PATH = "/private/oem/oem.txt";
-    private static Bitmap getBitmap(String path){
-        Bitmap bitmap = null;
-        File f = new File(path);
-        if(f.exists()){
-            BitmapFactory.Options op = new BitmapFactory.Options();
-            op.inPreferredConfig = Bitmap.Config.ARGB_8888;
-            op.inScaled = false;
-            bitmap = BitmapFactory.decodeFile(path,op);
+/**
+ * ┌──────────────────────────────────────────────────────────────────────────────┐
+ * │                              OEM 品牌定制工具类                              │
+ * │                          OEM品牌资源加载与管理                               │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【模块定位】                                                                 │
+ * │   MHO示波器基础工具模块 - 品牌定制组件                                        │
+ * │   提供OEM品牌资源加载功能，支持多品牌定制                                     │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【核心职责】                                                                 │
+ * │   1. 加载OEM定制启动画面                                                   │
+ * │   2. 加载OEM定制Logo图标                                                   │
+ * │   3. 读取OEM品牌名称                                                       │
+ * │   4. 判断是否为Micsig品牌                                                  │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【架构设计】                                                                 │
+ * │   从/private/oem/目录读取OEM资源文件                                        │
+ * │   支持PNG图片和文本配置文件                                                 │
+ * │   静态方法设计，无需实例化                                                  │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【数据流向】                                                                 │
+ * │   文件系统 → Bitmap/String → UI显示                                        │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【依赖关系】                                                                 │
+ * │   依赖: android.graphics.Bitmap (图片处理)                                  │
+ * │   依赖: android.graphics.BitmapFactory (图片解码)                           │
+ * │   被依赖: 启动画面、设置界面、关于界面                                       │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【使用示例】                                                                 │
+ * │   Bitmap splash = OEM.getSplashScreen();  // 获取启动画面                  │
+ * │   Bitmap logo = OEM.getLogo();            // 获取Logo                      │
+ * │   String name = OEM.getOEMName();         // 获取品牌名称                   │
+ * │   boolean isMicsig = OEM.isMicsig();      // 判断是否为Micsig品牌           │
+ * └──────────────────────────────────────────────────────────────────────────────┘
+ * 
+ * @author Micsig R&D Team
+ * @version 1.0
+ * @since MHO Series Oscilloscope Software
+ */
+public class OEM { // OEM品牌定制工具类
+    
+    // ==================== 文件路径常量 ====================
+    private static final String Splash_PATH = "/private/oem/smart_oscilloscope.png"; // 启动画面图片路径
+    private static final String Logo_PATH = "/private/oem/logo.png"; // Logo图标路径
+    private static final String OEM_PATH = "/private/oem/oem.txt"; // OEM配置文件路径
+
+    /**
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 从文件加载位图                                                          │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   从指定路径加载PNG图片为Bitmap对象                                       │
+     * │   使用ARGB_8888配置，不进行缩放                                          │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                            │
+     * │   @param path 图片文件路径                                              │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【返回值】                                                              │
+     * │   @return Bitmap对象，文件不存在时返回null                               │
+     * └────────────────────────────────────────────────────────────────────────┘
+     */
+    private static Bitmap getBitmap(String path){ // 私有方法：加载位图
+        Bitmap bitmap = null; // 初始化位图对象为null
+        File f = new File(path); // 创建文件对象
+        if(f.exists()){ // 检查文件是否存在
+            BitmapFactory.Options op = new BitmapFactory.Options(); // 创建解码选项
+            op.inPreferredConfig = Bitmap.Config.ARGB_8888; // 设置首选配置为ARGB_8888（高质量）
+            op.inScaled = false; // 禁用缩放，保持原始尺寸
+            bitmap = BitmapFactory.decodeFile(path, op); // 解码文件为位图
         }
-        return bitmap;
-    }
-    public static Bitmap getSplashScreen(){
-        return getBitmap(Splash_PATH);
+        return bitmap; // 返回位图对象
     }
 
-    public static Bitmap getLogo(){
-        return getBitmap(Logo_PATH);
+    /**
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 获取启动画面图片                                                        │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   加载OEM定制的启动画面图片                                              │
+     * │   图片路径：/private/oem/smart_oscilloscope.png                         │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【返回值】                                                              │
+     * │   @return 启动画面Bitmap，文件不存在时返回null                           │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【使用示例】                                                            │
+     * │   Bitmap splash = OEM.getSplashScreen();                               │
+     * │   if (splash != null) {                                                │
+     * │       imageView.setImageBitmap(splash);                                │
+     * │   }                                                                    │
+     * └────────────────────────────────────────────────────────────────────────┘
+     */
+    public static Bitmap getSplashScreen(){ // 获取启动画面方法
+        return getBitmap(Splash_PATH); // 调用通用加载方法
     }
-    public static String getOEMName(){
-        String oemName = "";
+
+    /**
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 获取Logo图标                                                           │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   加载OEM定制的Logo图标                                                 │
+     * │   图片路径：/private/oem/logo.png                                       │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【返回值】                                                              │
+     * │   @return Logo Bitmap，文件不存在时返回null                              │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【使用示例】                                                            │
+     * │   Bitmap logo = OEM.getLogo();                                         │
+     * │   if (logo != null) {                                                  │
+     * │       logoImageView.setImageBitmap(logo);                              │
+     * │   }                                                                    │
+     * └────────────────────────────────────────────────────────────────────────┘
+     */
+    public static Bitmap getLogo(){ // 获取Logo方法
+        return getBitmap(Logo_PATH); // 调用通用加载方法
+    }
+
+    /**
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 获取OEM品牌名称                                                        │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   从配置文件读取OEM品牌名称                                              │
+     * │   配置文件路径：/private/oem/oem.txt                                    │
+     * │   读取文件第一行作为品牌名称                                             │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【返回值】                                                              │
+     * │   @return OEM品牌名称字符串，读取失败返回空字符串                         │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【使用示例】                                                            │
+     * │   String brand = OEM.getOEMName();                                     │
+     * │   // 返回: "micsig" 或其他品牌名称                                      │
+     * └────────────────────────────────────────────────────────────────────────┘
+     */
+    public static String getOEMName(){ // 获取OEM名称方法
+        String oemName = ""; // 初始化品牌名称为空字符串
         try {
-            FileReader fr = new FileReader(OEM_PATH);
-            BufferedReader bf = new BufferedReader(fr);
-            String str;
-            while ((str = bf.readLine()) != null) {
-                oemName = str;
-                break;
+            FileReader fr = new FileReader(OEM_PATH); // 创建文件读取器
+            BufferedReader bf = new BufferedReader(fr); // 创建缓冲读取器
+            String str; // 声明行字符串变量
+            while ((str = bf.readLine()) != null) { // 逐行读取
+                oemName = str; // 取第一行作为品牌名称
+                break; // 只读取第一行，跳出循环
             }
-            bf.close();
-            fr.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+            bf.close(); // 关闭缓冲读取器
+            fr.close(); // 关闭文件读取器
+        } catch (IOException e) { // 捕获IO异常
+            e.printStackTrace(); // 打印异常堆栈
         }
-        return oemName;
+        return oemName; // 返回品牌名称
     }
-    public static boolean isMicsig(){
-        String oemName = getOEMName();
-        if(oemName == null || oemName.isEmpty() || "micsig".equals(oemName)){
-            return true;
+
+    /**
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 判断是否为Micsig品牌                                                   │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   检查当前OEM品牌是否为Micsig（默认品牌）                                 │
+     * │   如果品牌名称为空、null或"micsig"，则认为是Micsig品牌                    │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【返回值】                                                              │
+     * │   @return true表示是Micsig品牌，false表示是其他OEM品牌                   │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【使用示例】                                                            │
+     * │   if (OEM.isMicsig()) {                                                │
+     * │       // 显示Micsig默认界面                                             │
+     * │   } else {                                                             │
+     * │       // 显示OEM定制界面                                                │
+     * │   }                                                                    │
+     * └────────────────────────────────────────────────────────────────────────┘
+     */
+    public static boolean isMicsig(){ // 判断是否为Micsig品牌方法
+        String oemName = getOEMName(); // 获取OEM品牌名称
+        if(oemName == null || oemName.isEmpty() || "micsig".equals(oemName)){ // 检查是否为默认品牌
+            return true; // 是Micsig品牌
         }
-        return false;
+        return false; // 不是Micsig品牌
     }
 }

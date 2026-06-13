@@ -1,55 +1,232 @@
-package com.micsig.base.keyevent;
+package com.micsig.base.keyevent; // 按键事件过滤包
 
-import android.view.View;
+import android.view.View; // Android视图基类
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashSet; // 哈希集合实现类
+import java.util.Set; // 集合接口
 
-public class KeyFilterBuilder {
-    private View.OnKeyListener originalListener;
-    private final Set<Integer> filteredKeyCoders = new HashSet<>();
-    private boolean consumerFilteredKeys = true;
+/**
+ * ┌─────────────────────────────────────────────────────────────────────────────┐
+ * │                            KeyFilterBuilder                                 │
+ * │                          按键过滤器建造者                                     │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 【模块定位】                                                                 │
+ * │   base模块 → keyevent子包 → 建造者组件                                        │
+ * │   MHO系列示波器软件按键过滤器构建工具                                         │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 【核心职责】                                                                 │
+ * │   1. 实现建造者模式，简化KeyEventFilter的创建过程                             │
+ * │   2. 支持链式调用配置过滤参数                                                │
+ * │   3. 提供灵活的按键码添加方式(单个/批量)                                      │
+ * │   4. 封装复杂的过滤器初始化逻辑                                              │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 【架构设计】                                                                 │
+ * │   ┌─────────────────────────────────────────────────────────────────────┐   │
+ * │   │                        建造者模式                                    │   │
+ * │   │  ┌──────────────────┐    构建     ┌──────────────────┐            │   │
+ * │   │  │ KeyFilterBuilder │ ─────────→ │  KeyEventFilter  │            │   │
+ * │   │  │  ┌────────────┐  │            │  ┌────────────┐  │            │   │
+ * │   │  │  │originalLis-│  │            │  │filteredKey-│  │            │   │
+ * │   │  │  │tener       │  │            │  │Coders      │  │            │   │
+ * │   │  │  ├────────────┤  │            │  ├────────────┤  │            │   │
+ * │   │  │  │filteredKey-│  │            │  │consumerFil-│  │            │   │
+ * │   │  │  │Coders      │  │            │  │teredKeys   │  │            │   │
+ * │   │  │  ├────────────┤  │            │  └────────────┘  │            │   │
+ * │   │  │  │consumerFil-│  │            │                  │            │   │
+ * │   │  │  │teredKeys   │  │            │                  │            │   │
+ * │   │  │  └────────────┘  │            │                  │            │   │
+ * │   │  └──────────────────┘            └──────────────────┘            │   │
+ * │   └─────────────────────────────────────────────────────────────────────┘   │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 【数据流向】                                                                 │
+ * │   配置参数 → Builder内部存储 → build()方法 → KeyEventFilter实例              │
+ * │        ↓                                                                     │
+ * │   setOriginalListener() → 保存监听器引用                                     │
+ * │   addKeyCode() → 添加到过滤集合                                              │
+ * │   setConsumerFilteredKeys() → 设置消费策略                                   │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 【依赖关系】                                                                 │
+ * │   依赖:                                                                      │
+ * │     - android.view.View$OnKeyListener: 监听器接口                            │
+ * │     - java.util.Set/HashSet: 按键码集合存储                                  │
+ * │   创建:                                                                      │
+ * │     - KeyEventFilter: 通过build()方法创建过滤器实例                          │
+ * │   被使用:                                                                    │
+ * │     - 各UI组件: 用于创建按键过滤器                                            │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 【使用示例】                                                                  │
+ * │   // 基本用法                                                                │
+ * │   KeyEventFilter filter = new KeyFilterBuilder()                            │
+ * │       .setOriginalListener(myListener)                                      │
+ * │       .addKeyCode(KeyEvent.KEYCODE_BACK)                                    │
+ * │       .addKeyCode(KeyEvent.KEYCODE_MENU)                                    │
+ * │       .setConsumerFilteredKeys(true)                                        │
+ * │       .build();                                                             │
+ * │                                                                              │
+ * │   // 批量添加按键码                                                          │
+ * │   Set<Integer> keys = new HashSet<>();                                      │
+ * │   keys.add(KeyEvent.KEYCODE_BACK);                                          │
+ * │   keys.add(KeyEvent.KEYCODE_MENU);                                          │
+ * │   KeyEventFilter filter = new KeyFilterBuilder()                            │
+ * │       .setOriginalListener(myListener)                                      │
+ * │       .addKeyCodeSet(keys)                                                  │
+ * │       .build();                                                             │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 【注意事项】                                                                  │
+ * │   1. 线程安全: 非线程安全，应在单线程中构建                                   │
+ * │   2. 可重用: 同一个Builder可多次调用build()创建多个实例                       │
+ * │   3. 默认值: consumerFilteredKeys默认为true(消费过滤按键)                    │
+ * │   4. 链式调用: 所有配置方法返回this，支持链式调用                             │
+ * └─────────────────────────────────────────────────────────────────────────────┘
+ *
+ * @author MICSIG开发团队
+ * @version 1.0.0
+ * @since 2024-01-01
+ */
+public class KeyFilterBuilder { // 按键过滤器建造者类
+
+    /** 原始按键监听器，用于传递非过滤按键事件 */ // 原始监听器成员变量
+    private View.OnKeyListener originalListener; // 保存原始监听器引用
+
+    /** 需要过滤的按键码集合，使用HashSet实现快速查找 */ // 过滤按键码集合
+    private final Set<Integer> filteredKeyCoders = new HashSet<>(); // 初始化过滤按键码集合
+
+    /** 是否消费被过滤的按键事件，默认为true(消费) */ // 消费标志位
+    private boolean consumerFilteredKeys = true; // 默认消费过滤的按键
 
 
     /**
-     * 设置原始监听器件
+     * ┌─────────────────────────────────────────────────────────────────────────┐
+     * │ 方法：setOriginalListener - 设置原始监听器                               │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                              │
+     * │   配置原始的按键监听器，用于处理非过滤按键事件                              │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                              │
+     * │   @param listener 原始按键监听器实例                                      │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【返回值说明】                                                            │
+     * │   @return 返回当前Builder实例，支持链式调用                               │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【使用场景】                                                              │
+     * │   当需要在原有监听器基础上添加按键过滤功能时使用                            │
+     * └─────────────────────────────────────────────────────────────────────────┘
      */
-    public KeyFilterBuilder setOriginalListener(View.OnKeyListener listener) {
-        this.originalListener = listener;
-        return this;
-    }
+    /**
+     * 设置原始监听器件 // 功能说明注释
+     */
+    public KeyFilterBuilder setOriginalListener(View.OnKeyListener listener) { // 设置原始监听器方法开始
+        this.originalListener = listener; // 保存监听器引用
+        return this; // 返回当前Builder实例，支持链式调用
+    } // 设置原始监听器方法结束
 
     /**
-     * 设置是否消费过滤的按键
+     * ┌─────────────────────────────────────────────────────────────────────────┐
+     * │ 方法：setConsumerFilteredKeys - 设置消费策略                             │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                              │
+     * │   配置被过滤按键的处理策略：消费或继续传递                                  │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                              │
+     * │   @param consume true=消费过滤按键(事件不传递)，false=继续传递            │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【返回值说明】                                                            │
+     * │   @return 返回当前Builder实例，支持链式调用                               │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【使用建议】                                                              │
+     * │   - true: 完全阻止过滤按键，适合需要禁用特定按键的场景                     │
+     * │   - false: 仅过滤但不阻止，适合需要记录但不干预的场景                      │
+     * └─────────────────────────────────────────────────────────────────────────┘
      */
-    public KeyFilterBuilder setConsumerFilteredKeys(boolean consume) {
-        this.consumerFilteredKeys = consume;
-        return this;
-    }
+    /**
+     * 设置是否消费过滤的按键 // 功能说明注释
+     */
+    public KeyFilterBuilder setConsumerFilteredKeys(boolean consume) { // 设置消费策略方法开始
+        this.consumerFilteredKeys = consume; // 保存消费策略标志
+        return this; // 返回当前Builder实例，支持链式调用
+    } // 设置消费策略方法结束
 
     /**
-     * 添加单个按键
+     * ┌─────────────────────────────────────────────────────────────────────────┐
+     * │ 方法：addKeyCode - 添加单个过滤按键                                       │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                              │
+     * │   向过滤集合中添加单个需要过滤的按键码                                     │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                              │
+     * │   @param keyCode 需要过滤的按键码(如KeyEvent.KEYCODE_BACK)                │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【返回值说明】                                                            │
+     * │   @return 返回当前Builder实例，支持链式调用                               │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【使用示例】                                                              │
+     * │   builder.addKeyCode(KeyEvent.KEYCODE_BACK)                              │
+     * │          .addKeyCode(KeyEvent.KEYCODE_MENU);                             │
+     * └─────────────────────────────────────────────────────────────────────────┘
      */
-    public KeyFilterBuilder addKeyCode(int keyCode) {
-        filteredKeyCoders.add(keyCode);
-        return this;
-    }
+    /**
+     * 添加单个按键 // 功能说明注释
+     */
+    public KeyFilterBuilder addKeyCode(int keyCode) { // 添加单个按键方法开始
+        filteredKeyCoders.add(keyCode); // 将按键码添加到过滤集合
+        return this; // 返回当前Builder实例，支持链式调用
+    } // 添加单个按键方法结束
 
     /**
-     * 添加按键组合
+     * ┌─────────────────────────────────────────────────────────────────────────┐
+     * │ 方法：addKeyCodeSet - 批量添加过滤按键                                    │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                              │
+     * │   批量向过滤集合中添加多个需要过滤的按键码                                  │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                              │
+     * │   @param keyCodes 包含多个按键码的集合                                    │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【返回值说明】                                                            │
+     * │   @return 返回当前Builder实例，支持链式调用                               │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【使用示例】                                                              │
+     * │   Set<Integer> keys = new HashSet<>();                                   │
+     * │   keys.add(KeyEvent.KEYCODE_BACK);                                       │
+     * │   keys.add(KeyEvent.KEYCODE_MENU);                                       │
+     * │   builder.addKeyCodeSet(keys);                                           │
+     * └─────────────────────────────────────────────────────────────────────────┘
      */
-    public KeyFilterBuilder addKeyCodeSet(Set<Integer> keyCodes) {
-        filteredKeyCoders.addAll(keyCodes);
-        return this;
-    }
+    /**
+     * 添加按键组合 // 功能说明注释
+     */
+    public KeyFilterBuilder addKeyCodeSet(Set<Integer> keyCodes) { // 批量添加按键方法开始
+        filteredKeyCoders.addAll(keyCodes); // 将按键码集合添加到过滤集合
+        return this; // 返回当前Builder实例，支持链式调用
+    } // 批量添加按键方法结束
 
 
     /**
-     * 最终为了构建KeyEventFilter
-     * @return
+     * ┌─────────────────────────────────────────────────────────────────────────┐
+     * │ 方法：build - 构建KeyEventFilter实例                                     │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                              │
+     * │   根据配置的参数创建并返回KeyEventFilter实例                               │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【返回值说明】                                                            │
+     * │   @return 配置完成的KeyEventFilter实例                                    │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【实现逻辑】                                                              │
+     * │   使用Builder中配置的所有参数创建KeyEventFilter实例:                       │
+     * │   - originalListener: 原始监听器                                         │
+     * │   - filteredKeyCoders: 过滤按键码集合                                    │
+     * │   - consumerFilteredKeys: 消费策略                                       │
+     * ├─────────────────────────────────────────────────────────────────────────┤
+     * │ 【注意事项】                                                              │
+     * │   可多次调用build()创建多个独立的KeyEventFilter实例                        │
+     * └─────────────────────────────────────────────────────────────────────────┘
      */
-    public KeyEventFilter build() {
-        return new KeyEventFilter(originalListener, filteredKeyCoders, consumerFilteredKeys);
-    }
+    /**
+     * 最终为了构建KeyEventFilter // 功能说明注释
+     * @return KeyEventFilter实例 // 返回值说明
+     */
+    public KeyEventFilter build() { // 构建方法开始
+        return new KeyEventFilter(originalListener, filteredKeyCoders, consumerFilteredKeys); // 创建并返回KeyEventFilter实例
+    } // 构建方法结束
 
-}
+} // KeyFilterBuilder类结束

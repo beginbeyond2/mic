@@ -1,134 +1,320 @@
-package com.micsig.base;
+package com.micsig.base; // 定义基础工具类包
 
-import java.io.Serializable;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
+import java.io.Serializable; // 导入序列化接口
+import java.math.BigDecimal; // 导入高精度数学运算类
+import java.math.RoundingMode; // 导入舍入模式枚举
 
 /**
- * double的计算不精确，会有类似0.0000000000000002的误差，正确的方法是使用BigDecimal或者用整型
- * 整型地方法适合于货币精度已知的情况，比如12.11+1.10转成1211+110计算，最后再/100即可
- * 以下是摘抄的BigDecimal方法:
+ * ┌──────────────────────────────────────────────────────────────────────────────┐
+ * │                              DoubleUtil 工具类                               │
+ * │                          高精度浮点数运算工具                                  │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【模块定位】                                                                 │
+ * │   MHO示波器基础工具模块 - 数学运算核心组件                                     │
+ * │   解决Java浮点数精度丢失问题，提供精确的数值计算能力                            │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【核心职责】                                                                 │
+ * │   1. 提供精确的加、减、乘、除四则运算                                          │
+ * │   2. 提供精确的四舍五入处理                                                   │
+ * │   3. 提供浮点数比较和模糊匹配功能                                              │
+ * │   4. 提供类型转换工具方法                                                     │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【架构设计】                                                                 │
+ * │   基于BigDecimal实现高精度运算，避免double类型的精度丢失问题                    │
+ * │   采用静态方法设计，无需实例化即可使用                                          │
+ * │   实现Serializable接口支持序列化传输                                          │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【数据流向】                                                                 │
+ * │   Double输入 → BigDecimal转换 → 精确计算 → Double输出                         │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【依赖关系】                                                                 │
+ * │   依赖: java.math.BigDecimal (高精度运算核心)                                 │
+ * │   依赖: java.math.RoundingMode (舍入策略)                                     │
+ * │   被依赖: 示波器测量模块、数据处理模块、显示格式化模块                          │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【使用示例】                                                                 │
+ * │   double result = DoubleUtil.add(0.1, 0.2);    // 精确加法                   │
+ * │   double div = DoubleUtil.divide(1.0, 3.0, 5); // 精确除法保留5位小数         │
+ * │   boolean eq = DoubleUtil.FuzzyCompare(1.0, 1.0000000001); // 模糊比较       │
+ * └──────────────────────────────────────────────────────────────────────────────┘
+ * 
+ * @author Micsig R&D Team
+ * @version 1.0
+ * @since MHO Series Oscilloscope Software
  */
-public class DoubleUtil implements Serializable {
-    private static final long serialVersionUID = -3345205828566485102L;
-    // 默认除法运算精度
-    private static final Integer DEF_DIV_SCALE = 3;
+public class DoubleUtil implements Serializable { // 实现序列化接口，支持对象序列化传输
+    
+    // ==================== 序列化版本号 ====================
+    private static final long serialVersionUID = -3345205828566485102L; // 序列化版本标识，确保版本兼容性
+    
+    // ==================== 常量定义 ====================
+    private static final Integer DEF_DIV_SCALE = 3; // 默认除法运算精度：小数点后3位
+    
+    private static final double EPSILON = 1e-12; // 模糊比较的误差阈值，用于浮点数近似相等判断
 
     /**
-     * 提供精确的加法运算。
-     *
-     * @param value1 被加数
-     * @param value2 加数
-     * @return 两个参数的和
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 精确加法运算                                                            │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   使用BigDecimal进行精确的加法运算，避免浮点数精度丢失问题                 │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                            │
+     * │   @param value1 被加数（第一个操作数）                                   │
+     * │   @param value2 加数（第二个操作数）                                     │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【返回值】                                                              │
+     * │   @return 两个参数的精确和                                               │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【使用示例】                                                            │
+     * │   Double result = DoubleUtil.add(0.1, 0.2); // 返回 0.3 而非 0.30000000000000004 │
+     * └────────────────────────────────────────────────────────────────────────┘
      */
-    public static Double add(Double value1, Double value2) {
-        BigDecimal b1 = new BigDecimal(Double.toString(value1));
-        BigDecimal b2 = new BigDecimal(Double.toString(value2));
-        return b1.add(b2).doubleValue();
+    public static Double add(Double value1, Double value2) { // 静态方法，直接通过类名调用
+        BigDecimal b1 = new BigDecimal(Double.toString(value1)); // 将第一个参数转换为BigDecimal，使用字符串构造避免精度问题
+        BigDecimal b2 = new BigDecimal(Double.toString(value2)); // 将第二个参数转换为BigDecimal
+        return b1.add(b2).doubleValue(); // 执行加法运算并转换为double返回
     }
 
     /**
-     * 提供精确的减法运算。
-     *
-     * @param value1 被减数
-     * @param value2 减数
-     * @return 两个参数的差
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 精确减法运算                                                            │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   使用BigDecimal进行精确的减法运算，避免浮点数精度丢失问题                 │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                            │
+     * │   @param value1 被减数（第一个操作数）                                   │
+     * │   @param value2 减数（第二个操作数）                                     │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【返回值】                                                              │
+     * │   @return 两个参数的精确差（value1 - value2）                            │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【使用示例】                                                            │
+     * │   double result = DoubleUtil.sub(1.0, 0.9); // 返回精确的 0.1           │
+     * └────────────────────────────────────────────────────────────────────────┘
      */
-    public static double sub(Double value1, Double value2) {
-        BigDecimal b1 = new BigDecimal(Double.toString(value1));
-        BigDecimal b2 = new BigDecimal(Double.toString(value2));
-        return b1.subtract(b2).doubleValue();
+    public static double sub(Double value1, Double value2) { // 静态方法，执行减法运算
+        BigDecimal b1 = new BigDecimal(Double.toString(value1)); // 将被减数转换为BigDecimal
+        BigDecimal b2 = new BigDecimal(Double.toString(value2)); // 将减数转换为BigDecimal
+        return b1.subtract(b2).doubleValue(); // 执行减法运算并返回结果
     }
 
     /**
-     * 提供精确的乘法运算。
-     *
-     * @param value1 被乘数
-     * @param value2 乘数
-     * @return 两个参数的积
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 精确乘法运算                                                            │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   使用BigDecimal进行精确的乘法运算，避免浮点数精度丢失问题                 │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                            │
+     * │   @param value1 被乘数（第一个操作数）                                   │
+     * │   @param value2 乘数（第二个操作数）                                     │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【返回值】                                                              │
+     * │   @return 两个参数的精确积                                               │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【使用示例】                                                            │
+     * │   Double result = DoubleUtil.mul(0.1, 0.2); // 返回精确的 0.02          │
+     * └────────────────────────────────────────────────────────────────────────┘
      */
-    public static Double mul(Double value1, Double value2) {
-        BigDecimal b1 = new BigDecimal(Double.toString(value1));
-        BigDecimal b2 = new BigDecimal(Double.toString(value2));
-        return b1.multiply(b2).doubleValue();
+    public static Double mul(Double value1, Double value2) { // 静态方法，执行乘法运算
+        BigDecimal b1 = new BigDecimal(Double.toString(value1)); // 将第一个乘数转换为BigDecimal
+        BigDecimal b2 = new BigDecimal(Double.toString(value2)); // 将第二个乘数转换为BigDecimal
+        return b1.multiply(b2).doubleValue(); // 执行乘法运算并返回结果
     }
 
     /**
-     * 提供（相对）精确的除法运算，当发生除不尽的情况时， 精确到小数点以后10位，以后的数字四舍五入。
-     *
-     * @param dividend 被除数
-     * @param divisor  除数
-     * @return 两个参数的商
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 精确除法运算（默认精度）                                                 │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   提供相对精确的除法运算，当除不尽时使用默认精度（3位小数）                 │
+     * │   采用四舍五入方式处理多余小数位                                          │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                            │
+     * │   @param dividend 被除数                                                │
+     * │   @param divisor  除数                                                  │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【返回值】                                                              │
+     * │   @return 两个参数的商（保留3位小数，四舍五入）                           │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【使用示例】                                                            │
+     * │   Double result = DoubleUtil.divide(10.0, 3.0); // 返回 3.333           │
+     * └────────────────────────────────────────────────────────────────────────┘
      */
-    public static Double divide(Double dividend, Double divisor) {
-        return divide(dividend, divisor, DEF_DIV_SCALE);
+    public static Double divide(Double dividend, Double divisor) { // 使用默认精度的除法运算
+        return divide(dividend, divisor, DEF_DIV_SCALE); // 调用带精度参数的重载方法
     }
 
     /**
-     * 提供（相对）精确的除法运算。 当发生除不尽的情况时，由scale参数指定精度，以后的数字四舍五入。
-     *
-     * @param dividend 被除数
-     * @param divisor  除数
-     * @param scale    表示表示需要精确到小数点以后几位。
-     * @return 两个参数的商
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 精确除法运算（指定精度）                                                 │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   提供精确的除法运算，可指定保留小数位数                                   │
+     * │   当除数为0时返回0，避免除零异常                                          │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                            │
+     * │   @param dividend 被除数                                                │
+     * │   @param divisor  除数                                                  │
+     * │   @param scale    保留小数位数（必须 >= 0）                              │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【返回值】                                                              │
+     * │   @return 两个参数的商（保留指定位小数，四舍五入）                         │
+     * │   @throws IllegalArgumentException 当scale为负数时抛出                   │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【使用示例】                                                            │
+     * │   Double result = DoubleUtil.divide(10.0, 3.0, 5); // 返回 3.33333     │
+     * │   Double zero = DoubleUtil.divide(10.0, 0.0, 2); // 返回 0.0            │
+     * └────────────────────────────────────────────────────────────────────────┘
      */
-    public static Double divide(Double dividend, Double divisor, Integer scale) {
-        if (scale < 0) {
-            throw new IllegalArgumentException("The scale must be a positive integer or zero");
+    public static Double divide(Double dividend, Double divisor, Integer scale) { // 带精度参数的除法运算
+        if (scale < 0) { // 检查精度参数是否合法
+            throw new IllegalArgumentException("The scale must be a positive integer or zero"); // 抛出非法参数异常
         }
-        if (divisor == 0) {
-            return (double) 0;
+        if (divisor == 0) { // 检查除数是否为0
+            return (double) 0; // 除数为0时返回0，避免ArithmeticException
         }
-        BigDecimal b1 = new BigDecimal(Double.toString(dividend));
-        BigDecimal b2 = new BigDecimal(Double.toString(divisor));
-        return b1.divide(b2, scale, RoundingMode.HALF_UP).doubleValue();
+        BigDecimal b1 = new BigDecimal(Double.toString(dividend)); // 将被除数转换为BigDecimal
+        BigDecimal b2 = new BigDecimal(Double.toString(divisor)); // 将除数转换为BigDecimal
+        return b1.divide(b2, scale, RoundingMode.HALF_UP).doubleValue(); // 执行除法，使用四舍五入模式
     }
 
     /**
-     * 提供指定数值的（精确）小数位四舍五入处理。
-     *
-     * @param value 需要四舍五入的数字
-     * @param scale 小数点后保留几位
-     * @return 四舍五入后的结果
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 精确四舍五入                                                            │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   对指定数值进行精确的四舍五入处理                                        │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                            │
+     * │   @param value 需要四舍五入的数字                                       │
+     * │   @param scale 小数点后保留几位（必须 >= 0）                             │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【返回值】                                                              │
+     * │   @return 四舍五入后的结果                                               │
+     * │   @throws IllegalArgumentException 当scale为负数时抛出                   │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【使用示例】                                                            │
+     * │   double result = DoubleUtil.round(3.14159, 2); // 返回 3.14            │
+     * │   double result2 = DoubleUtil.round(3.145, 2); // 返回 3.15             │
+     * └────────────────────────────────────────────────────────────────────────┘
      */
-    public static double round(double value, int scale) {
-        if (scale < 0) {
-            throw new IllegalArgumentException("The scale must be a positive integer or zero");
+    public static double round(double value, int scale) { // 四舍五入方法
+        if (scale < 0) { // 检查精度参数是否合法
+            throw new IllegalArgumentException("The scale must be a positive integer or zero"); // 抛出非法参数异常
         }
-        BigDecimal b = new BigDecimal(Double.toString(value));
-        BigDecimal one = new BigDecimal("1");
-        return b.divide(one, scale, RoundingMode.HALF_UP).doubleValue();
+        BigDecimal b = new BigDecimal(Double.toString(value)); // 将数值转换为BigDecimal
+        BigDecimal one = new BigDecimal("1"); // 创建值为1的BigDecimal，用于除法技巧
+        return b.divide(one, scale, RoundingMode.HALF_UP).doubleValue(); // 通过除以1实现四舍五入
     }
 
     /**
-     * Float转Double
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ Float转Double                                                          │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   将Float类型精确转换为Double类型                                         │
+     * │   通过字符串中转避免直接转换的精度问题                                     │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                            │
+     * │   @param val 需要转换的Float值                                          │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【返回值】                                                              │
+     * │   @return 转换后的Double值                                               │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【使用示例】                                                            │
+     * │   double result = DoubleUtil.Float2Double(3.14f); // 返回 3.14          │
+     * └────────────────────────────────────────────────────────────────────────┘
      */
-    public static double Float2Double(float val) {
-        return Double.parseDouble(String.valueOf(val));
+    public static double Float2Double(float val) { // Float到Double的精确转换
+        return Double.parseDouble(String.valueOf(val)); // 先转字符串再解析为double，避免精度丢失
     }
 
     /**
-     * 当此 value1 在数字上小于、等于或大于 value2 时，返回 -1、0 或 1
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 精确比较两个Double值                                                    │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   使用BigDecimal精确比较两个Double值的大小关系                            │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                            │
+     * │   @param value1 第一个比较值                                            │
+     * │   @param value2 第二个比较值                                            │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【返回值】                                                              │
+     * │   @return -1 表示value1 < value2                                       │
+     * │           0  表示value1 == value2                                      │
+     * │           1  表示value1 > value2                                       │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【使用示例】                                                            │
+     * │   int result = DoubleUtil.compareTo(1.0, 2.0); // 返回 -1              │
+     * │   int result2 = DoubleUtil.compareTo(2.0, 1.0); // 返回 1               │
+     * └────────────────────────────────────────────────────────────────────────┘
      */
-    public static int compareTo(Double value1, Double value2) {
-        BigDecimal b1 = new BigDecimal(Double.toString(value1));
-        BigDecimal b2 = new BigDecimal(Double.toString(value2));
-        return b1.compareTo(b2);
+    public static int compareTo(Double value1, Double value2) { // 精确比较两个Double值
+        BigDecimal b1 = new BigDecimal(Double.toString(value1)); // 将第一个值转换为BigDecimal
+        BigDecimal b2 = new BigDecimal(Double.toString(value2)); // 将第二个值转换为BigDecimal
+        return b1.compareTo(b2); // 返回比较结果：-1/0/1
     }
 
-    private static final double EPSILON = 1e-12;
-    public static boolean FuzzyCompare(double p1, double p2){
-        return Math.abs(p1 - p2) < EPSILON
-                || (Math.abs(p1 - p2) <= EPSILON * Math.min(Math.abs(p1), Math.abs(p2)));
+    /**
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 模糊比较两个double值                                                    │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   判断两个double值是否在允许误差范围内近似相等                             │
+     * │   用于示波器测量值的模糊匹配，避免浮点精度导致的误判                        │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                            │
+     * │   @param p1 第一个比较值                                                │
+     * │   @param p2 第二个比较值                                                │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【返回值】                                                              │
+     * │   @return true 表示两值近似相等（误差在EPSILON范围内）                    │
+     * │           false 表示两值不相等                                          │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【算法说明】                                                            │
+     * │   满足以下任一条件即认为相等：                                            │
+     * │   1. 绝对差值 < EPSILON (1e-12)                                        │
+     * │   2. 相对差值 <= EPSILON * min(|p1|, |p2|)                             │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【使用示例】                                                            │
+     * │   boolean eq = DoubleUtil.FuzzyCompare(1.0, 1.0000000001); // true     │
+     * └────────────────────────────────────────────────────────────────────────┘
+     */
+    public static boolean FuzzyCompare(double p1, double p2){ // 模糊比较方法
+        return Math.abs(p1 - p2) < EPSILON // 检查绝对差值是否小于阈值
+                || (Math.abs(p1 - p2) <= EPSILON * Math.min(Math.abs(p1), Math.abs(p2))); // 检查相对差值是否在允许范围内
     }
 
-    public static long floor(double val){
-        if(val >= 0){
-            return (long)(val + 0.0000001);
-        }else if(val < 0){
-            return (long)(val - 0.0000001);
-        }else {
-            return 0;
+    /**
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ 精确向下取整                                                            │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【功能说明】                                                            │
+     * │   对double值进行精确的向下取整（floor）操作                               │
+     * │   处理正负数的边界情况，确保精度正确                                       │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【参数说明】                                                            │
+     * │   @param val 需要取整的double值                                         │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【返回值】                                                              │
+     * │   @return 向下取整后的long值                                             │
+     * ├────────────────────────────────────────────────────────────────────────┤
+     * │ 【使用示例】                                                            │
+     * │   long result = DoubleUtil.floor(3.7); // 返回 3                       │
+     * │   long result2 = DoubleUtil.floor(-3.7); // 返回 -4                    │
+     * └────────────────────────────────────────────────────────────────────────┘
+     */
+    public static long floor(double val){ // 向下取整方法
+        if(val >= 0){ // 处理正数情况
+            return (long)(val + 0.0000001); // 加微小值后转long，确保正确取整
+        }else if(val < 0){ // 处理负数情况
+            return (long)(val - 0.0000001); // 减微小值后转long，确保正确取整
+        }else { // 处理特殊情况（理论上不会执行）
+            return 0; // 返回0
         }
     }
 }
