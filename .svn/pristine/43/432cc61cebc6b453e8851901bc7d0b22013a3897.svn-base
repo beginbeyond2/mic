@@ -1,0 +1,12 @@
+package com.micsig.tbook.scope.fpga;
+
+/**
+ * Created by zhuzh on 2018-4-8.
+ */
+
+public class FPGAReg_TRIG_LEVEL extends FPGAReg {
+    public FPGAReg_TRIG_LEVEL() {
+        super(FPGA_TRIG_LEVEL, 20);
+    }
+
+}

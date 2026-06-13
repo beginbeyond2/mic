@@ -1,0 +1,341 @@
+package com.micsig.tbook.tbookscope.wavezone.wave;
+
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
+
+import com.chillingvan.canvasgl.ICanvasGL;
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.tbookscope.GlobalVar;
+import com.micsig.tbook.tbookscope.tools.Tools;
+import com.micsig.tbook.tbookscope.util.CacheUtil;
+import com.micsig.tbook.tbookscope.wavezone.IWorkMode;
+import com.micsig.tbook.tbookscope.wavezone.WorkModeManage;
+import com.micsig.tbook.ui.util.TBookUtil;
+import com.micsig.tbook.ui.wavezone.IWave;
+import com.micsig.tbook.ui.wavezone.TChan;
+
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Created by liwb on 2017/5/19.
+ */
+
+public class MathRefWaveManage implements IWaveShowManage, IWorkMode {
+    private static final String TAG = "MathRefWaveManage";
+    private Bitmap[][] resBmp;
+
+    //region 私有变量
+    private Map<Integer, MathRefWave> mapChannel = new HashMap<>();
+//    private Bitmap bmp;
+//    private Canvas mCanvas;
+//    private Paint paint;
+    //endregion
+
+    public MathRefWaveManage(Bitmap[][] resBmp, IWave.OnMovingWaveEvent onMovingWaveEvent, IWave.OnSelectChangeEvent onSelectChangeEvent) {
+        this.resBmp = resBmp;
+        TChan.foreachMath1ToR8((chNo)-> {
+            MathRefWave channelWave = new MathRefWave(this.resBmp[chNo]);
+            channelWave.setLineNameId(chNo);
+            channelWave.setY(Tools.getYTChannelPositionUI(chNo));
+            channelWave.setSelected(true);
+            channelWave.setVisible(false);
+            channelWave.setOnMovingWaveEvent(onMovingWaveEvent);
+            channelWave.setOnSelectChangeEvent(onSelectChangeEvent);
+            channelWave.initLabelRect();
+            mapChannel.put(chNo, channelWave);
+        });
+    }
+
+
+    public void setWaveChange(int  height) {
+//        bmp = Bitmap.createScaledBitmap(bmp, GlobalVar.get().getWaveZoneWidth_Pix(WorkModeManage.getInstance().getmWorkMode()), height, true);
+//        mCanvas.setBitmap(bmp);
+        updateChannelPosCache();
+        refresh();
+    }
+
+    private void updateChannelPosCache() {
+        for (Integer i : mapChannel.keySet()) {
+            MathRefWave tem = mapChannel.get(i);
+            if (tem == null) continue;
+            tem.changeLabelPos(tem.getLabelRect().left);
+            if (CacheUtil.get().isClickFactoryReset()) {//这个值时是初始值
+                tem.setYFromEventBus((int) Math.round(108 * (tem.getLineNameID() - 2 - (tem.getLineNameID() - 9) * 1.5)));
+            } else {
+                Tools.putChannelPosition(tem.getLineNameID(), ScopeBase.changeAccuracy(tem.getPosY() * ScopeBase.getToUICoff()));
+            }
+        }
+        CacheUtil.get().setClickFactoryReset(false);
+    }
+
+    public void updateResBmp(int chIndex, Bitmap[][] resBmp) {
+        this.resBmp = resBmp;
+        MathRefWave mathRefWave = mapChannel.get(chIndex);
+        if (mathRefWave == null) return;
+        mathRefWave.changeBitMap(this.resBmp[chIndex]);
+    }
+
+    //region IWorkMode接口
+
+    @Override
+    public void switchWorkMode(@WorkMode int workMode) {
+        for (MathRefWave c : mapChannel.values()) {
+            c.switchWorkMode(workMode);
+        }
+    }
+
+    //endregion
+
+    //region IWaveShowManage接口
+    @Override
+    public void draw(Canvas canvas) {
+        for (MathRefWave c : mapChannel.values()) {
+            c.draw(canvas);
+        }
+        int flag = isSelected();
+        if (flag != -1) {
+            mapChannel.get(flag).draw(canvas);
+        }
+    }
+
+    @Override
+    public void draw(ICanvasGL canvas) {
+        for (MathRefWave c : mapChannel.values()) {
+            if (c.getVisible() == true) c.draw(canvas);
+        }
+        int flag = isSelected();
+        if (flag != -1) {
+            mapChannel.get(flag).draw(canvas);
+        }
+    }
+
+    public void setVisible(int ChNo, boolean visible) {
+        for (MathRefWave c : mapChannel.values()) {
+            if (c.getLineNameID() == ChNo) {
+                c.setVisible(visible);
+            }
+        }
+    }
+
+    @Override
+    public int isSelected() {
+        int flag = -1;
+        for (Integer i : mapChannel.keySet()) {
+            MathRefWave tem = mapChannel.get(i);
+            if (tem.isSelected() == true) {
+                flag = i;
+                return flag;
+            }
+        }
+        return flag;
+    }
+
+    @Override
+    public void setOffsetY(int offsetY) {
+        for (MathRefWave c : mapChannel.values()) {
+            if (c.isSelected() == true) {
+                c.setY(c.getY() - offsetY);
+            }
+        }
+    }
+
+    public void setY(int ch, double y) {
+        for (MathRefWave c : mapChannel.values()) {
+            if (c.getLineNameID() == ch) {
+                c.setY(y);
+            }
+        }
+    }
+
+    public void setYFromEventBus(int ch, double y) {
+        for (MathRefWave c : mapChannel.values()) {
+            if (c.getLineNameID() == ch) {
+                c.setYFromEventBus(y);
+            }
+        }
+    }
+
+    public double getY(int ch) {
+        for (MathRefWave c : mapChannel.values()) {
+            if (c.getLineNameID() == ch) {
+                return c.getY();
+            }
+        }
+        return 0;
+    }
+
+    public double getUIY(int ch) {
+        for (MathRefWave c : mapChannel.values()) {
+            if (c.getLineNameID() == ch) {
+                return ScopeBase.changeAccuracy(c.getPosY() * ScopeBase.getToUICoff());
+            }
+        }
+        return 0;
+    }
+
+    public boolean isVisible(int ch) {
+        for (MathRefWave c : mapChannel.values()) {
+            if (c.getLineNameID() == ch) {
+                return c.getVisible();
+            }
+        }
+        return false;
+    }
+
+    private PorterDuffXfermode clearMode = new PorterDuffXfermode(PorterDuff.Mode.CLEAR);
+    private PorterDuffXfermode srcMode = new PorterDuffXfermode(PorterDuff.Mode.SRC);
+
+//    @Override
+//    public Bitmap getWavesBitmap() {
+//        paint.setXfermode(clearMode);
+//        mCanvas.drawPaint(paint);
+//        paint.setXfermode(srcMode);
+//        for (MathRefWave m : mapChannel.values()) {
+//            if (m.isSelected()) continue;
+////            synchronized (m.getWaveBmp()) {
+////                mCanvas.drawBitmap(m.getWaveBmp(), 0, 0, paint);
+////            }
+//        }
+//        for (MathRefWave m : mapChannel.values()) {
+//            if (m.isSelected()) {
+////                synchronized (m.getWaveBmp()) {
+////                    mCanvas.drawBitmap(m.getWaveBmp(), 0, 0, paint);
+////                }
+//            }
+//        }
+//
+//
+//        return bmp;
+//    }
+
+    public int selectCursor(int x, int y) {
+        int selectIndex = -1;
+        for (int i : mapChannel.keySet()) {
+            MathRefWave c = mapChannel.get(i);
+//            Logger.i(TAG, "c.name:"+c.getLineNameID()+"  c.visible:"+c.getVisible());
+            if (c.getVisible() == false) continue;
+            if (c.selectCursor(x, y)) {
+                c.setSelected(true);
+                selectIndex = i;
+                return selectIndex;
+            }else{
+                c.setSelected(false);
+            }
+        }
+//        Logger.i(TAG, "selectIndex:"+selectIndex);
+        return selectIndex;
+    }
+    public int selectCursor(int x, int y,int curChan) {
+        int selectIndex = -1;
+        for (int i : mapChannel.keySet()) {
+            MathRefWave c = mapChannel.get(i);
+            if (c.getVisible() == false) continue;
+            if (c.selectCursor(x, y) && i!=curChan) {
+                c.setSelected(true);
+                selectIndex = i;
+                return selectIndex;
+            }else if (c.selectCursor(x,y)){
+                selectIndex=i;
+                return selectIndex;
+            }
+            else{
+                c.setSelected(false);
+            }
+        }
+        return selectIndex;
+    }
+
+    public void setSelectCursor(int ChNo) {
+        for (Integer i : mapChannel.keySet()) {
+            MathRefWave tem = mapChannel.get(i);
+            if (tem.getLineNameID() == ChNo) {
+                tem.setSelected(true);
+            } else {
+                tem.setSelected(false);
+            }
+        }
+    }
+
+    public void movePix(int px) {
+        for (Integer i : mapChannel.keySet()) {
+            MathRefWave tem = mapChannel.get(i);
+            if (tem.isSelected()) {
+                tem.movePix(px);
+                break;
+            }
+        }
+    }
+    //endregion
+
+    public void refresh(){
+        for(Integer i:mapChannel.keySet()){
+            MathRefWave tem=mapChannel.get(i);
+            tem.refresh();
+        }
+    }
+
+    /**
+     * 设置波形Label
+     */
+    public void setChannelLabel(int ChNo, String label) {
+        for (MathRefWave c : mapChannel.values()) {
+            if (c.getLineNameID() == ChNo) {
+                c.setLabel(label);
+            }
+        }
+    }
+
+    public String getChannelLabel(int chNo) {
+        String label = "";
+        for (MathRefWave c : mapChannel.values()) {
+            if (c.getLineNameID() != chNo) continue;
+            label = c.getLabel();
+            break;
+        }
+        return label;
+    }
+
+    public Rect getLabelRect(int chNo) {
+        Rect rect = new Rect();
+        for (MathRefWave c : mapChannel.values()) {
+            if (c.getLineNameID() != chNo) continue;
+            rect = c.getLabelRect();
+            break;
+        }
+        return rect;
+    }
+
+    private int labelSelectChan = -1;
+
+    public boolean contains(int x, int y) {
+        boolean isContains = false;
+        for (MathRefWave c : mapChannel.values()) {
+            if (c.getVisible() && c.getLabelRect().contains(x, y)) {
+                isContains = true;
+                labelSelectChan = c.getLineNameID();
+                break;
+            }
+        }
+        return isContains;
+    }
+
+    public int getLabelSelectChan() {
+        return labelSelectChan;
+    }
+
+    public void changeLabelPos(int selectChan, int x) {
+        for (MathRefWave c : mapChannel.values()) {
+            if (selectChan == c.getLineNameID()) {
+                c.changeLabelPos(x);
+                break;
+            }
+        }
+    }
+
+}

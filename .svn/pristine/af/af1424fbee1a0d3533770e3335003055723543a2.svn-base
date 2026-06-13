@@ -1,0 +1,76 @@
+package com.micsig.tbook.scope.surface;
+
+import android.opengl.GLES20;
+
+import com.chillingvan.canvasgl.ICanvasGL;
+import com.chillingvan.canvasgl.OpenGLUtil;
+import com.chillingvan.canvasgl.glcanvas.BasicTexture;
+import com.chillingvan.canvasgl.glcanvas.GLES20Canvas;
+import com.chillingvan.canvasgl.textureFilter.BasicTextureFilter;
+
+/**
+ * Created by zhuzh on 2018-4-2.
+ */
+
+public class AfterglowFilter extends BasicTextureFilter {
+
+
+    private static final String TEXTURE_SAMPLER_UNIFORM_OLD = "uTextureSamplerOld";
+    private static final String UNIFORM_VAL = "uVal";
+    private static final String AFTERGLOW_FRAGMENT_SHADER = "" +
+            "precision highp float;\n" +
+            "varying vec2 " + VARYING_TEXTURE_COORD + ";\n" +
+            "uniform sampler2D " + TEXTURE_SAMPLER_UNIFORM + ";\n" +
+            "uniform sampler2D " + TEXTURE_SAMPLER_UNIFORM_OLD + ";\n" +
+            "uniform float " + UNIFORM_VAL + ";\n" +
+            "void main() {\n" +
+            "   vec4 tvalNew, tvalOld, color;\n" +
+            "   tvalNew = texture2D(" + TEXTURE_SAMPLER_UNIFORM + ", " + VARYING_TEXTURE_COORD + ");\n" +
+            "   tvalOld = texture2D(" + TEXTURE_SAMPLER_UNIFORM_OLD + ", " + VARYING_TEXTURE_COORD + ");\n" +
+            "   tvalOld -= "+ UNIFORM_VAL +";\n" +
+            "   color = max(tvalNew,tvalOld);\n" +
+            "   gl_FragColor = color;\n" +
+            "}\n";
+    @Override
+    public String getVertexShader() {
+        return super.getVertexShader();
+    }
+
+    @Override
+    public String getFragmentShader() {
+        return AFTERGLOW_FRAGMENT_SHADER;
+    }
+
+    @Override
+    public String getOesFragmentProgram() {
+        return AFTERGLOW_FRAGMENT_SHADER;
+    }
+
+    @Override
+    public void onPreDraw(int program, BasicTexture texture, ICanvasGL canvas) {
+        super.onPreDraw(program, texture, canvas);
+
+        GLES20.glActiveTexture(textureId);
+        GLES20Canvas.checkError();
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, afterglowId);
+        GLES20Canvas.checkError();
+        OpenGLUtil.setFloat(GLES20.glGetUniformLocation(program,UNIFORM_VAL), weakenVal);
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(program, TEXTURE_SAMPLER_UNIFORM_OLD), afterglowId);
+
+    }
+    private float weakenVal = 0;
+    public void setWeakenVal(float val){
+        weakenVal = val <= 0f ? 0.0f : Math.min(val, 1f);
+    }
+    private int afterglowId = 0;
+    public void setAfterglowId(int Id){
+        afterglowId = Id;
+    }
+
+    public int textureId = GLES20.GL_TEXTURE3;
+    public void setTexture(int texture){
+        this.textureId = texture;
+    }
+
+
+}

@@ -1,0 +1,55 @@
+package com.micsig.tbook.scope.Trigger;
+
+/**
+ * Created by zhuzh on 2018-6-1.
+ */
+
+public class TriggerNEdge extends Trigger {
+    public static final int TET_ASC = 0;
+    public static final int TET_DSC = 1;
+    private long idleTime = 8;
+    private int slope = TET_ASC;
+    private int edge = 1;
+    public TriggerNEdge() {
+        super(Trigger.TRIG_TYPE_NEDGE);
+    }
+
+    public long getIdleTime() {
+        return idleTime;
+    }
+
+    public void setIdleTime(long idleTime) {
+        this.idleTime = idleTime;
+        triggerParamChange();
+    }
+
+    public int getSlope() {
+        return slope;
+    }
+
+    public void setSlope(int slope) {
+        this.slope = slope;
+        triggerParamChange();
+    }
+
+    public int getEdge() {
+        return edge;
+    }
+
+    public void setEdge(int edge) {
+        this.edge = edge;
+        triggerParamChange();
+    }
+
+    @Override
+    public int getTriggerSourceCnt() {
+        return 1;
+    }
+
+    @Override
+    protected boolean isMultitriggerSource() {
+        return false;
+    }
+
+
+}

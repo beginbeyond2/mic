@@ -1,0 +1,41 @@
+package com.micsig.tbook.scope.channel;
+
+import com.micsig.tbook.scope.Data.IBufferQueue;
+import com.micsig.tbook.scope.Data.IDataBuffer;
+import com.micsig.tbook.scope.measure.Measure;
+
+
+/**
+ * Created by zhuzh on 2018/3/15.
+ */
+
+public interface IChannel {
+    Measure getMeasure();
+    void setBuffer(IBufferQueue dataBuffer);
+    void open();
+    boolean isOpen();
+    void close();
+    void activate();
+    void setPos(double pos);
+    double getPos();
+    double getPosUI();
+    int getChId();
+    int getzOrder();
+    void setzOrder(int zOrder);
+    double getVerticalPerPix();
+    double getADVerticalPerPix();
+
+    double getSampleRate();
+    double getSampleRate2display();
+    boolean save(String pathName);
+    boolean saveCSV(String pathName);
+    //
+    IDataBuffer obtain();
+    void recycle(IDataBuffer dataBuffer);
+    IDataBuffer dequeue();
+    void enqueue(IDataBuffer dataBuffer);
+
+    String getName();
+    void setLabel(String label);
+    String getLabel();
+}

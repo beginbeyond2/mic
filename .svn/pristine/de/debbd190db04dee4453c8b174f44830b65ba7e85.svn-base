@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 字体 -->
+    <dimen name="textSize24">24px</dimen>
+    <dimen name="textSize20">20px</dimen>
+    <dimen name="textSize18">18px</dimen>
+    <dimen name="textSize16">16px</dimen>
+    <dimen name="textSize10">10px</dimen>
+
+    <dimen name="textSizeCur">@dimen/textSize20</dimen>
+    <dimen name="newMainTopHeight">40px</dimen>
+
+</resources>

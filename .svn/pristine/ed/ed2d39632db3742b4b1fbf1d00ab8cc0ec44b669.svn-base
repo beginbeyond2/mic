@@ -1,0 +1,129 @@
+package com.micsig.tbook.scope.surface;
+
+import android.content.Context;
+import android.graphics.SurfaceTexture;
+import android.os.Build;
+import android.os.SystemClock;
+import android.util.Log;
+
+import com.micsig.base.Logger;
+import com.micsig.tbook.hardware.HardwareProduct;
+import com.micsig.tbook.scope.Calibrate.HwConfig;
+import com.micsig.tbook.scope.Data.DataFactory;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+/** Created by zhuzh on 2018-3-27. */
+public class SurfaceDevice extends Thread {
+
+    private static final String TAG = "SurfaceDevice";
+
+    //    private SurfaceTexture mSurfaceTexture;
+
+    private Context mContext;
+
+    private HwDevice hwDevice;
+    private volatile boolean bOpen = false;
+    private SurfaceNative[] surfaceNative = null;
+
+    public SurfaceDevice(Context context) {
+        mContext = context;
+        hwDevice = DeviceFactory.allocDevice();
+        surfaceNative = new SurfaceNative[hwDevice.getDevCnt()];
+        Log.d("XDmaDev","DevCnt:" + hwDevice.getDevCnt());
+    }
+
+    public int getDevCnt() {
+        return hwDevice.getDevCnt();
+    }
+
+    public synchronized void openDevice(int idx, SurfaceTexture surfaceTexture) {
+        Log.d(TAG, "openDevice() called with: idx = [" + idx + "], surfaceTexture = [" + surfaceTexture + "]" + "," + this);
+
+        surfaceNative[idx] = new SurfaceNative(surfaceTexture, 7);
+        surfaceNative[idx].acquireSurface(ScopeBase.getWidth(), ScopeBase.getHeight());
+        hwDevice.setSurfaceNative(idx, surfaceNative[idx]);
+        if(!bOpen) {
+            bOpen = true;
+            start();
+        }else{
+            Log.e("zhuzh","-------------------");
+        }
+    }
+
+    public synchronized boolean isOpen() {
+        return bOpen;
+    }
+
+    public synchronized void clear(){
+        if(bOpen) {
+            hwDevice.clear();
+        }
+    }
+    public synchronized void closeDevice() {
+        if (bOpen) {
+            Log.d(TAG, "closeDevice() called");
+            bOpen = false;
+            hwDevice.setSurfaceNative(null);
+            for (SurfaceNative aNative : surfaceNative) {
+                aNative.releaseSurface();
+            }
+        }
+    }
+
+    ExecutorService fixedThreadPool = Executors.newFixedThreadPool(2);
+
+    @Override
+    public void run() {
+        super.run();
+
+        HwDevice hwDevice = DeviceFactory.allocDevice();
+        if (hwDevice.isAsyncOpen()) {
+            while (!hwDevice.isOpen() && isOpen()) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        } else {
+            if (!hwDevice.isOpen()) {
+                hwDevice.openDevice();
+            }
+        }
+        Logger.d(TAG, "--------------------------");
+        int devcnt = hwDevice.getDevCnt();
+        while (isOpen()) {
+            List<Callable<Boolean>> list = new ArrayList<>();
+            for (int i = 0; i < devcnt; i++) {
+                int finalI = i;
+                list.add(()->{
+                    ByteBuffer byteBuffer;
+                    DataFactory dataFactory = DataFactory.getInstance();
+                    while (isOpen()) {
+                        byteBuffer = hwDevice.lockBuffer(finalI);
+                        if (byteBuffer != null && isOpen()) {
+                            dataFactory.onRecv(finalI, byteBuffer, byteBuffer.capacity());
+                            hwDevice.unlockBuffer(finalI);
+                        }
+                    }
+                    return true;
+                });
+            }
+            try {
+                fixedThreadPool.invokeAll(list);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        Logger.d(TAG, "--------------------------end");
+        hwDevice.closeDevice();
+    }
+}

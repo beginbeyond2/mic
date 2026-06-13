@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AbsoluteLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="@dimen/screenWidth"
+    android:layout_height="@dimen/screenHeight">
+
+    <com.micsig.tbook.tbookscope.main.dialog.MainChannelVerticalScale
+        android:id="@+id/main_chan_vertical_scale"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone" />
+
+</AbsoluteLayout>

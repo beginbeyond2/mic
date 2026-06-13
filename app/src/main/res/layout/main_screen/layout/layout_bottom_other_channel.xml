@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/ll_bottom_other"
+    android:layout_width="wrap_content"
+    android:layout_height="68px"
+    android:orientation="horizontal">
+
+
+    <ImageView
+        android:id="@+id/img_left"
+        android:layout_width="28px"
+        android:layout_height="match_parent"
+        android:layout_marginEnd="4px"
+        android:src="@drawable/selector_bottom_other_channel_left"
+        android:visibility="invisible" />
+
+
+    <HorizontalScrollView
+        android:id="@+id/scroll_view"
+        android:layout_width="638px"
+        android:layout_height="68px"
+        android:overScrollMode="never"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:id="@+id/ll_channel_master"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical|left"
+            android:orientation="horizontal"
+            android:paddingHorizontal="4px">
+
+            <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+                android:id="@+id/math1Master"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4px"
+                android:gravity="center"
+                android:visibility="gone"
+                app:checked="false"
+                app:isNormal="false"
+                app:large="false"
+                app:text="M1" />
+
+            <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+                android:id="@+id/math2Master"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4px"
+                android:gravity="center"
+                android:visibility="gone"
+                app:checked="false"
+                app:isNormal="false"
+                app:large="false"
+                app:text="M2" />
+
+            <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+                android:id="@+id/math3Master"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4px"
+                android:gravity="center"
+                android:visibility="gone"
+                app:checked="false"
+                app:isNormal="false"
+                app:large="false"
+                app:text="M3" />
+
+            <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+                android:id="@+id/math4Master"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4px"
+                android:gravity="center"
+                android:visibility="gone"
+                app:checked="false"
+                app:isNormal="false"
+                app:large="false"
+                app:text="M4" />
+
+            <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+                android:id="@+id/math5Master"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4px"
+                android:gravity="center"
+                android:visibility="gone"
+                app:checked="false"
+                app:isNormal="false"
+                app:large="false"
+                app:text="M5" />
+
+            <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+                android:id="@+id/math6Master"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4px"
+                android:gravity="center"
+                android:visibility="gone"
+                app:checked="false"
+                app:isNormal="false"
+                app:large="false"
+                app:text="M6" />
+
+            <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+                android:id="@+id/math7Master"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4px"
+                android:gravity="center"
+                android:visibility="gone"
+                app:checked="false"
+                app:isNormal="false"
+                app:large="false"
+                app:text="M7" />
+
+
+            <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+                android:id="@+id/math8Master"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4px"
+                android:gravity="center"
+                android:visibility="gone"
+                app:checked="false"
+                app:isNormal="false"
+                app:large="false"
+                app:text="M8" />
+
+            <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+                android:id="@+id/ref1Master"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4px"
+                android:gravity="center"
+                android:visibility="gone"
+                app:checked="false"
+                app:isNormal="false"
+                app:text="R1" />
+
+            <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+                android:id="@+id/ref2Master"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4px"
+                android:gravity="center"
+                android:visibility="gone"
+                app:checked="false"
+                app:isNormal="false"
+                app:text="R2" />
+
+            <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+                android:id="@+id/ref3Master"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4px"
+                android:gravity="center"
+                android:visibility="gone"
+                app:checked="false"
+                app:isNormal="false"
+                app:text="R3" />
+
+            <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+                android:id="@+id/ref4Master"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4px"
+                android:gravity="center"
+                android:visibility="gone"
+                app:checked="false"
+                app:isNormal="false"
+                app:text="R4" />
+
+            <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+                android:id="@+id/ref5Master"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4px"
+                android:gravity="center"
+                android:visibility="gone"
+                app:checked="false"
+                app:isNormal="false"
+                app:text="R5" />
+
+            <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+                android:id="@+id/ref6Master"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4px"
+                android:gravity="center"
+                android:visibility="gone"
+                app:checked="false"
+                app:isNormal="false"
+                app:text="R6" />
+
+            <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+                android:id="@+id/ref7Master"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4px"
+                android:gravity="center"
+                android:visibility="gone"
+                app:checked="false"
+                app:isNormal="false"
+                app:text="R7" />
+
+            <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+                android:id="@+id/ref8Master"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4px"
+                android:gravity="center"
+                android:visibility="gone"
+                app:checked="false"
+                app:isNormal="false"
+                app:text="R8" />
+
+            <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemSerialsMaster
+                android:id="@+id/rightS1Master"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4px"
+                android:gravity="center"
+                android:visibility="gone"
+                app:checked="false"
+                app:text="S1" />
+
+
+            <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemSerialsMaster
+                android:id="@+id/rightS2Master"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4px"
+                android:gravity="center"
+                android:visibility="gone"
+                app:checked="false"
+                app:text="S2" />
+
+            <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemSerialsMaster
+                android:id="@+id/rightS3Master"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4px"
+                android:gravity="center"
+                android:visibility="gone"
+                app:checked="false"
+                app:text="S3" />
+
+            <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemSerialsMaster
+                android:id="@+id/rightS4Master"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4px"
+                android:gravity="center"
+                android:visibility="gone"
+                app:checked="false"
+                app:text="S4" />
+
+        </LinearLayout>
+
+    </HorizontalScrollView>
+
+    <ImageView
+        android:id="@+id/img_right"
+        android:layout_width="28px"
+        android:layout_height="match_parent"
+        android:layout_marginStart="4px"
+        android:src="@drawable/selector_bottom_other_channel_right"
+        android:visibility="invisible" />
+
+
+    <Button
+        android:id="@+id/btn_other_channel"
+        android:layout_width="76px"
+        android:layout_height="68px"
+        android:layout_marginStart="22px"
+        android:background="@drawable/svg_right_ch1234_close"
+        android:gravity="center"
+        android:text="Math\nRef\nBus"
+        android:textAllCaps="false"
+        android:textSize="18px" />
+
+</LinearLayout>

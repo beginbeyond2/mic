@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/mainRightChannelLayoutEight"
+    android:layout_width="120px"
+    android:layout_height="@dimen/mainCenterHeightMeasureRow0"
+    android:background="@color/color_Backcolor_MainMenu3"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:paddingHorizontal="4px">
+
+    <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+        android:id="@+id/rightCh1MasterEight"
+        android:layout_width="108px"
+        android:layout_height="108px"
+        android:gravity="center"
+        app:checked="true"
+        app:large="true"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:text="1" />
+
+    <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+        android:id="@+id/rightCh2MasterEight"
+        android:layout_width="108px"
+        android:layout_height="108px"
+        android:layout_marginTop="@dimen/rightSlipMarginVerticalBig"
+        android:gravity="center"
+        app:checked="true"
+        app:large="true"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/rightCh1MasterEight"
+        app:text="2" />
+
+    <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+        android:id="@+id/rightCh3MasterEight"
+        android:layout_width="108px"
+        android:layout_height="108px"
+        android:layout_marginTop="@dimen/rightSlipMarginVerticalBig"
+        android:gravity="center"
+        app:checked="true"
+        app:large="true"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/rightCh2MasterEight"
+        app:text="3" />
+
+    <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+        android:id="@+id/rightCh4MasterEight"
+        android:layout_width="108px"
+        android:layout_height="108px"
+        android:layout_marginTop="@dimen/rightSlipMarginVerticalBig"
+        android:gravity="center"
+        app:checked="true"
+        app:large="true"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/rightCh3MasterEight"
+        app:text="4" />
+
+    <TextView
+        android:id="@+id/mark"
+        android:layout_width="96px"
+        android:layout_height="96px"
+        android:gravity="center"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+        android:id="@+id/rightCh5MasterEight"
+        android:layout_width="108px"
+        android:layout_height="108px"
+        android:layout_marginBottom="@dimen/rightSlipMarginVerticalBig"
+        android:gravity="center"
+        app:checked="true"
+        app:large="true"
+        app:layout_constraintBottom_toTopOf="@+id/rightCh6MasterEight"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:text="5" />
+
+    <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+        android:id="@+id/rightCh6MasterEight"
+        android:layout_width="108px"
+        android:layout_height="108px"
+        android:layout_marginBottom="@dimen/rightSlipMarginVerticalBig"
+        android:gravity="center"
+        app:checked="true"
+        app:large="true"
+        app:layout_constraintBottom_toTopOf="@+id/rightCh7MasterEight"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:text="6" />
+
+    <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+        android:id="@+id/rightCh7MasterEight"
+        android:layout_width="108px"
+        android:layout_height="108px"
+        android:layout_marginBottom="@dimen/rightSlipMarginVerticalBig"
+        android:gravity="center"
+        app:checked="true"
+        app:large="true"
+        app:layout_constraintBottom_toTopOf="@+id/rightCh8MasterEight"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:text="7" />
+
+
+    <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+        android:id="@+id/rightCh8MasterEight"
+        android:layout_width="108px"
+        android:layout_height="108px"
+        android:gravity="center"
+        app:checked="true"
+        app:large="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:text="8" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

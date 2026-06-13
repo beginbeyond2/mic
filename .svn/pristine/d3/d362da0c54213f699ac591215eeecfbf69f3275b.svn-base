@@ -1,0 +1,31 @@
+package com.micsig.tbook.scope.fpga;
+
+import com.micsig.base.Logger;
+
+public class FPGAReg_STATUS extends FPGAReg {
+    private FPGAReg recvReg;
+    private static final String TAG = "FPGAReg_STATUS";
+
+    public FPGAReg_STATUS() {
+        super(FPGA_STATUS_STATE, 4, true);
+        recvReg = new FPGAReg(FPGA_STATUS_STATE,4);
+    }
+    public int getStatus(){
+        return recvReg.getVal(0);
+    }
+    public FPGAReg getRecvReg(){
+        return recvReg;
+    }
+
+    public boolean getClockInStatus() {//最高位 和 次高位 都拉高则表示 外部时钟OK
+//        Logger.d(TAG, "clockHighStatus= " + ((recvReg.getVal() & (1 << 31)) != 0) + ",clockSecondHighStatus= " + ((recvReg.getVal() & (1 << 30)) != 0));
+        return (recvReg.getVal() & (1 << 31)) != 0 && (recvReg.getVal() & (1 << 30)) != 0;
+    }
+
+    public boolean getClockOutStatus() {//最高位 拉高则表示 内部时钟OK
+//        Logger.d("limh", "getClockHighStatus=" + ((recvReg.getVal() & (1 << 31)) != 0));
+        return (recvReg.getVal() & (1 << 31)) != 0;
+    }
+
+
+}

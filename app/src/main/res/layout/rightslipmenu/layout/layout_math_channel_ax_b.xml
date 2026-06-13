@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/axbLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingStart="28px"
+    android:paddingTop="28px"
+    android:paddingEnd="22px"
+    android:visibility="gone">
+
+    <TextView
+        android:id="@+id/axbUnitTitle"
+        style="@style/textStylePrompt"
+        android:layout_width="100px"
+        android:layout_height="54px"
+        android:gravity="center_vertical"
+        android:text="@string/rightMathAxbUnitTitle" />
+
+    <TextView
+        android:id="@+id/axbUnitDetail"
+        style="@style/editTextStyle"
+        android:layout_width="230px"
+        android:layout_height="54px"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="7px"
+        android:gravity="center"
+        android:text="dBm"
+        android:textColor="@color/textColor" />
+
+    <View
+        android:id="@+id/driver1"
+        android:layout_width="match_parent"
+        android:layout_height="2px"
+        android:layout_below="@+id/axbUnitDetail"
+        android:layout_marginTop="14px"
+        android:layout_marginEnd="7px"
+        android:layout_marginBottom="7px"
+        android:background="@drawable/bg_right_layout_divider" />
+
+    <TextView
+        android:id="@+id/axbSourceHead"
+        style="@style/textStylePrompt"
+        android:layout_width="100px"
+        android:layout_height="54px"
+        android:layout_below="@id/driver1"
+        android:gravity="center_vertical"
+        android:text="@string/mathSource" />
+
+    <com.micsig.tbook.ui.rightslipmenu.RightViewSelect
+        android:id="@+id/axbSource"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/driver1"
+        android:layout_alignParentEnd="true"
+        app:array="@array/channelsNameEight"
+        app:arrayOrientation="horizontalEachRow4"
+        app:itemHeight="54px"
+        app:itemMargin="7px"
+        app:itemWidth="108px" />
+
+
+    <View
+        android:id="@+id/driver2"
+        android:layout_width="match_parent"
+        android:layout_height="2px"
+        android:layout_below="@+id/axbSource"
+        android:layout_marginTop="7px"
+        android:layout_marginEnd="7px"
+        android:layout_marginBottom="14px"
+        android:background="@drawable/bg_right_layout_divider" />
+
+    <TextView
+        android:id="@+id/axbATitle"
+        style="@style/textStylePrompt"
+        android:layout_width="100px"
+        android:layout_height="54px"
+        android:layout_below="@+id/driver2"
+        android:gravity="center_vertical"
+        android:text="A" />
+
+    <TextView
+        android:id="@+id/axbADetail"
+        style="@style/editTextStyle"
+        android:layout_width="230px"
+        android:layout_height="54px"
+        android:layout_below="@+id/driver2"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="7px"
+        android:gravity="center"
+        android:text="1"
+        android:textColor="@color/textColor" />
+
+    <View
+        android:id="@+id/driver3"
+        android:layout_width="match_parent"
+        android:layout_height="2px"
+        android:layout_below="@+id/axbADetail"
+        android:layout_marginTop="14px"
+        android:layout_marginEnd="7px"
+        android:layout_marginBottom="14px"
+        android:background="@drawable/bg_right_layout_divider" />
+
+    <TextView
+        android:id="@+id/axbBTitle"
+        style="@style/textStylePrompt"
+        android:layout_width="100px"
+        android:layout_height="54px"
+        android:layout_below="@+id/driver3"
+        android:gravity="center_vertical"
+        android:text="B" />
+
+    <TextView
+        android:id="@+id/axbBDetail"
+        style="@style/editTextStyle"
+        android:layout_width="230px"
+        android:layout_height="54px"
+        android:layout_below="@id/driver3"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="7px"
+        android:gravity="center"
+        android:text="0"
+        android:textColor="@color/textColor" />
+
+</RelativeLayout>

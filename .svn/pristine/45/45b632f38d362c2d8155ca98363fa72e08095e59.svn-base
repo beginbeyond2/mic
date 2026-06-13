@@ -1,0 +1,282 @@
+package com.micsig.tbook.scope.Display;
+
+
+import com.micsig.base.FilterThread;
+import com.micsig.tbook.scope.Calibrate.HwConfig;
+import com.micsig.tbook.scope.Data.BaseDirectBuffer;
+import com.micsig.tbook.scope.Data.IDataBuffer;
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.channel.Channel;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.surface.SurfaceDataRecv;
+import com.micsig.tbook.scope.surface.SurfaceNative;
+import com.micsig.tbook.scope.surface.SurfacePreview;
+
+import java.nio.ByteBuffer;
+import java.util.Observable;
+import java.util.Observer;
+
+
+/**
+ * Created by zhuzh on 2018-5-28.
+ */
+
+public class DisplayXYService extends FilterThread implements Observer {
+    private static final String TAG = "DisplayXYService";
+    private SurfaceNative surfaceNative = null;
+    private XYParam xyParam;
+
+
+    private static volatile DisplayXYService instance = null;
+
+    public static DisplayXYService getInstance() {
+        if (instance == null) {
+            synchronized (DisplayXYService.class) {
+                if (instance == null) {
+                    instance = new DisplayXYService();
+                }
+            }
+        }
+        return instance;
+    }
+
+    private void InitParam() {
+        xyParam.setWidth(ScopeBase.getXYWidth());
+        xyParam.setHeight(ScopeBase.getXYHeight());
+        xyParam.setXDstVScaleVal(1.0);
+        xyParam.setYDstVScaleVal(1.0);
+        xyParam.setFlags(1);
+        xyParam.setADMaxVal(HwConfig.getInstance().getAdMaxVal());
+        setX(0);
+        setY(0);
+        setForegroundColor(0xFF00FFFF);
+        setBackgroundColor(0);
+        setBrightness(80);
+    }
+
+    private DisplayXYService() {
+        super(TAG);
+        setDelayMillis(50);
+        xyParam = new XYParam();
+        InitParam();
+
+        this.setRunnable(new Runnable() {
+            @Override
+            public void run() {
+//                Thread.currentThread().setName("DisplayXYServer");
+                if(isXY()) {
+                    drawXY();
+                }
+            }
+        });
+
+        EventFactory.addEventObserver(EventFactory.EVENT_CH_WAVE_UPDATE, this);
+        EventFactory.addEventObserver(EventFactory.EVENT_SURFACE_CREATED,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_SURFACE_DESTROYED,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_DISPLAY_CCT,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_DIAPLAY_WAVE_BRIGHTNESS,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_DISPLAY_MODE,this);
+    }
+
+    private boolean isXY(){
+        return Display.getInstance().isXYMode();
+    }
+
+    public void setX(int x) {
+        xyParam.setX(x);
+        if(isXY()) {
+            run();
+        }
+    }
+
+    public void setY(int y) {
+        xyParam.setY(y);
+        if(isXY()) {
+            run();
+        }
+    }
+
+    public void setForegroundColor(int color) {
+        xyParam.setForegroundColor(color);
+    }
+
+    public void setBackgroundColor(int color) {
+        xyParam.setBackgroundColor(color);
+    }
+
+    public void setBrightness(int val) {
+        xyParam.setBrightness(val);
+        if(isXY()) {
+            run();
+        }
+    }
+
+    public void setCCTEnable(int cctEnable){
+        xyParam.setCCTEnable(cctEnable);
+        if(isXY()) {
+            run();
+        }
+    }
+
+    public void drawXY() {
+
+        boolean bClear = false;
+        synchronized (this) {
+            if (bWaveVaild) {
+                Channel ch1 = ChannelFactory.getDynamicChannel(ChannelFactory.CH1);
+                Channel ch2 = ChannelFactory.getDynamicChannel(ChannelFactory.CH2);
+                IDataBuffer dataBuffer1 = ch1.obtain();
+                IDataBuffer dataBuffer2 = ch2.obtain();
+                if (dataBuffer1 != null && dataBuffer2 != null) {
+                    drawXY(dataBuffer1.getByteBuffer(), dataBuffer2.getByteBuffer());
+                }
+                if (dataBuffer1 != null) {
+                    ch1.recycle(dataBuffer1);
+                }
+                if (dataBuffer2 != null) {
+                    ch2.recycle(dataBuffer2);
+                }
+            } else {
+                bClear = true;
+            }
+        }
+        if(bClear){
+            ClearXY();
+        }
+    }
+    public void ClearXY(){
+
+        synchronized (this){
+            bWaveVaild = false;
+            Channel ch1 = ChannelFactory.getDynamicChannel(ChannelFactory.CH1);
+            Channel ch2 = ChannelFactory.getDynamicChannel(ChannelFactory.CH2);
+            ch1.setWaveValid(false);
+            ch2.setWaveValid(false);
+            if (surfaceNative != null) {
+                surfaceNative.clearSurface();
+            }
+        }
+    }
+
+    public void drawXY(ByteBuffer xByteBuffer, ByteBuffer yByteBuffer) {
+        synchronized (this) {
+            if (surfaceNative != null) {
+                surfaceNative.drawXYSurface(xByteBuffer, yByteBuffer, xyParam.getDirectBuffer());
+            }
+        }
+    }
+    public void clear(){
+        surfaceNative.clearSurface();
+    }
+
+    private volatile boolean bWaveVaild = false;
+    @Override
+    public void update(Observable observable, Object data) {
+        EventBase eventBase = (EventBase) data;
+        if (eventBase.getId() == EventFactory.EVENT_CH_WAVE_UPDATE) {
+            if(Display.getInstance().isXYMode()) {
+                run();
+            }
+            if(Display.getInstance().isXYMode()){
+                if(Scope.getInstance().isRun()){
+                    bWaveVaild = true;
+                }
+            }else{
+                bWaveVaild = false;
+            }
+
+        }else if(eventBase.getId() == EventFactory.EVENT_SURFACE_CREATED){
+            bWaveVaild = false;
+            SurfaceDataRecv surface = (SurfaceDataRecv)eventBase.getData();
+            if(surface != null){
+                synchronized (this) {
+                    surfaceNative = surface.getSurfaceNative(SurfacePreview.LAYER_XY);
+                    surfaceNative.acquireSurface(ScopeBase.getXYWidth(), ScopeBase.getXYHeight());
+                    surfaceNative.clearSurface();
+                }
+            }
+        }else if(eventBase.getId() == EventFactory.EVENT_SURFACE_DESTROYED){
+            SurfaceDataRecv surface = (SurfaceDataRecv)eventBase.getData();
+            if(surface != null) {
+                synchronized (this) {
+                    if(surfaceNative !=  null) {
+                        surfaceNative.releaseSurface();
+                        surfaceNative = null;
+                    }
+                }
+            }
+        }else if(eventBase.getId() == EventFactory.EVENT_DISPLAY_CCT){
+            setCCTEnable(Display.getInstance().isCCT() ? 1:0);
+        }else if(eventBase.getId() == EventFactory.EVENT_DIAPLAY_WAVE_BRIGHTNESS){
+            setBrightness(Display.getInstance().getBrightness());
+        }else if(eventBase.getId() == EventFactory.EVENT_DISPLAY_MODE){
+
+            ClearXY();
+            bWaveVaild = false;
+        }
+    }
+
+    private class XYParam extends BaseDirectBuffer {
+
+        public XYParam() {
+            super(128);
+        }
+
+        public void setPerPixelByte(int val) {
+            setVal(0, val);
+        }
+
+        public void setX(int x) {
+            setVal(4, x);
+        }
+
+        public void setY(int y) {
+            setVal(8, y);
+        }
+
+        public void setWidth(int w) {
+            setVal(12, w);
+        }
+
+        public void setHeight(int h) {
+            setVal(16, h);
+        }
+
+        public void setForegroundColor(int val) {
+            setVal(20, val);
+        }
+
+        public void setBackgroundColor(int val) {
+            setVal(24, val);
+        }
+
+        public void setBrightness(int val) {
+            setVal(28, val);
+        }
+
+        public void setFlags(int val) {
+            setVal(32, val);
+        }
+
+        public void setXDstVScaleVal(double val) {
+            setVal(36, val);
+        }
+
+        public void setYDstVScaleVal(double val) {
+            setVal(44, val);
+        }
+
+        public void setCCTEnable(int cctEnable){
+            setVal(52,cctEnable);
+        }
+
+        public void setADMaxVal(int val){
+            setVal(56,val);
+        }
+
+    }
+
+}

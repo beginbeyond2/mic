@@ -1,0 +1,123 @@
+package com.micsig.tbook.scope.Calibrate;
+
+import android.os.Bundle;
+import android.util.Log;
+
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.channel.Channel;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+
+import java.util.ArrayList;
+import java.util.Observable;
+import java.util.Observer;
+
+/**
+ * Created by zhuzh on 2018-6-29.
+ * 自校准
+ */
+
+public class SelfCalibrate implements Observer{
+    public static final String ERROR_KEY = "Error code";
+    private static final String TAG = "SelfCalibrate";
+    private static volatile SelfCalibrate instance = null;
+    private Bundle bundle=new Bundle();
+    public static SelfCalibrate getInstance() {
+        if (instance == null) {
+            synchronized (SelfCalibrate.class) {
+                if (instance == null ) {
+                    instance = new SelfCalibrate();
+                }
+            }
+        }
+        return instance;
+    }
+    private boolean bSelfZeroCalibrate = false;
+    public void setSelfZeroCalibrate(boolean selfZeroCalibrate,int chIdx,double vScaleVal){
+        bSelfZeroCalibrate = selfZeroCalibrate;
+        if(selfZeroCalibrate){
+            Calibrate calibrate = CalibrateService.getInstance().getCalibrate(CalibrateService.CH_ZERO_CALIBRATE);
+            if(calibrate != null){
+                if(ChannelFactory.isDynamicCh(chIdx)){
+                    Channel channel = ChannelFactory.getDynamicChannel(chIdx);
+
+                    double [] ch={chIdx,vScaleVal,channel.getResistanceType(), Scope.getInstance().getChannelSampOnCnt()/4};
+                    calibrate.setParam(ch);
+                }
+            }
+        }
+    }
+
+    private final int [] stateArray ={
+           CalibrateService.ZERO_CALIBRATE,
+            CalibrateService.CH_ZERO_CALIBRATE,
+    };
+    private final int SELF_ITEM_MAX;
+    public static int getJIaoZhunCnt() {
+        return getInstance().SELF_ITEM_MAX;
+    }
+    public static int getCablicationID(int id) {
+        return getInstance().stateArray[id];
+    }
+
+    private int stateIdx = 0;
+    private SelfCalibrate(){
+        SELF_ITEM_MAX = 1;//stateArray.length;
+    }
+    public void begin(){
+        EventFactory.addEventObserver(EventFactory.EVENT_CALIBRATE_ITEM_FINISH,this);
+        if(bSelfZeroCalibrate) {
+            stateIdx = 1;
+        }else{
+            stateIdx = 0;
+        }
+        CalibrateService.getInstance().sendMsg(CalibrateService.CALIBRATE_BEGIN_SELF);//测量->统计 开关关闭，统计dialog关闭
+        CalibrateService.getInstance().start(stateArray[stateIdx]);//自校准
+        bundle.clear();
+        CabteRegister.getInstance().backUpCabteRegister();
+    }
+    //强制校准结束
+    public void forEnd() {
+        bundle.putInt(ERROR_KEY, 11);
+        CabteRegister.getInstance().restoreCabteRegister();
+        Log.e(TAG, "校准过程被强制打断，全部校准系数恢复");
+        end();
+    }
+
+    private void end(){
+        EventFactory.delEventObserver(EventFactory.EVENT_CALIBRATE_ITEM_FINISH,this);
+        CalibrateService.getInstance().end();
+        EventFactory.sendEvent(new EventBase(EventFactory.EVENT_SELF_CALIBRATE_END, bundle));
+    }
+    private void selfStateMachine(int err){
+
+        end();
+        //存储校准系数
+        if(err == 0)
+            CabteRegister.getInstance().saveUserCalibrateParam();
+    }
+
+    @Override
+    public void update(Observable observable, Object data) {
+        EventBase eventBase = (EventBase)data;
+        if(eventBase.getId() == EventFactory.EVENT_CALIBRATE_ITEM_FINISH){
+            Calibrate calibrate=CalibrateService.getInstance().getCalibrate();
+            ArrayList<String> stringList=(ArrayList<String>) calibrate.getResultString();
+
+            for (String x:stringList
+                 ) {
+                Log.i(TAG, x);
+            }
+
+            bundle.putStringArrayList(calibrate.getTAG(), (ArrayList<String>) calibrate.getResultString());
+            if(calibrate.getErrcode() != 0) {
+                //校准有错误
+                bundle.putInt(ERROR_KEY, calibrate.getErrcode());
+                CabteRegister.getInstance().restoreCabteRegister();
+                Log.e(TAG, "校准错误，全部校准系数恢复");
+            }
+            selfStateMachine(calibrate.getErrcode());
+        }
+    }
+}

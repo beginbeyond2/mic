@@ -1,0 +1,31 @@
+package com.micsig.tbook.scope.fpga;
+
+/**
+ * Created by zhuzh on 2018-4-8.
+ */
+
+public class FPGAReg_DISP_SL extends FPGAReg {
+    public FPGAReg_DISP_SL() {
+        super(FPGA_DISP_SL, 8);
+    }
+    public void setXStart(int val){
+        setVal(0,16,val);
+    }
+    public void setXEnd(int val){
+        setVal(16,16,val);
+    }
+    public int getXStart(){
+        return getVal() & 0xFFFF;
+    }
+    public int getXEnd(){
+        return (getVal() >>> 16) & 0xFFFFF;
+    }
+
+    public void setXLastStart(int val){
+        setVal(1,0,16,val);
+    }
+    public void setXLastEnd(int val){
+        setVal(1,16,16,val);
+    }
+
+}

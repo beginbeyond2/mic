@@ -1,0 +1,55 @@
+package com.micsig.tbook.tbookscope;
+
+/**
+ * Created by yangj on 2018/5/28.
+ */
+
+public class MainMsgSlip {
+    @MainViewGroup.Slip
+    private int slip;
+    private boolean open;
+    private boolean isNormal;//是否显示常规布局，默认true
+
+    public MainMsgSlip(@MainViewGroup.Slip int slip, boolean open, boolean... isNormal) {
+        this.slip = slip;
+        this.open = open;
+        if (isNormal.length > 0) {
+            this.isNormal = isNormal[0];
+        } else {
+            this.isNormal = true;
+        }
+    }
+
+    public int getSlip() {
+        return slip;
+    }
+
+    public void setSlip(@MainViewGroup.Slip int slip) {
+        this.slip = slip;
+    }
+
+    public boolean isOpen() {
+        return open;
+    }
+
+    public void setOpen(boolean open) {
+        this.open = open;
+    }
+
+    public boolean isNormal() {
+        return isNormal;
+    }
+
+    public void setNormal(boolean normal) {
+        isNormal = normal;
+    }
+
+    @Override
+    public String toString() {
+        return "MainMsgSlip{" +
+                "slip=" + slip +
+                ", open=" + open +
+                ", isNormal=" + isNormal +
+                '}';
+    }
+}

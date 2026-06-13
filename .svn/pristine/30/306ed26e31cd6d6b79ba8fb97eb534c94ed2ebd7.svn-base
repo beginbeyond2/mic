@@ -1,0 +1,31 @@
+package com.micsig.tbook.tbookscope.wavezone.wave;
+
+import android.graphics.Bitmap;
+
+import com.micsig.tbook.tbookscope.wavezone.IWorkMode;
+import com.micsig.tbook.tbookscope.wavezone.trigger.VerticalChannelBase;
+
+/**
+ * Created by liwb on 2017/11/7.
+ * 坚型通道类，用于XY模式下显示
+ */
+
+public class ChannelWaveVertical extends VerticalChannelBase implements IWorkMode {
+
+    public ChannelWaveVertical(Bitmap[] resBmp) {
+        super();
+        //this.resBmp=resBmp;
+        init(resBmp);
+    }
+//region interface IWorkMode
+
+    @Override
+    public void switchWorkMode(@WorkMode int workMode) {
+
+        this.isChanageBitmap = true;
+        onRefresh();
+    }
+
+    //endregion
+
+}

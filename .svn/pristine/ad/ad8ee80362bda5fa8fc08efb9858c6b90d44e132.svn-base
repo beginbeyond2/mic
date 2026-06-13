@@ -1,0 +1,302 @@
+package com.micsig.tbook.tbookscope;
+
+import static com.micsig.tbook.tbookscope.wavezone.IWorkMode.WorkMode_XY;
+import static com.micsig.tbook.tbookscope.wavezone.IWorkMode.WorkMode_YT;
+import static com.micsig.tbook.tbookscope.wavezone.IWorkMode.WorkMode_YTZOOM;
+
+import android.content.Context;
+import android.content.res.Resources;
+import android.graphics.Point;
+import android.graphics.Rect;
+
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.tbookscope.config.ScopeConfig;
+import com.micsig.tbook.tbookscope.util.CacheUtil;
+import com.micsig.tbook.tbookscope.wavezone.IWorkMode;
+import com.micsig.tbook.ui.top.view.scale.TopUtilScale;
+
+import java.util.HashMap;
+
+/**
+ * Created by liwb on 2017/5/8.
+ */
+
+public class GlobalVar {
+    //region 单例创建
+    private static class GlobalVarHolder {
+        private static final GlobalVar instance = new GlobalVar();
+    }
+
+    public static final GlobalVar get() {
+        return GlobalVarHolder.instance;
+    }
+
+    private Context context;
+
+    public void init(Context context) {
+        this.context = context;
+        initScreen();
+    }
+    //endregion
+
+
+
+    //region YT模式 参数定义
+    public int getWaveZoneWidth_Pix(@IWorkMode.WorkMode int workMode) {
+        switch (workMode) {
+            case WorkMode_XY:
+                return 800;
+            case WorkMode_YT:
+                return mainWave.x;
+            case WorkMode_YTZOOM:
+                return mainWave.x;
+        }
+        return mainWave.x;
+    }
+
+    public int getWaveZoneHeight_Pix(@IWorkMode.WorkMode int workMode) {
+        switch (workMode) {
+            case WorkMode_XY:
+                return 800;
+            case WorkMode_YT:
+                return mainWave.y;
+            case WorkMode_YTZOOM:
+                return (int) (mainWave.y * ytToZoomCoef);
+        }
+        return mainWave.y;
+    }
+
+    /**
+     * 返回光标测量结果的位置
+     */
+    public Point getMeasureCursorPosition(@IWorkMode.WorkMode int workMode) {
+        switch (workMode) {
+            case WorkMode_XY:
+                return new Point(500, 40);
+            case WorkMode_YT:
+                return new Point(1460, 60);
+            case WorkMode_YTZOOM:
+                return new Point(1460, ((int) (60 * toZoomCoef())));
+        }
+        return new Point(1460, 60);
+    }
+
+    /**
+     *
+     */
+    public Point getMeasureAllPosition(@IWorkMode.WorkMode int workMode) {
+        switch (workMode) {
+            case WorkMode_XY:
+                return null;
+            case WorkMode_YT:
+                return new Point(0, 700);
+            case WorkMode_YTZOOM:
+                return new Point(0, (int)(660*toZoomCoef()));
+            //return new Point(0, ((int) (330 * 0.8)));
+        }
+        return new Point(0, 790);
+    }
+    /**
+     *
+     */
+    public Point getMeasureItemPosition(@IWorkMode.WorkMode int workMode) {
+        switch (workMode) {
+            case WorkMode_XY:
+                return null;
+            case WorkMode_YT:
+//                return new Point(0, 450);
+                return new Point(0, 910);
+            case WorkMode_YTZOOM:
+//                return new Point(0,349);
+                return new Point(0, (int)(890*toZoomCoef()));
+            //return new Point(0, ((int) (450 * 0.8)));
+        }
+        return new Point(0, 910);
+    }
+    /**
+     *
+     */
+    public Point getMeasureFrequencyMeterPosition(@IWorkMode.WorkMode int workMode) {
+        switch (workMode) {
+            case WorkMode_XY:
+                return null;
+            case WorkMode_YT:
+                return new Point(100, 60);
+            case WorkMode_YTZOOM:
+                return new Point(100, ((int) (60 * toZoomCoef())));
+        }
+        return new Point(100, 60);
+    }
+
+    public Point getMeasureFFTPosition(@IWorkMode.WorkMode int workMode) {
+        switch (workMode) {
+            case WorkMode_XY:
+                return null;
+            case WorkMode_YT:
+                return new Point(100, 116);
+            case WorkMode_YTZOOM:
+                return new Point(100, (int) (116 * toZoomCoef()));
+        }
+        return new Point(100, 116);
+    }
+
+
+    public Point getMeasureSegmentPosition(@IWorkMode.WorkMode int workMode) {
+        switch (workMode) {
+            case WorkMode_XY:
+                return null;
+            case WorkMode_YT:
+                return new Point(30, 5);
+            case WorkMode_YTZOOM:
+                return new Point(30, (int) (5 * toZoomCoef()));
+        }
+        return new Point(30, 5);
+    }
+
+
+    //endregion
+
+    //region 屏幕尺寸
+    private Rect screen;
+    private Point mainWave;
+    private Point mainTop;
+    private Point bottomSlip;
+    private String[] channelsNameDouble;
+    private String[] channelsNameFour;
+    private String[] channelsNameEight;
+    private float ytToZoomCoef;
+    private float zoomToYtCoef;
+    private Rect rectZoom;
+    private float zoomH = 1000.0f / 4;
+    private final HashMap<Integer, Integer> measureRowToHeightMap = new HashMap<>();
+
+    private void initScreen() {
+        Resources res = context.getResources();
+        screen = new Rect(0, 0, (int) res.getDimension(R.dimen.screenWidth), (int) res.getDimension(R.dimen.screenHeight));
+        mainWave = new Point((int) res.getDimension(R.dimen.mainCenterWidth), (int) res.getDimension(R.dimen.mainCenterHeightMeasureRow0));
+        mainTop = new Point(((int) res.getDimension(R.dimen.mainTopWidth)), (int) res.getDimension(R.dimen.mainTopHeight));
+        bottomSlip = new Point(((int) res.getDimension(R.dimen.mainBottomQuickWidth)), (int) res.getDimension(R.dimen.mainBottomQuickHeight));
+        rectZoom = new Rect(0, 0, mainWave.x, (int) zoomH);
+        channelsNameDouble = res.getStringArray(R.array.channelsNameDouble);
+        channelsNameFour = res.getStringArray(R.array.channelsNameFour);
+        channelsNameEight = res.getStringArray(R.array.channelsNameEight);
+        ytToZoomCoef = (mainWave.y - zoomH) / mainWave.y;
+        zoomToYtCoef = mainWave.y / (mainWave.y - zoomH);
+
+        measureRowToHeightMap.put(0, (int) res.getDimension(R.dimen.mainCenterHeightMeasureRow0));
+        measureRowToHeightMap.put(1, (int) res.getDimension(R.dimen.mainCenterHeightMeasureRow1));
+        measureRowToHeightMap.put(2, (int) res.getDimension(R.dimen.mainCenterHeightMeasureRow2));
+        measureRowToHeightMap.put(3, (int) res.getDimension(R.dimen.mainCenterHeightMeasureRow3));
+        measureRowToHeightMap.put(4, (int) res.getDimension(R.dimen.mainCenterHeightMeasureRow4));
+    }
+
+    public Rect getScreen() {
+        return screen;
+    }
+    public Rect getRectZoom(){return rectZoom;}
+    public Point getMainWave() {
+        return mainWave;
+    }
+    public boolean isContainMainWaveX(int x){
+        return x>=0 && x<mainWave.x;
+    }
+    public boolean isContainMainWaveX(int x1,int x2){
+        return isContainMainWaveX(x1) && isContainMainWaveX(x2);
+    }
+    public boolean isContainMainWaveY(int y){
+        return y>=0 && y< mainWave.y;
+    }
+    public boolean isContainMainWaveY(int y1,int y2){
+        return isContainMainWaveY(y1) && isContainMainWaveY(y2);
+    }
+    public Point getMainTop() {
+        return mainTop;
+    }
+
+    public Point getBottomSlip() {
+        return bottomSlip;
+    }
+
+    public float toZoomCoef(){
+       return ytToZoomCoef;
+    }
+    public float toYTCoef(){
+        return zoomToYtCoef;
+    }
+    //endregion
+
+    //region 界面配置
+
+    public static final int CHANNEL_COUNT_2 = 2;
+    public static final int CHANNEL_COUNT_4 = 4;
+    public static final int CHANNEL_COUNT_8 = 8;
+
+    /**
+     * 获取当前机器的通道数，一般为2,4,8
+     */
+    public int getChannelsCount() {
+        return Scope.getInstance().getChNum();
+    }
+
+    public void changeMainWaveH(int h) {
+        mainWave.y = h;
+        zoomH = h >> 2;
+        ytToZoomCoef = (mainWave.y - zoomH) / mainWave.y;
+        zoomToYtCoef = mainWave.y / (mainWave.y - zoomH);
+        rectZoom.set(rectZoom.left, rectZoom.top, rectZoom.right, (int) zoomH);
+        CacheUtil.get().putMap(CacheUtil.MAIN_WAVE_ZONE_HEIGHT, String.valueOf(h));
+    }
+
+    public String[] getChannelsName() {
+        if (getChannelsCount() == CHANNEL_COUNT_2) {
+            return channelsNameDouble;
+        } else if (getChannelsCount() == CHANNEL_COUNT_4) {
+            return channelsNameFour;
+        } else {
+            return channelsNameEight;
+        }
+    }
+
+    public int getMeasureItemCount() {
+        return 40;
+    }
+
+    public int getMeasureItemPerRowCount() {
+        return 10;
+    }
+
+    /**
+     * 工厂校准页面是否显示
+     */
+    public boolean isFactoryCalibration() {
+        return !ScopeConfig.getConfig().isDeliveryDate();
+    }
+
+    /**
+     * 返回触发电平中，时间项的最小识别间隔，单位ns
+     */
+    public int getTimeMinInterval() {
+        return TopUtilScale.TIME_MIN_INTERVAL;
+    }
+
+    public boolean isMathAxbVisible() {
+        return true;
+    }
+
+
+
+    public boolean isEnableChannelZero() {
+
+        return Scope.getInstance().isEnableChannelZero();
+    }
+
+    public void setEnableChannelZero(boolean enableChannelZero) {
+        Scope.getInstance().setEnableChannelZero(enableChannelZero);
+    }
+
+    public HashMap<Integer, Integer> getMeasureRowToHeightMap() {
+        return measureRowToHeightMap;
+    }
+
+    //endregion
+}

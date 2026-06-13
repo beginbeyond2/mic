@@ -1,0 +1,23 @@
+package com.micsig.tbook.scope.math.mathEx;
+
+import android.content.res.AssetManager;
+
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
+
+/**
+ * @auother Liwb
+ * @description:
+ * @data:2025-6-11 10:31
+ */
+public class MathExt {
+    static {
+        System.loadLibrary("math_ext");
+    }
+
+    public static native void initMathExprOpenCL(AssetManager assetManager);
+
+
+    public static native void IntToHex(IntBuffer src, ByteBuffer desFD, int placeVal, int headLend, int waveLen);
+    public static native void DoubleToASCII(IntBuffer src,ByteBuffer desFD,double vv,int headLend, int waveLen);
+}

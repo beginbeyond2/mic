@@ -1,0 +1,24 @@
+package com.micsig.tbook.scope.fpga;
+
+/**
+ * Created by zhuzh on 2018/3/21.
+ */
+
+public class FPGAReg_DISP_WAVE extends FPGAReg {
+    public FPGAReg_DISP_WAVE() {
+        super(FPGAReg.FPGA_DISP_WAVE,8);
+    }
+
+    public void setCouY(int val){
+        setVal(0,13,val);
+    }
+    public void setNeedCY(int val){
+        //setVal(13,1,val);
+    }
+    public void setLen(int val){
+        setVal(13,19,val);
+    }
+    public  void setWavePlace(int val){
+        setVal(1,val);
+    }
+}

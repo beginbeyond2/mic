@@ -1,0 +1,81 @@
+package com.micsig.tbook.scope.probe;
+
+public class DevInfoBean {
+
+    private String devType;
+
+    private String devSn;
+
+    private String devUuid;
+
+    private String remark;
+
+
+
+    /**
+     * @return DEV_TYPE
+     */
+    public String getDevType() {
+        return devType;
+    }
+
+    /**
+     * @param devType
+     */
+    public void setDevType(String devType) {
+        this.devType = devType == null ? null : devType.trim();
+    }
+
+    /**
+     * @return DEV_SN
+     */
+    public String getDevSn() {
+        return devSn;
+    }
+
+    /**
+     * @param devSn
+     */
+    public void setDevSn(String devSn) {
+        this.devSn = devSn == null ? null : devSn.trim();
+    }
+
+    /**
+     * @return DEV_UUID
+     */
+    public String getDevUuid() {
+        return devUuid;
+    }
+
+    /**
+     * @param devUuid
+     */
+    public void setDevUuid(String devUuid) {
+        this.devUuid = devUuid == null ? null : devUuid.trim();
+    }
+
+
+    /**
+     * @return REMARK
+     */
+    public String getRemark() {
+        return remark;
+    }
+
+    /**
+     * @param remark
+     */
+    public void setRemark(String remark) {
+        this.remark = remark == null ? null : remark.trim();
+    }
+
+    @Override
+    public String toString() {
+        return "DevInfoBean{" +
+                "devType='" + devType + '\'' +
+                ", devSn='" + devSn + '\'' +
+                ", devUuid='" + devUuid + '\'' +
+                ", remark='" + remark + '\'' +
+                '}';
+    }
+}

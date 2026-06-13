@@ -1,0 +1,132 @@
+package com.micsig.tbook.scope;
+
+import com.micsig.base.Logger;
+
+/**
+ * Created by zhuzh on 2018/3/16.
+ */
+
+public class ScopeBase {
+
+    private static final int MS_XY_W = 800;
+    private static final int MS_XY_H = 800;
+    private static final int MS_GRID_H =            12;
+    private static final int MS_GRID_V =            10;
+    private static final int MS_GRID_PerH =         150;
+    private static final int MS_GRID_PerV =         100;
+    private static final int MS_ZOOM_GRID_H =       MS_GRID_H;
+    private static final int MS_ZOOM_GRID_V =      MS_GRID_V;
+    private static final int MS_ZOOM_GRID_PerH =   MS_GRID_PerH;
+    private static final int MS_ZOOM_GRID_PerV =  75;
+    private static final int OSCILLO_WIDTH =       (MS_GRID_PerH*MS_GRID_H);
+    private static final int OSCILLO_HEIGHT =      (MS_GRID_PerV*MS_GRID_V);
+    private static final int OSCILLO_ZOOM_WIDTH =  OSCILLO_WIDTH;
+    private static final int OSCILLO_ZOOM_HEIGHT = (MS_ZOOM_GRID_PerV*MS_ZOOM_GRID_V);
+//    private static final int MAX_AD_IN_CLK = 3000;
+    private static double ToUICoff = 1.0f;
+    private static double ToFPGACoff = 1.0f;
+
+    public static double getToUICoff() {
+        if (Scope.getInstance().isInXYMode()) {
+            return 1.0;
+        } else {
+            return ToUICoff;
+        }
+    }
+
+    public static double getToFPGACoff() {
+        if (Scope.getInstance().isInXYMode()) {
+            return 1.0;
+        } else {
+            return ToFPGACoff;
+        }
+    }
+
+    public static void setConvertScale(double newHeight) {
+        ScopeBase.ToUICoff = newHeight / 1000;
+        ScopeBase.ToFPGACoff = 1000 / newHeight;
+        Logger.d("ScopeBase", "ScopeBase ToUICoff= " + ToUICoff + " ,ToFPGACoff= " + ToFPGACoff);
+    }
+
+    public static int getWidth(){
+        return OSCILLO_WIDTH;
+    }
+
+    public static int getZoomWidth(){
+        return OSCILLO_ZOOM_WIDTH;
+    }
+    public static int getHeight(){
+        return OSCILLO_HEIGHT;
+    }
+    public static int getZoomHeight(){
+        return OSCILLO_ZOOM_HEIGHT;
+    }
+    public static int getHorizonGridCnt(){
+        return MS_GRID_H;
+    }
+    public static int getVerticalGridCnt(){
+        return MS_GRID_V;
+    }
+    public static int getHorizonPerGridPixels(){
+        return MS_GRID_PerH;
+    }
+    public static int getVerticalPerGridPixels(){
+        return MS_GRID_PerV;
+    }
+
+    public static int getZoomHorizonPerGridPixels(){
+        return MS_ZOOM_GRID_PerH;
+    }
+    public static int getZoomVerticalPerGridPixels(){
+        return MS_ZOOM_GRID_PerV;
+    }
+
+    //zoom模式原始波形区
+    public static int zoomYGrid_suolue(){
+        return OSCILLO_HEIGHT-OSCILLO_ZOOM_HEIGHT;
+    }
+
+    //zoom模式放大波形区
+    public static int zoomYGrid_fangda(){
+        return OSCILLO_ZOOM_HEIGHT;
+    }
+
+    public static int YGridWave(){
+        return OSCILLO_HEIGHT;
+    }
+
+    public static int getXYWidth(){
+        return MS_XY_W;
+    }
+
+    public static int getXYHeight(){
+        return MS_XY_H;
+    }
+
+//    public static void main(String [] args)
+//    {
+//        double val = 1000.0;
+//        long x = Double.doubleToLongBits(val);
+//
+//        System.out.println("val:" + val+ ",x:" + Long.toHexString(x));
+//    }
+
+    public static int getNewHeight(){
+        return (int) (getHeight() * getToUICoff());
+    }
+
+    public static int getNewZoomHeight() {
+        return (int) (getZoomHeight() * getToUICoff());
+    }
+
+    public static double changeAccuracy(double originalValue) {
+        if (Math.abs(originalValue) < 10E-6) {
+            return Math.round(originalValue * 1000000000) / 1000000000.0;
+        } else if (Math.abs(originalValue) < 10E-3) {
+            return Math.round(originalValue * 1000000) / 1000000.0;
+        } else {
+            return Math.round(originalValue * 1000) / 1000.0;
+        }
+    }
+
+}

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="horizontal"
+    android:layout_width="wrap_content"
+    android:visibility="gone"
+    android:layout_height="63px">
+
+    <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelBranch
+        android:id="@+id/rightMathBranch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        app:text="M1"
+        app:checked="true" />
+
+    <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelBranch
+        android:id="@+id/rightRefBranch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_toEndOf="@+id/rightMathBranch"
+        android:layout_marginStart="-1px"
+        app:text="R1"
+        app:checked="true" />
+
+    <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelBranch
+        android:id="@+id/rightS1Branch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_toEndOf="@+id/rightRefBranch"
+        android:layout_marginStart="-1px"
+        app:text="S1"
+        app:checked="true" />
+
+    <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelBranch
+        android:id="@+id/rightS2Branch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_toEndOf="@+id/rightS1Branch"
+        android:layout_marginStart="-1px"
+        app:text="S2"
+        app:checked="true" />
+</RelativeLayout>

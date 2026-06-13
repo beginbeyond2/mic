@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.micsig.tbook.tbookscope.top.popwindow.TopLayoutPopWindow xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/topSlipMenuBar_Quick"
+    android:layout_width="@dimen/topSlipWidth"
+    android:layout_height="wrap_content"
+    android:layout_x="@dimen/topSlipX"
+    android:layout_y="@dimen/topSlipY"
+    android:elevation="100px"
+    android:outlineSpotShadowColor="@android:color/transparent"
+    android:outlineAmbientShadowColor="@android:color/transparent"
+    android:translationZ="100px"
+    android:clickable="true" />

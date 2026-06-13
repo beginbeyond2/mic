@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AbsoluteLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <View
+        android:id="@+id/outView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <LinearLayout
+        android:layout_width="@dimen/rightChannelDialogWidth"
+        android:layout_height="@dimen/rightDialogHeight"
+        android:layout_x="@dimen/rightChannelDialogX"
+        android:layout_y="@dimen/newRightDialogY"
+        android:background="@color/bg_slip_backcolor"
+        android:orientation="horizontal">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/listView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1" />
+
+<!--        <TextView-->
+<!--            android:id="@+id/back"-->
+<!--            android:layout_width="44px"-->
+<!--            android:layout_height="30px"-->
+<!--            android:layout_gravity="bottom"-->
+<!--            android:layout_margin="10px"-->
+<!--            android:background="@drawable/bg_dialogrecall_back" />-->
+    </LinearLayout>
+</AbsoluteLayout>

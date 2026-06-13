@@ -1,0 +1,503 @@
+
+#include "scpi_cmd_stor.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <cstring>
+#include <string>
+#include "scpi_help.h"
+#include "../../SCPICommandCallBackJava.h"
+#include "../../Log.h"
+
+
+//�洢ʾ��������
+scpi_result_t STOR_CONS(scpi_t * context)
+{
+    const char* param = NULL;
+    size_t len=0;
+    if  (!SCPI_ParamString(context,&param,&len,true)){
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    std::string param1(param,len);
+    setParam_1String(context->env,context->param,param1.c_str());
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+scpi_result_t STOR_CONS_START(scpi_t * context){
+
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+//����ʾ��������
+scpi_result_t STOR_CONL(scpi_t * context)
+{
+    const char* param = NULL;
+    size_t len=0;
+    if  (!SCPI_ParamString(context,&param,&len,true)){
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    std::string param1(param,len);
+    setParam_1String(context->env,context->param,param1.c_str());
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+const char * stor_vedioState[] = {
+    "RECOrd",
+    "STOP",
+    NULL
+};
+//����ʾ����¼�ƹ��ܵĴ���ر�
+scpi_result_t STOR_REC(scpi_t * context)
+{
+//    Q_UNUSED(context);
+//    MenuBottom *tem=gMainWindow-> GetMenuBottom();
+//    tem->setRecordState();
+    int param1;
+    if (!SCPI_ParamChoice(context,stor_vedioState, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Int(context->env,context->param,param1);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+//��ѯʾ����¼�ƹ��ܵĴ���ر�
+scpi_result_t STOR_RECQ(scpi_t * context)
+{
+    //SEND_RECEIVE_CMD(context);
+//    MenuBottom *tem=gMainWindow-> GetMenuBottom();
+//    bool b=tem->getRecordState();
+//    int param1;
+//    if (b==true){param1=0;}
+//    else{param1=1;}
+//    SCPI_ResultString(context,stor_vedioState[param1]);
+
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+//����ʾ�����طŹ��ܵĴ��͹ر�
+scpi_result_t STOR_PLAY(scpi_t * context){
+//    Q_UNUSED(context);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;}
+//��ѯʾ�����طŹ��ܵĴ��͹ر�
+scpi_result_t STOR_PLAYQ(scpi_t * context){
+    //SEND_RECEIVE_CMD(context);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;}
+//����ʾ�����طſ��ѡ��
+scpi_result_t STOR_PLAY_SPE(scpi_t * context){
+//    Q_UNUSED(context);
+
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;}
+//��ѯʾ�����طſ��ѡ��
+scpi_result_t STOR_PLAY_SPEQ(scpi_t * context){
+    //SEND_RECEIVE_CMD(context);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;}
+//����ʾ�����طź���ѡ��
+scpi_result_t STOR_PLAY_BACK(scpi_t * context){
+//    Q_UNUSED(context);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;}
+//��ѯʾ�����طź���ѡ��
+scpi_result_t STOR_PLAY_BACKQ(scpi_t * context){
+    //SEND_RECEIVE_CMD(context);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;}
+
+
+
+const char * stor_save[] = {
+    "LOCal",
+    "UDISk",
+    NULL
+};
+//�洢ָ��ͨ���Ĳ��ε�ָ��λ��
+scpi_result_t STOR_SAVE(scpi_t * context)
+{
+//    ERROR_XY_MODE;
+//    IModuleChannel *mc = dynamic_cast<IModuleChannel *>(
+//        ProcessCenter::IModuleRegisterDesk::module(
+//        ProcessCenter::MI_CHANNEL));
+
+    int param1;
+    if (!SCPI_ParamChoice(context, allCh, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    int param2 = 0;
+    if (!SCPI_ParamChoice(context, stor_save, &param2, true)) {
+        dealCallBack_ParamError(context);
+        return  SCPI_RES_ERR;
+    }
+//    if (param2 == 1 && !ISystemEvent::Instance()->IsUdisk()) {
+//        return SCPI_RES_ERR;
+//    }
+//    CH_IDX ch = (CH_IDX)getCh(param1);
+//    if (!mc->isChOpened(ch)) {
+//        return SCPI_RES_ERR;
+//    }
+//    SCPI_CLOSE_MENU;
+//    MenuSaveRefFrame *temp = (MenuSaveRefFrame *)gMainWindow->GetMenuFrame_Help(OscilloUi::MI_SAVE_WAVE);
+//    switch(ch)
+//    {
+//    case CI_CH1:
+//        temp->on_btCh1_clicked();
+//        break;
+//    case CI_CH2:
+//        temp->on_btCh2_clicked();
+//        break;
+//#ifdef CHANNEL_FOUR
+//    case CI_CH3:
+//        temp->on_btCh3_clicked();
+//        break;
+//    case CI_CH4:
+//        temp->on_btCh4_clicked();
+//        break;
+//#endif
+//    case CI_MATH:
+//        temp->on_btChMath_clicked();
+//        break;
+//    case CI_REF1:
+//        temp->on_btChR1_clicked();
+//        break;
+//    case CI_REF2:
+//        temp->on_btChR2_clicked();
+//        break;
+//    case CI_REF3:
+//        temp->on_btChR3_clicked();
+//        break;
+//    case CI_REF4:
+//        temp->on_btChR4_clicked();
+//        break;
+//    default:
+//        return SCPI_RES_ERR;
+//        break;
+//    }
+//
+//    switch(param2)
+//    {
+//        case 0:
+//            temp->when_btLocal_clicked();
+//            break;
+//        case 1:
+//            temp->when_btUDisk_clicked();
+//            break;
+//        default:return SCPI_RES_OK;
+//    }
+//    temp->on_btSave_clicked();
+    setParam_2Int(context->env,context->param,param1,param2);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+//����ref
+scpi_result_t STOR_LOAD(scpi_t * context)
+{
+//    ERROR_XY_MODE;
+    int param1;
+    if (!SCPI_ParamChoice(context, allCh, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+//    CH_IDX ch = (CH_IDX)getCh(param1);
+//    if (!isRefCh(ch)) {
+//        return SCPI_RES_ERR;
+//    }
+    bool param3;
+    if (!SCPI_ParamBool(context, &param3, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+
+    const char* param=NULL;
+    size_t len=0;
+    if  (!SCPI_ParamString(context,&param,&len,true)){
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    std::string param2(param,len);
+
+//
+//    SCPI_CLOSE_MENU;
+//    MenuRefFrame* temp = gMainWindow->GetMenuRef();
+//    switch(ch)
+//    {
+//    case CI_REF1:
+//        if(param2==true)
+//        {
+//            temp->WhenRefClicked(CI_REF1,true);
+//        }
+//        else
+//        {
+//            temp->WhenRefClicked(CI_REF1,false);
+//        }
+//        break;
+//    case CI_REF2:
+//        if(param2==true)
+//        {
+//            temp->WhenRefClicked(CI_REF2,true);
+//        }
+//        else
+//        {
+//            temp->WhenRefClicked(CI_REF2,false);
+//        }
+//        break;
+//    case CI_REF3:
+//        if(param2==true)
+//        {
+//            temp->WhenRefClicked(CI_REF3,true);
+//        }
+//        else
+//        {
+//            temp->WhenRefClicked(CI_REF3,false);
+//        }
+//        break;
+//    case CI_REF4:
+//        if(param2 == true)
+//        {
+//            temp->WhenRefClicked(CI_REF4,true);
+//        }
+//        else
+//        {
+//            temp->WhenRefClicked(CI_REF4,false);
+//        }
+//        break;
+//    default:
+//        break;
+//    }
+    //setParam_1Int1Boolean(context->env,context->param,param1,param2);
+    setParam_1Int1String1Boolean(context->env,context->param,param1,param2.c_str(),param3);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+//��Ļ��ͼ
+scpi_result_t STOR_CAPT(scpi_t * context)
+{
+//    Q_UNUSED(context);
+//    gMainWindow->menuBottomFrame->on_btnScreen_clicked();
+
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+scpi_result_t STOR_CAPT_TIME(scpi_t * context){
+    bool param1;
+    if (!SCPI_ParamBool(context,&param1,true))
+    {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Boolean(context->env,context->param,param1);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+scpi_result_t STOR_CAPT_TIMEQ(scpi_t * context){
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+scpi_result_t STOR_CAPT_INCOLOR(scpi_t * context){
+    bool param1;
+    if (!SCPI_ParamBool(context,&param1,true))
+    {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Boolean(context->env,context->param,param1);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+scpi_result_t STOR_CAPT_INCOLORQ(scpi_t * context){
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+scpi_result_t STOR_CAPT_THUM(scpi_t * context){
+    bool param1;
+    if (!SCPI_ParamBool(context,&param1,true))
+    {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Boolean(context->env,context->param,param1);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+scpi_result_t STOR_CAPT_THUMQ(scpi_t * context){
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+scpi_result_t STOR_CAPT_START(scpi_t * context){
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+//����ʾ�����洢���
+scpi_result_t STOR_DEPT(scpi_t * context)
+{
+    int param1;
+    if (!SCPI_ParamInt(context, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+//    SCPI_CLOSE_MENU;
+//    MenuDepthFrame *temp = (MenuDepthFrame *)gMainWindow->GetMenuFrame_Help(OscilloUi::MI_STORAGE_DEPTH);
+//    temp->setDepthByScpi(param1);
+    setParam_1Int(context->env,context->param,param1);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+
+//��ѯʾ�����洢���
+scpi_result_t STOR_DEPTQ(scpi_t * context)
+{
+//    SCPI_ResultInt(context,IModuleDevice::instance()->memDepthInSampleGroup());
+
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+scpi_result_t STOR_SAVE_SOUR(scpi_t * context)
+{
+    int param1;
+    if (!SCPI_ParamChoice(context, allCh, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Int(context->env,context->param,param1);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+scpi_result_t STOR_SAVE_SOURQ(scpi_t * context)
+{
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+scpi_result_t STOR_SAVE_LOCA(scpi_t * context)
+{
+    int param2 = 0, _param2;
+    if (SCPI_ParamChoice(context, stor_save, &_param2, true)) {
+        param2 = _param2;
+    }
+    setParam_1Int(context->env,context->param,param2);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+scpi_result_t STOR_SAVE_LOCAQ(scpi_t * context)
+{
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+const char* save_type[]={
+        "WAV",
+        "CSV",
+        "BIN",
+        NULL
+};
+
+scpi_result_t STOR_SAVE_TYPE(scpi_t * context)
+{
+    int param1;
+    if (!SCPI_ParamChoice(context, save_type, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Int(context->env,context->param,param1);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+scpi_result_t STOR_SAVE_TYPEQ(scpi_t * context)
+{
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+scpi_result_t STOR_SAVE_FIL(scpi_t * context)
+{
+    const char* param=NULL;
+    size_t len=0;
+    if  (!SCPI_ParamString(context,&param,&len,true)){
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    std::string param1(param,len);
+    setParam_1String(context->env,context->param,param1.c_str());
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+scpi_result_t STOR_SAVE_FILQ(scpi_t * context)
+{
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+scpi_result_t STOR_SAVE_START(scpi_t * context)
+{
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+scpi_result_t STOR_SAVE_ALLS(scpi_t * context){
+    bool param1;
+    if (!SCPI_ParamBool(context,&param1,true))
+    {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Boolean(context->env,context->param,param1);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+scpi_result_t STOR_SAVE_ALLSQ(scpi_t * context){
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+scpi_result_t STOR_DATA_TYPE(scpi_t * context){
+    const char* param=NULL;
+    LOGD("%s.%d",__FUNCTION__ ,__LINE__);
+    size_t len=0;
+    int32_t n = SCPI_ParamCount(context);
+    std::string par[5];
+    if(n > 5) n = 5;
+    for(int i=0;i<n;i++){
+        if(!SCPI_ParamString(context,&param,&len,true)){
+            dealCallBack_ParamError(context);
+            LOGD("%s.%d",__FUNCTION__ ,__LINE__);
+            return SCPI_RES_ERR;
+        }
+        par[i] = std::string(param,len);
+    }
+    setParam_5String(context->env,context->param
+                     ,par[0].c_str()
+            ,par[1].c_str()
+            ,par[2].c_str()
+            ,par[3].c_str()
+            ,par[4].c_str()
+            );
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    LOGD("%s.%d,scpi_command_index:%d",__FUNCTION__ ,__LINE__,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+scpi_result_t STOR_DATA_STATUSQ(scpi_t * context){
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+scpi_result_t STOR_DATA_CSVQ(scpi_t * context){
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+scpi_result_t STOR_DATA_PNGQ(scpi_t * context){
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+scpi_result_t STOR_DATA_MSSQ(scpi_t * context){
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}

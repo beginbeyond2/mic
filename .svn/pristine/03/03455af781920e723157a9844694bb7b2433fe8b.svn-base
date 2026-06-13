@@ -1,0 +1,234 @@
+package com.micsig.tbook.scope.math;
+
+
+import androidx.annotation.IntDef;
+
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.channel.Channel;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.channel.MathChannel;
+import com.micsig.tbook.scope.vertical.VerticalAxisMathFft;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+
+/**
+ * Created by zhuzh on 2018-4-13.
+ */
+
+public class MathFFTWave extends MathWave{
+    public static final String TAG = "MathFFTWave";
+    @IntDef({FFT_TYPE_RMS,FFT_TYPE_DB})
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface FFT_TYPE {}
+    public static final int FFT_TYPE_RMS = 0;
+    public static final int FFT_TYPE_DB = 1;
+    @IntDef({FFT_WINDOW_RECTANGLE,FFT_WINDOW_HAMMING,FFT_WINDOW_BLACKMAN,FFT_WINDOW_HANNING})
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface FFT_WINDOW {}
+    public static final int FFT_WINDOW_RECTANGLE = 0;
+    public static final int FFT_WINDOW_HAMMING = 1;
+    public static final int FFT_WINDOW_BLACKMAN = 2;
+    public static final int FFT_WINDOW_HANNING = 3;
+
+    private MathChannel mathChannel;
+    private int srcChIdx = ChannelFactory.CH1;
+    private int fftType = FFT_TYPE_RMS;
+    private int fftWindow = FFT_WINDOW_RECTANGLE;
+    private VerticalAxisMathFft verticalAxisMathFft;
+
+
+
+    public MathFFTWave(MathChannel channel){
+        super(MATH_FFTWAVE);
+        mathChannel = channel;
+        verticalAxisMathFft = new VerticalAxisMathFft();
+    }
+
+    public void setSource(int chIdx){
+        srcChIdx = chIdx;
+        mathChannel.chSampleChange();
+        mathChannel.forceRefresh();
+        EventFactory.sendEvent(new EventBase(EventFactory.EVENT_CHANNEL_VSCALE, chIdx, mathChannel.getChId()), true);
+        sendEvent(EventFactory.EVENT_AFTERGLOW_MATH_CLEAR);
+        sendEvent(EventFactory.EVENT_MATH_SOURCE,true);
+    }
+    public int getSource(){
+        return srcChIdx;
+    }
+    public void setFFTType(@FFT_TYPE int fftType){
+        this.fftType = fftType;
+        mathChannel.forceRefresh();
+        mathChannel.mathVChange();
+        sendEvent(EventFactory.EVENT_AFTERGLOW_MATH_CLEAR);
+    }
+    public int getFFTType(){
+        return fftType;
+    }
+    public int getFFTWindow() {
+        return fftWindow;
+    }
+    public void setFFTWindow(@FFT_WINDOW int fftWindow) {
+        this.fftWindow = fftWindow;
+        mathChannel.forceRefresh();
+        sendEvent(EventFactory.EVENT_AFTERGLOW_MATH_CLEAR);
+    }
+    public void sendEvent(int eventId){
+        EventFactory.sendEvent(new EventBase(eventId, mathChannel.getChId()), false);
+    }
+    public void sendEvent(int eventId,boolean async){
+        EventFactory.sendEvent(new EventBase(eventId, mathChannel.getChId()), async);
+    }
+    @Override
+    public boolean isChInSample(int chIdx) {
+        return srcChIdx == chIdx;
+    }
+    public double getVScaleVal() {
+        if (fftType == FFT_TYPE_DB) {
+            return verticalAxisMathFft.getScaleVal();
+        } else {
+            Channel channel=ChannelFactory.getDynamicChannel(srcChIdx);
+//            return verticalAxisMathFft.getScaleValInRms()*channel.getFineScale()*channel.getProbeRate();
+            double probeRate = 1.0;
+            if (channel != null) {
+                probeRate = channel.getProbeRate();
+            }
+            return verticalAxisMathFft.getScaleValInRms() * probeRate;
+        }
+    }
+    public double getVScaleIdVal() {
+        if (fftType == FFT_TYPE_DB) {
+            return verticalAxisMathFft.getScaleIdVal();
+        } else {
+            return verticalAxisMathFft.getScaleIdValInRms();
+        }
+    }
+    public double getVScaleIdVal(int scaleId, int fftType) {
+        if (fftType == FFT_TYPE_DB) {
+            return verticalAxisMathFft.getScaleIdVal(scaleId);
+        } else {
+            return verticalAxisMathFft.getScaleIdValInRms(scaleId);
+        }
+    }
+    public int getVScaleId(double val, int fftType) {
+        if (fftType == FFT_TYPE_DB) {
+            return verticalAxisMathFft.getScaleId(val);
+        } else {
+            return verticalAxisMathFft.getScaleIdInRms(val);
+        }
+    }
+    public int getVScaleId() {
+        if (fftType == FFT_TYPE_DB) {
+            return verticalAxisMathFft.getScaleId();
+        } else {
+            return verticalAxisMathFft.getScaleIdInRms();
+        }
+    }
+    public double getFineScale() {
+        if (fftType == FFT_TYPE_DB) {
+            return verticalAxisMathFft.getFineScale();
+        } else {
+            return verticalAxisMathFft.getFineScaleInRms();
+        }
+    }
+    public int getVScaleIdMax() {
+        if(fftType == FFT_TYPE_DB) {
+            return verticalAxisMathFft.DANG_DBV_MAX;
+        } else {
+            return verticalAxisMathFft.DANG_RMS_MAX;
+        }
+    }
+    public  int getVScaleIdMin() {
+        if(fftType == FFT_TYPE_DB) {
+            return verticalAxisMathFft.DANG_DBV_MIN;
+        } else {
+            return verticalAxisMathFft.DANG_RMS_MIN;
+        }
+    }
+
+    public void setVScaleId(int scaleId) {
+        if(fftType == FFT_TYPE_DB) {
+            verticalAxisMathFft.setScaleId(scaleId);
+        } else {
+            verticalAxisMathFft.setScaleIdInRms(scaleId);
+        }
+        mathChannel.forceRefresh();
+
+    }
+    public void setVScaleVal(double scaleIdVal){
+        setVScaleId(fftType == FFT_TYPE_DB? verticalAxisMathFft.getScaleId(scaleIdVal) : verticalAxisMathFft.getScaleIdInRms(scaleIdVal));
+    }
+    public void setFineScale(double fineScale){
+        if(fftType == FFT_TYPE_DB) {
+            verticalAxisMathFft.setFineScale(fineScale);
+        } else {
+            verticalAxisMathFft.setFineScaleInRms(fineScale);
+        }
+    }
+
+    @Override
+    public double getVScaleIdVal(int scaleId) {
+        return 0;
+    }
+
+    @Override
+    public int getVScaleId(double scaleVal) {
+        return 0;
+    }
+
+    public int generateProbeType() {
+        int probeType = 255;
+        if (fftType == FFT_TYPE_RMS) {//RMS
+            int isCur = ChannelFactory.getDynamicChannel(srcChIdx).getProbeType();
+            if (isCur == 0) {
+                probeType = verticalAxisMathFft.PROBE_TYPE_VOL;//"V"
+            } else {
+                probeType = verticalAxisMathFft.PROBE_TYPE_CUR;//"A"
+            }
+        } else {//DBV
+            probeType = verticalAxisMathFft.PROBE_TYPE_DB;//"db"
+        }
+        return probeType;
+    }
+    public int getProbeType() {
+        return verticalAxisMathFft.getProbeType();
+    }
+    public void setProbeType(int probeType) {
+        verticalAxisMathFft.setProbeType(probeType);
+    }
+
+    @Override
+    public void setProbeStr(String probeStr) {
+        verticalAxisMathFft.setProbeStr(probeStr);
+    }
+
+    @Override
+    public String getProbeStr() {
+        return verticalAxisMathFft.getProbeStr();
+    }
+
+    private int getMathChIdx(){
+        return mathChannel.getChId() - ChannelFactory.MATH1;
+    }
+    public double getFFTDCVal(double val) {
+
+        if(fftType == FFT_TYPE_DB)
+            return MathNative.getFFTDCVal(getMathChIdx());
+        else
+            return MathNative.getFFTDCVal(getMathChIdx())*val;
+    }
+
+    public double getFFTMaxVal(double val) {
+        if(fftType == FFT_TYPE_DB)
+            return MathNative.getFFTMaxVal(getMathChIdx());
+        else
+            return MathNative.getFFTMaxVal(getMathChIdx())*val;
+    }
+    public boolean isTypeDb(){
+        return fftType==FFT_TYPE_DB;
+    }
+    public int getFFTMaxIdx() {
+        return MathNative.getFFTMaxIdx(getMathChIdx());
+    }
+}

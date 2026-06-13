@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <TextView
+        android:id="@+id/measureStaticsAllTitle"
+        style="@style/textStyle"
+        android:layout_width="60px"
+        android:layout_height="52px"
+        android:layout_marginTop="10px"
+        android:layout_marginStart="50px"
+        android:gravity="center_vertical|end"
+        android:text="@string/measureStaticsAll"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <com.micsig.tbook.ui.MSwitchBox
+        android:id="@+id/measureStaticsAllDetail"
+        android:layout_width="72px"
+        android:layout_height="52px"
+        android:layout_marginStart="10px"
+        app:layout_constraintTop_toTopOf="@+id/measureStaticsAllTitle"
+        app:layout_constraintBottom_toBottomOf="@+id/measureStaticsAllTitle"
+        app:layout_constraintStart_toEndOf="@+id/measureStaticsAllTitle" />
+
+    <Button
+        android:id="@+id/reset"
+        style="@style/textStyle"
+        android:layout_width="120px"
+        android:layout_height="60px"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginTop="10px"
+        android:layout_marginBottom="10px"
+        android:layout_marginStart="10px"
+        android:layout_marginEnd="50px"
+        android:background="@drawable/selector_rightslip_button"
+        android:textColor="@drawable/selector_text_color"
+        android:text="@string/measureStaticsReset"
+        android:textAllCaps="false"
+
+        />
+
+    <TextView
+        android:id="@+id/measureStaticsMeanTitle"
+        style="@style/textStyle"
+        android:layout_width="60px"
+        android:layout_height="52px"
+        android:layout_marginTop="10px"
+        android:layout_marginStart="50px"
+        android:gravity="center_vertical|end"
+        android:text="@string/measureStaticsMean"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/measureStaticsAllTitle" />
+
+    <com.micsig.tbook.ui.MSwitchBox
+        android:id="@+id/measureStaticsMeanDetail"
+        android:layout_width="72px"
+        android:layout_height="52px"
+        android:layout_marginStart="10px"
+        app:layout_constraintTop_toTopOf="@+id/measureStaticsMeanTitle"
+        app:layout_constraintBottom_toBottomOf="@+id/measureStaticsMeanTitle"
+        app:layout_constraintStart_toEndOf="@+id/measureStaticsMeanTitle" />
+
+    <TextView
+        android:id="@+id/measureStaticsMaxTitle"
+        style="@style/textStyle"
+        android:layout_width="60px"
+        android:layout_height="52px"
+        android:layout_marginTop="10px"
+        android:layout_marginStart="50px"
+        android:gravity="center_vertical|end"
+        android:text="@string/measureStaticsMax"
+        app:layout_constraintStart_toEndOf="@+id/measureStaticsMeanDetail"
+        app:layout_constraintTop_toBottomOf="@+id/measureStaticsAllTitle" />
+
+    <com.micsig.tbook.ui.MSwitchBox
+        android:id="@+id/measureStaticsMaxDetail"
+        android:layout_width="72px"
+        android:layout_height="52px"
+        android:layout_marginStart="10px"
+        app:layout_constraintTop_toTopOf="@+id/measureStaticsMaxTitle"
+        app:layout_constraintBottom_toBottomOf="@+id/measureStaticsMaxTitle"
+        app:layout_constraintStart_toEndOf="@+id/measureStaticsMaxTitle" />
+
+    <TextView
+        android:id="@+id/measureStaticsMinTitle"
+        style="@style/textStyle"
+        android:layout_width="60px"
+        android:layout_height="52px"
+        android:layout_marginTop="10px"
+        android:layout_marginStart="50px"
+        android:gravity="center_vertical|end"
+        android:text="@string/measureStaticsMin"
+        app:layout_constraintStart_toEndOf="@+id/measureStaticsMaxDetail"
+        app:layout_constraintTop_toBottomOf="@+id/measureStaticsAllTitle" />
+
+    <com.micsig.tbook.ui.MSwitchBox
+        android:id="@+id/measureStaticsMinDetail"
+        android:layout_width="72px"
+        android:layout_height="52px"
+        android:layout_marginStart="10px"
+        app:layout_constraintTop_toTopOf="@+id/measureStaticsMinTitle"
+        app:layout_constraintBottom_toBottomOf="@+id/measureStaticsMinTitle"
+        app:layout_constraintStart_toEndOf="@+id/measureStaticsMinTitle" />
+
+    <TextView
+        android:id="@+id/measureStaticsDeltaTitle"
+        style="@style/textStyle"
+        android:layout_width="60px"
+        android:layout_height="52px"
+        android:layout_marginTop="10px"
+        android:layout_marginStart="50px"
+        android:gravity="center_vertical|end"
+        android:text="@string/measureStaticsDelta"
+        app:layout_constraintStart_toEndOf="@+id/measureStaticsMinDetail"
+        app:layout_constraintTop_toBottomOf="@+id/measureStaticsAllTitle" />
+
+    <com.micsig.tbook.ui.MSwitchBox
+        android:id="@+id/measureStaticsDeltaDetail"
+        android:layout_width="72px"
+        android:layout_height="52px"
+        android:layout_marginStart="10px"
+        app:layout_constraintTop_toTopOf="@+id/measureStaticsDeltaTitle"
+        app:layout_constraintBottom_toBottomOf="@+id/measureStaticsDeltaTitle"
+        app:layout_constraintStart_toEndOf="@+id/measureStaticsDeltaTitle" />
+
+    <TextView
+        android:id="@+id/measureStaticsCountTitle"
+        style="@style/textStyle"
+        android:layout_width="60px"
+        android:layout_height="52px"
+        android:layout_marginTop="10px"
+        android:layout_marginStart="50px"
+        android:gravity="center_vertical|end"
+        android:text="@string/measureStaticsCount"
+        app:layout_constraintStart_toEndOf="@+id/measureStaticsDeltaDetail"
+        app:layout_constraintTop_toBottomOf="@+id/measureStaticsAllTitle" />
+
+    <com.micsig.tbook.ui.MSwitchBox
+        android:id="@+id/measureStaticsCountDetail"
+        android:layout_width="72px"
+        android:layout_height="52px"
+        android:layout_marginStart="10px"
+        app:layout_constraintTop_toTopOf="@+id/measureStaticsCountTitle"
+        app:layout_constraintBottom_toBottomOf="@+id/measureStaticsCountTitle"
+        app:layout_constraintStart_toEndOf="@+id/measureStaticsCountTitle" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

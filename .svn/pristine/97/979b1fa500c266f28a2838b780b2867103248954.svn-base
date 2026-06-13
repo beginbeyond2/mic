@@ -1,0 +1,15 @@
+package com.micsig.tbook.scope.fpga;
+
+public class FPGAReg_TRIG_OFFSET extends FPGAReg{
+    private static final String TAG = "FPGAReg_TRIG_OFFSET";
+
+    public FPGAReg_TRIG_OFFSET(int addr) {
+        super(addr, 16);
+    }
+
+    public void setChOffset(int chIdx,int val,int val1){
+//        Log.d(TAG, "setChOffset() called with: chIdx = [" + chIdx + "], val = [" + val + "], val1 = [" + val1 + "]");
+        setVal(8, 24, val);
+        setVal(0, 8, val1);
+    }
+}

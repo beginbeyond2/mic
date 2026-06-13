@@ -1,0 +1,3068 @@
+package com.micsig.tbook.tbookscope.main.mainbottom;
+
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.graphics.Rect;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.net.wifi.WifiManager;
+import android.os.Environment;
+import android.os.Handler;
+import android.os.Message;
+import android.os.storage.StorageManager;
+import android.util.Log;
+import android.view.MotionEvent;
+import android.view.View;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.micsig.base.DoubleUtil;
+import com.micsig.base.Logger;
+import com.micsig.smart.Property;
+import com.micsig.smart.PropertyManage;
+import com.micsig.tbook.scope.Data.AutoSave;
+import com.micsig.tbook.scope.Data.WaveData;
+import com.micsig.tbook.scope.Display.Display;
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.Event.EventUIObserver;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.channel.Channel;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.channel.RefChannel;
+import com.micsig.tbook.scope.channel.SerialChannel;
+import com.micsig.tbook.scope.horizontal.HorizontalAxis;
+import com.micsig.tbook.scope.horizontal.HorizontalAxisMath;
+import com.micsig.tbook.scope.horizontal.HorizontalAxisRef;
+import com.micsig.tbook.tbookscope.BuildConfig;
+import com.micsig.tbook.tbookscope.GlobalVar;
+import com.micsig.tbook.tbookscope.LoadCache;
+import com.micsig.tbook.tbookscope.MainActivity;
+import com.micsig.tbook.tbookscope.MainViewGroup;
+import com.micsig.tbook.tbookscope.R;
+import com.micsig.tbook.tbookscope.config.ScopeConfig;
+import com.micsig.tbook.tbookscope.main.ExternalKeysMsgCursor;
+import com.micsig.tbook.tbookscope.main.ExternalKeysMsgLevel;
+import com.micsig.tbook.tbookscope.main.ExternalKeysMsgTimeBase;
+import com.micsig.tbook.tbookscope.main.dialog.DialogOk;
+import com.micsig.tbook.tbookscope.main.dialog.DialogOkCancel;
+import com.micsig.tbook.tbookscope.main.maincenter.MainLayoutCenterChannel;
+import com.micsig.tbook.tbookscope.main.maincenter.MainLayoutCenterTest;
+import com.micsig.tbook.tbookscope.main.maincenter.MainLayoutCenterTestJZ;
+import com.micsig.tbook.tbookscope.main.maincenter.MainLayoutCenterTimeBase;
+import com.micsig.tbook.tbookscope.main.maincenter.MainLeftMsgMenuRunStop;
+import com.micsig.tbook.tbookscope.main.maincenter.MainMsgCenterMenuCommand;
+import com.micsig.tbook.tbookscope.main.maincenter.TimeBaseScale;
+import com.micsig.tbook.tbookscope.main.maincenter.serialsword.ISerialsWord;
+import com.micsig.tbook.tbookscope.main.mainright.MainRightMsgOthers;
+import com.micsig.tbook.tbookscope.middleware.command.Command;
+import com.micsig.tbook.tbookscope.middleware.command.CommandMsgToUI;
+import com.micsig.tbook.tbookscope.middleware.mq.MQEnum;
+import com.micsig.tbook.tbookscope.middleware.mq.msg.MsgChActiveChange;
+import com.micsig.tbook.tbookscope.rightslipmenu.RightMsgChannel;
+import com.micsig.tbook.tbookscope.rightslipmenu.RightMsgMath;
+import com.micsig.tbook.tbookscope.rightslipmenu.serials.RightLayoutSerials;
+import com.micsig.tbook.tbookscope.rightslipmenu.serials.RightMsgSerials;
+import com.micsig.tbook.tbookscope.rxjava.RxBus;
+import com.micsig.tbook.tbookscope.rxjava.RxBusRegister;
+import com.micsig.tbook.tbookscope.rxjava.RxEnum;
+import com.micsig.tbook.tbookscope.services.ExternalKeys.client.ExternalKeysProtocol;
+import com.micsig.tbook.tbookscope.struct.ExternalKeysMsg_ToMCU;
+import com.micsig.tbook.tbookscope.structdata.ExternalKeysCommand;
+import com.micsig.tbook.tbookscope.tools.FileUtils;
+import com.micsig.tbook.tbookscope.tools.PlaySound;
+import com.micsig.tbook.tbookscope.tools.SaveManage;
+import com.micsig.tbook.tbookscope.tools.ScreenControls;
+import com.micsig.tbook.tbookscope.tools.Tools;
+import com.micsig.tbook.tbookscope.top.layout.sample.TopMsgSegmentedState;
+import com.micsig.tbook.tbookscope.top.layout.save.TopLayoutSaveStore;
+import com.micsig.tbook.tbookscope.util.CacheUtil;
+import com.micsig.tbook.tbookscope.util.DToast;
+import com.micsig.tbook.tbookscope.wavezone.IWorkMode;
+import com.micsig.tbook.tbookscope.wavezone.WaveZoneDisplay_YT;
+import com.micsig.tbook.tbookscope.wavezone.WorkModeBean;
+import com.micsig.tbook.tbookscope.wavezone.WorkModeManage;
+import com.micsig.tbook.tbookscope.wavezone.display.CursorManage;
+import com.micsig.tbook.tbookscope.wavezone.display.MsgCursorVisible;
+import com.micsig.tbook.tbookscope.wavezone.measure.MeasureManage;
+import com.micsig.tbook.tbookscope.wavezone.trigger.TriggerTimebase;
+import com.micsig.tbook.tbookscope.wavezone.wave.SerialBusManage;
+import com.micsig.tbook.tbookscope.wavezone.wave.WaveManage;
+import com.micsig.tbook.ui.main.BatteryView;
+import com.micsig.tbook.ui.util.RepeatExecuteUtil;
+import com.micsig.tbook.ui.util.StrUtil;
+import com.micsig.tbook.ui.util.TBookUtil;
+import com.micsig.tbook.ui.wavezone.IChan;
+import com.micsig.tbook.ui.wavezone.TChan;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import io.reactivex.rxjava3.annotations.NonNull;
+import io.reactivex.rxjava3.functions.Consumer;
+
+
+/**
+ * Created by yangj on 2017/5/10.
+ */
+
+public class MainHolderBottom extends RecyclerView.ViewHolder {
+    private static final String TAG = "MainHolderBottom";
+
+    public static final String SLIPRIGHTMENU_CHANNELS = "SLIPRIGHTMENU_CHANNELS";
+    public static final String SLIPRIGHTMENU_OTHERS = "SLIPRIGHTMENU_OTHERS";
+
+    private static Context context;
+    private MainActivity mainActivity;
+    private Button btnFineUp, btnFineDown, btnFineLeft, btnFineRight,btnEnterYt;
+    private TextView btnFineText;
+    private CheckBox btnFine;
+    private Button btnSave, btnAdjustZero,btnHome;
+    private LinearLayout btnStopAutoSave;
+    private CheckBox btnPer50, checkZoom;
+    private ImageButton btnLeftTimeBase, btnRightTimeBase;
+    private static TextView btnCenterTimeBase;
+    private static TextView bgTimeBase;
+    private static TextView tvBriefDisplayTB;
+    private MainLayoutCenterTimeBase mainCenterTimeBase;
+    private CheckBox btnChList;
+    private CheckBox btnCursorH, btnCursorV;
+    private static ImageView tvUsbPcLink, tvUDisk, tvWifi,tvInternet;
+    private static TextView tvTime;
+    private static BatteryView tvBattery;
+//    private Button btnSlipDown;
+    private MainLayoutCenterChannel channels;
+    private MainLayoutCenterTest test;
+
+    private MainLayoutCenterTestJZ testjz;
+//    private ConstraintLayout al;
+//    private RelativeLayout alb;
+    private DialogOkCancel dialogOkCancel;
+    private static DialogOk dialogOk;
+
+    private int timeScaleId;
+
+    private MainBottomMsgTimeBase msgTimeBase = new MainBottomMsgTimeBase();
+    private MainTopMsgRightGone msgTopRightGone = new MainTopMsgRightGone();
+    private MainTopMsgRightGone msgTopCenterGone = new MainTopMsgRightGone();
+
+    /**
+     * 当为false是Other页面,true是channel页面
+     */
+    private boolean right_state_ch = false;
+    //最后的操作对像
+    private int lastObject = TChan.Ch1;
+    private MainBottomOtherChannels msgChannelOthers;
+    private boolean isAutoSaveStarting = false;//是否正在快速保存
+
+    public MainHolderBottom(View itemView, MainActivity mainActivity) {
+        super(itemView);
+        this.context = mainActivity;
+        this.mainActivity = mainActivity;
+        initView(itemView);
+        initControl();
+//        initReceiver();
+//        new TimeThread().start();
+
+    }
+
+    private void initControl() {
+        RxBus.getInstance().getObservable(RxEnum.MAINCENTER_CHANNEL_VISIBLE_LAYOUTTOBTN).subscribe(consumerVisibleLayoutToBtn);
+        RxBus.getInstance().getObservable(RxEnum.WAVEZONE_SLIDEDIRECTION).subscribe(consumerSlideDirection);
+        RxBus.getInstance().getObservable(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT).subscribe(consumerLastObject);
+        RxBus.getInstance().getObservable(RxEnum.EXTERNALKEYS_TIMEBASE).subscribe(consumerExternalKeysTimeBase);
+        RxBus.getInstance().getObservable(RxEnum.EXTERNALKEYS_CURSOR).subscribe(consumerExternalKeysCursor);
+        RxBus.getInstance().getObservable(RxEnum.MAIN_LOAD_CACHE).subscribe(consumerLoadCache);
+        RxBus.getInstance().getObservable(RxEnum.SLIPRIGHTMENU).subscribe(consumerSlipRightMenu);
+        RxBus.getInstance().getObservable(RxEnum.COMMAND_TO_UI).subscribe(consumerCommandToUI);
+        RxBus.getInstance().getObservable(RxEnum.WAVEZONE_WORKMODE_CHANGE).subscribe(consumerWorkModeChange);
+        RxBus.getInstance().getObservable(RxEnum.MAINRIGHT_OTHERS_PREV).subscribe(consumerMainRightOther);
+        RxBus.getInstance().getObservable(RxEnum.RIGHTLAYOUT_SERIALS).subscribe(consumerRightSerials);
+        RxBus.getInstance().getObservable(RxEnum.TOP_USER_SELFADJUST).subscribe(consumerUserSelfAdjust);
+        RxBus.getInstance().getObservable(RxEnum.RIGHTLAYOUT_MATH).subscribe(consumerRightMath);
+        RxBus.getInstance().getObservable(RxEnum.CENTER_SERIALSWORD_VISIBLE).subscribe(consumerSerialswordVisible);
+        RxBus.getInstance().getObservable(RxEnum.MCUTOARM).subscribe(consumerMcuToArm);
+        RxBus.getInstance().getObservable(RxEnum.DIALOG_CLOSE).subscribe(consumerDialogClose);
+        RxBus.getInstance().getObservable(RxEnum.CURSOR_CHANGE_VISIBLE).subscribe(consumerCursorChangeVisible);
+        RxBus.getInstance().getObservable(RxEnum.RIGHTLAYOUT_CHANNEL).subscribe(consumerRightChannel);
+        RxBus.getInstance().getObservable(RxEnum.TOPLAYOUT_SAMPLESEGMENTED_STATE).subscribe(consumerSegmentedState);
+        RxBus.getInstance().getObservable(RxEnum.EXTERNALKEYS_CHANNEL_LIST_CLICK).subscribe(consumerExternalKeysChannelListClick);
+
+        RxBus.getInstance().getObservable(RxEnum.MAINBOTTOM_QUICKENABLE).subscribe(consumerMainBottomQucikEnable);
+        RxBus.getInstance().getObservable(RxEnum.EXTERNALKEYS_HORIZONTAL_VERNIER).subscribe(consumerExternalkeysVernier);
+
+        RxBus.getInstance().dealObservable(RxEnum.MQ_CHANNEL_ACTIVE_CHANGE,this::OnChanActiveChange);
+        RxBus.getInstance().getObservable(RxEnum.MSG_UPDATE_AUTO_SAVE_BUTTON_STATE).subscribe(consumerAutoSaveTaskState);
+        RxBus.getInstance().getObservable(RxEnum.MQ_MSG_USER_SET_TIMEBASE).subscribe(consumerRefTimeBase);
+        RxBus.getInstance().getObservable(RxEnum.MQ_MSG_MOUSE_CLICK_POSITION).subscribe(consumerMouseClick);
+        RxBus.getInstance().getObservable(RxEnum.MSG_TVALUE_ENABLE).subscribe(consumerTValue);
+
+//        RxBus.getInstance().getObservable(RxEnum.MAINLEFT_MENU_RUNSTOP).subscribe(consumerLeftMenuRunStop);
+        EventFactory.addEventObserver(EventFactory.EVENT_TIME_SCALE, eventUIObserver);
+        EventFactory.addEventObserver(EventFactory.EVENT_UI_DEPTH_SAMPFRE_REFLASH, eventUIObserver);
+        EventFactory.addEventObserver(EventFactory.EVENT_MATH_FFT_SCALE, eventUIObserver);
+        EventFactory.addEventObserver(EventFactory.EVENT_CHANNEL_VSCALE_USER,eventUIObserver);
+        EventFactory.addEventObserver(EventFactory.EVENT_TIME_POS, eventUIObserver);
+
+//        CursorManage_YT.get().setOnSelectChangeEvent(new IWave.OnSelectChangeEvent() {
+//            @Override
+//            public void OnSelectChange(IWave iWave, boolean isSelect) {
+//                if (iWave.getLineNameID() == IWave.Cursor_col_1 || iWave.getLineNameID() == IWave.Cursor_col_2) {
+//                    if (isSelect) fineSwitch(true);
+//                } else if (iWave.getLineNameID() == IWave.Cursor_row_1 || iWave.getLineNameID() == IWave.Cursor_row_2) {
+//                    if (isSelect) fineSwitch(false);
+//                }
+//            }
+//        });
+    }
+
+
+
+    private void initView(View itemView) {
+        btnFineUp = (Button) itemView.findViewById(R.id.fineUp);
+        btnFineDown = (Button) itemView.findViewById(R.id.fineDown);
+        btnFineLeft = (Button) itemView.findViewById(R.id.fineLeft);
+        btnFineRight = (Button) itemView.findViewById(R.id.fineRight);
+        btnFineText = (TextView) itemView.findViewById(R.id.fineText);
+
+        btnEnterYt=itemView.findViewById(R.id.enterYT);
+//        btnFine = (CheckBox) itemView.findViewById(R.id.fine);
+        btnSave = (Button) itemView.findViewById(R.id.quickSave);
+        btnStopAutoSave = (LinearLayout) itemView.findViewById(R.id.stopAutoSave);
+        btnAdjustZero =(Button)itemView.findViewById(R.id.screenShot);
+        btnPer50=(CheckBox)itemView.findViewById(R.id.per50);
+        checkZoom=(CheckBox)itemView.findViewById(R.id.mainTopZoom);
+        btnHome=(Button)itemView.findViewById(R.id.home);
+        btnLeftTimeBase = (ImageButton) itemView.findViewById(R.id.leftTimeBase);
+        btnCenterTimeBase = (TextView) itemView.findViewById(R.id.centerTimeBase);
+        btnRightTimeBase = (ImageButton) itemView.findViewById(R.id.rightTimeBase);
+        bgTimeBase = (TextView) itemView.findViewById(R.id.bgTimeBase);
+        mainCenterTimeBase = (MainLayoutCenterTimeBase) itemView.findViewById(R.id.mainCenterTimeBase);
+        btnChList = (CheckBox) itemView.findViewById(R.id.current);
+        btnCursorH = (CheckBox) itemView.findViewById(R.id.cursorH);
+        btnCursorV = (CheckBox) itemView.findViewById(R.id.cursorV);
+//        tvUsbPcLink = (ImageView) itemView.findViewById(R.id.usbPcLink);
+//        tvUDisk = (ImageView) itemView.findViewById(R.id.uDisk);
+//        tvBattery = (BatteryView) itemView.findViewById(R.id.battery);
+//        tvTime = (TextView) itemView.findViewById(R.id.time);
+//        tvWifi=itemView.findViewById(R.id.wifi);
+//        tvInternet= itemView.findViewById(R.id.lan);
+
+//        btnSlipDown = (Button) itemView.findViewById(R.id.ch_slipdown);
+        channels = (MainLayoutCenterChannel) itemView.findViewById(R.id.mainLayoutCenterChannels);
+        test = (MainLayoutCenterTest) itemView.findViewById(R.id.mainLayoutCenterTests);
+        testjz = (MainLayoutCenterTestJZ) itemView.findViewById(R.id.mainLayoutCenterTestsjz);
+//        al = (ConstraintLayout) itemView.findViewById(R.id.menu_right2);
+//        alb = (RelativeLayout) itemView.findViewById(R.id.bottomRightOther);
+        tvBriefDisplayTB = (TextView) itemView.findViewById(R.id.briefDisplayTextTimeBase);
+        dialogOkCancel = (DialogOkCancel) itemView.findViewById(R.id.dialogOkCancel);
+        dialogOk = (DialogOk) itemView.findViewById(R.id.dialogOk);
+
+//        btnFineUp.setOnClickListener(onClickListener);
+//        btnFineDown.setOnClickListener(onClickListener);
+//        btnFineLeft.setOnClickListener(onClickListener);
+//        btnFineRight.setOnClickListener(onClickListener);
+        btnFineUp.setOnTouchListener(onFineTouchListener);
+        btnFineDown.setOnTouchListener(onFineTouchListener);
+        btnFineLeft.setOnTouchListener(onFineTouchListener);
+        btnFineRight.setOnTouchListener(onFineTouchListener);
+        btnFineText.setOnClickListener(onClickListener);
+        btnEnterYt.setOnClickListener(this::OnBtnEnterYt);
+
+//        btnFine.setOnClickListener(onClickListener);
+        btnSave.setOnClickListener(onClickListener);
+        btnStopAutoSave.setOnClickListener(onClickListener);
+        btnAdjustZero.setOnClickListener(onClickListener);
+        btnPer50.setOnClickListener(onClickListener);
+        btnHome.setOnClickListener(onClickListener);
+//        btnLeftTimeBase.setOnClickListener(onClickListener);
+        btnCenterTimeBase.setOnClickListener(onClickListener);
+//        btnRightTimeBase.setOnClickListener(onClickListener);
+        mainCenterTimeBase.setOnClickItemListener(onClickTimeBaseListener);
+        btnChList.setOnClickListener(onClickListener);
+        btnCursorH.setOnClickListener(onClickListener);
+        btnCursorV.setOnClickListener(onClickListener);
+//        btnSlipDown.setOnClickListener(onClickListener);
+        channels.setDialogVisible(View.GONE);
+        test.setVisibility(View.GONE);
+        testjz.setVisibility(View.GONE);
+
+        btnLeftTimeBase.setOnTouchListener(onTouchListener);
+        btnRightTimeBase.setOnTouchListener(onTouchListener);
+
+//        msgChannelOthers = itemView.findViewById(R.id.bottom_channel_others);
+//        msgChannelOthers.setMainViewGroup(itemView);
+        //TODO 调零功能本次发布版本暂时不用
+        btnFineText.setClickable(true);
+    }
+
+    private void OnBtnEnterYt(View view) {
+        MainMsgCenterMenuCommand command= new MainMsgCenterMenuCommand(MainMsgCenterMenuCommand.CommandSerialText);
+        RxBus.getInstance().post(RxEnum.MainLeft_To_Menu_Command,command);
+    }
+
+    private void delayRefTime(){
+        mainCenterTimeBase.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+
+
+                TChan.foreachRef((refchan)->{
+                    boolean isCheck = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_REF_CHECK + refchan);
+                    if(isCheck){
+                        String rtimeBaseScale = CacheUtil.get().getString(CacheUtil.MAIN_BOTTOM_TIMEBASE_REF_SCALE + refchan);
+                        String rvScaleId = CacheUtil.get().getString(CacheUtil.MAIN_CHAN_REF_VSCALE_ID + refchan);
+                        long x = CacheUtil.get().getLong(CacheUtil.MAIN_WAVE_TIMEBASE_POSITION_RN + refchan);
+
+
+                        RefChannel refChannel = ChannelFactory.getRefChannel(TChan.toFpgaChNo(refchan));
+
+
+                        if(refChannel.isOpen()) {
+                            int rtimeScaleId = mainCenterTimeBase.getRefIndex(refChannel,rtimeBaseScale);
+                            if(rvScaleId.length() > 0) {
+                                refChannel.setVScaleId(Integer.parseInt(rvScaleId));
+                            }
+                            refChannel.setRefTimeScale(refChannel.getHorizontalAxisRef().getxAxis().get(rtimeScaleId));
+                            refChannel.setXPosOfViewPix(ScopeBase.getWidth() / 2 - x);
+                            refChannel.correctTimePose();//某些情况下需要纠正
+                            refChannel.setPos(Tools.getYTChannelPosition(refchan));
+
+                        }else{
+                            Log.d(TAG, "refchan:" + refchan + ", no open");
+                        }
+                    }
+                });
+
+            }
+        },700);
+    }
+
+    private void setCache() {
+        String msgNormalTimeBaseScale = null, msgFftTimeBaseScale = null, msgRefTimeBaseScale = null;
+        int timeBaseType;
+        String timeBaseScale;
+//        if (ChannelFactory.isRefCh(ChannelFactory.getChActivate())) {
+//            timeBaseType = MainBottomMsgTimeBase.TYPE_REF;
+//            timeBaseScale = CacheUtil.get().getString(CacheUtil.MAIN_BOTTOM_TIMEBASE_REF_SCALE + TChan.toUiChNo(ChannelFactory.getChActivate()));
+//            timeScaleId = mainCenterTimeBase.getRefIndex(timeBaseScale);
+//        } else
+            if (ChannelFactory.isMath_FFT_Ch(ChannelFactory.getChActivate())) {
+            timeBaseType = MainBottomMsgTimeBase.TYPE_FFT;
+            timeBaseScale = CacheUtil.get().getString(CacheUtil.MAIN_BOTTOM_TIMEBASE_FFT_SCALE + TChan.toUiChNo(ChannelFactory.getChActivate()));
+            timeScaleId = mainCenterTimeBase.getMathFFTIndex(timeBaseScale);
+        } else {
+            timeBaseType = MainBottomMsgTimeBase.TYPE_NORMAL;
+            timeBaseScale = CacheUtil.get().getString(CacheUtil.MAIN_BOTTOM_TIMEBASE_NORMAL_SCALE );
+            timeScaleId = mainCenterTimeBase.getNormalIndex(timeBaseScale);
+            String xxLargeScale = CacheUtil.get().getString(CacheUtil.ZOOM_BOTTOM_TIMEBASE_LARGE_SCALE);
+            int timeLargeScale = mainCenterTimeBase.getNormalIndex(xxLargeScale);
+            HorizontalAxis.getInstance().setTimeScaleIdOfView(HorizontalAxis.WPI_LARGE, timeLargeScale);
+            HorizontalAxis.getInstance().setTimeScaleIdOfView(HorizontalAxis.WPI_STANDARD, timeScaleId);
+        }
+        delayRefTime();
+
+
+        msgNormalTimeBaseScale = CacheUtil.get().getString(CacheUtil.MAIN_BOTTOM_TIMEBASE_NORMAL_SCALE);
+        msgFftTimeBaseScale = CacheUtil.get().getString(CacheUtil.MAIN_BOTTOM_TIMEBASE_FFT_SCALE + TChan.toUiChNo(ChannelFactory.getChActivate()));
+        int refId = ChannelFactory.getInstance().getTopRefChannel().getChId();
+        msgRefTimeBaseScale = CacheUtil.get().getString(CacheUtil.MAIN_BOTTOM_TIMEBASE_REF_SCALE + TChan.toUiChNo(refId));
+
+        boolean channelList = CacheUtil.get().getBoolean(CacheUtil.MAIN_BOTTOM_CHANNELLIST_VISIBLE);
+        boolean fine = CacheUtil.get().getBoolean(CacheUtil.MAIN_BOTTOM_FINE);
+        boolean cursorH = CacheUtil.get().getBoolean(CacheUtil.MAIN_WAVE_YT_CURSORH_VISIBLE);
+        boolean cursorV = CacheUtil.get().getBoolean(CacheUtil.MAIN_WAVE_YT_CURSORV_VISIBLE);
+        boolean cursorH_xy = CacheUtil.get().getBoolean(CacheUtil.MAIN_WAVE_XY_CURSORH_VISIBLE);
+        boolean cursorV_xy = CacheUtil.get().getBoolean(CacheUtil.MAIN_WAVE_XY_CURSORV_VISIBLE);
+        boolean rightSwitchChannel = CacheUtil.get().getBoolean(CacheUtil.MAIN_BOTTOM_RIGHTSWITCH_CHANNEL);
+        int channelsX = CacheUtil.get().getInt(CacheUtil.MAIN_CENTER_CHANNELS_X);
+        int channelsY = CacheUtil.get().getInt(CacheUtil.MAIN_CENTER_CHANNELS_Y);
+
+        int yt = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_DISPLAY_COMMON_TIMEBASE);
+
+        Command.get().getTimebase().Extent(-1, TBookUtil.getSFromTime(timeBaseScale), false);
+        Command.get().getTimebase().Scale(-1, TBookUtil.getSFromTime(timeBaseScale), false);
+//        btnFine.setChecked(fine);
+//        TBookUtil.setFine(fine);
+        btnCenterTimeBase.setText(timeBaseScale);
+        this.btnChList.setChecked(channelList);
+        if (yt == 0) {
+            this.btnCursorH.setChecked(cursorH);
+            this.btnCursorV.setChecked(cursorV);
+        } else {
+            this.btnCursorH.setChecked(cursorH_xy);
+            this.btnCursorV.setChecked(cursorV_xy);
+        }
+
+        CursorManage.getInstance().setRowVisible(IWorkMode.WorkMode_YT, cursorH);
+        CursorManage.getInstance().setColVisible(IWorkMode.WorkMode_YT, cursorV);
+        CursorManage.getInstance().setRowVisible(IWorkMode.WorkMode_XY, cursorH_xy);
+        CursorManage.getInstance().setColVisible(IWorkMode.WorkMode_XY, cursorV_xy);
+
+        if (Tools.isZoom()) {
+            bgTimeBase.setBackgroundResource(R.drawable.svg_main_time_base);
+        } else {
+            bgTimeBase.setBackgroundResource(R.drawable.svg_main_time_base);
+        }
+
+        right_state_ch = rightSwitchChannel;
+        slipRightMenu(rightSwitchChannel);
+
+//        channels.setLeft(channelsX);
+//        channels.setTop(channelsY);
+        channels.setLocation(channelsX, channelsY);
+        channels.setDialogVisible(this.btnChList.isChecked() && yt != 1 ? View.VISIBLE : View.GONE);
+
+        sendTopGoneMsg();
+        //设置三种消息的发送，用以修改界面上的相关部分
+        int mathType = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_MATH_TYPE + TChan.toUiChNo(ChannelFactory.getChActivate()));
+        if (mathType != CacheUtil.MATHTYPE_FFT) {
+            msgTimeBase.setType(MainBottomMsgTimeBase.TYPE_NORMAL);
+            msgTimeBase.setTimeBase(msgNormalTimeBaseScale);
+            sendTimeBaseMsg(msgTimeBase);
+        } else {
+            msgTimeBase.setType(MainBottomMsgTimeBase.TYPE_FFT);
+            msgTimeBase.setTimeBase(msgFftTimeBaseScale);
+            sendTimeBaseMsg(msgTimeBase);
+        }
+        msgTimeBase.setType(MainBottomMsgTimeBase.TYPE_REF);
+        msgTimeBase.setTimeBase(msgRefTimeBaseScale);
+        sendTimeBaseMsg(msgTimeBase);
+
+//        if (!StrUtil.isEmpty(CacheUtil.get().getOtherMapValue(CacheUtil.MAIN_BOTTOM_USB_PATH))) {
+//            tvUDisk.setVisibility(View.VISIBLE);
+//            Logger.d("UDiskChangedReceiver", "setCache,tvUDisk.setVisibility(View.VISIBLE)");
+//        } else {
+//        tvUDisk.setVisibility(View.GONE);
+//        RxBus.getInstance().post(RxEnum.UDISK_RESPONSE, false);
+//        }
+
+        RxBus.getInstance().post(RxEnum.EXTERNALKEY_TOMCU,
+                new ExternalKeysMsg_ToMCU(ExternalKeysMsg_ToMCU.TYPE_HCURSOR,
+                        btnCursorH.isChecked() ? ExternalKeysMsg_ToMCU.STATE_LED_ON : ExternalKeysMsg_ToMCU.STATE_LED_OFF));
+        RxBus.getInstance().post(RxEnum.EXTERNALKEY_TOMCU,
+                new ExternalKeysMsg_ToMCU(ExternalKeysMsg_ToMCU.TYPE_VCURSOR,
+                        btnCursorV.isChecked() ? ExternalKeysMsg_ToMCU.STATE_LED_ON : ExternalKeysMsg_ToMCU.STATE_LED_OFF));
+    }
+
+    private boolean checkUdiskState() {
+        File udiskDir = Environment.getExternalStorageDirectory();
+        String udiskDirStr = udiskDir.getAbsolutePath();
+        String state = Environment.getStorageState(udiskDir);
+        if (Environment.MEDIA_MOUNTED.equals(state)) {
+            return true;
+        }
+        return false;
+    }
+    private boolean bHorizontalVernier = false;
+    private Consumer<Boolean> consumerExternalkeysVernier = new Consumer<Boolean>() {
+        @Override
+        public void accept(Boolean aBoolean) throws Exception {
+
+            bHorizontalVernier = !bHorizontalVernier;
+        }
+    };
+
+    private Consumer<Integer> consumerVisibleLayoutToBtn = new Consumer<Integer>() {
+        @Override
+        public void accept(Integer integer) throws Exception {
+            boolean b = View.VISIBLE == integer;
+            btnChList.setChecked(b);
+            CacheUtil.get().putMap(CacheUtil.MAIN_BOTTOM_CHANNELLIST_VISIBLE, String.valueOf(b));
+        }
+    };
+
+    private Consumer<String> consumerSlipRightMenu = new Consumer<String>() {
+        @Override
+        public void accept(String s) throws Exception {
+            if (SLIPRIGHTMENU_CHANNELS.equals(s)) {
+                slipRightMenu(true);
+            } else if (SLIPRIGHTMENU_OTHERS.equals(s)) {
+                slipRightMenu(false);
+            }
+        }
+    };
+
+    private Consumer<LoadCache> consumerLoadCache = new Consumer<LoadCache>() {
+        @Override
+        public void accept(@NonNull LoadCache loadCache) throws Exception {
+            setCache();
+            CacheUtil.get().setLoadMenuState(CacheUtil.LOAD_MainHolderBottom, true);
+        }
+    };
+
+    private Consumer consumerSlideDirection = new Consumer<Integer>() {
+        @Override
+        public void accept(@NonNull Integer integer) throws Exception {
+            switch (integer) {
+                case WaveZoneDisplay_YT.MOVE_LEFTRIGHT:
+                    fineSwitch(true);
+                    break;
+                case WaveZoneDisplay_YT.MOVE_UPDOWN:
+                    fineSwitch(false);
+                    break;
+            }
+        }
+    };
+
+    private Consumer consumerLastObject = new Consumer<Integer>() {
+        @Override
+        public void accept(@NonNull Integer integer) throws Exception {
+            if (integer == -1) return;
+            lastObject = integer;
+            if (!TChan.isCh1ToR8(integer)) {
+                Command.get().getChannel().setCurrActiveObject(integer, false);
+            }
+            if (TChan.isCh1ToR8(integer)) {
+                Command.get().getChannel().setCurrActiveChannel(integer, false);
+            }
+            ExternalKeysProtocol.setLastCursor(lastObject);
+        }
+    };
+
+    private Consumer<ExternalKeysMsgTimeBase> consumerExternalKeysTimeBase = new Consumer<ExternalKeysMsgTimeBase>() {
+        @Override
+        public void accept(ExternalKeysMsgTimeBase msgTimeBase) throws Exception {
+            if (mainCenterTimeBase.getVisibility() == View.VISIBLE) {
+                mainCenterTimeBase.hide();
+            }
+            if (handler.hasMessages(MSG_TIMEBASE)) {
+                handler.removeMessages(MSG_TIMEBASE);
+            }
+            handler.sendEmptyMessageDelayed(MSG_TIMEBASE, 500);
+            if (msgTimeBase.isAdd()) {
+                if (Scope.getInstance().isZoom()) {
+                    bgTimeBase.setBackgroundResource(R.drawable.svg_main_time_base_left);
+                } else {
+                    bgTimeBase.setBackgroundResource(R.drawable.svg_main_time_base_left);
+                }
+                onClick(btnLeftTimeBase);
+            } else {
+                if (Scope.getInstance().isZoom()) {
+                    bgTimeBase.setBackgroundResource(R.drawable.svg_main_time_base_right);
+                } else {
+                    bgTimeBase.setBackgroundResource(R.drawable.svg_main_time_base_right);
+                }
+                onClick(btnRightTimeBase);
+            }
+        }
+    };
+
+    private Consumer<Boolean> consumerTValue = new Consumer<Boolean>() {
+        @Override
+        public void accept(@androidx.annotation.NonNull Boolean update) throws Exception {
+            Logger.i(TAG, "isTVtrace= " + MeasureManage.getInstance().isCursorTValueTrace());
+            btnCursorV.setEnabled(!MeasureManage.getInstance().isCursorTValueTrace());
+        }
+    };
+
+
+    private Consumer<ExternalKeysMsgCursor> consumerExternalKeysCursor = new Consumer<ExternalKeysMsgCursor>() {
+        @Override
+        public void accept(ExternalKeysMsgCursor msgCursor) throws Exception {
+            if (msgCursor.isHor()) {
+                if (msgCursor.getType() == ExternalKeysMsgCursor.TYPE_CHANGE) {
+                    btnCursorH.setChecked(!btnCursorH.isChecked());
+                    onClick(btnCursorH);
+                } else if (msgCursor.getType() == ExternalKeysMsgCursor.TYPE_OPEN) {
+                    if (!btnCursorH.isChecked()) {
+                        btnCursorH.setChecked(true);
+                        onClick(btnCursorH);
+                    }
+                } else if (msgCursor.getType() == ExternalKeysMsgCursor.TYPE_CLOSE) {
+                    if (btnCursorH.isChecked()) {
+                        btnCursorH.setChecked(false);
+                        onClick(btnCursorH);
+                    }
+                }
+            } else {
+                if (msgCursor.getType() == ExternalKeysMsgCursor.TYPE_CHANGE) {
+                    btnCursorV.setChecked(!btnCursorV.isChecked());
+                    onClick(btnCursorV);
+                } else if (msgCursor.getType() == ExternalKeysMsgCursor.TYPE_OPEN) {
+                    if (!btnCursorV.isChecked()) {
+                        btnCursorV.setChecked(true);
+                        onClick(btnCursorV);
+                    }
+                } else if (msgCursor.getType() == ExternalKeysMsgCursor.TYPE_CLOSE) {
+                    if (btnCursorV.isChecked()) {
+                        btnCursorV.setChecked(false);
+                        onClick(btnCursorV);
+                    }
+                }
+            }
+        }
+    };
+
+    private Consumer<CommandMsgToUI> consumerCommandToUI = new Consumer<CommandMsgToUI>() {
+        @Override
+        public void accept(CommandMsgToUI commandMsgToUI) throws Exception {
+            //region command
+            switch (commandMsgToUI.getFlag()) {
+                case CommandMsgToUI.FLAG_CURSOR_HORIZONTAL: {
+                    boolean isOpen = Boolean.parseBoolean(commandMsgToUI.getParam());
+                    if (btnCursorH.isChecked() == isOpen) return;
+                    btnCursorH.setChecked(isOpen);
+                    onClick(btnCursorH);
+                    break;
+                }
+                case CommandMsgToUI.FLAG_CURSOR_VERTICAL: {
+                    boolean isOpen = Boolean.parseBoolean(commandMsgToUI.getParam());
+                    if (btnCursorV.isChecked() == isOpen) return;
+                    btnCursorV.setChecked(isOpen);
+                    onClick(btnCursorV);
+                    break;
+                }
+                case CommandMsgToUI.FLAG_CURSOR_SOURCE: {
+                    int chIndex = Integer.parseInt(commandMsgToUI.getParam());
+                    if (channels.getChannelSelectIndex() == chIndex) return;
+                    channels.setChannelSelectIndex(chIndex,false);
+                    channels.updateSelect(false);
+                    break;
+                }
+                case CommandMsgToUI.FLAG_MATH_FFT_HsCal:
+                case CommandMsgToUI.FLAG_TIMEBASE_ZOOM_SCALE:
+                case CommandMsgToUI.FLAG_TIMEBASE_EXTENT: {
+                    String[] param= commandMsgToUI.getParam().split(CommandMsgToUI.PARAM_SPLIT);
+                    int mathIndex  = Integer.parseInt(param[0]);
+                    double d = Double.parseDouble(param[1]);
+                    String timeBaseScale = "";
+                    if (commandMsgToUI.getFlag() == CommandMsgToUI.FLAG_MATH_FFT_HsCal) {
+                        if (Command.get().getMath().DisplayQ() && Command.get().getMath().ModeQ() == CacheUtil.MATHTYPE_FFT) {
+                            WaveManage.get().setSelectCursor(TChan.toUiChNo(mathIndex));
+                        } else {
+                            return;
+                        }
+                    }
+                    int activatIdx = ChannelFactory.getChActivate();
+                    if(ChannelFactory.isRefCh(activatIdx)){
+                        RefChannel refChannel = (RefChannel) ChannelFactory.getRefChannel(activatIdx);
+                        int temp = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_USERSET_REF_TIMEBASE);
+                        if(refChannel != null) {
+                            HorizontalAxisRef horizontalAxisRef = refChannel.getHorizontalAxisRef();
+
+                            String tail = "s";
+                            if (horizontalAxisRef.getRefType() == HorizontalAxisRef.REFTYPE_MATHFFT) {
+                                tail = "Hz";
+                            }
+                            timeBaseScale = TBookUtil.getMFromDouble(d) + tail;
+                            timeScaleId = mainCenterTimeBase.getRefIndex(refChannel,timeBaseScale);
+                            if (temp ==0 ) { //跟随
+                                timeScaleId = mainCenterTimeBase.getNormalIndex(timeBaseScale);
+                            }
+                            CacheUtil.get().putMap(String.format(CacheUtil.MAIN_BOTTOM_TIMEBASE_Rn_SCALE, activatIdx - ChannelFactory.REF1 + 1), timeBaseScale);
+                        }
+                    }else if (ChannelFactory.isMath_FFT_Ch(activatIdx)) {
+                        HorizontalAxisMath horizontalAxisMath = ChannelFactory.getMathChannel(activatIdx).getHorizontalAxisMathFFT();
+                        int idx = Tools.indexOf(horizontalAxisMath.getxAxis(), t -> Double.compare(d, t) == 0);
+                        if (idx == -1) {
+                            return;
+                        }
+                        if (idx < horizontalAxisMath.getMinScaleId()) {
+                            idx = horizontalAxisMath.getMinScaleId();
+                        } else if (idx > horizontalAxisMath.getMaxScaleId()) {
+                            idx = horizontalAxisMath.getMaxScaleId();
+                        }
+                        timeScaleId = idx;
+
+                        String tail = "Hz";
+                        timeBaseScale = TBookUtil.getMFromDouble(d) + tail;
+                        CacheUtil.get().putMap(CacheUtil.MAIN_BOTTOM_TIMEBASE_FFT_SCALE + TChan.toUiChNo(activatIdx), timeBaseScale);
+                        TimeBaseScale timeBaseScale1 = mainCenterTimeBase.getList().get(timeScaleId);
+                        setCenterTimeBase(timeBaseScale1, false, false);
+//                        Logger.i(Command.TAG,"timebase:"+timeBaseScale);
+                        return;
+                    } else {
+
+
+                        timeBaseScale = TBookUtil.getMFromDouble(d) + "s";
+                        timeScaleId = mainCenterTimeBase.getNormalIndex(timeBaseScale);
+                        if (Tools.isZoom()) {
+                            CacheUtil.get().putMap(CacheUtil.ZOOM_BOTTOM_TIMEBASE_LARGE_SCALE, timeBaseScale);
+                        } else {
+                            CacheUtil.get().putMap(CacheUtil.MAIN_BOTTOM_TIMEBASE_NORMAL_SCALE, timeBaseScale);
+                        }
+
+                    }
+                    btnCenterTimeBase.setText(timeBaseScale);
+                    mainCenterTimeBase.hide();
+//                    timeScaleId = mainCenterTimeBase.getRefIndex(timeBaseScale);
+
+                    HorizontalAxis.getInstance().setTimeScaleIdOfView(timeScaleId);
+
+                    //触发时刻刷新
+                    boolean isCenter=CacheUtil.get().getInt(CacheUtil.TOP_SLIP_DISPLAY_COMMON_HORREF)==0; //中心参考
+                    CursorManage.getInstance().setCursorTrace(true);
+                    if (isCenter) {
+                        //中心，时间不变，触发位置变
+                        double dd = HorizontalAxis.getInstance().getTimePosOfView() * 1e-13;
+                        long x = HorizontalAxis.getInstance().SCPIQueryPixInScreenFromTImePosVal(dd);
+                        TriggerTimebase.getInstance().setX(GlobalVar.get().getMainWave().x / 2 - x);
+
+                    }else {
+                        //触发参考，触发位置不变，时间变
+                        long x=TriggerTimebase.getInstance().getX();
+                        TriggerTimebase.getInstance().setX(x);
+                    }
+                    CursorManage.setCursorByTimebaseTrace();
+                    CursorManage.getInstance().setCursorTrace(false);
+
+                }
+                break;
+                case CommandMsgToUI.FLAG_REF_Hscal: {
+                    String[] param = commandMsgToUI.getParam().split(CommandMsgToUI.PARAM_SPLIT);
+                    int ch_idx = Integer.parseInt(param[0]);
+                    double value = Double.parseDouble(param[1]);
+                    RefChannel refChannel = ChannelFactory.getRefChannel(ch_idx);
+//                    Logger.i(Command.TAG,"act ch:"+ChannelFactory.getChActivate()+",ch:"+(IWave.Math+ch_idx));
+                    if (ChannelFactory.getChActivate() != (ch_idx)) {
+                        return;
+                    }
+                    List<TimeBaseScale> list = mainCenterTimeBase.getList();
+                    TimeBaseScale scale = null;
+                    String timeBaseScale;
+                    if (refChannel.getRefType() == 2) {
+                        //fft
+                        timeBaseScale = TBookUtil.getMFromDouble(value) + "Hz";
+                    } else {
+                        timeBaseScale = TBookUtil.getMFromDouble(value) + "s";
+                    }
+
+                    int index = Tools.indexOf(list, t -> t.getScale().equals(timeBaseScale));
+                    if (index != -1) {
+                        scale = list.get(index);
+                    } else {
+                        //没有找到就使用极值，最大值或最小值
+                        String s = list.get(0).getScale();
+                        double d = TBookUtil.getDoubleFromM(s.replace("s", "").replace("Hz", ""));
+                        if (Double.compare(value, d) > 0) {
+                            scale = list.get(0);
+                        } else {
+                            scale = list.get(list.size() - 1);
+                        }
+                        d = TBookUtil.getDoubleFromM(scale.getScale().replace("s", "").replace("Hz", ""));
+                        Command.get().getReference().Hscale(ch_idx, d, false);
+                    }
+//                    if (scale==null) {
+//                        double d= refChannel.getRefTimeScaleVal();
+//                        Command.get().getReference().Hscale(ch_idx,d,false);
+//                        return;
+//                    }
+                    if (ChannelFactory.isRefCh(ch_idx)) {
+                        int idx = scale.getIndex();
+                        refChannel.setRefTimeScale(refChannel.getHorizontalAxisRef().getxAxis().get(idx));
+                        CacheUtil.get().putMap(CacheUtil.MAIN_BOTTOM_TIMEBASE_REF_SCALE + TChan.toUiChNo(ch_idx), scale.getScale());
+                        msgTimeBase.setTimeBase(scale.getScale());
+                        msgTimeBase.setType(MainBottomMsgTimeBase.TYPE_REF);
+                        sendTimeBaseMsg(msgTimeBase);
+                        msgTopCenterGone.setVisible(true);
+                        sendTopCenterGoneMsg(msgTopCenterGone);
+//                        if (true) {
+//                            handler.sendEmptyMessage(MSG_TIP_DISPLAY_TB);
+//                        }
+                        if (ChannelFactory.getChActivate() == ch_idx) {
+                            btnCenterTimeBase.setText(scale.getScale());
+                        }
+                    }
+
+                }
+                break;
+            }
+
+            //endregion
+        }
+    };
+
+
+    private Consumer<WorkModeBean> consumerWorkModeChange = new Consumer<WorkModeBean>() {
+        @Override
+        public void accept(WorkModeBean workModeBean) throws Exception {
+            switch (workModeBean.getNextWorkMode()) {
+                case IWorkMode.WorkMode_YT:
+                case IWorkMode.WorkMode_YTZOOM:
+                    btnSave.setVisibility(isAutoSaveStarting ? View.GONE : View.VISIBLE);
+//                    btnChList.setVisibility(View.VISIBLE);
+//                    btnPer50.setVisibility(View.VISIBLE);
+                    btnAdjustZero.setEnabled(false);
+                    if (ChannelFactory.getChActivate()>=ChannelFactory.CH1 && ChannelFactory.getChActivate()<=ChannelFactory.CH4){
+                        btnAdjustZero.setEnabled(true);
+                    }
+                    btnFineText.setEnabled(true);
+                    break;
+                case IWorkMode.WorkMode_XY:
+                    btnSave.setVisibility(View.GONE);
+//                    btnChList.setVisibility(View.GONE);
+//                    btnPer50.setVisibility(View.GONE);
+                    if (!Objects.equals(context.getResources().getString(R.string.menu_bottom_adjust), btnFineText.getText().toString())) {
+                        onFineText(false);
+                    }
+                    btnFineText.setEnabled(false);
+                    break;
+            }
+            if (workModeBean.getNextWorkMode() == IWorkMode.WorkMode_YTZOOM) {
+                bgTimeBase.setBackgroundResource(R.drawable.svg_main_time_base);
+            } else {
+                bgTimeBase.setBackgroundResource(R.drawable.svg_main_time_base);
+            }
+            setBtnChListVisible();
+        }
+    };
+
+    private Consumer<MainRightMsgOthers> consumerMainRightOther = new Consumer<MainRightMsgOthers>() {
+        @Override
+        public void accept(MainRightMsgOthers mainRightMsgOthers) throws Exception {
+
+
+            if (Tools.isSlowTimeBase() &&
+                    (mainRightMsgOthers.getS1().isValue()
+                            || mainRightMsgOthers.getS2().isValue()
+                            || mainRightMsgOthers.getS3().isValue()
+                            || mainRightMsgOthers.getS4().isValue())
+            ) {
+//                CacheUtil.get().putMap(CacheUtil.MAIN_BOTTOM_TIMEBASE_NORMAL_SCALE, "500ns");
+//                TimeBaseScale timeBaseScale = mainCenterTimeBase.getList().get(28);
+                int serialsNumber = CacheUtil.S1;
+                if (mainRightMsgOthers.getS1().isValue()) {
+                    serialsNumber = CacheUtil.S1;
+                } else if (mainRightMsgOthers.getS2().isValue()) {
+                    serialsNumber = CacheUtil.S2;
+                } else if (mainRightMsgOthers.getS3().isValue()) {
+                    serialsNumber = CacheUtil.S3;
+                } else if (mainRightMsgOthers.getS4().isValue()) {
+                    serialsNumber = CacheUtil.S4;
+                }
+                setTimeBaseFromBaudRate(serialsNumber, false);
+            }
+            RxBus.getInstance().post(RxEnum.MAINRIGHT_OTHERS, mainRightMsgOthers);
+
+
+        }
+    };
+
+    private Consumer<RightMsgSerials> consumerRightSerials = new Consumer<RightMsgSerials>() {
+        @Override
+        public void accept(RightMsgSerials rightMsgSerials) throws Exception {
+            int serialsNumber = rightMsgSerials.getSerialsNumber();
+            if (rightMsgSerials.getSerialsCheck(serialsNumber) != null && rightMsgSerials.getSerialsCheck(serialsNumber).isValue()) {
+                if (rightMsgSerials.getSerialsType().isRxMsgSelect() || rightMsgSerials.getSerialsCheck(serialsNumber).isRxMsgSelect()) {
+                    setTimeBaseFromBaudRate(serialsNumber, rightMsgSerials.isFromEventBus());
+                }
+            }
+        }
+    };
+
+    private void setTimeBaseFromBaudRate(int serialsNumber, boolean isFromEventBus) {
+        Scope scope = Scope.getInstance();
+        if(scope.isUsersetReset()){
+            return;
+        }
+        TimeBaseScale timeBaseScale = null;
+        int serialsIndex = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS + serialsNumber);
+        String userDefine;
+        String sBaudRate;
+        int iBaudRate;
+        switch (serialsIndex) {
+            case RightLayoutSerials.SERIALS_UART:
+                userDefine = CacheUtil.get().getString(CacheUtil.RIGHT_SLIP_SERIALS_UART_USERDEFINE + serialsNumber);
+                if (StrUtil.isEmpty(userDefine)) {
+                    int uartIndex = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS_UART_BAUDRATE + serialsNumber);
+                    sBaudRate = context.getResources().getStringArray(R.array.serialsUartBaudRate)[uartIndex];
+                    iBaudRate = TBookUtil.getIntFromBaudRate(sBaudRate);
+                } else {
+                    iBaudRate = TBookUtil.getIntFromBaudRate(userDefine);
+                }
+                if (!isFromEventBus) {
+                    HorizontalAxis.getInstance().setTimeScaleIdOfView(HorizontalAxis.BaudrateToTimeScale(iBaudRate));
+                }
+                break;
+            case RightLayoutSerials.SERIALS_LIN:
+                userDefine = CacheUtil.get().getString(CacheUtil.RIGHT_SLIP_SERIALS_LIN_USERDEFINE + serialsNumber);
+                if (StrUtil.isEmpty(userDefine)) {
+                    int linIndex = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS_LIN_BAUDRATE + serialsNumber);
+                    sBaudRate = context.getResources().getStringArray(R.array.serialsLinBaudRate)[linIndex];
+                    iBaudRate = TBookUtil.getIntFromBaudRate(sBaudRate);
+                } else {
+                    iBaudRate = TBookUtil.getIntFromBaudRate(userDefine);
+                }
+                if (!isFromEventBus) {
+                    HorizontalAxis.getInstance().setTimeScaleIdOfView(HorizontalAxis.BaudrateToTimeScale(iBaudRate));
+                }
+                break;
+            case RightLayoutSerials.SERIALS_CAN:
+                userDefine = CacheUtil.get().getString(CacheUtil.RIGHT_SLIP_SERIALS_CAN_USERDEFINE + serialsNumber);
+                if (StrUtil.isEmpty(userDefine)) {
+                    int canIndex = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS_CAN_BAUDRATE + serialsNumber);
+                    sBaudRate = context.getResources().getStringArray(R.array.serialsCanBaudRate)[canIndex];
+                    iBaudRate = TBookUtil.getIntFromBaudRate(sBaudRate);
+                } else {
+                    iBaudRate = TBookUtil.getIntFromBaudRate(userDefine);
+                }
+                if (!isFromEventBus) {
+                    HorizontalAxis.getInstance().setTimeScaleIdOfView(HorizontalAxis.BaudrateToTimeScale(iBaudRate));
+                }
+                break;
+            case RightLayoutSerials.SERIALS_M429:
+                int m429Index = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS_M429_BAUDRATE + serialsNumber);
+                sBaudRate = context.getResources().getStringArray(R.array.serialsM429BaudRate)[m429Index];
+                iBaudRate = TBookUtil.getIntFromBaudRate(sBaudRate);
+                if (!isFromEventBus) {
+                    HorizontalAxis.getInstance().setTimeScaleIdOfView(HorizontalAxis.BaudrateToTimeScale(iBaudRate));
+                }
+                break;
+            case RightLayoutSerials.SERIALS_SPI:
+                CacheUtil.get().putMap(CacheUtil.MAIN_BOTTOM_TIMEBASE_NORMAL_SCALE, "5us");
+//                timeBaseScale = mainCenterTimeBase.getList().get(25);//会有越界异常，先规避
+//                if (!Objects.equals(timeBaseScale.getScale(), btnCenterTimeBase.getText().toString())) {
+//                    setCenterTimeBase(timeBaseScale, false, false);
+//                }
+                for (int i = 0; i < mainCenterTimeBase.getList().size(); i++) {
+                    if (mainCenterTimeBase.getList().get(i).getScale().equals("5us")) {
+                        timeBaseScale = mainCenterTimeBase.getList().get(i);
+                        if (!Objects.equals(timeBaseScale.getScale(), btnCenterTimeBase.getText().toString())) {
+                            setCenterTimeBase(timeBaseScale, false, false);
+                        }
+                        break;
+                    }
+                }
+                break;
+            case RightLayoutSerials.SERIALS_I2C:
+                CacheUtil.get().putMap(CacheUtil.MAIN_BOTTOM_TIMEBASE_NORMAL_SCALE, "100us");
+//                timeBaseScale = mainCenterTimeBase.getList().get(21);//会有越界异常，先规避
+//                if (!Objects.equals(timeBaseScale.getScale(), btnCenterTimeBase.getText().toString())) {
+//                    setCenterTimeBase(timeBaseScale, false, false);
+//                }
+                for (int i = 0; i < mainCenterTimeBase.getList().size(); i++) {
+                    if (mainCenterTimeBase.getList().get(i).getScale().equals("100us")) {
+                        timeBaseScale = mainCenterTimeBase.getList().get(i);
+                        if (!Objects.equals(timeBaseScale.getScale(), btnCenterTimeBase.getText().toString())) {
+                            setCenterTimeBase(timeBaseScale, false, false);
+                        }
+                        break;
+                    }
+                }
+                break;
+            case RightLayoutSerials.SERIALS_M1553B:
+                CacheUtil.get().putMap(CacheUtil.MAIN_BOTTOM_TIMEBASE_NORMAL_SCALE, "10us");
+//                timeBaseScale = mainCenterTimeBase.getList().get(24);//会有越界异常，先规避
+//                if (!Objects.equals(timeBaseScale.getScale(), btnCenterTimeBase.getText().toString())) {
+//                    setCenterTimeBase(timeBaseScale, false, false);
+//                }
+                for (int i = 0; i < mainCenterTimeBase.getList().size(); i++) {
+                    if (mainCenterTimeBase.getList().get(i).getScale().equals("10us")) {
+                        timeBaseScale = mainCenterTimeBase.getList().get(i);
+                        if (!Objects.equals(timeBaseScale.getScale(), btnCenterTimeBase.getText().toString())) {
+                            setCenterTimeBase(timeBaseScale, false, false);
+                        }
+                        break;
+                    }
+                }
+                break;
+        }
+        if (!isFromEventBus) {
+            //这种情况下，设置过时基档位之后，需要重新激活下图形解析，才能是解析正常工作
+            int serialChannelNumber = ChannelFactory.S1;
+            switch (serialsNumber) {
+                case 1:
+                    serialChannelNumber = ChannelFactory.S1;
+                    break;
+                case 2:
+                    serialChannelNumber = ChannelFactory.S2;
+                    break;
+                case 3:
+                    serialChannelNumber = ChannelFactory.S3;
+                    break;
+                case 4:
+                    serialChannelNumber = ChannelFactory.S4;
+                    break;
+            }
+            SerialChannel serialChannel = ChannelFactory.getSerialChannel(serialChannelNumber);
+            if(serialChannel != null) {
+                serialChannel.setBusType(CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS + serialsNumber));
+            }
+        }
+    }
+
+    private Consumer<Integer> consumerUserSelfAdjust = new Consumer<Integer>() {
+        @Override
+        public void accept(Integer integer) throws Exception {
+            if (!CacheUtil.get().getBoolean(CacheUtil.MAIN_BOTTOM_RIGHTSWITCH_CHANNEL)) {
+//                onClick(btnSlipDown);
+                slipRightMenu(false);
+            } else {
+                slipRightMenu(true);
+            }
+            if (btnChList.isChecked()) {
+                btnChList.setChecked(false);
+                onClick(btnChList);
+            }
+            if (btnCursorH.isChecked()) {
+                btnCursorH.setChecked(false);
+                onClick(btnCursorH);
+            }
+            if (btnCursorV.isChecked()) {
+                btnCursorV.setChecked(false);
+                onClick(btnCursorV);
+            }
+        }
+    };
+
+    private Consumer<RightMsgMath> consumerRightMath = new Consumer<RightMsgMath>() {
+        @Override
+        public void accept(RightMsgMath rightMsgMath) throws Exception {
+            if (!ChannelFactory.isChActivate(TChan.toFpgaChNo(rightMsgMath.getMathChannelNumber())))
+                return;
+            int timeBaseIndex;
+            String timeBaseScale;
+            if (ChannelFactory.isMath_FFT_Ch(ChannelFactory.getChActivate())) {
+                timeBaseScale = CacheUtil.get().getString(CacheUtil.MAIN_BOTTOM_TIMEBASE_FFT_SCALE + TChan.toUiChNo(ChannelFactory.getChActivate()));
+                timeBaseIndex = mainCenterTimeBase.getMathFFTIndex(timeBaseScale);
+            } else {
+                timeBaseScale = CacheUtil.get().getString(CacheUtil.MAIN_BOTTOM_TIMEBASE_NORMAL_SCALE);
+                timeBaseIndex = mainCenterTimeBase.getNormalIndex(timeBaseScale);
+            }
+            List<TimeBaseScale> list = mainCenterTimeBase.getList();
+            if (list.size() - 1 < timeBaseIndex) {
+                timeBaseIndex = list.size() - 1;
+            }
+            TimeBaseScale timeBaseScale1 = mainCenterTimeBase.getList().get(timeBaseIndex);
+
+            if (!btnCenterTimeBase.getText().toString().contains(timeBaseScale1.getScale())) {
+                setCenterTimeBase(timeBaseScale1, false, false);
+            }
+        }
+    };
+
+    private void OnChanActiveChange(Object obj) {
+        MsgChActiveChange msgChActiveChange = (MsgChActiveChange)obj;
+        MQEnum mqEnum= RxBusRegister.parseMqEnum(obj);
+        if (mqEnum!=MQEnum.CH_ACTIVE) return;
+        IChan chan=msgChActiveChange.getChan();
+
+        if (chan==IChan.CH_NULL) return;
+        btnAdjustZero.setEnabled(false);
+        if (IChan.isCh1ToCh8(chan)){
+            btnAdjustZero.setEnabled(true);
+        }
+        if (GlobalVar.get().isEnableChannelZero()) {
+            onFineText(true);
+        }
+        int chIdx = chan.getValue();
+        int timebaseIdx;
+        int refBaseIndex = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_USERSET_REF_TIMEBASE);
+            if(ChannelFactory.isRefCh(chIdx)){
+                timebaseIdx = ChannelFactory.getRefChannel(chIdx).getRefTimeScaleId_ui();
+                if (refBaseIndex == 0) {
+                    timebaseIdx = HorizontalAxis.getInstance().getTimeScaleIdOfView();
+                }
+            }else if(ChannelFactory.isMath_FFT_Ch(chIdx)){
+                timebaseIdx = ChannelFactory.getMathChannel(chIdx).getHorizontalAxisMathFFT().getHorizontalScaleId();
+            }else{
+                timebaseIdx = HorizontalAxis.getInstance().getTimeScaleIdOfView();
+            }
+
+
+        if (timebaseIdx >= mainCenterTimeBase.getList().size()) {
+            timebaseIdx = mainCenterTimeBase.getList().size() - 1;
+        }
+        Logger.i(TAG, "timeBasdIdx=  " + timebaseIdx);
+        if (timebaseIdx >= 0) {
+            setCenterTimeBase(mainCenterTimeBase.getList().get(timebaseIdx), false, msgChActiveChange.isFromEventBus);
+        }
+
+    }
+
+    boolean cursorH = CacheUtil.get().getBoolean(CacheUtil.MAIN_WAVE_YT_CURSORH_VISIBLE);
+    boolean cursorV = CacheUtil.get().getBoolean(CacheUtil.MAIN_WAVE_YT_CURSORV_VISIBLE);
+
+    private Consumer<Boolean> consumerSerialswordVisible = new Consumer<Boolean>() {
+        @Override
+        public void accept(Boolean aBoolean) throws Exception {
+            if (aBoolean) {
+                cursorH = CacheUtil.get().getBoolean(CacheUtil.MAIN_WAVE_YT_CURSORH_VISIBLE);
+                cursorV = CacheUtil.get().getBoolean(CacheUtil.MAIN_WAVE_YT_CURSORV_VISIBLE);
+            }
+
+            if (btnChList.isChecked() && aBoolean) {
+                btnChList.setChecked(false);
+                onClick(btnChList);
+            }
+//            if (btnFine.isChecked() && aBoolean) {
+//                btnFine.setChecked(false);
+//                onClick(btnFine);
+//            }
+            if (!Objects.equals(context.getResources().getString(R.string.menu_bottom_adjust), btnFineText.getText().toString())) {
+                onFineText(false);
+            }
+
+//            if (MeasureManage.getInstance().isCursorTValueTrace() && !aBoolean) {
+//                btnCursorV.setChecked(true);
+//                onClick(btnCursorV);
+//            }
+            if (!aBoolean) {
+                if (cursorV) {
+                    btnCursorV.setChecked(true);
+                    onClick(btnCursorV);
+                }
+                if (cursorH) {
+                    btnCursorH.setChecked(true);
+                    onClick(btnCursorH);
+                }
+            }
+
+            if (btnCursorH.isChecked() && aBoolean) {
+                btnCursorH.setChecked(false);
+                onClick(btnCursorH);
+            }
+            if (btnCursorV.isChecked() && aBoolean) {
+                btnCursorV.setChecked(false);
+                onClick(btnCursorV);
+            }
+            if (CacheUtil.get().getBoolean(CacheUtil.MAIN_BOTTOM_RIGHTSWITCH_CHANNEL) && aBoolean) {
+//                onClick(btnSlipDown);
+                slipRightMenu(true);
+            }
+//            btnSave.setEnabled(!aBoolean);
+            btnLeftTimeBase.setEnabled(!aBoolean);
+            btnCenterTimeBase.setEnabled(!aBoolean);
+            btnRightTimeBase.setEnabled(!aBoolean);
+            btnChList.setEnabled(!aBoolean);
+            btnPer50.setEnabled(!aBoolean);
+            btnFineText.setEnabled(!aBoolean);
+//            btnFine.setEnabled(!aBoolean);
+            btnCursorH.setEnabled(!aBoolean);
+            btnCursorV.setEnabled(!aBoolean);
+//            btnSlipDown.setEnabled(!aBoolean);
+        }
+    };
+
+    private Consumer<Integer> consumerMcuToArm = new Consumer<Integer>() {
+        @Override
+        public void accept(Integer integer) throws Exception {
+            if (integer == ExternalKeysCommand.MCUTOARM_QUICKSAVE) {
+                onClick(btnSave);
+            }
+        }
+    };
+
+    private Consumer<Integer> consumerDialogClose = new Consumer<Integer>() {
+        @Override
+        public void accept(Integer integer) throws Exception {
+            if (integer == MainViewGroup.DIALOG_MENUHALF) {
+                btnPer50.setChecked(false);
+            }
+        }
+    };
+
+    private  Consumer<MsgCursorVisible> consumerCursorChangeVisible = new Consumer<MsgCursorVisible>() {
+        @Override
+        public void accept(MsgCursorVisible msgCursorVisible) throws Exception {
+            if (msgCursorVisible.isVisible() && msgCursorVisible.isShu()){
+               btnCursorV.setChecked(msgCursorVisible.isVisible());
+               //onClick(btnCursorV);
+                Command.get().getCursor().Vertical(btnCursorV.isChecked(), false);
+                if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) {
+                    CacheUtil.get().putMap(CacheUtil.MAIN_WAVE_XY_CURSORV_VISIBLE, String.valueOf(btnCursorV.isChecked()));
+                } else {
+                    CacheUtil.get().putMap(CacheUtil.MAIN_WAVE_YT_CURSORV_VISIBLE, String.valueOf(btnCursorV.isChecked()));
+                }
+
+                RxBus.getInstance().post(RxEnum.EXTERNALKEY_TOMCU,
+                        new ExternalKeysMsg_ToMCU(ExternalKeysMsg_ToMCU.TYPE_VCURSOR,
+                                btnCursorV.isChecked() ? ExternalKeysMsg_ToMCU.STATE_LED_ON : ExternalKeysMsg_ToMCU.STATE_LED_OFF));
+            }
+        }
+    };
+    private Consumer<RightMsgChannel> consumerRightChannel =new Consumer<RightMsgChannel>() {
+        @Override
+        public void accept(RightMsgChannel rightMsgChannel) throws Exception {
+          boolean isFineSwitch= rightMsgChannel.getFineSwitch().isValue();
+            if (isFineSwitch){
+                GlobalVar.get().setEnableChannelZero(false);
+                btnFineText.setText(R.string.menu_bottom_adjust);
+                btnFineText.setTextColor(context.getResources().getColor(R.color.main_text_color));
+            }
+        }
+    };
+
+    private void setBtnChListVisible() {
+        boolean isSerialsTxt = CacheUtil.get().getBoolean(CacheUtil.MAIN_BOTTOM_SLIP_SERIALBUSTXT);
+        boolean isXy = WorkModeManage.getInstance().isXyMode();
+        if (isSerialsTxt || isXy) {
+            btnChList.setVisibility(View.GONE);
+            checkZoom.setVisibility(View.GONE);
+        } else {
+            btnChList.setVisibility(View.VISIBLE);
+            checkZoom.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private Consumer<Object> consumerExternalKeysChannelListClick=new Consumer<Object>() {
+        @Override
+        public void accept(Object o) throws Throwable {
+            boolean b=! btnChList.isChecked();
+            btnChList.setChecked(b);
+            onClick(btnChList);
+
+        }
+    };
+    private Consumer<TopMsgSegmentedState> consumerSegmentedState = new Consumer<TopMsgSegmentedState>() {
+        @Override
+        public void accept(TopMsgSegmentedState msgSegmentedState) throws Exception {
+            // 串型文本打开与关闭，是通过分段存储消息过来的
+            boolean isSerialsTxt = CacheUtil.get().getBoolean(CacheUtil.MAIN_BOTTOM_SLIP_SERIALBUSTXT);
+            btnPer50.setVisibility(isSerialsTxt?View.GONE:View.VISIBLE);
+            btnCursorH.setVisibility(isSerialsTxt?View.GONE:View.VISIBLE);
+            btnCursorV.setVisibility(isSerialsTxt?View.GONE:View.VISIBLE);
+
+            btnFineText.setVisibility(isSerialsTxt?View.GONE:View.VISIBLE);
+            btnFineLeft.setVisibility(isSerialsTxt?View.GONE:View.VISIBLE);
+            btnFineRight.setVisibility(isSerialsTxt? View.GONE: View.VISIBLE);
+            btnFineUp.setVisibility(isSerialsTxt? View.GONE: View.VISIBLE);
+            btnFineDown.setVisibility(isSerialsTxt? View.GONE:View.VISIBLE);
+
+            btnEnterYt.setVisibility(isSerialsTxt?View.VISIBLE:View.GONE);
+//            btnSave.setVisibility(isSerialsTxt?View.GONE:View.VISIBLE);
+            setBtnChListVisible();
+        }
+    };
+
+private Consumer<MainBottomMsgQuick> consumerMainBottomQucikEnable=new Consumer<MainBottomMsgQuick>() {
+    @Override
+    public void accept(MainBottomMsgQuick mainBottomMsgQuick) throws Exception {
+        if (WorkModeManage.getInstance().isSerialTextMode()) {
+            boolean b = mainBottomMsgQuick.getEnable()[1];
+            //Log.d("Tag.Debug", String.format("MainHolderBottom.accept: %s", Arrays.toString(mainBottomMsgQuick.getEnable())));
+            btnEnterYt.setEnabled(b);
+        }
+
+    }
+};
+
+    private Consumer<Boolean> consumerAutoSaveTaskState = new Consumer<Boolean>() {
+        @Override
+        public void accept(Boolean isAutoSaveStop) throws Throwable {
+            itemView.post(() ->{
+                isAutoSaveStarting = !isAutoSaveStop;
+                if (!isAutoSaveStop) {
+                    btnSave.setVisibility(View.GONE);
+                    btnStopAutoSave.setVisibility(View.VISIBLE);
+                } else {
+                    btnSave.setVisibility(View.VISIBLE);
+                    btnStopAutoSave.setVisibility(View.GONE);
+                }
+            });
+
+
+        }
+    };
+
+    private Consumer<MainLeftMsgMenuRunStop> consumerLeftMenuRunStop = new Consumer<MainLeftMsgMenuRunStop>() {
+        @Override
+        public void accept(MainLeftMsgMenuRunStop mainLeftMsgMenuRunStop) throws Exception {
+            sendTopGoneMsg();
+        }
+    };
+
+    /**
+     * 微调切换
+     */
+    public void fineSwitch(boolean isLeftRight) {
+        boolean isSerialsTxt = CacheUtil.get().getBoolean(CacheUtil.MAIN_BOTTOM_SLIP_SERIALBUSTXT);
+        if (!isSerialsTxt) {
+            if (!isLeftRight || GlobalVar.get().isEnableChannelZero()) {
+                btnFineUp.setVisibility(View.VISIBLE);
+                btnFineDown.setVisibility(View.VISIBLE);
+                btnFineLeft.setVisibility(View.GONE);
+                btnFineRight.setVisibility(View.GONE);
+            } else {
+                btnFineLeft.setVisibility(View.VISIBLE);
+                btnFineRight.setVisibility(View.VISIBLE);
+                btnFineUp.setVisibility(View.GONE);
+                btnFineDown.setVisibility(View.GONE);
+            }
+        }
+
+
+
+    }
+
+    /**
+     * 微调增加
+     */
+    private void fineAdd() {
+        if (ChannelFactory.isDynamicCh(ChannelFactory.getChActivate())
+                && GlobalVar.get().isEnableChannelZero()) {
+            Channel channel = ChannelFactory.getDynamicChannel(ChannelFactory.getChActivate());
+            channel.setZero(channel.getZero() - 1);
+            CacheUtil.get().putMap(CacheUtil.MAIN_WAVE_CH_Y_ZERO_POSITION + (channel.getChId() + 1) + channel.getVScaleId(), String.valueOf(channel.getZero()));
+            btnFineText.setText(TBookUtil.getD4FromD(channel.getMoveZeroVal()));
+        } else {
+
+            switch (lastObject) {
+                case TChan.Ch1:
+                case TChan.Ch2:
+                case TChan.Ch3:
+                case TChan.Ch4:
+                case TChan.Ch5:
+                case TChan.Ch6:
+                case TChan.Ch7:
+                case TChan.Ch8:
+                case TChan.Math1:
+                case TChan.Math2:
+                case TChan.Math3:
+                case TChan.Math4:
+                case TChan.Math5:
+                case TChan.Math6:
+                case TChan.Math7:
+                case TChan.Math8:
+                case TChan.R1:
+                case TChan.R2:
+                case TChan.R3:
+                case TChan.R4:
+                case TChan.R5:
+                case TChan.R6:
+                case TChan.R7:
+                case TChan.R8:
+                    WaveManage.get().movePix(1);
+                    break;
+                case TChan.Cursor_col_1:
+                case TChan.Cursor_col_2:
+                case TChan.Cursor_col_3:
+                case TChan.Cursor_row_1:
+                case TChan.Cursor_row_2:
+                case TChan.Cursor_row_3:
+//                case IWave.Cursor_col_4:
+//                case IWave.Cursor_row_4:
+                    //CursorManage_YT.get().movePix();
+                    CursorManage.getInstance().addPixMove();
+                    break;
+                case TChan.Cursor_col_4:
+                    CursorManage.getInstance().moveMultiSelectCursor(-1,0,TChan.Cursor_col_4);
+                    break;
+                case TChan.Cursor_row_4:
+                    CursorManage.getInstance().moveMultiSelectCursor(0,-1, TChan.Cursor_row_4);
+                    break;
+                case TChan.TriggerTime:
+                    TriggerTimebase.getInstance().movePix(1);
+                    break;
+                case TChan.TriggerLevel:
+                    RxBus.getInstance().post(RxEnum.EXTERNALKEYS_LEVEL,
+                            new ExternalKeysMsgLevel(ExternalKeysMsgLevel.TYPE_TRIGGER_MOVEDOMN, 1));
+
+                break;
+            case TChan.ValueLevel:
+                RxBus.getInstance().post(RxEnum.EXTERNALKEYS_LEVEL,
+                        new ExternalKeysMsgLevel(ExternalKeysMsgLevel.TYPE_VALUE_MOVEDOMN, 1));
+                break;
+            case TChan.S1:
+            case TChan.S2:
+            case TChan.S3:
+            case TChan.S4:
+            {
+                SerialBusManage.getInstance().addPixMov();
+            }
+            break;
+            default: {
+                WaveManage.get().movePix(1);
+            }
+            break;
+        }
+        }
+    }
+
+
+    /**
+     * 微调减少
+     */
+    private void fineSub() {
+        if (ChannelFactory.isDynamicCh(ChannelFactory.getChActivate())
+                && GlobalVar.get().isEnableChannelZero()) {
+            Channel channel = ChannelFactory.getDynamicChannel(ChannelFactory.getChActivate());
+            channel.setZero(channel.getZero() + 1);
+            CacheUtil.get().putMap(CacheUtil.MAIN_WAVE_CH_Y_ZERO_POSITION + (channel.getChId() + 1) + channel.getVScaleId(), String.valueOf(channel.getZero()));
+            btnFineText.setText(TBookUtil.getD4FromD(channel.getMoveZeroVal()));
+
+        } else {
+            switch (lastObject) {
+                case TChan.Ch1:
+                case TChan.Ch2:
+                case TChan.Ch3:
+                case TChan.Ch4:
+                case TChan.Ch5:
+                case TChan.Ch6:
+                case TChan.Ch7:
+                case TChan.Ch8:
+                case TChan.Math1:
+                case TChan.Math2:
+                case TChan.Math3:
+                case TChan.Math4:
+                case TChan.Math5:
+                case TChan.Math6:
+                case TChan.Math7:
+                case TChan.Math8:
+                case TChan.R1:
+                case TChan.R2:
+                case TChan.R3:
+                case TChan.R4:
+                case TChan.R5:
+                case TChan.R6:
+                case TChan.R7:
+                case TChan.R8:
+                    WaveManage.get().movePix(-1);
+                    break;
+                case TChan.Cursor_col_1:
+                case TChan.Cursor_col_2:
+                case TChan.Cursor_col_3:
+                case TChan.Cursor_row_1:
+                case TChan.Cursor_row_2:
+                case TChan.Cursor_row_3:
+                    //CursorManage_YT.get().subPixMove();
+                    CursorManage.getInstance().subPixMove();
+                    break;
+                case TChan.Cursor_row_4:
+                    CursorManage.getInstance().moveMultiSelectCursor(0,1,TChan.Cursor_row_4);
+                    break;
+                case TChan.Cursor_col_4:
+                    CursorManage.getInstance().moveMultiSelectCursor(1,0,TChan.Cursor_col_4);
+                    break;
+
+                case TChan.TriggerTime:
+                    TriggerTimebase.getInstance().movePix(-1);
+                    break;
+                case TChan.TriggerLevel:
+
+                RxBus.getInstance().post(RxEnum.EXTERNALKEYS_LEVEL,
+                        new ExternalKeysMsgLevel(ExternalKeysMsgLevel.TYPE_TRIGGER_MOVEUP, 1));
+
+                break;
+            case TChan.ValueLevel:
+                RxBus.getInstance().post(RxEnum.EXTERNALKEYS_LEVEL,
+                        new ExternalKeysMsgLevel(ExternalKeysMsgLevel.TYPE_VALUE_MOVEUP, 1));
+                break;
+            case TChan.S1:
+            case TChan.S2:
+            case TChan.S3:
+            case TChan.S4:
+            {
+                SerialBusManage.getInstance().subPixMove();
+            }
+            break;
+            default: {
+                WaveManage.get().movePix(-1);
+            }
+            break;
+        }
+        }
+    }
+
+    private void slipRightMenu(boolean channel) {
+//        AnimatorSet as = new AnimatorSet();
+//        AnimatorSet as2 = new AnimatorSet();
+//        ObjectAnimator oa;
+//        ObjectAnimator oa2;
+//        ObjectAnimator oa3;
+//        ObjectAnimator oa4;
+//        if (!menu_right_state) {
+//            oa = ObjectAnimator.ofFloat(al, "translationY", 0, 510);
+//            oa2 = ObjectAnimator.ofFloat(al, "alpha", 1f, 0f);
+//            oa3 = ObjectAnimator.ofFloat(alb, "translationX", 0, 510);
+//            oa4 = ObjectAnimator.ofFloat(alb, "alpha", 1f, 0f);
+//        } else {
+//            oa = ObjectAnimator.ofFloat(al, "translationY", -510, 0);
+//            oa2 = ObjectAnimator.ofFloat(al, "alpha", 0f, 1f);
+//            oa3 = ObjectAnimator.ofFloat(alb, "translationX", -510, 0);
+//            oa4 = ObjectAnimator.ofFloat(alb, "alpha", 0f, 1f);
+//        }
+//        menu_right_state = !menu_right_state;
+//        as.setDuration(500);
+//        as2.setDuration(500);
+//        as.play(oa).with(oa2);
+//        as2.play(oa3).with(oa4);
+//        as.start();
+//        as2.start();
+//        oa2.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+//            @Override
+//            public void onAnimationUpdate(ValueAnimator animation) {
+//                float cVal = (Float) animation.getAnimatedValue();
+//                al.setAlpha(cVal);
+//                if (cVal == 0) {
+//                    al.setVisibility(View.GONE);
+//                } else {
+//                    al.setVisibility(View.VISIBLE);
+//                }
+//                RxBus.getInstance().post(RxEnum.CONTROLS_VISIBLE_CHANGED, MainViewGroup.VISIBLE_DISCREETVOLTAGELINE_S1);
+//                RxBus.getInstance().post(RxEnum.CONTROLS_VISIBLE_CHANGED, MainViewGroup.VISIBLE_DISCREETVOLTAGELINE_S2);
+//            }
+//        });
+//        oa4.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+//            @Override
+//            public void onAnimationUpdate(ValueAnimator animation) {
+//                float cVal = (Float) animation.getAnimatedValue();
+////                alb.setAlpha(cVal);
+//                if (cVal == 0) {
+////                    alb.setVisibility(View.GONE);
+//                } else {
+////                    alb.setVisibility(View.VISIBLE);
+//                }
+//            }
+//        });
+        MainViewGroup mainViewGroup = (MainViewGroup) MainHolderBottom.this.itemView;
+        if (mainViewGroup.isRightLayout() == channel && CacheUtil.get().isLoadParamComplete()) {
+            return;
+        }
+        mainViewGroup.hideAllDialogSlip();
+        mainViewGroup.showRightLayout(channel);
+    }
+
+    private static final int MSG_UPDATETIME = 31;//时间显示更新
+    private static final int MSG_TIP_DISPLAY_TB = 32;//时基改变提示显示
+    private static final int MSG_TIP_DISPLAY_TB_GONE = 33;//时基改变提示消失
+    private static final int MSG_BATTERY_CHARGE = 34;//电池进入充电状态
+    private static final int MSG_BATTERY_DISCHARGE = 35;//电池进入非充电状态
+    private static final int MSG_BATTERY_SELF_UPDATE = 36;//电池电量充电时的自动更新
+    private static final int MSG_TIMEBASE = 37;
+
+    private static Handler handler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            switch (msg.what) {
+                case MSG_UPDATETIME:
+                    Calendar calendar = Calendar.getInstance();
+                    int hourInt = Tools.is24HourFormat()
+                            ? calendar.get(Calendar.HOUR_OF_DAY) : calendar.get(Calendar.HOUR);
+                    int minInt = calendar.get(Calendar.MINUTE);
+                    String hourStr = String.valueOf(hourInt < 10 ? "0" + hourInt : hourInt);
+                    String minStr = String.valueOf(minInt < 10 ? "0" + minInt : minInt);
+                    tvTime.setText(hourStr + ":" + minStr);
+                    break;
+//                case MSG_TIP_DISPLAY_TB:
+//                    tvBriefDisplayTB.setVisibility(View.VISIBLE);
+//                    String str;
+//                    if (btnCenterTimeBase.getText().toString().contains("\n")) {
+//                        str = btnCenterTimeBase.getText().toString().split("\n")[1];
+//                    } else {
+//                        str = btnCenterTimeBase.getText().toString();
+//                    }
+//                    tvBriefDisplayTB.setText(str);
+//                    if (handler.hasMessages(MSG_TIP_DISPLAY_TB_GONE)) {
+//                        handler.removeMessages(MSG_TIP_DISPLAY_TB_GONE);
+//                    }
+//                    handler.sendEmptyMessageDelayed(MSG_TIP_DISPLAY_TB_GONE, 2000);
+//                    break;
+//                case MSG_TIP_DISPLAY_TB_GONE:
+//                    tvBriefDisplayTB.setVisibility(View.GONE);
+//                    break;
+                case MSG_BATTERY_CHARGE:
+                    if (dialogOk.isShow() && Objects.equals(dialogOk.getText(), context.getResources().getString(R.string.msgBatteryLow))) {
+                        dialogOk.hide();
+                    }
+                    tvBattery.setLevel(msg.arg1);
+                    tvBattery.setIcon(true);
+//                    tvBattery.setText(msg.arg1 + "%");
+//                    if (handler.hasMessages(MSG_BATTERY_SELF_UPDATE)) {
+//                        handler.removeMessages(MSG_BATTERY_SELF_UPDATE);
+//                    }
+//                    handler.sendEmptyMessageDelayed(MSG_BATTERY_SELF_UPDATE, 800);
+                    break;
+                case MSG_BATTERY_DISCHARGE:
+                    if (tvBattery.getLevel() >= 20 && msg.arg1 < 20) {
+                        dialogOk.setData(R.string.msgBatteryLow, null, null);
+                    }
+                    tvBattery.setLevel(msg.arg1);
+                    tvBattery.setIcon(false);
+//                    if (handler.hasMessages(MSG_BATTERY_SELF_UPDATE)) {
+//                        handler.removeMessages(MSG_BATTERY_SELF_UPDATE);
+//                    }
+                    break;
+                case MSG_BATTERY_SELF_UPDATE:
+//                    tvBattery.selfUpdate();
+//                    handler.sendEmptyMessageDelayed(MSG_BATTERY_SELF_UPDATE, 800);
+                    break;
+                case MSG_TIMEBASE:
+                    if (Scope.getInstance().isZoom()) {
+                        bgTimeBase.setBackgroundResource(R.drawable.svg_main_time_base);
+                    } else {
+                        bgTimeBase.setBackgroundResource(R.drawable.svg_main_time_base);
+                    }
+//                    btnLeftTimeBase.setBackgroundResource(R.drawable.ic_timebase_left);
+//                    btnRightTimeBase.setBackgroundResource(R.drawable.ic_timebase_right);
+                    break;
+            }
+        }
+    };
+
+    private EventUIObserver eventUIObserver = new EventUIObserver() {
+        @Override
+        public void update(Object data) {
+            EventBase eventBase = (EventBase) data;
+            int eId = eventBase.getId();
+            if (eId == EventFactory.EVENT_TIME_SCALE
+                    || eId == EventFactory.EVENT_UI_DEPTH_SAMPFRE_REFLASH) {
+                int index = 0;
+                int activateIdx = ChannelFactory.getChActivate();
+//                Logger.d("activateIdx= " + activateIdx);
+                List<TimeBaseScale> scaleList = mainCenterTimeBase.getList();
+                int refTimeBaseIndex = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_USERSET_REF_TIMEBASE);
+                if (refTimeBaseIndex == 0) {
+                    if (ChannelFactory.isMath_FFT_Ch(activateIdx)) {
+                        index=ChannelFactory.getMathChannel(activateIdx).getHorizontalAxisMathFFT().getHorizontalScaleIndexUI();
+                    } else if (ChannelFactory.isRefCh(activateIdx)) {
+                        RefChannel refChannel = ChannelFactory.getRefChannel(activateIdx);
+                        if (refChannel != null && refChannel.getRefType() == WaveData.FFT_WAVE) {
+                            index = refChannel.getRefTimeScaleId_ui();
+                        } else {
+                            index = HorizontalAxis.getInstance().getTimeScaleIdOfView();
+                        }
+                    } else {
+                        index = HorizontalAxis.getInstance().getTimeScaleIdOfView();
+                    }
+                } else {
+                    if(ChannelFactory.isRefCh(activateIdx)){
+                        index = ChannelFactory.getRefChannel(activateIdx).getRefTimeScaleId_ui();
+                    } else if (ChannelFactory.isMath_FFT_Ch(activateIdx)) {
+                        index = ChannelFactory.getMathChannel(activateIdx).getHorizontalAxisMathFFT().getHorizontalScaleId();
+                    } else {
+                        index = HorizontalAxis.getInstance().getTimeScaleIdOfView();
+                    }
+                }
+
+                if (index >= scaleList.size()) {
+                    index = scaleList.size() - 1;
+                }
+                CursorManage.getInstance().setCursorTrace(true);
+                if (index >= 0) {
+                    setCenterTimeBase(scaleList.get(index), false, true);
+                }
+                CursorManage.setCursorByTimebaseTrace();
+                CursorManage.getInstance().setCursorTrace(false);
+
+            } else if (eId == EventFactory.EVENT_MATH_FFT_SCALE) {
+//                int activateIdx = ChannelFactory.getChActivate();
+                int chIdx = (int) eventBase.getData();
+                if(ChannelFactory.isMathCh(chIdx)) {
+                    HorizontalAxisMath horizontalAxisMath = ChannelFactory.getMathChannel(chIdx).getHorizontalAxisMathFFT();
+                    String fftNum = TBookUtil.getMFromDouble(horizontalAxisMath.fftXScaleIdVal()) + "Hz";
+                    CacheUtil.get().putMap(CacheUtil.MAIN_BOTTOM_TIMEBASE_FFT_SCALE + TChan.toUiChNo(chIdx), fftNum);
+                }
+
+            } else if (eId == EventFactory.EVENT_CHANNEL_ZERO) {
+
+                int chid = (int) eventBase.getData();
+                Channel channel = ChannelFactory.getDynamicChannel(chid);
+                if (channel != null) {
+                    chid += 1;
+                    CacheUtil.get().putMap(CacheUtil.MAIN_WAVE_CH_Y_ZERO_POSITION + chid + channel.getVScaleId(), String.valueOf(channel.getZero()));
+                    if (GlobalVar.get().isEnableChannelZero()) {
+                        btnFineText.setText(TBookUtil.getD4FromD(channel.getMoveZeroVal()));
+                    }
+                }
+            }else if (eId==EventFactory.EVENT_CHANNEL_VSCALE_USER){
+
+                    int chid = (int) eventBase.getData();
+                    Channel channel = ChannelFactory.getDynamicChannel(chid);
+                    if (channel.getZero()!=0 && GlobalVar.get().isEnableChannelZero()){
+                        btnFineText.setText(TBookUtil.getD4FromD(channel.getMoveZeroVal()));
+                        btnFineText.setTextColor(TChan.getChannelColor(context, TChan.toUiChNo(channel.getChId())));
+                    }else {
+                        GlobalVar.get().setEnableChannelZero(false);
+                        btnFineText.setText(R.string.menu_bottom_adjust);
+                        btnFineText.setTextColor(context.getResources().getColor(R.color.main_text_color));
+                    }
+            } else if (eId == EventFactory.EVENT_TIME_POS) {
+                updateTbPosCache();
+            }
+        }
+    };
+
+    private void updateTbPosCache() {
+        long pix = ScopeBase.getWidth() / 2 - HorizontalAxis.getInstance().getTimePoseOfViewPix();
+        long xCache = CacheUtil.get().getLong(CacheUtil.MAIN_WAVE_TIMEBASE_POSITION_NORMAL);
+        Logger.i(TAG, " pix= " + pix + " ,xCache= " + xCache);
+        if (pix != xCache) {
+            CacheUtil.get().putMap(CacheUtil.MAIN_WAVE_TIMEBASE_POSITION_NORMAL, String.valueOf(pix));
+        }
+    }
+
+    private class TimeThread extends Thread {
+        Message msg;
+
+        public TimeThread() {
+            msg = new Message();
+        }
+
+        @Override
+        public void run() {
+            super.run();
+            do {
+                try {
+                    msg = handler.obtainMessage();
+                    msg.what = MSG_UPDATETIME;
+                    handler.sendMessage(msg);
+                    Thread.sleep(1000 * 20);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            } while (true);
+        }
+    }
+
+    private void sendTimeBaseMsg(MainBottomMsgTimeBase timeBase) {
+        RxBus.getInstance().post(RxEnum.MAINBOTTOM_TIMEBASE, timeBase);
+    }
+
+    private void sendTopGoneMsg() {
+        if (CacheUtil.get().getInt(CacheUtil.TOP_SLIP_DISPLAY_COMMON_ROLL) == 0
+                && Tools.isSlowTimeBase()) {
+            msgTopRightGone.setVisible(false);
+            RxBus.getInstance().post(RxEnum.MAIN_TOPRIGHT_GONE, msgTopRightGone);
+        } else {
+            msgTopRightGone.setVisible(true);
+            RxBus.getInstance().post(RxEnum.MAIN_TOPRIGHT_GONE, msgTopRightGone);
+        }
+    }
+
+    private void sendTopCenterGoneMsg(MainTopMsgRightGone msgTopCenterGone) {
+        RxBus.getInstance().post(RxEnum.MAIN_TOPCENTER_TEXT_GONE, msgTopCenterGone);
+    }
+
+
+
+    //private boolean isLeftRight = true;
+    private View.OnClickListener onClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+//            if (v.getId() == btnSlipDown.getId()) {
+//                PlaySound.getInstance().playSlide();
+//            } else {
+            PlaySound.getInstance().playButton();
+//            }
+            MainHolderBottom.this.onClick(v);
+        }
+    };
+
+    private View.OnTouchListener onFineTouchListener=new View.OnTouchListener() {
+        @Override
+        public boolean onTouch(View view, MotionEvent motionEvent) {
+            switch (motionEvent.getAction() & MotionEvent.ACTION_MASK){
+                case MotionEvent.ACTION_DOWN:{
+                    RepeatExecuteUtil.updateAddOrSubtract(view.getId(),handlerFine);
+                }break;
+                case MotionEvent.ACTION_CANCEL:
+                case MotionEvent.ACTION_UP:{
+                    boolean b= RepeatExecuteUtil.stopAddOrSubtract();
+                    if (!b){
+                        action(view.getId());
+                    }
+                }break;
+            }
+            return false;
+        }
+
+        private Handler handlerFine=new Handler(){
+            @Override
+            public void handleMessage(@NonNull Message msg) {
+                super.handleMessage(msg);
+                action(msg.what);
+            }
+        };
+
+        private void action(int viewId){
+            if (viewId==btnFineUp.getId() || viewId==btnFineLeft.getId()){
+                fineSub();
+            }else if (viewId==btnFineDown.getId() || viewId== btnFineRight.getId()){
+                fineAdd();
+            }
+        }
+
+    };
+
+    private View.OnTouchListener onTouchListener= new View.OnTouchListener(){
+        private View curView;
+        @Override
+        public boolean onTouch(View view, MotionEvent motionEvent) {
+            switch (motionEvent.getAction() & MotionEvent.ACTION_MASK){
+                case MotionEvent.ACTION_DOWN:{
+                    curView=view;
+                    OnMouseDown(view);
+                }break;
+                case MotionEvent.ACTION_UP:{
+                    Rect rect=Tools.getViewRect(view);
+                    if (curView!=null && curView==view && rect.contains((int)motionEvent.getRawX(), (int) motionEvent.getRawY())){
+                        OnMouseUp(view);
+                    }
+                    OnMouseCancel(view);
+                }break;
+                case MotionEvent.ACTION_CANCEL:{
+                    OnMouseCancel(view);
+                }break;
+            }
+            return false;
+        }
+        private void OnMouseDown(View v){
+            Log.d(TAG, "OnMouseDown() called with: v = [" + v + "]");
+            if (v.getId()==btnLeftTimeBase.getId()){
+                if (Scope.getInstance().isZoom()) {
+                    bgTimeBase.setBackgroundResource(R.drawable.svg_main_time_base_left);
+                } else {
+                    bgTimeBase.setBackgroundResource(R.drawable.svg_main_time_base_left);
+                }
+            }else if (v.getId()==btnRightTimeBase.getId()){
+                if (Scope.getInstance().isZoom()) {
+                    bgTimeBase.setBackgroundResource(R.drawable.svg_main_time_base_right);
+                } else {
+                    bgTimeBase.setBackgroundResource(R.drawable.svg_main_time_base_right);
+                }
+            }
+        }
+        private void OnMouseCancel(View v){
+            if (v.getId()==btnLeftTimeBase.getId() || v.getId()==btnRightTimeBase.getId()){
+                if (Scope.getInstance().isZoom()) {
+                    bgTimeBase.setBackgroundResource(R.drawable.svg_main_time_base);
+                } else {
+                    bgTimeBase.setBackgroundResource(R.drawable.svg_main_time_base);
+                }
+            }
+        }
+        private void OnMouseUp(View v){
+            PlaySound.getInstance().playButton();
+            if (v.getId()==btnLeftTimeBase.getId()){
+                 OnBtnClickLeftTimeBase();
+            }else if (v.getId()==btnRightTimeBase.getId()){
+                OnBtnClickRightTimeBase();
+            }
+        }
+    };
+
+    private void OnBtnClickLeftTimeBase(){
+        CursorManage.getInstance().setCursorTrace(true);
+        if (handler.hasMessages(MSG_TIMEBASE)) {
+            handler.removeMessages(MSG_TIMEBASE);
+        }
+        handler.sendEmptyMessageDelayed(MSG_TIMEBASE, 200);
+
+        List<TimeBaseScale> list = mainCenterTimeBase.getList();
+        String timeBase = btnCenterTimeBase.getText().toString();
+        timeBase = timeBase.contains("\n") ? timeBase.split("\n")[1] : timeBase;
+        for (int i = 0; i < list.size(); i++) {
+            if (list.get(i).getScale().equals(timeBase)) {
+                if (i != 0) {
+                    TimeBaseScale timeBaseScale = list.get(i - 1);
+                    Command.get().getTimebase().Extent(-1, TBookUtil.getSFromTime(timeBaseScale.getScale()), false);
+                    Command.get().getTimebase().Scale(-1, TBookUtil.getSFromTime(timeBaseScale.getScale()), false);
+                    setCenterTimeBase(timeBaseScale, true, false);
+                } else {
+                    DToast.get().show(R.string.msgParameterLimited);
+                }
+                break;
+            }
+        }
+        CursorManage.setCursorByTimebaseTrace();
+        CursorManage.getInstance().setCursorTrace(false);
+    }
+    private void OnBtnClickRightTimeBase(){
+        CursorManage.getInstance().setCursorTrace(true);
+        if (handler.hasMessages(MSG_TIMEBASE)) {
+            handler.removeMessages(MSG_TIMEBASE);
+        }
+        handler.sendEmptyMessageDelayed(MSG_TIMEBASE, 200);
+        List<TimeBaseScale> list = mainCenterTimeBase.getList();
+        String timeBase = btnCenterTimeBase.getText().toString();
+        timeBase = timeBase.contains("\n") ? timeBase.split("\n")[1] : timeBase;
+        for (int i = 0; i < list.size(); i++) {
+            //if (list.get(i).getScale().contains(timeBase)) {
+            if (list.get(i).getScale().equals(timeBase)) {
+                if (i != list.size() - 1) {
+                    TimeBaseScale timeBaseScale = list.get(i + 1);
+                    Command.get().getTimebase().Extent(-1, TBookUtil.getSFromTime(timeBaseScale.getScale()), false);
+                    Command.get().getTimebase().Scale(-1, TBookUtil.getSFromTime(timeBaseScale.getScale()), false);
+//                            if (CacheUtil.get().getInt(CacheUtil.TOP_SLIP_DISPLAY_COMMON_ROLL) == 0
+//                                    && !CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_MATH_TYPE)
+//                                    && Tools.isSlowTimeBase(timeBaseScale.getScale())) {//当前为fft模式,进入慢时基时需要确认
+//                                dialogOkCancel.setDecimalData(R.string.dialogMsgInSlowTimeBase, timeBaseScale, onOkCancelClickListener);
+//                            } else {
+                    setCenterTimeBase(timeBaseScale, true, false);
+//                            }
+                } else {
+                    DToast.get().show(R.string.msgParameterLimited);
+                }
+                break;
+            }
+        }
+        CursorManage.setCursorByTimebaseTrace();
+        CursorManage.getInstance().setCursorTrace(false);
+    }
+
+//    public static void setCursor(){
+//        try {
+//            double x1 = Double.parseDouble(CacheUtil.get().getString(CacheUtil.MAIN_WAVE_CURSOR_POSITION_X1));
+//            double x2 = Double.parseDouble(CacheUtil.get().getString(CacheUtil.MAIN_WAVE_CURSOR_POSITION_X2));
+//            long pix1 = Tools.TimebaseToPix(TChan.toFpgaChNo(WaveManage.get().getCurCh()), x1);
+//            long pix2 = Tools.TimebaseToPix(TChan.toFpgaChNo(WaveManage.get().getCurCh()), x2);
+//
+//
+//            Log.d("Tag.Debug", String.format("MainHolderBottom.setCursor: x1:%s, x2:%s  ,pix1:%s,pix2:%s ,curCh:%s",x1,x2,pix1,pix2,WaveManage.get().getCurCh() ));
+//            CursorManage.getInstance().setCursor(TChan.Cursor_col_1, (int) pix1);
+//            CursorManage.getInstance().setCursor(TChan.Cursor_col_2, (int) pix2);
+//
+//
+//        }catch (Exception e){
+//            e.printStackTrace();
+//        }
+//    }
+
+    /** 是否是精细档位 ： true 是精细 */
+    private boolean isFineSwitch(){
+        if (ChannelFactory.isDynamicCh(ChannelFactory.getChActivate())){
+            int channelNumber=ChannelFactory.getChActivate();
+            return ChannelFactory.getDynamicChannel(channelNumber).isFineExtent();
+        }
+        return false;
+    }
+    private void onFineText(boolean zero) {
+        if (ChannelFactory.isDynamicCh(ChannelFactory.getChActivate()) && isFineSwitch()==false) {
+            if (zero && Scope.getInstance().isRun()) {
+                GlobalVar.get().setEnableChannelZero(true);
+                btnFineText.setText(TBookUtil.getD4FromD(ChannelFactory.getDynamicChannel(ChannelFactory.getChActivate()).getMoveZeroVal()));
+                btnFineText.setTextColor(TChan.getChannelColor(context,TChan.toUiChNo(ChannelFactory.getChActivate())));
+
+            } else {
+                GlobalVar.get().setEnableChannelZero(false);
+                btnFineText.setText(R.string.menu_bottom_adjust);
+                btnFineText.setTextColor(context.getResources().getColor(R.color.main_text_color));
+
+            }
+        } else {
+            GlobalVar.get().setEnableChannelZero(false);
+            btnFineText.setText(R.string.menu_bottom_adjust);
+            btnFineText.setTextColor(context.getResources().getColor(R.color.main_text_color));
+        }
+
+        fineSwitch(false);
+        if (GlobalVar.get().isEnableChannelZero()) {
+            if (!btnChList.isChecked() && (CacheUtil.get().getInt(CacheUtil.TOP_SLIP_DISPLAY_COMMON_TIMEBASE) == 0)) {
+                btnChList.setChecked(true);
+                onClick(btnChList);
+            }
+        }
+    }
+
+
+    private void onClick(View v) {
+        if (v.getId() == btnFineUp.getId()) {
+            fineSub();
+        } else if (v.getId() == btnFineDown.getId()) {
+            fineAdd();
+        } else if (v.getId() == btnFineLeft.getId()) {
+            fineSub();
+        } else if (v.getId() == btnFineRight.getId()) {
+            fineAdd();
+        } else if (v.getId() == btnFineText.getId()) {
+            if(!Scope.getInstance().isAuto()) {
+                onFineText(!GlobalVar.get().isEnableChannelZero());
+            }
+        }else if(v.getId() == btnStopAutoSave.getId()){
+//            AutoSaveTaskManager.getInstance().stop();
+            AutoSave.getInstance().stop();
+            btnSave.setVisibility(View.VISIBLE);
+            btnStopAutoSave.setVisibility(View.GONE);
+        }
+//        if (v.getId() == btnFine.getId()) {
+//            TBookUtil.setFine(btnFine.isChecked());
+//            CacheUtil.get().putMap(CacheUtil.MAIN_BOTTOM_FINE, String.valueOf(btnFine.isChecked()));
+//        } else
+        if (v.getId() == btnSave.getId()) {
+            int dir = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_SAVE_DIR);
+            final int savePosType = (dir == TopLayoutSaveStore.SAVEINLOCAL ? Tools.SaveType_LOCAL : Tools.SaveType_UDISK);
+            if (CacheUtil.get().getBoolean(CacheUtil.MAIN_BOTTOM_SLIP_SERIALBUSTXT)) {
+                int typeSerialBus = CacheUtil.get().getInt(CacheUtil.SERIAL_TXT_CURRTAB);
+                int serialbus = 0;
+                if (typeSerialBus == ISerialsWord.TYPE_S1) {
+                    serialbus = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS + CacheUtil.S1);
+                } else if (typeSerialBus == ISerialsWord.TYPE_S2) {
+                    serialbus = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS + CacheUtil.S2);
+                } else if (typeSerialBus == ISerialsWord.TYPE_S3) {
+                    serialbus = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS + CacheUtil.S3);
+                } else if (typeSerialBus == ISerialsWord.TYPE_S4) {
+                    serialbus = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS + CacheUtil.S4);
+                } else if (typeSerialBus == ISerialsWord.TYPE_S12) {
+                    if (isSelectSerialBusSame() && isSelectAndOpen()) {
+                        Optional<Integer> firstValue = getSelectBusMap().values().stream().findFirst();
+                        if (firstValue.isPresent()) {
+                            serialbus = firstValue.get();
+                        }
+                    } else {
+                        if (isSelectAndOpen()) {
+                            DToast.get().show(context.getResources().getString(R.string.serialsWordUartTip));
+                        } else {
+                            DToast.get().show(context.getResources().getString(R.string.serialsWordTip));
+                        }
+                        return;
+                    }
+                }
+//                serialbus = RightLayoutSerials.getPropertyIndex(serialbus);
+                if (ScopeConfig.getConfig().isBusEnable(RightLayoutSerials.getPropertyIndex(serialbus))) {
+                    SaveManage.getInstance().saveSerialCSV(typeSerialBus, serialbus,
+                            savePosType, SaveManage.getInstance().generateName(), new SaveManage.SaveCallBack() {
+                                @Override
+                                public void onResult(boolean success, String msg) {
+                                    if (success) {
+                                        SaveManage.getInstance().putCacheName(SaveManage.getInstance().generateName());
+                                    }
+                                    DToast.get().show(msg);
+                                }
+                            });
+                }
+            } else {
+                boolean canSave = false;
+                for (int i = 0; i < ChannelFactory.CH_CNT; i++) {
+                    if (ChannelFactory.isChOpen(i)) {
+                        canSave = true;
+                        break;
+                    }
+                }
+                Logger.i(TAG, "Click QuickSave = " + canSave);
+                if (!canSave) {
+                    DToast.get().show(R.string.msgTopSaveCsvNotSelect);
+                    return;
+                }
+                String waveName = getWaveFileName();
+                boolean hasSameFile = false;
+                String currentPath = getWavePath();
+                for (int i = 0; i < ChannelFactory.CH_CNT; i++) {
+                    String newWaveName = waveName + "_ch" + TChan.toUiChNo(i) + ".mwav";
+                    String fileStr = currentPath + File.separator + newWaveName;
+                    File file = new File(fileStr);
+                    if (file.exists()) {
+                        hasSameFile = true;
+                        break;
+                    }
+                }
+                if (hasSameFile) {
+                    dialogOkCancel.setData(btnSave, R.string.top_slip_save_file_exists, null, null, onOkCancelClickListener);
+                } else {
+                    doQuickSave();
+                }
+            }
+        } else if (v.getId() == btnLeftTimeBase.getId()) {
+            OnBtnClickLeftTimeBase();
+//            if (handler.hasMessages(MSG_TIMEBASE)) {
+//                handler.removeMessages(MSG_TIMEBASE);
+//            }
+//            handler.sendEmptyMessageDelayed(MSG_TIMEBASE, 200);
+//            List<TimeBaseScale> list = mainCenterTimeBase.getList();
+//            String timeBase = btnCenterTimeBase.getText().toString();
+//            timeBase = timeBase.contains("\n") ? timeBase.split("\n")[1] : timeBase;
+//            for (int i = 0; i < list.size(); i++) {
+//                if (list.get(i).getScale().equals(timeBase)) {
+//                    if (i != 0) {
+//                        TimeBaseScale timeBaseScale = list.get(i - 1);
+//
+//                        setCenterTimeBase(timeBaseScale, true, false);
+//                    } else {
+//                        DToast.get().show(R.string.msgParameterLimited);
+//                    }
+//                    break;
+//                }
+//            }
+        } else if (v.getId() == btnCenterTimeBase.getId()) {
+            int iwaveCh = CacheUtil.get().getInt(CacheUtil.MAIN_CENTER_CHANNELS_SELECT) + 1;
+            int iwaveChWillNull = CacheUtil.get().getInt(CacheUtil.MAIN_CENTER_CHANNELS_SELECT_WILL_NULL) + 1;
+//            boolean isMathFft = false;
+//            if (TChan.isMath(iwaveCh)) {
+//                isMathFft = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_MATH_TYPE + iwaveCh) == CacheUtil.MATHTYPE_FFT;
+//            }
+//            if ((TChan.isMath(iwaveCh) && isMathFft) || TChan.isRef(iwaveCh)) {
+//                return;
+//            }
+//            if (iwaveCh == 0 && ((TChan.isMath(iwaveChWillNull) && isMathFft)
+//                    || TChan.isRef(iwaveChWillNull))) {
+//                return;
+//            }
+            String timeBase = btnCenterTimeBase.getText().toString();
+            timeBase = timeBase.contains("\n") ? timeBase.split("\n")[1] : timeBase;
+            mainCenterTimeBase.show(timeBase);
+        } else if (v.getId() == btnRightTimeBase.getId()) {
+            OnBtnClickRightTimeBase();
+//            if (handler.hasMessages(MSG_TIMEBASE)) {
+//                handler.removeMessages(MSG_TIMEBASE);
+//            }
+//            handler.sendEmptyMessageDelayed(MSG_TIMEBASE, 200);
+//            List<TimeBaseScale> list = mainCenterTimeBase.getList();
+//            String timeBase = btnCenterTimeBase.getText().toString();
+//            timeBase = timeBase.contains("\n") ? timeBase.split("\n")[1] : timeBase;
+//            for (int i = 0; i < list.size(); i++) {
+//                //if (list.get(i).getScale().contains(timeBase)) {
+//                if (list.get(i).getScale().equals(timeBase)) {
+//                    if (i != list.size() - 1) {
+//                        TimeBaseScale timeBaseScale = list.get(i + 1);
+////                            if (CacheUtil.get().getInt(CacheUtil.TOP_SLIP_DISPLAY_COMMON_ROLL) == 0
+////                                    && !CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_MATH_TYPE)
+////                                    && Tools.isSlowTimeBase(timeBaseScale.getScale())) {//当前为fft模式,进入慢时基时需要确认
+////                                dialogOkCancel.setDecimalData(R.string.dialogMsgInSlowTimeBase, timeBaseScale, onOkCancelClickListener);
+////                            } else {
+//                        setCenterTimeBase(timeBaseScale, true, false);
+////                            }
+//                    } else {
+//                        DToast.get().show(R.string.msgParameterLimited);
+//                    }
+//                    break;
+//                }
+//            }
+        } else if (v.getId() == btnChList.getId()) {
+            int visible = channels.setDialogVisible(btnChList.isChecked() ? View.VISIBLE : View.GONE);
+            Command.get().getMenu().ChannelSelector(visible == View.VISIBLE, false);
+            if (visible != View.VISIBLE && btnChList.isChecked()) {
+                btnChList.setChecked(false);
+            }
+            CacheUtil.get().putMap(CacheUtil.MAIN_BOTTOM_CHANNELLIST_VISIBLE, String.valueOf(btnChList.isChecked()));
+            RxBus.getInstance().post(RxEnum.MAINCENTER_CHANNEL_VISIBLE_LAYOUTTOBTN, btnChList.isChecked() ? View.VISIBLE : View.GONE);
+            ((MainViewGroup) itemView).hideAllSlip();
+            if (BuildConfig.DEBUG) {
+                if (!ScopeConfig.getConfig().isDeliveryDate()) {
+                    if (test.getVisibility() == View.VISIBLE) {
+                        test.setVisibility(View.GONE);
+                        testjz.setVisibility(View.VISIBLE);
+                    } else {
+                        if(testjz.getVisibility() == View.VISIBLE){
+                            testjz.setVisibility(View.GONE);
+                        }else
+                        {
+                            test.setVisibility(View.VISIBLE);
+                        }                    }
+                }
+            }
+        } else if (v.getId() == btnCursorH.getId()) {
+            Logger.d(TAG,"btnCursorH:" + btnCursorH.isChecked());
+            Command.get().getCursor().Horizontal(btnCursorH.isChecked(), false);
+            if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) {
+                CacheUtil.get().putMap(CacheUtil.MAIN_WAVE_XY_CURSORH_VISIBLE, String.valueOf(btnCursorH.isChecked()));
+            } else {
+                CacheUtil.get().putMap(CacheUtil.MAIN_WAVE_YT_CURSORH_VISIBLE, String.valueOf(btnCursorH.isChecked()));
+            }
+            CursorManage.getInstance().setRowVisible(btnCursorH.isChecked());
+            RxBus.getInstance().post(RxEnum.EXTERNALKEY_TOMCU,
+                    new ExternalKeysMsg_ToMCU(ExternalKeysMsg_ToMCU.TYPE_HCURSOR,
+                            btnCursorH.isChecked() ? ExternalKeysMsg_ToMCU.STATE_LED_ON : ExternalKeysMsg_ToMCU.STATE_LED_OFF));
+        } else if (v.getId() == btnCursorV.getId()) {
+            Logger.d(TAG,"btnCursorV:" + btnCursorV.isChecked());
+            Command.get().getCursor().Vertical(btnCursorV.isChecked(), false);
+            if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) {
+                CacheUtil.get().putMap(CacheUtil.MAIN_WAVE_XY_CURSORV_VISIBLE, String.valueOf(btnCursorV.isChecked()));
+            } else {
+                CacheUtil.get().putMap(CacheUtil.MAIN_WAVE_YT_CURSORV_VISIBLE, String.valueOf(btnCursorV.isChecked()));
+            }
+            CursorManage.getInstance().setColVisible(btnCursorV.isChecked());
+
+            RxBus.getInstance().post(RxEnum.EXTERNALKEY_TOMCU,
+                    new ExternalKeysMsg_ToMCU(ExternalKeysMsg_ToMCU.TYPE_VCURSOR,
+                            btnCursorV.isChecked() ? ExternalKeysMsg_ToMCU.STATE_LED_ON : ExternalKeysMsg_ToMCU.STATE_LED_OFF));
+//        } else if (v.getId() == btnSlipDown.getId()) {
+//            Screen.getViewLocation(btnSlipDown);
+//
+//            slipRightMenu();
+//                triggerLevel.Animation_DragToButton();
+        }else if (v.getId()== btnAdjustZero.getId()){
+            sendMsg(new MainMsgCenterMenuCommand(MainMsgCenterMenuCommand.CommandCalibrationZero));
+//            CommandMsgToUI msgToUI = Command.get().getMsgToUI();
+//            msgToUI.setFlag(CommandMsgToUI.FLAG_STOTAGE_CAPTURE);
+//            RxBus.getInstance().post(RxEnum.COMMAND_TO_UI,msgToUI);
+
+//            if(BuildConfig.DEBUG) {
+//                Scope.getInstance().AdReset();
+//            }
+        }else if (v.getId()==btnPer50.getId()){
+            MainMsgCenterMenuCommand command= new MainMsgCenterMenuCommand(MainMsgCenterMenuCommand.Command50Percent);
+            command.isOpenPercent50=btnPer50.isChecked();
+            RxBus.getInstance().post(RxEnum.MainLeft_To_Menu_Command,command);
+//            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+//                boolean b= UsbUtils.UdiskExist(context);
+//                Logger.i(Command.TAG,"b:"+b);
+//            }
+        }else if (v.getId()==btnHome.getId()){
+            MainMsgCenterMenuCommand command= new MainMsgCenterMenuCommand(MainMsgCenterMenuCommand.CommandReturnHome);
+            RxBus.getInstance().post(RxEnum.MainLeft_To_Menu_Command,command);
+//            Command.get().getChannel().Display(2,true,true);
+
+        }
+    }
+
+    private void sendMsg(MainMsgCenterMenuCommand command){
+        RxBus.getInstance().post(RxEnum.MainLeft_To_Menu_Command,command);
+    }
+
+    private String getScreenShotMsg(String... strings) {
+        String msg = "";
+        for (int i = 0; i < strings.length; i++) {
+            if (!StrUtil.isEmpty(strings[i])) {
+                if (!StrUtil.isEmpty(msg)) {
+                    msg += "\n";
+                }
+                msg += strings[i];
+            }
+        }
+        return msg;
+    }
+
+    /**
+     * @param showTip        是否显示tip
+     * @param isFromEventBus 是否来自底层
+     */
+    private void setCenterTimeBase(TimeBaseScale scale, boolean showTip, boolean isFromEventBus) {
+        String timeBase = btnCenterTimeBase.getText().toString();
+        int ch_idx = ChannelFactory.getChActivate();
+        int refTimeBaseIndex = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_USERSET_REF_TIMEBASE);
+        if (Scope.getInstance().isZoom() && !ChannelFactory.isRefCh(ch_idx) && !ChannelFactory.isMath_FFT_Ch(ch_idx)) {
+            //String[] strings = timeBase.split("\n");
+            //if (strings.length == 2 && strings[1].equals(scale.getScale())) {//这里不能这样判断，因为当zoom时修改存储深度，则缩略视图的时基档会发生变化，但放大视图时基档不变
+            //    return;
+            //}
+            int timeScaleIdZoom = HorizontalAxis.getInstance().getTimeScaleIdOfView(HorizontalAxis.WPI_SMALL);
+
+            List<TimeBaseScale> scaleList = mainCenterTimeBase.getList();
+            if(timeScaleIdZoom < scaleList.size()){
+                TimeBaseScale timeScaleDataZoom = scaleList.get(timeScaleIdZoom);
+                String str = timeScaleDataZoom.getScale() + "\n" + scale.getScale();
+                if (timeBase.equals(str) || scale.getIndex() < timeScaleIdZoom) {
+                    return;
+                }
+                CacheUtil.get().putMap(CacheUtil.ZOOM_BOTTOM_TIMEBASE_LARGE_SCALE, scale.getScale());
+                CacheUtil.get().putMap(CacheUtil.MAIN_BOTTOM_TIMEBASE_NORMAL_SCALE, timeScaleDataZoom.getScale());
+                btnCenterTimeBase.setText(str);
+            }else{
+                return;
+            }
+        } else {
+            if (timeBase.equals(scale.getScale())) {
+                //静态时zoom界面下，参考波形为当前通道时，点击运行时如果示波器配置为滚屏状态，则需要关闭zoom
+                if (Tools.isSlowTimeBase(CacheUtil.get().getString(CacheUtil.MAIN_BOTTOM_TIMEBASE_NORMAL_SCALE))
+                        && CacheUtil.get().getInt(CacheUtil.TOP_SLIP_DISPLAY_COMMON_ROLL) == 0) {
+                    msgTopRightGone.setVisible(false);
+                    RxBus.getInstance().post(RxEnum.MAIN_TOPRIGHT_GONE, msgTopRightGone);
+                }else {
+                    msgTopRightGone.setVisible(true);
+                    RxBus.getInstance().post(RxEnum.MAIN_TOPRIGHT_GONE, msgTopRightGone);
+                }
+
+                if ((ChannelFactory.isDynamicCh(ch_idx) || ChannelFactory.isMathCh(ch_idx)) && refTimeBaseIndex == 0) { //模拟通道为当前时会有循环，这里return掉
+                    return;
+                }
+            }
+            if (!ChannelFactory.isMath_FFT_Ch(ch_idx))
+                btnCenterTimeBase.setText(scale.getScale());
+        }
+
+        if (ChannelFactory.isRefCh(ch_idx)) {
+            if (refTimeBaseIndex == 0) {
+                RefChannel refChannel = ChannelFactory.getRefChannel(ch_idx);
+                if (refChannel != null && refChannel.getRefType() != WaveData.FFT_WAVE) {
+                    changeChTimeBase(scale, showTip, isFromEventBus);
+                    TChan.foreachRef(chan -> {
+                        RefChannel tempChannel = ChannelFactory.getRefChannel(TChan.toFpgaChNo(chan));
+                        if (tempChannel != null && tempChannel.getRefType() != WaveData.FFT_WAVE) {
+                            changeRefTimeScale(TChan.toFpgaChNo(chan), scale, showTip, true);
+                        }
+                    });
+                } else {
+                    changeRefTimeScale(ch_idx, scale, showTip, false);
+                }
+            } else {
+                changeRefTimeScale(ch_idx, scale, showTip, false);
+            }
+        } else if (ChannelFactory.isMath_FFT_Ch(ch_idx)) {
+            changeMathFFTTimeBase(ch_idx, scale, showTip, isFromEventBus);
+        } else {
+            changeChTimeBase(scale, showTip, isFromEventBus);
+            if (ChannelFactory.isDynamicCh(ch_idx) || ChannelFactory.isMathCh(ch_idx)) {
+                Logger.i(TAG, "RefTimeBaseIndex= " + refTimeBaseIndex);
+                if (refTimeBaseIndex == 0) { //跟随模拟通道
+                    final TimeBaseScale finalScale = scale;
+                    TChan.foreachRef(chan -> {
+                        changeRefTimeScale(TChan.toFpgaChNo(chan), finalScale, showTip, true);
+                    });
+                    //
+                    if(!isFromEventBus) {
+                        TriggerTimebase.getInstance().movePix(0);
+                    }
+                }
+            }
+        }
+    }
+
+    private void changeMathFFTTimeBase(int ch_idx, TimeBaseScale scale, boolean showTip, boolean isFromEventBus) {
+        HorizontalAxisMath horizontalAxisFft = ChannelFactory.getMathChannel(ch_idx).getHorizontalAxisMathFFT();
+        double sOld = horizontalAxisFft.fftXScaleIdVal();
+        long pos = horizontalAxisFft.getXPosOfView();
+        if (!isFromEventBus) {
+            horizontalAxisFft.setHorizontalScaleId(scale.getIndex());
+        }
+        int idx = horizontalAxisFft.getHorizontalScaleId();
+        if (idx != scale.getIndex()) {
+            List<TimeBaseScale> list = mainCenterTimeBase.getList();
+            if (idx >= list.size()) {
+                idx = list.size() - 1;
+            }
+            scale = list.get(idx);
+        }
+        double sNew = horizontalAxisFft.fftXScaleIdVal(scale.getIndex());
+        pos = (long) (sOld / sNew * pos);
+        if (!isFromEventBus) {
+            horizontalAxisFft.setXPosOfView(pos);
+        }
+        //horizontalAxisFft.correctXPose();
+        TriggerTimebase.getInstance().setX_dis(ScopeBase.getWidth() / 2 - pos);
+
+//            if (!Scope.getInstance().isZoom())
+        {
+            CacheUtil.get().putMap(CacheUtil.MAIN_BOTTOM_TIMEBASE_FFT_SCALE + TChan.toUiChNo(ch_idx), scale.getScale());
+        }
+        btnCenterTimeBase.setText(scale.getScale());
+
+        try {
+            Command.get().getMath_fft().HsCale(ch_idx, TBookUtil.getDoubleFromM(btnCenterTimeBase.getText().toString().replace("Hz", "")), false);
+        } catch (Exception e) {
+
+        }
+
+        msgTimeBase.setTimeBase(scale.getScale());
+        msgTimeBase.setType(MainBottomMsgTimeBase.TYPE_FFT);
+        sendTimeBaseMsg(msgTimeBase);
+//            sendTopGoneMsg();
+        msgTopCenterGone.setVisible(true);
+        sendTopCenterGoneMsg(msgTopCenterGone);
+        if (showTip) {
+            handler.sendEmptyMessage(MSG_TIP_DISPLAY_TB);
+        }
+    }
+
+    private void changeChTimeBase(TimeBaseScale scale, boolean showTip, boolean isFromEventBus) {
+        HorizontalAxis horizontalAxis = HorizontalAxis.getInstance();
+//        if (horizontalAxis.getTimeScaleIdOfView() == scale.getIndex()) return;
+        boolean scaleChange = false;
+
+        if (!isFromEventBus) {
+            horizontalAxis.setTimeScaleIdOfView(scale.getIndex());
+        }
+
+        //当以触发时刻为缩放中心，且非zoom，非滚屏时，需要修改触发时刻
+
+        boolean bX = true;
+        if (Display.getInstance().getHorRef() == Display.HORREF_TRIGPOS) { //菜单显示：时基参考 触发位置
+            if (!Display.getInstance().isZoom()) {
+                long timePos = horizontalAxis.getTimePosOfView();
+                long grid = horizontalAxis.getTimePoseOfGrid(horizontalAxis.getTimeScaleIdVal(timeScaleId), timePos);
+                long pos = horizontalAxis.getTimePose(horizontalAxis.getTimeScaleIdVal(scale.getIndex()), grid);
+                if (!isFromEventBus) {
+                    horizontalAxis.setTimePosOfView(pos);//设置timePos的变量值
+                }
+            } else {
+                bX = false;
+            }
+        }
+
+        if (timeScaleId != scale.getIndex()) {
+            if (bX) {
+                timeScaleId = scale.getIndex(); //时基备份，放后面
+            }
+            scaleChange = true;
+        }
+
+//            if (!Scope.getInstance().isInScrollMode())
+        {
+            horizontalAxis.correctTimePose();//当触发时刻为负数时，切换时基档有可能超出范围
+            int refTimeBaseIndex = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_USERSET_REF_TIMEBASE);
+
+            int ch_idx = ChannelFactory.getChActivate();
+            long pix = ScopeBase.getWidth() / 2 - horizontalAxis.getTimePoseOfViewPix();
+            if (ChannelFactory.isRefCh(ch_idx)) {
+                RefChannel refChannel = ChannelFactory.getRefChannel(ch_idx);
+                if (refChannel != null && refChannel.getRefType() != WaveData.FFT_WAVE) {
+                    long tempTime = refChannel.getTimePosOfView();
+                    long tempPix = refChannel.getTimePoseOfViewPix(tempTime);
+                    pix = ScopeBase.getWidth() / 2 - tempPix;
+                }
+            }
+//            long xCache = CacheUtil.get().getLong(CacheUtil.MAIN_WAVE_TIMEBASE_POSITION_NORMAL);
+//            if (pix != xCache && refTimeBaseIndex == 0) {
+//                pix = xCache;
+//                horizontalAxis.setTimePoseOfViewPix(ScopeBase.getWidth() / 2 - pix);
+//            }
+            if (isFromEventBus) {
+                TriggerTimebase.getInstance().setX_disFromEventBus(pix);//设置timePos的像素值，屏幕中间为0，左正右负
+            } else {
+                TriggerTimebase.getInstance().setX_dis(pix);//设置timePos的像素值，屏幕中间为0，左正右负
+            }
+        }
+
+        if (Scope.getInstance().isZoom()) {
+            if (btnCenterTimeBase.getText().toString().contains("\n")) {
+                String[] strs = btnCenterTimeBase.getText().toString().split("\n");
+                CacheUtil.get().putMap(CacheUtil.ZOOM_BOTTOM_TIMEBASE_LARGE_SCALE, strs[1]);
+                CacheUtil.get().putMap(CacheUtil.MAIN_BOTTOM_TIMEBASE_NORMAL_SCALE, strs[0]);
+            } else {
+                CacheUtil.get().putMap(CacheUtil.ZOOM_BOTTOM_TIMEBASE_LARGE_SCALE, scale.getScale());
+            }
+        } else {
+            CacheUtil.get().putMap(CacheUtil.MAIN_BOTTOM_TIMEBASE_NORMAL_SCALE, scale.getScale());
+        }
+        msgTimeBase.setTimeBase(scale.getScale());
+        msgTimeBase.setType(MainBottomMsgTimeBase.TYPE_NORMAL);
+        msgTimeBase.setFromEventBus(isFromEventBus);
+        sendTimeBaseMsg(msgTimeBase);
+
+        sendTopGoneMsg();
+        if (showTip) {
+            handler.sendEmptyMessage(MSG_TIP_DISPLAY_TB);
+        }
+    }
+
+    private void changeRefTimeScale(int ch_idx, TimeBaseScale scale, boolean showTip, boolean isFromCh) {
+        RefChannel refChannel = ChannelFactory.getRefChannel(ch_idx);
+        if (refChannel == null || !refChannel.isOpen()) return;
+        if (isFromCh && refChannel.getRefType() == WaveData.FFT_WAVE) return;
+        int idx = scale.getIndex();
+        HorizontalAxisRef horizontalAxisRef = refChannel.getHorizontalAxisRef();
+        List<Double> refxAxis = horizontalAxisRef.getxAxis();
+        int timeBaseIndex = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_USERSET_REF_TIMEBASE);
+        if(timeBaseIndex == 0 && refChannel.getRefType() != WaveData.FFT_WAVE) { //跟随模拟通
+            refxAxis = HorizontalAxis.getInstance().getxAxis();
+        }
+
+        if (isFromCh) {
+            double scaleValue = TBookUtil.getDoubleFromM(scale.getScale().replace("s", ""));
+            for (int i = 0; i < refxAxis.size(); i++) {
+//                Logger.i(TAG, "RefxAxis= " + i + " ,scale= " + refxAxis.get(i) + " ,scaleValue= " + scaleValue + " ,strScale= " + scale.getScale());
+                if (Math.abs(scaleValue - refxAxis.get(i)) < 1E-15) {
+                    idx = i;
+//                    break;
+                }
+            }
+            if (idx > refxAxis.size() - 1) {
+                idx = refxAxis.size() - 1;
+            }
+            if (scaleValue >= refxAxis.get(0)) {
+                idx = 0;
+            }
+        }
+        Logger.i(TAG, "RefxAxis finalIdx= " + idx);
+
+        long oldPosPix = refChannel.getTimePoseOfViewPix();
+//        if (refChannel.getRefTimeScaleVal() == refxAxis.get(idx)) return;
+        refChannel.setRefTimeScale(refxAxis.get(idx));
+        if (Display.getInstance().getHorRef() == Display.HORREF_TRIGPOS) { //菜单显示：时基参考 触发位置
+            if (!Display.getInstance().isZoom()) {
+                refChannel.setXPosOfViewPix(oldPosPix);
+            }
+        }
+
+        //修改触发时刻
+        if (!isFromCh || timeBaseIndex == 1) {
+            TriggerTimebase.getInstance().setX(ScopeBase.getWidth() / 2 - refChannel.getTimePoseOfViewPix());
+        }
+
+        CacheUtil.get().putMap(CacheUtil.MAIN_BOTTOM_TIMEBASE_REF_SCALE + TChan.toUiChNo(ch_idx), scale.getScale());
+
+//        if (!isFromCh) {
+            msgTimeBase.setTimeBase(scale.getScale());
+            msgTimeBase.setType(MainBottomMsgTimeBase.TYPE_REF);
+            sendTimeBaseMsg(msgTimeBase);
+            msgTopCenterGone.setVisible(true);
+            sendTopCenterGoneMsg(msgTopCenterGone);
+            if (showTip) {
+                handler.sendEmptyMessage(MSG_TIP_DISPLAY_TB);
+            }
+//        }
+        refChannel.drawRef();
+    }
+
+
+    private MainLayoutCenterTimeBase.OnClickItemListener onClickTimeBaseListener = new MainLayoutCenterTimeBase.OnClickItemListener() {
+        @Override
+        public void onClickItem(TimeBaseScale timeBaseScale) {
+            PlaySound.getInstance().playButton();
+//            if (CacheUtil.get().getInt(CacheUtil.TOP_SLIP_DISPLAY_COMMON_ROLL) == 0
+//                    && !CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_MATH_TYPE)
+//                    && Tools.isSlowTimeBase(timeBaseScale.getScale())) {//当前为fft模式,进入慢时基时需要确认
+//                dialogOkCancel.setDecimalData(R.string.dialogMsgInSlowTimeBase, timeBaseScale, onOkCancelClickListener);
+//            } else {
+            Command.get().getTimebase().Extent(-1, TBookUtil.getSFromTime(timeBaseScale.getScale()), false);
+            Command.get().getTimebase().Scale(-1, TBookUtil.getSFromTime(timeBaseScale.getScale()), false);
+            CursorManage.getInstance().setCursorTrace(true);
+            setCenterTimeBase(timeBaseScale, false, false);
+            CursorManage.setCursorByTimebaseTrace();
+            CursorManage.getInstance().setCursorTrace(false);
+//            }
+        }
+    };
+
+    private DialogOkCancel.OnOkCancelClickListener onOkCancelClickListener = new DialogOkCancel.OnOkCancelClickListener() {
+
+        @Override
+        public void onOkClick(View v, Object data) {
+            if (v.getId() == btnSave.getId()) {
+                createBakWavFile();
+                doQuickSave();
+            } else {
+                setCenterTimeBase(((TimeBaseScale) data), true, false);
+            }
+        }
+
+        @Override
+        public void onCancelClick(View v, Object data) {
+
+        }
+
+        @Override
+        public void onDialogClose(View view) {}
+    };
+
+    //BatteryChangedReceiver batteryChangedReceiver;
+    //UsbChangedReceiver usbChangedReceiver;
+    //    UDiskChangedReceiver uDiskChangedReceiver;
+//    WifiChangedReceiver wifiChangedReceiver;
+
+    private static final String ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
+
+    private void initReceiver() {
+
+
+//        batteryChangedReceiver = new BatteryChangedReceiver();
+//        IntentFilter intentFilter = new IntentFilter();
+//        intentFilter.addAction(Intent.ACTION_BATTERY_CHANGED);
+//        intentFilter.addAction(Intent.ACTION_BATTERY_LOW);
+//        intentFilter.addAction(Intent.ACTION_BATTERY_OKAY);
+//        mainActivity.registerReceiver(batteryChangedReceiver, intentFilter);
+//
+//        usbChangedReceiver = new UsbChangedReceiver();
+//        IntentFilter intentFilter3 = new IntentFilter();
+//        intentFilter3.addAction(UsbChangedReceiver.ACTION);
+//        mainActivity.registerReceiver(usbChangedReceiver, intentFilter3);
+
+        ////监听otg插入 拔出
+//        uDiskChangedReceiver = new UDiskChangedReceiver();
+//        IntentFilter usbDeviceStateFilter = new IntentFilter();
+//        usbDeviceStateFilter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
+//        usbDeviceStateFilter.addAction(Intent.ACTION_MEDIA_MOUNTED);
+//        usbDeviceStateFilter.addAction(Intent.ACTION_MEDIA_UNMOUNTED);
+//        usbDeviceStateFilter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
+//        usbDeviceStateFilter.addAction(ACTION_USB_PERMISSION);
+//        usbDeviceStateFilter.addDataScheme("file");
+//        mainActivity.registerReceiver(uDiskChangedReceiver, usbDeviceStateFilter);
+        //注册监听自定义广播
+//        IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
+
+//        mainActivity.registerReceiver(uDiskChangedReceiver, filter);
+
+        registerNetworkConnectChangeReceiver();
+    }
+
+    private void registerNetworkConnectChangeReceiver() {
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
+        filter.addAction(WifiManager.WIFI_STATE_CHANGED_ACTION);
+        filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
+        filter.addAction(WifiManager.SUPPLICANT_CONNECTION_CHANGE_ACTION);
+        filter.addAction(WifiManager.SUPPLICANT_STATE_CHANGED_ACTION);
+//        wifiChangedReceiver = new WifiChangedReceiver();
+//        mainActivity.registerReceiver(wifiChangedReceiver, filter);
+    }
+
+    public void unregisterReceiver() {
+//        mainActivity.unregisterReceiver(batteryChangedReceiver);
+//        mainActivity.unregisterReceiver(usbChangedReceiver);
+//        mainActivity.unregisterReceiver(uDiskChangedReceiver);
+    }
+
+    public static class BatteryChangedReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+//            String action = intent.getAction();
+//            if (action == null) return;
+//            if (Intent.ACTION_BATTERY_CHANGED.equals(action)) {
+//                int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0);//电量当前值
+//                int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, 100);//电量最大值
+//                int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, 0);
+//                Message message = new Message();
+//                message.arg1 = level;
+//                switch (status) {
+//                    case BatteryManager.BATTERY_STATUS_CHARGING:        //正在充电,2
+//                        message.what = MSG_BATTERY_CHARGE;
+//                        handler.sendMessage(message);
+//                        break;
+//                    case BatteryManager.BATTERY_STATUS_FULL:            //充满,5
+//                    case BatteryManager.BATTERY_STATUS_NOT_CHARGING:    //没有充电,4
+//                    case BatteryManager.BATTERY_STATUS_DISCHARGING:     //放电,3
+//                    default:
+//                        message.what = MSG_BATTERY_DISCHARGE;
+//                        handler.sendMessage(message);
+//                        break;
+//                }
+//                if (status != BatteryManager.BATTERY_STATUS_FULL) {
+//                    int plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0);
+//                    Message message2 = new Message();
+//                    message2.arg1 = level;
+//                    switch (plugged) {
+//                        case BatteryManager.BATTERY_PLUGGED_AC:             //连接的交流变电器
+//                        case BatteryManager.BATTERY_PLUGGED_USB:            //连接的usb
+//                            message2.what = MSG_BATTERY_CHARGE;
+//                            handler.sendMessage(message2);
+//                            break;
+//                        case BatteryManager.BATTERY_PLUGGED_WIRELESS:       //连接的无线电源
+//                        default:
+//                            message.what = MSG_BATTERY_DISCHARGE;
+//                            //handler.sendMessage(message);
+//                            break;
+//                    }
+//                }
+//            } else if (action.equalsIgnoreCase(Intent.ACTION_BATTERY_LOW)) {
+//                // 表示当前电池电量低
+//                DToast.get().show(R.string.msgBatteryLow);
+//            } else if (action.equalsIgnoreCase(Intent.ACTION_BATTERY_OKAY)) {
+//                // 表示当前电池已经从电量低恢复为正常
+//            }
+        }
+    }
+
+    public class UsbChangedReceiver extends BroadcastReceiver {
+        private final static String ACTION = "android.hardware.usb.action.USB_STATE";
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+//            String action = intent.getAction();
+//            if (action == null) return;
+//            if (action.equalsIgnoreCase(ACTION)) {
+//                boolean connected = intent.getBooleanExtra("connected", false);
+//                tvUsbPcLink.setVisibility(connected ? View.VISIBLE : View.GONE);
+//            }
+        }
+    }
+
+    private static void saveSysInfo(String path) {
+        PropertyManage propertyManage = PropertyManage.getInstance();
+        propertyManage.update();
+        Property property = propertyManage.getProperty();
+        String uuid = property.getUUID();
+        String sn = property.getSN();
+        String displaySn = property.getDisplaySN();
+        if (sn != null) sn = sn.trim();
+        if (displaySn != null) displaySn = displaySn.trim();
+        if (displaySn == null || displaySn.isEmpty()) {
+            displaySn = sn;
+        }
+        if (!path.endsWith(File.separator)) {
+            path += File.separator;
+        }
+        path += displaySn + ".txt";
+        File file = new File(path);
+        if (!file.exists()) {
+            try {
+                FileWriter fw = new FileWriter(file);
+                BufferedWriter bufw = new BufferedWriter(fw);
+                bufw.write("SN:" + displaySn + "( " + sn + ")");
+                bufw.newLine();
+                bufw.write("Code:" + uuid);
+                bufw.flush();
+                fw.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+    }
+
+    public static class UDiskChangedReceiver extends BroadcastReceiver {
+        private static final String TAG = "UDiskChangedReceiver";
+        private static final String MOUNTS_FILE = "/proc/mounts";
+        private StorageManager mStorageManager;
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+//            mStorageManager = (StorageManager) context.getSystemService(Activity.STORAGE_SERVICE);
+//            String action = intent.getAction();
+//            Logger.d(TAG, "action:" + action);
+//            if (action.equals(Intent.ACTION_MEDIA_MOUNTED)) {
+//                String mountPath = intent.getData().getPath();
+//                Uri data = intent.getData();
+//                if ("/storage/emulated/0".equalsIgnoreCase(mountPath)) {
+//                    return;
+//                }
+//                Logger.d(TAG, "mountPath = " + mountPath);
+//                if (!TextUtils.isEmpty(mountPath)) {
+//                    //读取到U盘路径再做其他业务逻辑
+//                    CacheUtil.get().putOtherMapAndSave(CacheUtil.MAIN_BOTTOM_USB_PATH, mountPath);
+//                    boolean mounted = isMounted(mountPath);
+//                    tvUDisk.setVisibility(View.VISIBLE);
+//                    RxBus.getInstance().post(RxEnum.UDISK_RESPONSE, true);
+//                    saveSysInfo(mountPath);
+//                    if (!Tools.mapUdisk.containsKey(mountPath)) {
+//                        Tools.mapUdisk.put(mountPath, mountPath);
+//                    }
+//                }
+//            } else if (action.equals(Intent.ACTION_MEDIA_UNMOUNTED) || action.equals(Intent.ACTION_MEDIA_EJECT)) {
+//                Logger.d(TAG, "onReceive: " + "U盘移除了");
+//                CacheUtil.get().putOtherMapAndSave(CacheUtil.MAIN_BOTTOM_USB_PATH, "");
+//                String path = intent.getData().getPath();
+//                Tools.mapUdisk.remove(path);
+//                tvUDisk.setVisibility(View.GONE);
+//                RxBus.getInstance().post(RxEnum.UDISK_RESPONSE, false);
+//            } else if (action.equals("android.intent.action.BOOT_COMPLETED")) {
+//                Logger.d(TAG, "onReceive: " + "BOOT_COMPLETED");
+//                //如果是开机完成，则需要调用另外的方法获取U盘的路径
+//            } else if (action.equals(Intent.ACTION_MEDIA_REMOVED)) {
+//                Logger.d(TAG, "onReceive: " + "ACTION_MEDIA_REMOVED");
+//            }
+        }
+
+        /**
+         * 判断是否有U盘插入,当U盘开机之前插入使用该方法.
+         *
+         * @param path
+         * @return
+         */
+        public static boolean isMounted(String path) {
+            boolean blnRet = false;
+            String strLine = null;
+            BufferedReader reader = null;
+            try {
+                reader = new BufferedReader(new FileReader(MOUNTS_FILE));
+                while ((strLine = reader.readLine()) != null) {
+                    if (strLine.contains(path)) {
+                        blnRet = true;
+                        break;
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                if (reader != null) {
+                    try {
+                        reader.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    reader = null;
+                }
+            }
+            return blnRet;
+        }
+    }
+
+    public static class WifiChangedReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+//            if (intent.getAction().equals(ConnectivityManager.CONNECTIVITY_ACTION)
+//                    || intent.getAction().equals("android.net.conn.CONNECTIVITY_CHANGE")) {
+//                switch (isNetworkAvailable(context)) {
+//                    case 1:
+//                        tvInternet.setVisibility(View.VISIBLE);
+//                        break;
+//                    case 2:
+//                        tvWifi.setVisibility(View.VISIBLE);
+//                        break;
+//                    case 0:
+//                        tvInternet.setVisibility(View.GONE);
+//                        tvWifi.setVisibility(View.GONE);
+//                        break;
+//                }
+//            }
+        }
+
+    }
+
+    private static int isNetworkAvailable(Context context) {
+        ConnectivityManager connectMgr = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo ethNetInfo = connectMgr.getNetworkInfo(ConnectivityManager.TYPE_ETHERNET);
+        NetworkInfo wifiNetInfo = connectMgr.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+
+        if (ethNetInfo != null && ethNetInfo.isConnected()) {
+            return 1;
+        } else if (wifiNetInfo != null && wifiNetInfo.isConnected()) {
+            return 2;
+        } else {
+            return 0;
+        }
+    }
+
+    public static String getCenterTimeBase() {
+        return btnCenterTimeBase.getText().toString();
+    }
+
+    private boolean isSelectAndOpen(){
+        boolean s1Check = CacheUtil.get().getBoolean(CacheUtil.MAIN_RIGHT_SERIAL + CacheUtil.S1);
+        boolean s2Check = CacheUtil.get().getBoolean(CacheUtil.MAIN_RIGHT_SERIAL + CacheUtil.S2);
+        boolean s3Check = CacheUtil.get().getBoolean(CacheUtil.MAIN_RIGHT_SERIAL + CacheUtil.S3);
+        boolean s4Check = CacheUtil.get().getBoolean(CacheUtil.MAIN_RIGHT_SERIAL + CacheUtil.S4);
+        boolean s1Select = CacheUtil.get().getBoolean(CacheUtil.SERIAL_TXT_SELECT + CacheUtil.S1);
+        boolean s2Select = CacheUtil.get().getBoolean(CacheUtil.SERIAL_TXT_SELECT + CacheUtil.S2);
+        boolean s3Select = CacheUtil.get().getBoolean(CacheUtil.SERIAL_TXT_SELECT + CacheUtil.S3);
+        boolean s4Select = CacheUtil.get().getBoolean(CacheUtil.SERIAL_TXT_SELECT + CacheUtil.S4);
+        boolean[] select = {s1Select, s2Select, s3Select, s4Select};
+        boolean[] check = {s1Check, s2Check, s3Check, s4Check};
+
+        for(int i=0;i<select.length;i++){
+            if (select[i] && !check[i]){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private HashMap<Integer, Integer> getSelectBusMap() {
+        boolean s1Select = CacheUtil.get().getBoolean(CacheUtil.SERIAL_TXT_SELECT + CacheUtil.S1);
+        boolean s2Select = CacheUtil.get().getBoolean(CacheUtil.SERIAL_TXT_SELECT + CacheUtil.S2);
+        boolean s3Select = CacheUtil.get().getBoolean(CacheUtil.SERIAL_TXT_SELECT + CacheUtil.S3);
+        boolean s4Select = CacheUtil.get().getBoolean(CacheUtil.SERIAL_TXT_SELECT + CacheUtil.S4);
+        int serialbus1 = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS + CacheUtil.S1);
+        int serialbus2 = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS + CacheUtil.S2);
+        int serialbus3 = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS + CacheUtil.S3);
+        int serialbus4 = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS + CacheUtil.S4);
+        HashMap<Integer, Integer> map = new HashMap<>();
+        if (s1Select) {
+            map.put(TChan.S1, serialbus1);
+        }
+        if (s2Select) {
+            map.put(TChan.S2, serialbus2);
+        }
+        if (s3Select) {
+            map.put(TChan.S3, serialbus3);
+        }
+        if (s4Select) {
+            map.put(TChan.S4, serialbus4);
+        }
+        return map;
+    }
+
+    private boolean isSelectSerialBusSame() {
+        return getSelectBusMap().values().stream().distinct().limit(2).count() <= 1;//判断map中存的值是否相等
+    }
+
+    private void doQuickSave() {
+        ScreenControls screenControls = ScreenControls.getInstance();
+        screenControls.lockScreen(ScreenControls.LOCK_PROGRESS);
+        QuickSaveTaskExecutor taskExecutor = new QuickSaveTaskExecutor();
+        taskExecutor.executeTaskSequentially();
+        taskExecutor.shutDown();
+        screenControls.unLockScreen(ScreenControls.LOCK_PROGRESS);
+    }
+
+    private void createBakWavFile() {
+        String currentPath = getWavePath();
+        String waveName = getWaveFileName();
+        for (int i = 0; i < ChannelFactory.CH_CNT; i++) {
+            if (!ChannelFactory.isChOpen(i)) continue;
+            String newWaveName = waveName + "_ch" + TChan.toUiChNo(i) + ".mwav";
+            String fileStr = currentPath + File.separator + newWaveName;
+            File file = new File(fileStr);
+            if (file.exists()) {
+                FileUtils.createBakFile(fileStr);
+            }
+        }
+    }
+
+    private String getWaveFileName() {
+        String waveName = CacheUtil.get().getOtherString(CacheUtil.TOP_SLIP_SAVE_WAVE_NAME + CacheUtil.WAVE_TYPE_WAV);
+        boolean isFileNumAddCheck = CacheUtil.get().getOtherBoolean(CacheUtil.TOP_SLIP_SAVE_WAVE_SUFFIX_CHECK + CacheUtil.WAVE_TYPE_WAV);
+        String suffixNum = CacheUtil.get().getOtherString(CacheUtil.TOP_SLIP_SAVE_WAVE_SUFFIX_CHECK_NUM + CacheUtil.WAVE_TYPE_WAV);
+        if (waveName.isEmpty()) {
+            waveName = Tools.generateName();
+        }
+        if (isFileNumAddCheck) {
+            waveName = waveName + "_" + suffixNum;
+        }
+        return waveName;
+    }
+
+    private String getWavePath() {
+        String currentPath = CacheUtil.get().getOtherString(CacheUtil.TOP_SLIP_SAVE_WAVE_PATH_CURRENT + CacheUtil.WAVE_TYPE_WAV);
+        if (!FileUtils.checkFolderExists(currentPath, context.getResources().getString(R.string.internal_storage))) {
+            currentPath = SaveManage.getInstance().getAbDefaultPath(SaveManage.SAVE_WAVE_DEFAULT);//默认位置
+        }
+        return currentPath;
+    }
+
+    public class QuickSaveTaskExecutor {
+        private final ExecutorService singleThreadExecutor;
+        private static final int TASK_COUNT = ChannelFactory.CH_CNT;
+
+        public QuickSaveTaskExecutor() {
+            singleThreadExecutor = Executors.newSingleThreadExecutor();
+        }
+
+        public void executeTaskSequentially() {
+            CountDownLatch previousLatch = new CountDownLatch(0);
+            final StringBuilder finalMsg = new StringBuilder("");
+            String waveNameTemp = getWaveFileName();
+            String currentPath = getWavePath();
+            for (int i = 0; i < TASK_COUNT; i++) {
+                final int taskId = i;
+                final CountDownLatch currentLatch = new CountDownLatch(1);
+                final CountDownLatch prevLatch = previousLatch;
+                final String filePathTemp = currentPath;
+                final String fileNameTemp = waveNameTemp;
+                singleThreadExecutor.submit(() -> {
+                    try {
+                        while (prevLatch.getCount() != 0) {
+                            prevLatch.await();
+                        }
+                        saveWavTask(taskId, filePathTemp, fileNameTemp, finalMsg);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    } finally {
+                        currentLatch.countDown();
+                    }
+
+                });
+                previousLatch = currentLatch;
+            }
+            RxBus.getInstance().post(RxEnum.MAINBOTTOM_QUICKSAVE, true);
+        }
+
+        private void saveWavTask(int taskId, String filePath, String fileName, StringBuilder finalMsg) {
+            final String finalFilePath = filePath;
+            final String finalFileName = fileName + "_ch" + TChan.toUiChNo(taskId);
+            SaveManage saveManage = SaveManage.getInstance();
+            while (!saveManage.saveIsComplete()) {
+                try {
+                    Thread.sleep(10);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            SaveManage.getInstance().allSaveEntrance(taskId, 0, finalFilePath, finalFileName, null, (success, msg) -> {
+                Logger.i(TAG, "doQuickSave save path= " + finalFilePath + " ,name= " + finalFileName + " ,success= " + success);
+                if (success) {
+                    FileUtils.deleteFile(finalFilePath + File.separator + finalFileName + ".mwav" + FileUtils.BACKUP_FILE_SUFFIX);
+                } else {
+                    FileUtils.restoreFromBakFile(finalFilePath + File.separator + finalFileName + ".mwav" + FileUtils.BACKUP_FILE_SUFFIX);
+                }
+                if (ChannelFactory.isChOpen(taskId)) {
+                    finalMsg.append(msg).append("\n");
+                }
+                if (taskId == ChannelFactory.CH_CNT - 1) {
+                    mainActivity.screenShot();
+                    Logger.i(TAG, "finalMsg= " + finalMsg);
+                    if (!StrUtil.isEmpty(finalMsg.toString()) && finalMsg.length() >= "\n".length()) {
+                        DToast.get().show(finalMsg.substring(0, finalMsg.length() - "\n".length()));
+                    }
+                }
+            });
+        }
+
+        public void shutDown() {
+            if (singleThreadExecutor != null) {
+                singleThreadExecutor.shutdown();
+            }
+        }
+    }
+
+    private final Consumer<Integer> consumerRefTimeBase = new Consumer<Integer>() {
+        @Override
+        public void accept(Integer refTbIndex) throws Throwable {
+            if(refTbIndex == 0) {//跟随
+                //模拟通道时基础调整为参考通道时基
+                TimeBaseScale tempScale = null;
+                for (int i = ChannelFactory.REF1; i <= ChannelFactory.REF8; i++) {//找到对应的参考
+                    RefChannel refChannel = ChannelFactory.getRefChannel(i);
+                    if (refChannel == null || !refChannel.isOpen() || refChannel.getRefType() == WaveData.FFT_WAVE) continue;
+                    List<TimeBaseScale> refScaleList = mainCenterTimeBase.onlyGenerateRefChannelList(refChannel);
+                    int refTimeIndex = ChannelFactory.getRefChannel(i).getRefTimeScaleId_ui();//参考的时基id
+                    Logger.d(TAG, "refChannel= " + refChannel.getName() + " ,timeIndex= " + refTimeIndex);
+                    tempScale = refScaleList.get(refTimeIndex);
+                    break;
+                }
+                if (tempScale != null) { //改变模拟通道时基
+                    List<TimeBaseScale> chScaleList = mainCenterTimeBase.onlyGenerateChannelList();
+                    for (TimeBaseScale timeBaseScale : chScaleList) {
+                        if (timeBaseScale.getScale().equals(tempScale.getScale())) {
+                            Logger.d(TAG, "timeBaseScale= " + timeBaseScale.toString() + " ,tempScale= " + tempScale.toString());
+                            changeChTimeBase(timeBaseScale, true, false);
+                            break;
+                        }
+                    }
+                }
+            } else {//切换为 独立调节 时看是否需要调整参考通道的时基
+                int oldChActive = ChannelFactory.getChActivate();
+                for (int i = ChannelFactory.REF1; i <= ChannelFactory.REF8; i++) {
+                    RefChannel refChannel = ChannelFactory.getRefChannel(i);
+                    if (refChannel == null || !refChannel.isOpen() || refChannel.getRefType() == WaveData.FFT_WAVE)
+                        continue;
+                    ChannelFactory.chActivate(i);
+                    int refTimeIndex = refChannel.getRefTimeScaleId_ui();
+                    if (refTimeIndex < 0) { //这里之前超限制的，需要还原到限制值。
+                        List<TimeBaseScale> refScaleList = mainCenterTimeBase.onlyGenerateRefChannelList(refChannel);
+//                    changeRefTimeScale(finalRefIndex, refScaleList.get(0), true, false);
+                        setCenterTimeBase(refScaleList.get(0), false, false);
+                    }
+                }
+                ChannelFactory.chActivate(oldChActive);
+
+//                int finalRefIndex = -1;
+//                int chActive = ChannelFactory.getChActivate();
+//                if (ChannelFactory.isRefCh(chActive)) {
+//                    RefChannel refChannel = ChannelFactory.getRefChannel(chActive);
+//                    if (refChannel != null && refChannel.isOpen() && refChannel.getRefType() != WaveData.FFT_WAVE) {
+//                        finalRefIndex = chActive;
+//                    }
+//                }
+//                if (finalRefIndex < 0) {
+//                    for (int i = ChannelFactory.REF1; i <= ChannelFactory.REF8; i++) {
+//                        RefChannel refChannel = ChannelFactory.getRefChannel(i);
+//                        if (refChannel != null && refChannel.getRefType() != WaveData.FFT_WAVE) {
+//                            finalRefIndex = i;
+//                            break;
+//                        }
+//                    }
+//                }
+//                if (finalRefIndex < 0) return;
+//                RefChannel refChannel = ChannelFactory.getRefChannel(finalRefIndex);
+//                int refTimeIndex = refChannel.getRefTimeScaleId_ui();
+//                Logger.d(TAG, "refChannel= " + refChannel.getName() + " ,timeIndex= " + refTimeIndex);
+//                if (refTimeIndex < 0) { //这里之前超限制的，需要还原到限制值。
+//                    List<TimeBaseScale> refScaleList = mainCenterTimeBase.onlyGenerateRefChannelList(refChannel);
+////                    changeRefTimeScale(finalRefIndex, refScaleList.get(0), true, false);
+//                    setCenterTimeBase(refScaleList.get(0), false, false);
+//                }
+            }
+        }
+    };
+
+
+
+    private Consumer<String> consumerMouseClick = new Consumer<String>() {
+        @Override
+        public void accept(String clickInfo) throws Throwable {
+            String[] info = clickInfo.split(";");
+            int chIdx = Integer.parseInt(info[0]);
+            int clickPos = Integer.parseInt(info[1]);//0垂直档位  1垂直位置  2水平挡位  3水平位置
+            Logger.d(TAG, "ClickInfo chidx= " + chIdx + " ,clickPos= " + clickPos);
+            if (clickPos == 2) { //水平挡位
+                onClick(btnCenterTimeBase);
+            }
+        }
+    };
+
+
+}

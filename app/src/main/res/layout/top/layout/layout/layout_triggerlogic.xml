@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/ch1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="45px"
+        app:array="@array/triggerCh"
+        app:head="@string/triggerCh1" />
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/ch2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/ch1"
+        android:layout_marginStart="260px"
+        android:layout_toEndOf="@+id/ch1"
+        app:array="@array/triggerCh"
+        app:head="@string/triggerCh2" />
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/ch3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/ch1"
+        android:layout_marginStart="45px"
+        android:layout_marginTop="10px"
+        app:array="@array/triggerCh"
+        app:head="@string/triggerCh3" />
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/ch4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/ch3"
+        android:layout_marginStart="260px"
+        android:layout_toEndOf="@+id/ch1"
+        app:array="@array/triggerCh"
+        app:head="@string/triggerCh4" />
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/ch5"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/ch3"
+        android:layout_marginStart="45px"
+        android:layout_marginTop="10px"
+        app:array="@array/triggerCh"
+        app:head="@string/triggerCh5" />
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/ch6"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/ch5"
+        android:layout_marginStart="260px"
+        android:layout_toEndOf="@+id/ch5"
+        app:array="@array/triggerCh"
+        app:head="@string/triggerCh6" />
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/ch7"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/ch5"
+        android:layout_marginStart="45px"
+        android:layout_marginTop="10px"
+        app:array="@array/triggerCh"
+        app:head="@string/triggerCh7" />
+
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/ch8"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/ch7"
+        android:layout_marginStart="260px"
+        android:layout_toEndOf="@+id/ch7"
+        app:array="@array/triggerCh"
+        app:head="@string/triggerCh8" />
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/triggerLogic"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/ch7"
+        android:layout_marginStart="45px"
+        android:layout_marginTop="10px"
+        app:array="@array/triggerLogic"
+        app:head="@string/triggerLogic" />
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/condition"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/triggerLogic"
+        android:layout_marginStart="45px"
+        android:layout_marginTop="10px"
+        app:array="@array/triggerLogicCondition"
+        app:head="@string/triggerLogicCondition" />
+
+    <TextView
+        android:id="@+id/tvLogic"
+        style="@style/editTextStyleRight"
+        android:layout_width="120px"
+        android:layout_height="60px"
+        android:layout_below="@+id/triggerLogic"
+        android:layout_marginStart="40px"
+        android:layout_marginTop="10px"
+        android:layout_toEndOf="@+id/condition"
+        android:text="@string/view_trigger_pulsewidth" />
+
+    <LinearLayout
+        android:id="@+id/layoutLogicTimeHigh"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/triggerLogic"
+        android:layout_marginStart="35px"
+        android:layout_marginTop="10px"
+        android:layout_toEndOf="@+id/tvLogic"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/owerangeTimeHead"
+            style="@style/textStyle"
+            android:layout_width="100px"
+            android:layout_height="60px"
+            android:layout_marginRight="14px"
+            android:gravity="center_vertical|right"
+            android:text="@string/triggerlogic_timehigh" />
+
+        <TextView
+            android:id="@+id/timeHighDetail"
+            style="@style/editTextStyleRight"
+            android:layout_width="120px"
+            android:layout_height="60px"
+            android:layout_toEndOf="@+id/owerangeTimeHead"
+            android:text="@string/view_trigger_pulsewidth" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/layoutLogicTimeLow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/triggerLogic"
+        android:layout_marginStart="35px"
+        android:layout_marginTop="10px"
+        android:layout_toEndOf="@id/layoutLogicTimeHigh"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/owerangeTimeLow"
+            style="@style/textStyle"
+            android:layout_width="100px"
+            android:layout_height="60px"
+            android:layout_marginRight="14px"
+            android:gravity="center_vertical|right"
+            android:text="@string/triggerlogic_timelow" />
+
+        <TextView
+            android:id="@+id/timeLowDetail"
+            style="@style/editTextStyleRight"
+            android:layout_width="120px"
+            android:layout_height="60px"
+            android:text="@string/view_trigger_pulsewidth" />
+    </LinearLayout>
+
+</RelativeLayout>

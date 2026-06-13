@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AbsoluteLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingTop="10px"
+    android:paddingBottom="10px"
+    >
+
+    <TextView
+        android:id="@+id/txtWireless"
+        style="@style/textStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="60px"
+        android:layout_x="25px"
+        android:gravity="center"
+        android:text="@string/settingWirelesskeyboard"
+        />
+
+    <TextView
+        android:id="@+id/txtWirelessSn"
+        style="@style/textStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="60px"
+        android:layout_marginStart="25px"
+        android:layout_x="250px"
+        android:gravity="center"
+        android:text="0000"
+         />
+
+    <TextView
+        android:id="@+id/txtWirelessBattery"
+        style="@style/textStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="60px"
+        android:layout_marginStart="25px"
+        android:layout_x="450px"
+        android:gravity="center"
+        android:text=""
+        />
+
+    <Button
+        android:id="@+id/btnWireless"
+        style="@style/buttonStyle"
+        android:layout_width="120px"
+        android:layout_height="60px"
+        android:layout_x="550px"
+        android:gravity="center"
+        android:text="@string/measure_clear"
+        android:textAllCaps="false" />
+</AbsoluteLayout>

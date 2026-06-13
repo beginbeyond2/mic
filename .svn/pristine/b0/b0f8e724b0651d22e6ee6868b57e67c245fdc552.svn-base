@@ -1,0 +1,89 @@
+package com.micsig.tbook.scope.surface;
+
+import android.graphics.SurfaceTexture;
+import android.util.Log;
+import android.view.Surface;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
+
+
+/**
+ * Created by zhuzh on 2018-5-16.
+ */
+
+public class SurfaceNative {
+
+    private long mWindow;
+    private Surface surface = null;
+    private boolean bValid = false;
+    public SurfaceNative(SurfaceTexture surfaceTexture){
+        surface = new Surface(surfaceTexture);
+
+    }
+    public SurfaceNative(SurfaceTexture surfaceTexture,int bufferCount){
+        surface = new Surface(surfaceTexture);
+//        surface.setBufferCount(bufferCount);
+        try {
+            Class<?> clazz=Class.forName("android.view.Surface");
+            Method method=clazz.getDeclaredMethod("setBufferCount", int.class);
+            method.setAccessible(true);
+            method.invoke(surface,bufferCount);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    public void acquireSurface(int width,int height){
+        if(surface != null &&  width > 0 && height >0){
+            acquire(surface, width, height);
+            bValid = true;
+        }
+    }
+
+    public void releaseSurface(){
+        if(surface != null){
+            bValid = false;
+            release();
+        }
+    }
+
+    public synchronized void clearSurface(){
+        if (surface != null && bValid) {
+            clear();
+        }
+    }
+    public void drawSurface(ByteBuffer byteBuffer,int offset,int length){
+        synchronized (this) {
+            if (surface != null && bValid && byteBuffer.isDirect()) {
+                drawBitmap(byteBuffer, offset, length);
+            }
+        }
+    }
+    public void drawSurface(ByteBuffer chBuffer,ByteBuffer paramBuffer){
+        if (surface != null && bValid && chBuffer.isDirect() && paramBuffer.isDirect()) {
+            draw(chBuffer, paramBuffer);
+        }
+    }
+
+    public void drawXYSurface(ByteBuffer xBuffer,ByteBuffer yBuffer,ByteBuffer paramBuffer){
+        if (surface != null && bValid && xBuffer.isDirect() && yBuffer.isDirect() && paramBuffer.isDirect()) {
+            drawXY(paramBuffer, xBuffer, yBuffer);
+        }
+    }
+
+    private native void acquire(Surface surface,int width,int height);
+    private native void release();
+    private native void clear();
+    private native void draw(ByteBuffer chBuffer,ByteBuffer paramBuffer);
+    private native void drawXY(ByteBuffer paramBuffer,ByteBuffer xBuffer,ByteBuffer yBuffer);
+    private native void drawBitmap(ByteBuffer byteBuffer,int offset,int length);
+}

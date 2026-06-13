@@ -1,0 +1,13 @@
+package com.micsig.tbook.tbookscope.wavezone;
+
+import java.nio.ByteBuffer;
+
+/**
+ * Created by liwb on 2017/9/26.
+ */
+
+public interface ISerialBus {
+    void OnTitleChange(int chNo,int SerialBusType);
+    void OnDataChange(int chNo,ByteBuffer bytes,long timeToPix,int startX,int endX);
+    void OnTxtDataChange(int chNo,ByteBuffer bytes);
+}

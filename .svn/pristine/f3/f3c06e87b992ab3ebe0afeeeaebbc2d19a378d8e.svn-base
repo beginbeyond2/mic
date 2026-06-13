@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AbsoluteLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/middlebar_wave_zone"
+    android:layout_width="@dimen/mainCenterWidth"
+    android:layout_height="@dimen/mainCenterHeightMeasureRow0"
+    android:layout_x="0px"
+
+    android:visibility="visible"
+    android:background="@android:color/transparent"
+    android:elevation="30px"
+    android:outlineSpotShadowColor="@android:color/transparent"
+    android:outlineAmbientShadowColor="@android:color/transparent"
+    android:translationZ="30px">
+
+</AbsoluteLayout>

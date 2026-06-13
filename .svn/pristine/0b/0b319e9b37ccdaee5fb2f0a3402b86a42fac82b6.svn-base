@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/triggerSource"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="45px"
+        app:array="@array/triggerSource"
+        app:head="@string/triggerSource" />
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/nEdgeSlope"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/triggerSource"
+        android:layout_marginStart="45px"
+        android:layout_marginTop="10px"
+        app:array="@array/triggerNEdgeSlope"
+        app:head="@string/triggerNEdgeSlope" />
+
+    <TextView
+        android:id="@+id/nEdgeIdleHead"
+        style="@style/textStyle"
+        android:layout_width="100px"
+        android:layout_height="60px"
+        android:layout_alignBottom="@+id/nEdgeSlope"
+        android:layout_marginStart="124px"
+        android:layout_marginEnd="16px"
+        android:layout_toEndOf="@+id/nEdgeSlope"
+        android:gravity="center_vertical|end"
+        android:text="@string/triggernedge_time" />
+
+    <TextView
+        android:id="@+id/nEdgeTime"
+        style="@style/editTextStyleRight"
+        android:layout_width="120px"
+        android:layout_height="60px"
+        android:layout_alignBottom="@+id/nEdgeSlope"
+        android:layout_toEndOf="@+id/nEdgeIdleHead"
+        android:layout_toRightOf="@+id/nEdgeIdleHead"
+        android:gravity="center"
+        android:text="@string/view_trigger_pulsewidth" />
+
+    <com.micsig.tbook.ui.MTextView
+        android:id="@+id/nEdgeHead"
+        style="@style/textStyle"
+        android:layout_width="100px"
+        android:layout_height="60px"
+        android:layout_alignBottom="@+id/nEdgeSlope"
+        android:layout_marginStart="124px"
+        android:layout_marginEnd="16px"
+        android:layout_toEndOf="@id/nEdgeTime"
+        android:gravity="center"
+        android:text="@string/triggernedge_edge" />
+
+    <TextView
+        android:id="@+id/nEdgeDetail"
+        style="@style/editTextStyleRight"
+        android:layout_width="120px"
+        android:layout_height="60px"
+        android:layout_alignBottom="@+id/nEdgeSlope"
+        android:layout_toEndOf="@+id/nEdgeHead"
+        android:gravity="center"
+        android:text="@string/triggernedge_edgevalue" />
+
+</RelativeLayout>

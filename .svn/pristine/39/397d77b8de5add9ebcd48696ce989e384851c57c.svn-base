@@ -1,0 +1,46 @@
+package com.micsig.tbook.tbookscope.wavezone.wave;
+
+public class MsgWaveToLevel {
+    public static final int LEVELTYPE_TRIGGER = 0;
+    public static final int LEVELTYPE_VALUE1 = 1;
+    public static final int LEVELTYPE_VALUE2 = 2;
+    public static final int LEVELTYPE_VALUE3=3;
+    public static final int LEVELTYPE_VALUE4=4;
+    /**
+     * 值为：LEVELTYPE_TRIGGER、LEVELTYPE_VALUE
+     */
+    private int levelType;
+    /**
+     * 值为：IWave.Ch1 - IWave.Ch4
+     */
+    private int curCh;
+
+    public MsgWaveToLevel(int levelType, int curCh) {
+        this.levelType = levelType;
+        this.curCh = curCh;
+    }
+
+    public int getLevelType() {
+        return levelType;
+    }
+
+    public void setLevelType(int levelType) {
+        this.levelType = levelType;
+    }
+
+    public int getCurCh() {
+        return curCh;
+    }
+
+    public void setCurCh(int curCh) {
+        this.curCh = curCh;
+    }
+
+    @Override
+    public String toString() {
+        return "MsgWaveToLevel{" +
+                "levelType=" + levelType +
+                ", curCh=" + curCh +
+                '}';
+    }
+}

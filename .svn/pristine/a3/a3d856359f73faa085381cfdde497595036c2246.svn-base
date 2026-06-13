@@ -1,0 +1,83 @@
+package com.micsig.tbook.scope.Trigger;
+
+/**
+ * Created by zhuzh on 2018-6-1.
+ * 矮脉冲触发
+ */
+
+public class TriggerRunt extends Trigger {
+    public static final int RUNT_POLARITY_POSITIVE = 0;
+    public static final int RUNT_POLARITY_NEGATIVE = 1;
+    public static final int RUNT_POLARITY_EITHER = 2;
+
+
+
+    public static final int RUNT_RELATION_LESSER = TRIGGER_RELATION_LESS_THAN;
+    public static final int RUNT_RELATION_GREATER = TRIGGER_RELATION_MORE_THAN;
+    public static final int RUNT_RELATION_BETWEEN = TRIGGER_RELATION_EQUAL;
+    public static final int RUNT_RELATION_NONE = TRIGGER_RELATION_NOT_EQUAL;
+    private int polarity = RUNT_POLARITY_POSITIVE;
+
+    private int condition = RUNT_RELATION_LESSER;
+    private long timeHigh = 8;
+    private long timeLow = 8;
+
+    public TriggerRunt() {
+        super(Trigger.TRIG_TYPE_LOW_PULSE);
+    }
+
+    public int getPolarity() {
+        return polarity;
+    }
+
+    public void setPolarity(int polarity) {
+        this.polarity = polarity;
+        triggerParamChange();
+    }
+
+    public long getTimeHigh() {
+        return timeHigh;
+    }
+
+    public void setTimeHigh(long timeHigh) {
+        this.timeHigh = timeHigh;
+        triggerParamChange();
+    }
+
+    public int getCondition() {
+        return condition;
+    }
+
+    public void setCondition(int condition) {
+        this.condition = condition;
+        triggerParamChange();
+    }
+
+    public long getTimeLow() {
+        return timeLow;
+    }
+
+    public void setTimeLow(long timeLow) {
+        this.timeLow = timeLow;
+        triggerParamChange();
+    }
+
+
+
+    @Override
+    public int getSrcTriggerLevelCnt() {
+        return 2;
+    }
+
+    @Override
+    public int getTriggerSourceCnt() {
+        return 1;
+    }
+
+    @Override
+    protected boolean isMultitriggerSource() {
+        return false;
+    }
+
+
+}

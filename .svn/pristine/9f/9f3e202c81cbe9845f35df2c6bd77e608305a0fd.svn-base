@@ -1,0 +1,248 @@
+<resources>
+
+    <!--底部菜单-->
+    <string name="menu_bottom_adjust">بخير</string>
+    <string name="menu_bottom_save">سريعة \r\n حفظ</string>
+    <string name="menu_bottom_cursor">المؤشر</string>
+    <string name="menu_bottom_time">10:13</string>
+    <string name="menu_bottom_qiuck_screen">القبض على الشاشة</string>
+    <string name="menu_bottom_qiuck_zoom">تدريج</string>
+    <string name="menu_bottom_qiuck_all_measure">جميع القياسات</string>
+    <string name="menu_bottom_qiuck_serials_txt">نص تسلسلي</string>
+    <string name="menu_bottom_qiuck_center_menu">قائمة طعام</string>
+    <string name="dialog_center_menu_half_timebase">قاعدة زمنية</string>
+    <string name="dialog_center_menu_half_level">مستوى</string>
+    <string name="dialog_center_menu_half_hor_cursor">المؤشر الأفقي</string>
+    <string name="dialog_center_menu_half_ver_cursor">المؤشر العمودي</string>
+    <string name="dialog_center_menu_half_channels">قنوات</string>
+
+    <!-- TopTriggerSerials -->
+    <string name="topSerialsHeadData">البيانات</string>
+    <string name="topSerialsHeadData1">البيانات1</string>
+    <string name="topSerialsHeadData2">البيانات2</string>
+    <string name="topSerialsHeadLabel">التسمية</string>
+    <string name="topSerialsHeadSdi">SDI</string>
+    <string name="topSerialsHeadSsm">SSM</string>
+    <string name="topSerialsHeadId">معرف</string>
+    <string name="topSerialsHeadDlc">DLC</string>
+    <string name="topSerialsHeadAddr">العنوان</string>
+    <string name="topSerialsHeadCondition">شرط</string>
+
+    <string name="m1553bCsWordCsWordHead">مركز القيادة</string>
+    <string name="m1553bDataWordDataHead">البيانات</string>
+    <string name="m1553bRtAddrRtAddrHead">RT العنوان</string>
+    <string name="spiDataDataHead">تعيين بت</string>
+
+    <string name="mainTopLeftStateRun">تشغيل</string>
+    <string name="mainTopLeftStateStop">توقف</string>
+    <string name="mainTopLeftStateWait">انتظر</string>
+    <string name="mainTopLeftStateAuto">السيارات</string>
+    <string name="mainTopLeftSD">SD</string>
+    <string name="mainTopLeftLength">87.5K</string>
+    <string name="mainTopLeftRate">3.13MSa/s</string>
+    <string name="mainTopCenterShow">0ps</string>
+    <string name="mainRightSample">256Ave</string>
+
+    <string name="view_savewithhead_title">الاسم</string>
+    <string name="view_savewithhead_input">1704060001</string>
+    <string name="view_savewithhead_confirm">حفظ</string>
+    <string name="view_seekbarwithhead_title">السطوع</string>
+    <string name="view_seekbarwithhead_show">66%</string>
+    <string name="view_display_brightness">السطوع</string>
+    <string name="view_display_transparency">Transparency</string>
+    <string name="view_display_intensity">كثافة</string>
+    <string name="view_afterglow_clearup">واضح</string>
+    <string name="view_horizontallist_title">ضبط</string>
+    <string name="view_display_adjust">ضبط</string>
+    <string name="view_horizontallist_show">100ms</string>
+    <string name="view_trigger_inhibitiontimetitle">أوقف الوقت</string>
+    <string name="view_trigger_inhibitiontimevalue">200ns</string>
+    <string name="view_trigger_pulsewidth">1us</string>
+    <string name="view_trigger_logic">1us</string>
+    <string name="trigger_pulsewidth">عرض النبضة</string>
+    <string name="trigger_overTime">مهلة</string>
+    <string name="triggervideo_linehead">خط</string>
+    <string name="triggervideo_linedetail">1</string>
+    <string name="triggeruart_datatitle">البيانات</string>
+    <string name="triggeruart_datadetail">56</string>
+    <string name="triggerslope_timehighhead">الأوان</string>
+    <string name="triggerslope_timelowhead">مرة قليلة</string>
+    <string name="triggerrunt_timehigh">الأوان</string>
+    <string name="triggerrunt_timelow">مرة قليلة</string>
+    <string name="triggerlogic_timehigh">الأوان</string>
+    <string name="triggerlogic_timelow">مرة قليلة</string>
+    <string name="triggerpulsewidth_timehigh">الأوان</string>
+    <string name="triggerpulsewidth_timelow">مرة قليلة</string>
+    <string name="triggernedge_time">الخمول</string>
+    <string name="triggernedge_edge">حافة</string>
+    <string name="triggernedge_edgevalue">345</string>
+    <string name="settingoscillograph_saveas">سافيتو</string>
+    <string name="settingfactory_pleasesure">يرجى التأكد من إعادة ضبط المصنع التكوين!</string>
+    <string name="settingfactory_sure">حسناً</string>
+    <string name="settingcalibration_pleasesure">إزالة المجسات الرجاء، ثم انقر فوق موافق على البدء في ضبط النفس!</string>
+    <string name="settingcalibration_sure">حسناً</string>
+    <string name="autosetting_levelhead">مستوى</string>
+    <string name="autosetting_leveldetail">10</string>
+    <string name="oscillograpg_storage">حفظ</string>
+    <string name="oscillograpg_recovery">شفاء</string>
+    <string name="measure_clear">واضح</string>
+    <string name="measure_relationto">يتعلق</string>
+    <string name="sure">أكد</string>
+    <string name="save_saveto">الا ان</string>
+    <string name="save_r1">R1</string>
+    <string name="save_r2">R2</string>
+    <string name="save_r3">R3</string>
+    <string name="save_r4">R4</string>
+
+    <string name="dialogcount_title">ن الحافة</string>
+    <string name="dialogcount_x1">1x</string>
+    <string name="dialogcount_x100">100x</string>
+    <string name="dialogcount_subtract">-</string>
+    <string name="dialogcount_add">+</string>
+    <string name="dialogmeasuredelay_head">Ch1</string>
+    <string name="dialogmeasurephase_head">Ch1</string>
+    <string name="dialogscale_head">المنطق</string>
+    <string name="dialogscale_show">9.00ms</string>
+
+    <string name="serialsUserDefine">مستخدم تحديد</string>
+
+    <string name="mainBottomScreenRecorderStart">بدء التسجيل:</string>
+    <string name="mainBottomScreenRecorderEnd">نهاية التسجيل</string>
+    <string name="mainBottomScreenShot">لقطة النجاح:</string>
+
+    <string name="topSlipUsersetSaveRecoveryDefaultName">التقصير</string>
+    <string name="topSlipUsersetSaveRecoveryStorage">إنقاذ النجاح</string>
+    <string name="topSlipUsersetSaveRecoveryRecovery">الانتعاش النجاح</string>
+    <string name="msgForGoHomeWhenLockScreen">n\وظيفة اللمس الحالية متوقفة
+لدخول سطح المكتب ، سيتم فتح وظيفة اللمس\n
+تأكيد لدخول سطح المكتب ، يرجى الضغط على زر "الصفحة الرئيسية" مرة أخرى.\n
+اضغط على مفاتيح أخرى للعودة
+    </string>
+
+    <string name="topBtn">上半部</string>
+    <string name="bottomBtn">下半部</string>
+    <string name="topZeroTitle">零点校准</string>
+    <string name="topADGainTitle">AD增益校准</string>
+    <string name="topADZeroTitle">AD零点校准</string>
+    <string name="centerChGain">通道增益校准(需接校准信号)</string>
+    <string name="bottomZeroTitle">零点校准</string>
+    <string name="bottomOffsetTitle">偏移量系数校准</string>
+    <string name="bottomChDiffTitle">通道差异校准</string>
+    <string name="calibration">（已校准）</string>
+    <string name="unCalibration">（未校准）</string>
+
+    <string name="topSaveSaveInToast">أي جهاز التخزين، يو القرص</string>
+
+    <string name="dialogMsgExitToHome">إذا كان الخروج إلى المنزل؟</string>
+    <string name="dialogMsgInSlowTimeBase">التبديل إلى تعميم نموذج للتنس سيكون قريب!</string>
+    <string name="keyBoardMsgBeyond">آسف، وضع الخاص بك هو غير شرعي!</string>
+    <string name="msgClickFFTInRoll">طريقة لفة لا يدعم fft!</string>
+    <string name="msgBatteryLow">انخفاض مستوى شحن البطارية، توصيل محول!</string>
+    <string name="msgParameterLimited">المعلمة محدودة! </string>
+    <string name="msgOpenMathInModeXY">إكس واي موديل لا يدعم موجة الرياضيات!</string>
+
+    <string name="msgSelfAdjustRun">ضبط النفس هو تشغيل.</string>
+    <string name="msgSelfAdjustSuccess">ضبط النفس هو ناجح!</string>
+    <string name="msgSelfAdjustFail">ضبط النفس هو فشل!رمز الخطأ：%1$s</string>
+
+    <string name="msgTopSaveNameExisted">اسم الملف %1$s كانت موجودة!</string>
+    <string name="msgTopSaveBinNoSupport">وليس دعم لانقاذ القناة كما بن البيانات!</string>
+    <string name="msgTopSaveBinSuccess">موجة%1$s انقاذ النجاح!</string>
+    <string name="msgTopSaveBinFailed">موجة%1$s انقاذ فاشلة!</string>
+
+    <string name="serialsWordTitleS1">S1</string>
+    <string name="serialsWordTitleS2">S2</string>
+    <string name="serialsWordTitleS3">S3</string>
+    <string name="serialsWordTitleS4">S4</string>
+    <string name="serialsWordTitleS12">S1&amp;S2</string>
+    <string name="serialsWordClear">واضح</string>
+    <string name="serialsWordTip">يرجى فتح القناة الأولى!</string>
+    <string name="serialsWordUartTitleBin">بن</string>
+    <string name="serialsWordUartTitleHex">عرافة</string>
+    <string name="serialsWordUartTitleASCII">أسكي</string>
+    <string name="serialsWordUartTip">يرجى الحفاظ على الإعدادات من الموسم الاول و الموسم نفس</string>
+    <string name="serialsWordLinTitleCh">Ch</string>
+    <string name="serialsWordLinTitleTime">الوقت</string>
+    <string name="serialsWordLinTitleId">ID</string>
+    <string name="serialsWordLinTitleData">البيانات</string>
+    <string name="serialsWordLinTitleError">خطأ</string>
+    <string name="serialsWordLinTitleCheck">فحص</string>
+    <string name="serialsWordLinTitleTrigger">الزناد</string>
+    <string name="serialsWordCanTitleCh">Ch</string>
+    <string name="serialsWordCanTitleTime">الوقت</string>
+    <string name="serialsWordCanTitleId">Id</string>
+    <string name="serialsWordCanTitleType">نوع</string>
+    <string name="serialsWordCanTitleDlc">DLC</string>
+    <string name="serialsWordCanTitleData">البيانات</string>
+    <string name="serialsWordCanTitleCrc">CRC</string>
+    <string name="serialsWordCanTitleError">خطأ</string>
+    <string name="serialsWordCanTitleTrigger">الزناد</string>
+    <string name="serialsWordSpiTitleCh">Ch</string>
+    <string name="serialsWordSpiTitleTime">الوقت</string>
+    <string name="serialsWordSpiTitleData">البيانات</string>
+    <string name="serialsWordSpiTitleTrigger">الزناد</string>
+    <string name="serialsWordI2cTitleCh">Ch</string>
+    <string name="serialsWordI2cTitleTime">الوقت</string>
+    <string name="serialsWordI2cTitleAddr">العنوان</string>
+    <string name="serialsWordI2cTitleData">البيانات</string>
+    <string name="serialsWordI2cTitleConfirm">تأكيد</string>
+    <string name="serialsWordI2cTitleTrigger">الزناد</string>
+    <string name="serialsWordI2cTitleRestart">إعادة تشغيل</string>
+    <string name="serialsWordM429TitleCh">Ch</string>
+    <string name="serialsWordM429TitleTime">الوقت</string>
+    <string name="serialsWordM429TitleLabel">التسمية</string>
+    <string name="serialsWordM429TitleSdi">SDI</string>
+    <string name="serialsWordM429TitleData">البيانات</string>
+    <string name="serialsWordM429TitleSsm">SSM</string>
+    <string name="serialsWordM429TitleError">خطأ</string>
+    <string name="serialsWordM429TitleTrigger">الزناد</string>
+    <string name="serialsWordM1553bTitleCh">Ch</string>
+    <string name="serialsWordM1553bTitleTime">الوقت</string>
+    <string name="serialsWordM1553bTitleType">نوع</string>
+    <string name="serialsWordM1553bTitleRAdr">RAdr</string>
+    <string name="serialsWordM1553bTitleData">البيانات</string>
+    <string name="serialsWordM1553bTitleTrigger">الزناد</string>
+    <string name="serialsWordM1553bTitleError">خطأ</string>
+    <string name="serialsWordUartMsg">TX FRAMES:%1$s\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tERR:%2$s(%3$s)</string>
+    <string name="serialsWordCanMsg">FRAMES:%1$s\t\t\t\t\t\t\t\t\t\t\t\tSPEC:%2$s\t\t\t\t\t\t\t\t\t\t\t\tERR FR:%3$s(%4$s)</string>
+    <string name="serialsWordM429Msg">WORDS:%1$s\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tERRORS:%2$s(%3$s)</string>
+
+    <string name="rightMathMenuFftMeasure_DC">العاصمة</string>
+    <string name="rightMathMenuFftMeasure_Freq">تردد</string>
+    <string name="rightMathMenuFftMeasure_Amp">السعة</string>
+
+    <string name="screenShotSuccess">سكرين شوت من النجاح:</string>
+    <string name="saveRecoveryFileIsNotExist">الملف غير موجود! تحميل التكوين الافتراضي!</string>
+    <string name="rightMathAxbUnitTitle">وحدة</string>
+
+    <string name="msgNumberFormatException">الإدخال غير قانوني</string>
+    <string name="mainCenterMenuAuto">تلقائي</string>
+    <string name="mainCenterMenuRunStop">توقف عن الجري</string>
+    <string name="mainCenterMenuSEQ">تسلسل واحد</string>
+    <string name="sysNoSupport">إصدار النظام منخفض جدًا لدعم هذه الوظيفة!</string>
+
+    <string name="msgMathAdvanceFormulaError">خطأ %2$s في الموقع %1$s</string>
+    <string name="msgMathAdvanceFormulaNull"> لا يمكن أن يكون التعبير فارغًا</string>
+    <string name="dialog_ok">بالتأكيد</string>
+    <string name="dialog_cancel">يلغي</string>
+    <string name="menu_bottom_qiuck_segment">التنقل المقسم</string>
+    <string name="menu_bottom_qiuck_home">مسكن</string>
+    <string name="mainCenterMenuAutoRange">تلقائي\\nنطاق</string>
+    <string name="mainCenterMenuZero">صفر</string>
+    <string name="mainTopLeftStateNormal">عادي</string>
+    <string name="serials">أوتوبيس</string>
+    <string name="msgAutoZeroRunning">المعايرة التلقائية الصفرية قيد التقدم</string>
+    <string name="msgAutoZeroSuccess">اكتمال المعايرة الصفرية التلقائية</string>
+    <string name="msgAutoZeroFailed">فشلت المعايرة الصفرية التلقائية</string>
+
+    <string name="mathRefSerialsSlip_display">عرض</string>
+    <string name="internal_storage">مساحة التخزين الداخلية</string>
+    <string name="new_folder"> مجلد جديد</string>
+    <string name="seleced_folder">  المجلد المحدد:</string>
+    <string name="file_selection_not_supported">تحديد الملفات غير مدعوم</string>
+    <string name="label_folder">مجلد</string>
+    <string name="toast_create_success">تم الإنشاء بنجاح</string>
+    <string name="toast_create_failure">فشل الإنشاء</string>
+    <string name="error_already_exists">موجود بالفعل</string>
+    <string name="label_file">ملف</string>
+</resources>

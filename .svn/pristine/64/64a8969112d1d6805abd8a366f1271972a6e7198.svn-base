@@ -1,0 +1,264 @@
+package com.micsig.tbook.scope.Calibrate.MHO68v1;
+
+import android.util.Log;
+
+import com.micsig.tbook.hardware.HardwareProduct;
+import com.micsig.tbook.scope.Calibrate.CabteRegister;
+import com.micsig.tbook.scope.Calibrate.Calibrate;
+import com.micsig.tbook.scope.Calibrate.HwConfig;
+import com.micsig.tbook.scope.Data.WaveData;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.Trigger.Trigger;
+import com.micsig.tbook.scope.Trigger.TriggerCommon;
+import com.micsig.tbook.scope.Trigger.TriggerEdge;
+import com.micsig.tbook.scope.Trigger.TriggerFactory;
+import com.micsig.tbook.scope.channel.Channel;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.math.MathNative;
+import com.micsig.tbook.scope.vertical.VerticalAxis;
+
+import java.util.Arrays;
+
+public class MHO68v1_ChCofitCalibrateEx extends Calibrate {
+    public MHO68v1_ChCofitCalibrateEx(int calibrateType) {
+        super(calibrateType);
+        delaySet(0);
+    }
+    @Override
+    public void setErrcode(int errcode) {
+        this.errcode = errcode;
+    }
+//    private float [][][]cofit=new float[ChannelFactory.CH_CNT][][];
+    private float []best_value=new float[ChannelFactory.CH_CNT];
+    private float []bakCoef=new float[ChannelFactory.CH_CNT];
+
+
+    private volatile int offset;
+
+    private int errcode;
+    private final String TAG = "ChCofit";
+    private final String TAG1=TAG_PRI+":"+TAG;
+
+    @Override
+    public String getTAG() {
+        return TAG1;
+    }
+
+    @Override
+    public int getErrcode() {
+        //=1：校验错误
+        return errcode;
+    }
+
+    //校准下一档初始化
+    private void rstCalculate(){
+
+        Arrays.fill(best_value, 1000);
+    }
+
+    @Override
+    public void iniCalibrateReg(){
+        //可以不用复位零点，在目前的零点基础上进行校准
+    }
+    /**
+     * 设置校准参数
+     * @param vol
+     * vol为int[];
+     * 第1个值为通道：0~3,-1；（-1表示所有通道）
+     * 第2个值为档位；
+     */
+    @Override
+    public void setParam(Object vol) {
+        ch = ChannelFactory.CH1;
+        vScaleVal = VerticalAxis.getScaleIdValById(VerticalAxis.DANG_1mV);
+
+        srcAmp = 2.4;
+        idx = 0;
+        if(vol instanceof double[]) {
+            double[] param=(double[])vol;
+            if(param.length >= 2){
+                int ix =(int)(param[0] + 0.1);
+                if(param[0] < 0){
+                    ix = -1;
+                }
+                if(ix == -1 || ChannelFactory.isDynamicCh(ix)) {
+                    ch = ix;
+                    vScaleVal = param[1];
+                    srcAmp = param[2];
+                    if(param.length > 3) {
+                        resistanceType = (int)(param[3] + 0.1);
+                    }
+                }
+            }
+        }
+        double v = Math.round(srcAmp * ScopeBase.getVerticalPerGridPixels() / vScaleVal);
+        offset = (int)( v > 0 ? v + 0.01 : v - 0.01) ;
+        Log.d(TAG,"offset:" + offset + ",srcAmp:" + srcAmp + "," + vScaleVal + ",resistanceType:" + resistanceType);
+
+        idx = offset > 0 ? 1 : 0;
+    }
+    int []param = new int[2];
+    @Override
+    public Object getParam() {
+        int n = resistanceType == Channel.RESISTANCE_50 ? vIdx + 4 : vIdx;
+        param[0] = ch;
+        param[1] = n * 2 + idx;
+        return param;
+    }
+
+    int ch = ChannelFactory.CH1;
+    double srcAmp = 2.4;
+    double vScaleVal = VerticalAxis.getScaleIdValById(VerticalAxis.DANG_1mV);
+    volatile int idx = 0;
+    volatile int vIdx = 0;
+    volatile float vDefaultVal = 0;
+    volatile int resistanceType = Channel.RESISTANCE_1M;
+    @Override
+    public void calibratePrepare() {
+
+        int tmpIdx = Math.max(ch,0);
+        vIdx = CabteRegister.getRatioIdx(resistanceType,vScaleVal);
+
+        TriggerFactory.getInstance().getTriggerCommon().setTriggerMode(TriggerCommon.TM_AUTO);
+        for(int i=0; i<channelNums; i++) {
+            if(ch < 0 || i == ch) {
+                channel[i].setProbeRate(1);
+                channel[i].setVScaleVal(vScaleVal);
+
+                channel[i].setPos(-offset);
+                channel[i].setResistanceType(resistanceType);
+                TriggerEdge triggerEdge = (TriggerEdge) TriggerFactory.getTriggerObj(Trigger.TRIG_TYPE_EDGE);
+                triggerEdge.getTriggerLevel(i).setPos(ScopeBase.getHeight()/3); //特意不让触发
+            }
+        }
+        ms_sleep(100);
+        if( ChannelFactory.isDynamicCh(tmpIdx) ){
+            ChannelFactory.chActivate(tmpIdx);
+        }
+
+        vDefaultVal = (float) cabteRegister.vol_ChannelCoef_default(resistanceType,vIdx);
+        for(int i=0; i<channelNums; i++) {
+//            cofit[i] = cabteRegister.vol_ChannelCoef(i);
+            if(ch < 0 || i == ch) {
+//                cofit[i][vIdx][idx] = vDefaultVal;
+                cabteRegister.setChannelCoef(i,vIdx,idx,vDefaultVal);
+            }
+        }
+
+        for(int i=0;i<3;i++){
+            ms_sleep(1100);
+            checkPram();
+        }
+
+        rstCalculate();
+        fpgaSync();
+        delaySet(2);
+        errcode = 0;
+        resultString.add("<<<<<<<<<< chCofitCalibrate start ......");
+        Log.i(TAG1,"<<<<<<<<<< chCofitCalibrate start ......");
+    }
+
+    private boolean checkPram(){
+
+        boolean bChange = false;
+        TriggerCommon triggerCommon = TriggerFactory.getInstance().getTriggerCommon();
+        if(triggerCommon.getTriggerMode() != TriggerCommon.TM_AUTO) {
+            triggerCommon.setTriggerMode(TriggerCommon.TM_AUTO);
+            bChange = true;
+        }
+
+        for(int i=0;i<channelNums;i++){
+            if(channel[i].getResistanceType() != resistanceType){
+                bChange = true;
+                break;
+            }
+        }
+        if(bChange){
+            updateSync();
+            for(int i=0;i<channelNums;i++){
+                if(channel[i].getResistanceType() != resistanceType){
+                    channel[i].setResistanceType(resistanceType);
+                }
+            }
+        }
+        return bChange;
+    }
+    @Override
+    public boolean onCalibrate() {
+        //等待硬件操作完成
+        if(!isFinishedAction())
+            return false;
+        if(checkPram()){
+            return false;
+        }
+        delaySet(0);
+        float[] average ={0,0,0,0,0,0,0,0};
+        long sum;
+        WaveData waveData;
+        int N;
+        HwConfig hwConfig = HwConfig.getInstance();
+        //获取每个通道的波形平均值
+        for(int i=0; i<channelNums; i++){
+            waveData = (WaveData) getWave(i);
+            if(waveData == null || (N = waveData.getWaveLength()) < 10)
+                return false;
+            sum = MathNative.calcSum(waveData.getByteBuffer());
+            average[i] = (float)( hwConfig.getWavFactor() * sum / N);
+        }
+        updateSync();
+        for(int i=0;i<channelNums;i++){
+            if(ch < 0 || ch == i){
+                float mean = offset-average[i];
+                if(Math.abs(mean) < Math.abs(best_value[i])){
+                    best_value[i] = mean;
+                    bakCoef[i] = cabteRegister.getChannelCoef(i,vIdx,idx);//cofit[i][vIdx][idx];
+                    Log.i(TAG1,"ch"+(i+1)+"找到更佳值 :" + best_value[i]);
+                }
+
+
+                float tpCoef = cabteRegister.getChannelCoef(i,vIdx,idx);
+//                float coef_default = vDefaultVal;
+                float coef_default = bakCoef[i];
+                float fx = coef_default * mean / offset;
+
+
+                float wuc=Math.abs(mean);
+
+                if(wuc < 50)//误差小于两个像素后精细调节
+                    fx /= 4;
+                else if(wuc < 100)
+                    fx /= 2;
+                float xvv = tpCoef;
+                xvv -= fx;
+
+                if(xvv  < 0){
+                    xvv = coef_default * 1.2f;
+                }
+
+                Log.i(TAG1, (i+1)+":\t"+
+                        "像素误差:"+wuc+
+                        " ,旧系数:"+tpCoef+
+                        " ,新系数:"+xvv+
+                        " ,默认系数:"+coef_default +
+                        ",mean:" + mean  +
+                        ",fx:" + fx +
+                        ",vIdx:" + vIdx
+                );
+                channel[i].setPos(-offset);
+            }
+        }
+
+        boolean bDone = true;
+
+        for(int i=0;i<channelNums;i++){
+            if(ch < 0 || ch == i){
+                if(Math.abs(best_value[i]) > 0.5){
+                    bDone = false;
+                    break;
+                }
+            }
+        }
+        return bDone;
+    }
+
+}

@@ -1,0 +1,277 @@
+package com.micsig.tbook.scope.Event;
+
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Message;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Observable;
+import java.util.Observer;
+
+
+/**
+ * Created by zhuzh on 2018/3/15.
+ */
+
+public class EventFactory {
+    private static volatile EventFactory instance = null;
+
+    public static EventFactory getInstance() {
+        if (instance == null) {
+            synchronized (EventFactory.class) {
+                if (instance == null) {
+                    instance = new EventFactory();
+                }
+            }
+        }
+        return instance;
+    }
+    public static final int EVENT_MIN = 0;
+    public static final int EVENT_CHANNEL_OPEN = EVENT_MIN;//通道打开、关闭、激活
+    public static final int EVENT_CHANNEL_CLOSE = EVENT_CHANNEL_OPEN + 1;//
+    public static final int EVENT_CHANNEL_ACTIVE = EVENT_CHANNEL_CLOSE + 1;//
+    public static final int EVENT_DISPLAY_ZOOM = EVENT_CHANNEL_ACTIVE + 1;
+    public static final int EVENT_DISPLAY_MODE = EVENT_DISPLAY_ZOOM + 1;
+    public static final int EVENT_FPGA_LOAD_OK = EVENT_DISPLAY_MODE + 1;
+    public static final int EVENT_FPGA_LOAD_ERR = EVENT_FPGA_LOAD_OK + 1;
+    public static final int EVENT_CHANNEL_VSCALE = EVENT_FPGA_LOAD_ERR + 1;//通道档位
+    public static final int EVENT_CHANNEL_POS = EVENT_CHANNEL_VSCALE + 1;//通道位置
+
+    public static final int EVENT_CHANNEL_OFFSET = EVENT_CHANNEL_POS + 1;
+    public static final int EVENT_MEM_DEPTH = EVENT_CHANNEL_OFFSET + 1;//存储深度
+    public static final int EVENT_TIME_POS = EVENT_MEM_DEPTH + 1;//时基位置
+    public static final int EVENT_TIME_SCALE = EVENT_TIME_POS + 1;//时基档位
+    public static final int EVENT_TRIGGER_TYPE = EVENT_TIME_SCALE + 1;//触发类型
+    public static final int EVENT_CH_WAVE_UPDATE = EVENT_TRIGGER_TYPE + 1;
+    public static final int EVENT_REF_WAVE_UPDATE = EVENT_CH_WAVE_UPDATE + 1;
+    public static final int EVENT_MATH_WAVE_UPDATE = EVENT_REF_WAVE_UPDATE + 1;
+    public static final int EVENT_CH_MEASURE_UPDATE = EVENT_MATH_WAVE_UPDATE + 1;
+    public static final int EVENT_MATH_MEASURE_UPDATE = EVENT_CH_MEASURE_UPDATE + 1;
+    public static final int EVENT_REF_MEASURE_UPDATE = EVENT_MATH_MEASURE_UPDATE + 1;
+    public static final int EVENT_SERIAL_UPDATE = EVENT_REF_MEASURE_UPDATE + 1;
+    public static final int EVENT_BUS_TYPE_UPDATE = EVENT_SERIAL_UPDATE + 1;
+    public static final int EVENT_CALIBRATE_ITEM_FINISH = EVENT_BUS_TYPE_UPDATE + 1;
+    public static final int EVENT_SELF_CALIBRATE_BEGIN = EVENT_CALIBRATE_ITEM_FINISH + 1;//自校准（Top-UserSet-SelfAdjust），屏幕键盘全部锁定
+    public static final int EVENT_SELF_CALIBRATE_END = EVENT_SELF_CALIBRATE_BEGIN + 1;//
+    public static final int EVENT_AUTO_START = EVENT_SELF_CALIBRATE_END + 1;//“自动”打开
+    public static final int EVENT_AUTO_STOP = EVENT_AUTO_START + 1;//
+
+    public static final int EVENT_TRIGGER_LEVEL = EVENT_AUTO_STOP + 1;//触发电平位置变化
+    public static final int EVENT_TRIGGER_PARAM = EVENT_TRIGGER_LEVEL + 1;//触发电平参数变化
+    public static final int EVENT_BUS_PARAM = EVENT_TRIGGER_PARAM + 1;//阈值电平参数变化
+    public static final int EVENT_BUS_LEVEL = EVENT_BUS_PARAM + 1;//阈值电平位置变化
+    public static final int EVENT_FREQ_COUNTER = EVENT_BUS_LEVEL + 1;
+    public static final int EVENT_SCOPE_STATE = EVENT_FREQ_COUNTER + 1; //run,stop
+    public static final int EVENT_SCOPE_SINGLE = EVENT_SCOPE_STATE + 1; //single
+    public static final int EVENT_SAMPLE_VALID = EVENT_SCOPE_SINGLE + 1;
+    public static final int EVENT_SYNCHEADER_CHANGE = EVENT_SAMPLE_VALID + 1;
+    public static final int EVENT_TIME_SCALE_LIST = EVENT_SYNCHEADER_CHANGE + 1;
+    public static final int EVENT_FORCE_MEM_DEPTH = EVENT_TIME_SCALE_LIST + 1;
+    public static final int EVENT_FACTOR_CALIBRATE_BEGIN = EVENT_FORCE_MEM_DEPTH + 1;//工厂校准，屏幕键盘全部锁定
+    public static final int EVENT_FACTOR_CALIBRATE_ITEM_START = EVENT_FACTOR_CALIBRATE_BEGIN + 1;
+    public static final int EVENT_FACTOR_CALIBRATE_END = EVENT_FACTOR_CALIBRATE_ITEM_START + 1;
+    public static final int EVENT_BUS_CH_CHANGE = EVENT_FACTOR_CALIBRATE_END + 1;
+    public static final int EVENT_UI_DEPTH_SAMPFRE_REFLASH = EVENT_BUS_CH_CHANGE + 1;
+    public static final int EVENT_UI_SAMPLE_GRAPH = EVENT_UI_DEPTH_SAMPFRE_REFLASH + 1;
+    public static final int EVENT_SURFACE_CREATED = EVENT_UI_SAMPLE_GRAPH + 1;
+    public static final int EVENT_SURFACE_DESTROYED = EVENT_SURFACE_CREATED + 1;
+    public static final int EVENT_DIAPLAY_WAVE_BRIGHTNESS = EVENT_SURFACE_DESTROYED + 1;
+    public static final int EVENT_AFTERGLOW_CLEAR = EVENT_DIAPLAY_WAVE_BRIGHTNESS + 1;
+    public static final int EVENT_AFTERGLOW_TIME = EVENT_AFTERGLOW_CLEAR + 1;
+    public static final int EVENT_AFTERGLOW_ENABLE = EVENT_AFTERGLOW_TIME + 1;
+    public static final int EVENT_WAVE_CLEAR = EVENT_AFTERGLOW_ENABLE + 1;
+    public static final int EVENT_MATH_VPOS = EVENT_WAVE_CLEAR + 1;
+    public static final int EVENT_DISPLAY_ZOOM_ENTER = EVENT_MATH_VPOS + 1;
+    public static final int EVENT_DISPLAY_CCT = EVENT_DISPLAY_ZOOM_ENTER + 1;
+
+    public static final int EVENT_DISPLAY_BACKGROUND = EVENT_DISPLAY_CCT + 1;
+
+    public static final int EVENT_SAVEBIN_RUN = EVENT_DISPLAY_BACKGROUND + 1;
+    public static final int EVENT_SERIAL_TXT_UPDATE = EVENT_SAVEBIN_RUN + 1;
+
+    public static final int EVENT_DEPTH_SAMPFRE_CHANGE = EVENT_SERIAL_TXT_UPDATE + 1;
+
+    public static final int EVENT_MATH_REFRESH = EVENT_DEPTH_SAMPFRE_CHANGE + 1;
+    public static final int EVENT_DRAW_TYPE = EVENT_MATH_REFRESH + 1;
+    public static final int EVENT_HORREF = EVENT_DRAW_TYPE + 1;
+    public static final int EVENT_CHANNEL_COUPLE = EVENT_HORREF + 1;
+    public static final int EVENT_CHANNEL_BANDWIDTH = EVENT_CHANNEL_COUPLE + 1;
+    public static final int EVENT_CHANNEL_INVERT = EVENT_CHANNEL_BANDWIDTH + 1;
+    public static final int EVENT_SAMPLE_TYPE = EVENT_CHANNEL_INVERT + 1;
+
+    public static final int EVENT_TRIGGER_COMMON_MODE = EVENT_SAMPLE_TYPE + 1;
+    public static final int EVENT_TRIGGER_COMMON_HOLDOFFTIME = EVENT_TRIGGER_COMMON_MODE + 1;
+    public static final int EVENT_SYNCHEADER_ERROR = EVENT_TRIGGER_COMMON_HOLDOFFTIME + 1;
+
+    //数学通道中，fft是当前选择但不是当前通道的情况下，档位发生变化时发送
+    public static final int EVENT_MATH_FFT_SCALE = EVENT_SYNCHEADER_ERROR + 1;
+    public static final int EVENT_REF_VPOS = EVENT_MATH_FFT_SCALE + 1;
+    public static final int EVENT_VERTICAL_MODE = EVENT_REF_VPOS + 1;
+    public static final int EVENT_TRIGGER_LEVEL_USER = EVENT_VERTICAL_MODE + 1;
+    public static final int EVENT_CHANNEL_VSCALE_USER = EVENT_TRIGGER_LEVEL_USER + 1;
+    public static final int EVENT_CHANNEL_GET_WAVE = EVENT_CHANNEL_VSCALE_USER + 1;
+    public static final int EVENT_SEGMENT_TIMESTAMP = EVENT_CHANNEL_GET_WAVE + 1;
+    public static final int EVENT_CHANNEL_RESISTANCETYPE = EVENT_SEGMENT_TIMESTAMP + 1;
+    public static final int EVENT_SEGMENT_FRAMES = EVENT_CHANNEL_RESISTANCETYPE + 1;
+
+    public static final int EVENT_FPGA_STATUS = EVENT_SEGMENT_FRAMES + 1;
+    public static final int EVENT_PROBE_EVENT = EVENT_FPGA_STATUS + 1;
+    public static final int EVENT_PROBE_ZERO = EVENT_PROBE_EVENT + 1;
+    public static final int EVENT_PROBE_UPGRADE = EVENT_PROBE_ZERO + 1;
+    public static final int EVENT_PROBE_ALARM = EVENT_PROBE_UPGRADE + 1;
+    public static final int EVENT_PROBE_ADJUST = EVENT_PROBE_ALARM + 1;
+    public static final int EVENT_PROBE_PLUG = EVENT_PROBE_ADJUST+1;
+    public static final int EVENT_PROBE_UNPLUG = EVENT_PROBE_PLUG+1;
+    public static final int EVENT_CHANNEL_ZERO = EVENT_PROBE_UNPLUG + 1;
+    public static final int EVENT_PROBE_CALIBRATE_BEGIN = EVENT_CHANNEL_ZERO + 1;
+    public static final int EVENT_PROBE_CALIBRATE_END = EVENT_PROBE_CALIBRATE_BEGIN + 1;
+    public static final int EVENT_CHANNEL_DELAY = EVENT_PROBE_CALIBRATE_END + 1;
+    public static final int EVENT_AFTERGLOW_MATH_CLEAR = EVENT_CHANNEL_DELAY + 1;
+
+    public static final int EVENT_AFTERGLOW_MATH = EVENT_AFTERGLOW_MATH_CLEAR + 1;
+
+    public static final int EVENT_MEASURE_RANGE = EVENT_AFTERGLOW_MATH + 1;
+
+    public static final int EVENT_MATH_SOURCE = EVENT_MEASURE_RANGE + 1;
+
+    public static final int EVENT_WAVE_OFFSET = EVENT_MATH_SOURCE + 1;
+    public static final int EVENT_SAVECSV_RUN = EVENT_WAVE_OFFSET + 1;
+    public static final int EVENT_WAVE_LABEL_SELECT = EVENT_SAVECSV_RUN + 1;
+    public static final int EVENT_WAVE_LABEL_MOVE = EVENT_WAVE_LABEL_SELECT + 1;
+    public static final int EVENT_LOADCSV_RUN = EVENT_WAVE_LABEL_MOVE + 1;
+    public static final int EVENT_CHANGE_CH_TIMEBASE = EVENT_LOADCSV_RUN + 1;
+    public static final int EVENT_SET_CH_TIMEPOS = EVENT_CHANGE_CH_TIMEBASE + 1;
+    public static final int EVENT_MAX = EVENT_SET_CH_TIMEPOS + 1;
+    public static final int EVENT_CNT = EVENT_MAX - EVENT_MIN + 1;
+
+    private Observable [] observables = new EventObservable[EVENT_CNT];
+
+    private static final int EVENT_ASYNC = (0x55AA << 16);
+    private Handler eventHandler;
+    private HandlerThread eventHandlerThread;
+    private EventFactory(){
+        eventHandlerThread = new HandlerThread("EventFactory");
+        eventHandlerThread.start();
+        eventHandler = new Handler(eventHandlerThread.getLooper()){
+            @Override
+            public void handleMessage(Message msg) {
+                if((msg.what & EVENT_ASYNC) != 0){
+                    sendEvent((EventBase)msg.obj);
+                }
+            }
+        };
+
+        for(int i=0;i<EVENT_CNT;i++){
+            observables[i] = new EventObservable();
+        }
+    }
+
+    private Observable getObservable(int event){
+        if(isValidEvent(event)){
+            return observables[event];
+        }
+        return null;
+    }
+    boolean bEnable = true;
+    public void setEnable(boolean bEnable) {
+        synchronized (this) {
+            this.bEnable = bEnable;
+        }
+        if (bEnable) {
+            for (EventBase e:list) {
+                this.notifyObservers(e,e.isAsync());
+            }
+            list.clear();
+        }
+    }
+    public boolean isEnable(){
+        return bEnable;
+    }
+
+    private List<EventBase> list = new ArrayList<>();
+    public void notifyObservers(EventBase eventBase,boolean async){
+        notifyObservers(eventBase,async,0);
+    }
+    public void notifyObservers(EventBase eventBase,boolean async,long ms){
+        synchronized (this) {
+            if (!bEnable) {
+                switch (eventBase.getId()){
+                    case EVENT_CHANNEL_OPEN:
+                    case EVENT_WAVE_CLEAR:
+                    case EVENT_SCOPE_STATE:
+                    case EVENT_DISPLAY_CCT:
+                    case EVENT_AFTERGLOW_ENABLE:
+                    case EVENT_DISPLAY_MODE:
+                    case EVENT_AFTERGLOW_CLEAR:
+                    case EVENT_BUS_CH_CHANGE:
+                    case EVENT_DISPLAY_BACKGROUND:
+                        eventBase.setAsync(async);
+                        list.add(eventBase);
+                        break;
+                }
+                return;
+            }
+        }
+        int id = eventBase.getId();
+        if(isValidEvent(id)){
+            if(async) {
+                Message msg = Message.obtain();
+                msg.arg1 = msg.arg2 = eventBase.getId();
+                msg.what = EVENT_ASYNC | (msg.arg1 & 0xFFFF);
+                msg.obj = eventBase;
+                if(eventHandler.hasMessages(msg.what)) {
+                    eventHandler.removeMessages(msg.what);
+                }
+                if(ms > 0){
+                    eventHandler.sendMessageDelayed(msg,ms);
+                }else {
+                    eventHandler.sendMessage(msg);
+                }
+            }else {
+                observables[id].notifyObservers(eventBase);
+            }
+        }
+    }
+    public void notifyObservers(EventBase eventBase){
+        notifyObservers(eventBase,false);
+    }
+
+
+    public static void sendEvent(EventBase eventBase){
+        sendEvent(eventBase,false);
+
+    }
+    public static void sendEvent(int event){
+
+        sendEvent(new EventBase(event),false);
+    }
+    public static void sendEvent(int event,boolean async){
+
+        sendEvent(new EventBase(event),async);
+    }
+    public static void sendEvent(EventBase eventBase,boolean async){
+        getInstance().notifyObservers(eventBase,async);
+    }
+    public static void sendEvent(EventBase eventBase,boolean async,long ms){
+        getInstance().notifyObservers(eventBase,async,ms);
+    }
+
+    public static void addEventObserver(int event,Observer observer){
+        if(isValidEvent(event)){
+            getInstance().getObservable(event).addObserver(observer);
+        }
+    }
+    public static void delEventObserver(int event,Observer observer){
+        if(isValidEvent(event)){
+            getInstance().getObservable(event).deleteObserver(observer);
+        }
+    }
+
+    public static boolean isValidEvent(int event){
+        return (event >= EVENT_MIN && event<= EVENT_MAX );
+    }
+
+
+
+}

@@ -1,0 +1,47 @@
+package com.micsig.tbook.tbookscope.wavezone.bean;
+
+
+/**
+ * Created by yangj on 2017/8/18.
+ */
+
+public class YTZoomMsgDisplay  {
+    private boolean isDisplay;
+    private boolean isReloadLargeTimeScale = false;
+    private boolean isPlaySound = true;
+
+    public YTZoomMsgDisplay(boolean isDisplay) {
+        this.isDisplay = isDisplay;
+    }
+
+    public boolean isDisplay() {
+        return isDisplay;
+    }
+
+    public void setDisplay(boolean display) {
+        isDisplay = display;
+    }
+
+    public boolean isReloadLargeTimeScale() {
+        return isReloadLargeTimeScale;
+    }
+
+    public void setReloadLargeTimeScale(boolean reloadLargeTimeScale) {
+        isReloadLargeTimeScale = reloadLargeTimeScale;
+    }
+
+    public boolean isPlaySound() {
+        return isPlaySound;
+    }
+
+    public void setPlaySound(boolean playSound) {
+        isPlaySound = playSound;
+    }
+
+    @Override
+    public String toString() {
+        return "YTZoomMsgDisplay{" +
+                "isDisplay=" + isDisplay +
+                '}';
+    }
+}

@@ -1,0 +1,31 @@
+package com.micsig.tbook.scope.Trigger;
+
+import com.micsig.tbook.scope.Action.FPGAMessage;
+import com.micsig.tbook.scope.Action.XAction;
+import com.micsig.tbook.scope.Event.EventFactory;
+
+/**
+ * Created by zhuzh on 2018/3/20.
+ */
+
+public class TriggerEdgeAction extends XAction {
+    private TriggerEdge triggerEdge;
+    public TriggerEdgeAction(TriggerEdge triggerEdge){
+        this.triggerEdge = triggerEdge;
+    }
+    public void TriggerSourceChange() {
+        sendFpgaMsg(FPGAMessage.FPGA_CMD_TRIG|FPGAMessage.FPGA_CMD_TRIG_OFFSET
+                | FPGAMessage.FPGA_CMD_TRIG_HUICHA|FPGAMessage.FPGA_CMD_TRIG_LEVEL);
+        sendEvent(EventFactory.EVENT_TRIGGER_PARAM);
+    }
+    public void TriggerEdgeChange() {
+        sendFpgaMsg(FPGAMessage.FPGA_CMD_TRIG | FPGAMessage.FPGA_CMD_TRIG_HUICHA
+                |FPGAMessage.FPGA_CMD_TRIG_LEVEL|FPGAMessage.FPGA_CMD_TRIG_COUPLE);
+        sendEvent(EventFactory.EVENT_TRIGGER_PARAM);
+    }
+    public void TriggerCoupleChange(){
+        sendFpgaMsg(FPGAMessage.FPGA_CMD_TRIG_COUPLE|FPGAMessage.FPGA_CMD_TRIG_LEVEL);
+        sendEvent(EventFactory.EVENT_TRIGGER_PARAM);
+    }
+
+}

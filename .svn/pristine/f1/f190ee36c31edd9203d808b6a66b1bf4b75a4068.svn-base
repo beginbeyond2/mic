@@ -1,0 +1,483 @@
+package com.micsig.tbook.tbookscope.main.mainbottom;
+
+import android.annotation.SuppressLint;
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Matrix;
+import android.graphics.Point;
+import android.graphics.Rect;
+import android.graphics.RectF;
+import android.os.Build;
+import android.text.TextUtils;
+import android.util.AttributeSet;
+import android.util.TypedValue;
+import android.view.Gravity;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.GridLayout;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.constraintlayout.widget.ConstraintLayout;
+
+import com.micsig.base.Logger;
+import com.micsig.tbook.tbookscope.GlobalVar;
+import com.micsig.tbook.tbookscope.MainViewGroup;
+import com.micsig.tbook.tbookscope.R;
+import com.micsig.tbook.tbookscope.rxjava.RxBus;
+import com.micsig.tbook.tbookscope.rxjava.RxEnum;
+import com.micsig.tbook.tbookscope.tools.Tools;
+import com.micsig.tbook.tbookscope.top.layout.sample.TopMsgSegmentedState;
+import com.micsig.tbook.tbookscope.util.CacheUtil;
+import com.micsig.tbook.tbookscope.wavezone.IWorkMode;
+import com.micsig.tbook.tbookscope.wavezone.WorkModeBean;
+import com.micsig.tbook.tbookscope.wavezone.WorkModeManage;
+import com.micsig.tbook.tbookscope.wavezone.measure.MeasureManage;
+import com.micsig.tbook.ui.wavezone.TChan;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import io.reactivex.rxjava3.functions.Consumer;
+
+
+/**
+ * @auother Liwb
+ * @description:
+ * @data:2023-10-26 16:19
+ */
+public class MainBottomMeasureItem extends ConstraintLayout {
+    private Context context;
+    private ViewGroup rootView;
+    public MainBottomMeasureItem(@NonNull Context context) {
+        this(context,null);
+    }
+
+    public MainBottomMeasureItem(@NonNull Context context, @Nullable AttributeSet attrs) {
+        this(context, attrs,0);
+    }
+
+    public MainBottomMeasureItem(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
+        this.context=context;
+        initView();
+        initControls();
+    }
+
+    private ConstraintLayout spaceLayout;
+    private GridLayout listView;
+    private List<TextView> listTxtView=new ArrayList<>();
+    private ImageView btnLeft,btnRight;
+//    private HorizontalScrollView scrollView;
+    private MainViewGroup mainViewGroup;
+    private static final int DELETE_ITEM_INSTANCE = 50;//删除item的拖动范围最小值
+    @SuppressLint("ClickableViewAccessibility")
+    private void initView() {
+
+        rootView= (ViewGroup) View.inflate(context, R.layout.layout_main_bottom_measure_item,this);
+        listView=rootView.findViewById(R.id.listView);
+        spaceLayout = rootView.findViewById(R.id.measureSpaceLayout);
+        for(int i=0;i< GlobalVar.get().getMeasureItemCount();i++){
+            TextView txt=new TextView(context);
+            txt.setTextSize(TypedValue.COMPLEX_UNIT_PX,18);
+            txt.setClickable(true);
+            txt.setGravity(Gravity.CENTER | Gravity.LEFT);
+            txt.setEllipsize(TextUtils.TruncateAt.END);
+            txt.setSingleLine();
+            txt.setBackground(null);
+//            txt.setOnClickListener(this::OnTxtClickListener);
+            txt.setOnLongClickListener(v->{
+                startSelection(v);
+                return true;
+            });
+            txt.setOnTouchListener(new DragTouchListener());
+
+            listView.addView(txt);
+            listTxtView.add(txt);
+            txt.getLayoutParams().height=(int) getResources().getDimension(R.dimen.mainBottomMeasureItemHeight0);
+            txt.getLayoutParams().width = 180;
+        }
+        btnLeft=rootView.findViewById(R.id.leftArrow);
+        btnRight=rootView.findViewById(R.id.rightArrow);
+//        scrollView=rootView.findViewById(R.id.scrollView);
+//        btnLeft.setOnClickListener((v)->{
+//            scrollView.smoothScrollBy(-180,0);
+//        });
+//        btnRight.setOnClickListener((v)->{
+//            scrollView.smoothScrollBy(180,0);
+//        });
+
+        List<MeasureManage.MeasureItemStruct> list=MeasureManage.getInstance().getMeasureItem().getMeasureList();
+
+        MeasureManage.getInstance().getMeasureItem().OnRefresh=(b)->{
+            updateTxtView();
+        };
+
+    }
+
+    int selectPosition = -1;
+
+    private void startSelection(View view) {
+        selectPosition = indexOfChild(view);
+    }
+
+    private Bitmap createBitmapFromView(View view) {
+        if (view.getWidth() <= 0 || view.getHeight() <= 0) {
+            view.measure(
+                    MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED),
+                    MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED)
+            );
+            view.layout(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight());
+        }
+
+        Matrix matrix = new Matrix();
+        if(view.getAnimation() != null ){
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                matrix = view.getAnimationMatrix();
+            }
+        } else {
+            matrix = new Matrix();
+            matrix.setTranslate(view.getTranslationX(), view.getTranslationY());
+            matrix.preScale(view.getScaleX(), view.getScaleY());
+            matrix.preRotate(view.getRotation(), view.getPivotX(), view.getPivotY());
+        }
+
+        RectF bounds = new RectF(0, 0, view.getWidth(), view.getHeight());
+        matrix.mapRect(bounds);
+
+        int width = (int) bounds.width();
+        int height = (int) bounds.height();
+        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+
+        canvas.translate(-bounds.left, -bounds.top);
+        canvas.concat(matrix);
+        view.draw(canvas);
+        return bitmap;
+    }
+
+    private class DragTouchListener implements OnTouchListener {
+        private float dx, dy;
+        private float downX, downY, deltaX, deltaY;
+
+        @Override
+        public boolean onTouch(View view, MotionEvent event) {
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    if (isMeasureItemClickEnable()) {
+                        OnTxtClickListener(view);
+                    }
+                    dx = view.getX() - event.getRawX();
+                    dy = view.getY() - event.getRawY();
+                    downX = event.getRawX();
+                    downY = event.getRawY();
+                    view.animate()
+                            .scaleX(1.16f)
+                            .scaleY(1.16f)
+                            .setDuration(100)
+                            .start();
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    view.animate()
+                            .x(event.getRawX() + dx)
+                            .y(event.getRawY() + dy)
+                            .setDuration(0)
+                            .start();
+//                    Logger.i("moving x= " + (event.getRawX() + dx) + " ,y= " + (event.getRawY() + dy));
+                    break;
+                case MotionEvent.ACTION_CANCEL:
+                case MotionEvent.ACTION_UP:
+                    deltaY = Math.abs(event.getRawY() - downY);
+                    deltaX = Math.abs(event.getRawX() - downX);
+                    if (deltaY < 5 && deltaX < 5) {
+                        view.animate()
+                                .scaleX(1.0f)
+                                .scaleY(1.0f)
+                                .setDuration(100)
+                                .start();
+                        break;
+                    }
+                    checkPositionSwap(view);
+                    view.animate()
+                            .translationX(0)
+                            .translationY(0)
+                            .translationZ(0)
+                            .scaleX(1f)
+                            .scaleY(1f)
+                            .setDuration(0)
+                            .start();
+                    break;
+            }
+            return true;
+        }
+    }
+
+    private void checkPositionSwap(View movingView) {
+        Rect rect = new Rect();
+        movingView.getHitRect(rect);
+        Point point = new Point();
+        point.x = (rect.left + rect.right) / 2;
+        point.y = (rect.top + rect.bottom) / 2 + Tools.getViewRect(listView).top;
+
+        Rect rectListView = Tools.getViewRect(listView);
+        int measureListCount = MeasureManage.getInstance().getMeasureItem().getMeasureList().size();
+        Logger.i("MainBottomMeasureItem movingView rect= " + rect + " point= " + point + " ,rectListView.top= " + rectListView + " ,measureListCount= " + measureListCount);
+        if (rectListView.top - point.y > DELETE_ITEM_INSTANCE) {
+            deleteSelectMeasure(movingView);
+        } else {
+            for (int i = 0; i < listView.getChildCount(); i++) {
+                View target = listView.getChildAt(i);
+                if (target == movingView) continue;
+                Rect targetRect = Tools.getViewRect(target);
+                Logger.i("MainBottomMeasureItem i= " + i + " target rect= " + targetRect + " contains= " + targetRect.contains(point.x, point.y));
+                if (targetRect.contains(point.x, point.y) || (i >= measureListCount && point.x > targetRect.left && point.x < targetRect.right && point.y > rectListView.top)) {
+//                    swapItems(listView.indexOfChild(movingView), i);
+                    changeItemView(listView.indexOfChild(movingView), i);
+                    break;
+                } else if ((point.x > targetRect.left && point.x < targetRect.right && point.y > rectListView.bottom)) {
+                    changeItemView(listView.indexOfChild(movingView), i % 10 + 30);
+                    break;
+                }
+            }
+        }
+        changeItemViewHeight();
+    }
+
+    private void deleteSelectMeasure(View movingView) {
+        int tempIndex = listView.indexOfChild(movingView);
+        int emptyNum = 0;
+        for (int i = 0; i < tempIndex; i++) {
+            if (listView.getChildAt(i).getVisibility() != View.VISIBLE) {
+                emptyNum++;
+            }
+        }
+//        RxBus.getInstance().post(RxEnum.MQ_MSG_DELETE_MEASURE_ITEM_POS, tempIndex - emptyNum);
+        RxBus.getInstance().post(RxEnum.MQ_MSG_DELETE_MEASURE_ITEM_POS, movingView.getTag().toString());
+//
+//        MeasureManage.MeasureItemStruct item = MeasureManage.getInstance().new MeasureItemStruct(-1, -1, "", "");
+//        MeasureManage.getInstance().getMeasureItem().addEmptyMeasureItem(tempIndex, item);
+    }
+
+    private void changeItemView(int fromPos, int toPos) {//改变原始数据的位置方便
+        List<MeasureManage.MeasureItemStruct> list = MeasureManage.getInstance().getMeasureItem().getMeasureList();
+        int oldSize = list.size();
+        if(toPos >= oldSize) {
+            for (int i = oldSize; i <= toPos; i++) {
+                MeasureManage.MeasureItemStruct item = MeasureManage.getInstance().new MeasureItemStruct(-1, -1, "", "");
+                MeasureManage.getInstance().getMeasureItem().addEmptyMeasureItem(i, item);
+            }
+        }
+        list = MeasureManage.getInstance().getMeasureItem().getMeasureList();
+        String updateStr  = "";
+        boolean isSwap;
+        if (list.get(toPos).getChannelId() < 0) { //目标地址是空位
+            Tools.swapElement(list, fromPos, toPos);//交换
+            isSwap = true;
+        } else {
+            //原位置设空
+            moveItemView(fromPos, toPos);
+//            Tools.insertElement(list, fromPos, toPos);//前面插入
+            isSwap = false;
+        }
+        updateStr = fromPos + "," + toPos + "," + isSwap;
+        RxBus.getInstance().post(RxEnum.MQ_MSG_UPDATE_MEASURE_ITEM_POS, updateStr);
+
+//        if (!isSwap && fromPos < toPos) {//从前往后拖动，需要补空位
+//            MeasureManage.MeasureItemStruct item = MeasureManage.getInstance().new MeasureItemStruct(-1, -1, "", "");
+//            MeasureManage.getInstance().getMeasureItem().addEmptyMeasureItem(fromPos, item);
+//        }
+        MeasureManage.getInstance().getMeasureItem().clearRowEmpty();//若一行都为空，则删除
+        updateTxtView();
+
+    }
+
+    private void moveItemView(int fromPos, int toPos) {
+        List<MeasureManage.MeasureItemStruct> list = MeasureManage.getInstance().getMeasureItem().getMeasureList();
+        MeasureManage.MeasureItemStruct itemFrom = list.get(fromPos);
+        MeasureManage.MeasureItemStruct itemTo = list.get(toPos);
+        MeasureManage.MeasureItemStruct itemEmpty = MeasureManage.getInstance().new MeasureItemStruct(-1, -1, "", "");
+        if (fromPos < toPos) { //向后移动
+            list.set(fromPos, itemEmpty);//from位置设置为空
+            if (list.size() == GlobalVar.get().getMeasureItemCount()) { //目前位置占满了
+                boolean hasEmpty = false; //后面是否有空位
+                int emptyIndex = -1;//最近的一个空位
+                for (int i = toPos; i < list.size(); i++) {
+                    if (list.get(i).getChannelId() < 0) {
+                        hasEmpty = true;
+                        emptyIndex = i;
+                        break;
+                    }
+                }
+                if (hasEmpty) {
+                    list.remove(emptyIndex); //先把最近的一个空位置删除
+                    list.add(toPos, itemFrom);//然后添加到对应位置
+                } else { //后面没空位了
+                    MeasureManage.MeasureItemStruct itemLast = list.get(list.size() - 1); //先把最后一个拿出来
+                    list.remove(itemLast); //删除最后一个
+                    list.add(toPos, itemFrom);//添加到对应位置
+                    for (int i = 0; i < list.size(); i++) {
+                        if (list.get(i).getChannelId() < 0) {
+                            list.set(i, itemLast);//之前的最后一个补到空位
+                            break;
+                        }
+                    }
+                }
+            } else {
+                for (int i = toPos; i < list.size(); i++) {
+                    if (list.get(i).getChannelId() < 0) {
+                        list.remove(i);
+                        break;
+                    }
+                }
+                list.add(toPos, itemFrom);
+            }
+        } else {
+            list.set(fromPos, itemEmpty);//from位置设置为空
+
+            boolean hasEmpty = false; //中间是否有空位
+            int emptyIndex = -1;//最近的一个空位
+            for (int i = toPos; i <= fromPos; i++) {
+                if (list.get(i).getChannelId() < 0) {
+                    hasEmpty = true;
+                    emptyIndex = i;
+                    break;
+                }
+            }
+            if (hasEmpty) {
+                list.remove(emptyIndex);
+                list.add(toPos, itemFrom);
+            }
+        }
+    }
+
+    private void swapItems(int fromPos, int toPos) {//此方案备用
+        if(fromPos == toPos || toPos >= listView.getChildCount()) return;
+        Logger.i("MainBottomMeasureItem swapItems from= " + fromPos + " ,to= " + toPos);
+        View fromView = listView.getChildAt(fromPos);
+        View toView =  listView.getChildAt(toPos);
+
+        GridLayout.LayoutParams params1 = (GridLayout.LayoutParams) fromView.getLayoutParams();
+        GridLayout.LayoutParams params2 = (GridLayout.LayoutParams) toView.getLayoutParams();
+
+        GridLayout.Spec row1 = params1.rowSpec;
+        GridLayout.Spec col1 = params1.columnSpec;
+
+        GridLayout.Spec tempRow1 = row1;
+        GridLayout.Spec tempCol1 = col1;
+
+        params1.rowSpec = params2.rowSpec;
+        params1.columnSpec = params2.columnSpec;
+
+        params2.rowSpec = tempRow1;
+        params2.columnSpec = tempCol1;
+
+        fromView.setLayoutParams(params1);
+        toView.setLayoutParams(params2);
+        Collections.swap(listTxtView, fromPos, toPos);
+    }
+
+    private void initControls(){
+
+        RxBus.getInstance().getObservable(RxEnum.DIALOG_OPEN).subscribe(onDialogOpen);
+        RxBus.getInstance().getObservable(RxEnum.DIALOG_CLOSE).subscribe(onDialogClose);
+
+        RxBus.getInstance().getObservable(RxEnum.TOPLAYOUT_SAMPLESEGMENTED_STATE).subscribe(onSerialTxtChange);
+        RxBus.getInstance().getObservable(RxEnum.WAVEZONE_WORKMODE_CHANGE).subscribe(onWorkModeChange);
+    }
+
+    private void OnTxtClickListener(View view) {
+        int idx= Tools.indexOf(listTxtView,(v)->v.equals(view));
+        MeasureManage.getInstance().getMeasureItem().setSelectItem(idx);
+    }
+
+    private void updateTxtView(){
+        List<MeasureManage.MeasureItemStruct> list=MeasureManage.getInstance().getMeasureItem().getMeasureList();
+        for(int i=0;i<listTxtView.size();i++){
+            TextView txt= listTxtView.get(i);
+            if (i>=list.size()){
+                txt.setText("");
+                txt.setBackground(null);
+                txt.setVisibility(GONE);
+                continue;
+            }
+            txt.setVisibility(VISIBLE);
+            MeasureManage.MeasureItemStruct bean=list.get(i);
+            if (bean.getChannelId() < 0) {
+                txt.setVisibility(View.INVISIBLE);
+            }
+            txt.setTag(bean.getChannelId() + " " + bean.getMeasureId());
+            txt.setText(bean.getMeasureName()+":"+bean.getData());
+            txt.setTextColor(TChan.getChannelColor(context, bean.getChannelId()));
+            txt.setGravity(Gravity.CENTER);
+            if (list.get(i).isSelected() && isMeasureItemClickEnable()){
+                txt.setBackgroundResource(R.drawable.measure_item_select);
+            }else {
+                txt.setBackground(null);
+            }
+
+        }
+    }
+
+    public void changeItemViewHeight() {
+        int row = MeasureManage.getInstance().getMeasureItem().getMeasureRowCount();
+//        if (oldRow == row) return;
+        if (row == 1) {
+            for (int i = 0; i < listView.getChildCount(); i++) {
+                ViewGroup.LayoutParams layoutParams = listView.getChildAt(i).getLayoutParams();
+                layoutParams.height = (int) getResources().getDimension(R.dimen.mainBottomMeasureItemHeight0);
+                listView.getChildAt(i).setLayoutParams(layoutParams);
+            }
+        } else {
+            for (int i = 0; i < listView.getChildCount(); i++) {
+                ViewGroup.LayoutParams layoutParams = listView.getChildAt(i).getLayoutParams();
+                layoutParams.height = (int) getResources().getDimension(R.dimen.mainBottomMeasureItemHeight1);
+                listView.getChildAt(i).setLayoutParams(layoutParams);
+            }
+        }
+        requestLayout();
+    }
+
+    private boolean isMeasureItemClickEnable() {
+        return CacheUtil.get().getBoolean(CacheUtil.TOP_SLIP_MEASURE_SETTING_INDICATOR);
+    }
+
+    private void hideMeasureItem(){
+        listView.setVisibility(INVISIBLE);
+    }
+    private void showMeasureItem(){
+        listView.setVisibility(VISIBLE);
+    }
+    private Consumer<Integer> onDialogOpen = integer -> {
+        if (integer==MainViewGroup.DIALOG_MEASURE_STATICS){
+            hideMeasureItem();
+        }
+    };
+    private Consumer<Integer> onDialogClose=(i)->{
+        if (i==MainViewGroup.DIALOG_MEASURE_STATICS && WorkModeManage.getInstance().getmWorkMode()!=IWorkMode.WorkMode_XY){
+            showMeasureItem();
+        }
+    };
+
+
+    private Consumer<TopMsgSegmentedState> onSerialTxtChange=(msg)->{
+        boolean b= CacheUtil.get().getBoolean(CacheUtil.MAIN_BOTTOM_SLIP_SERIALBUSTXT) ;
+        boolean b1=WorkModeManage.getInstance().getmWorkMode()==IWorkMode.WorkMode_XY;
+        boolean b2=CacheUtil.get().getBoolean(CacheUtil.TOP_SLIP_MEASURE_STATIC_ALL);
+
+        if (b || b1 || b2) hideMeasureItem();
+        else showMeasureItem();
+    };
+    private Consumer<WorkModeBean> onWorkModeChange=(msg)->{
+
+         if (WorkModeManage.getInstance().getmWorkMode()== IWorkMode.WorkMode_XY){
+             hideMeasureItem();
+         }else {
+             showMeasureItem();
+         }
+    };
+}

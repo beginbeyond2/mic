@@ -1,0 +1,79 @@
+package com.micsig.tbook.scope.Trigger;
+
+/**
+ * Created by zhuzh on 2018-6-1.
+ */
+
+public class TriggerSlope extends Trigger {
+
+
+    public static final int SLOPE_RELATION_LESSER = TRIGGER_RELATION_LESS_THAN; //小于
+    public static final int SLOPE_RELATION_GREATER = TRIGGER_RELATION_MORE_THAN; //大于
+    public static final int SLOPE_RELATION_BETWEEN = TRIGGER_RELATION_EQUAL;//之间
+
+    public static final int SLOPE_ASC = 0;
+    public static final int SLOPE_DSC = 1;
+    public static final int SLOPE_EITHER = 2;
+
+    private int edge = SLOPE_ASC;
+    private int condition = SLOPE_RELATION_LESSER;
+    private long timeLow = 8;
+    private long timeHigh = 8;
+
+    public TriggerSlope() {
+        super(Trigger.TRIG_TYPE_SLOPE);
+    }
+
+    public int getEdge() {
+        return edge;
+    }
+
+    public void setEdge(int edge) {
+        this.edge = edge;
+        triggerParamChange();
+    }
+
+    public int getCondition() {
+        return condition;
+    }
+
+    public void setCondition(int condition) {
+        this.condition = condition;
+        triggerParamChange();
+    }
+
+    public long getTimeHigh() {
+        return timeHigh;
+    }
+
+    public void setTimeHigh(long timeHigh) {
+        this.timeHigh = timeHigh;
+        triggerParamChange();
+    }
+
+    public long getTimeLow(){
+        return timeLow;
+    }
+    public void setTimeLow(long timeLow){
+        this.timeLow = timeLow;
+        triggerParamChange();
+    }
+
+
+
+    @Override
+    public int getSrcTriggerLevelCnt() {
+        return 2;
+    }
+
+    @Override
+    public int getTriggerSourceCnt() {
+        return 1;
+    }
+
+    @Override
+    protected boolean isMultitriggerSource() {
+        return false;
+    }
+
+}

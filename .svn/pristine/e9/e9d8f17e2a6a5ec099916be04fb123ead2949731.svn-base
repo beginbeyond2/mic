@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/color_Backcolor_MainMenu3"
+    android:padding="10px">
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/saveIn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:array="@array/saveInSetting"
+        android:layout_marginStart="36px"
+        app:head="@string/saveIn"
+        app:headWidth="80px"
+        app:itemWidth="200px"
+        app:itemHeight="52px"
+        />
+
+    <com.micsig.tbook.ui.top.view.TopViewSave
+        android:id="@+id/saveName"
+        android:layout_width="wrap_content"
+        android:layout_height="52px"
+        android:layout_marginStart="144px"
+        android:layout_toEndOf="@id/saveIn"
+        app:buttonWidth="96px"
+        app:editWidth="200px"
+        app:headWidth="60px" />
+</RelativeLayout>

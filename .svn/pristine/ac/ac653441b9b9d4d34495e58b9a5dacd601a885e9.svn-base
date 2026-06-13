@@ -1,0 +1,32 @@
+package com.micsig.tbook.scope.fpga;
+
+/**
+ * Created by zhuzh on 2018-4-8.
+ */
+
+public class FPGAReg_SLOW_SCALE_SET extends FPGAReg {
+    public FPGAReg_SLOW_SCALE_SET() {
+        super(FPGA_SLOW_SCALE_SET, 12);
+    }
+
+    //前采样更新多少列
+    public void setColsPreSamp(int val){
+        setVal(0,16,val);
+    }
+    //后采样总共刷新多少次
+    public void setNumsReferesh(int val){
+        setVal(16,16,val);
+    }
+    //屏幕第1列距离触发位置的列数，触发位置在屏幕内则为0；
+    public void setColsTrigPlace(int val){
+        setVal(1,0,16,val);
+    }
+    //每列有多少组采样点小数
+    public void setSampsPerLie_pt(int val){
+        setVal(1,30,2,val);
+    }
+    //每列有多少组采样点
+    public void setSampsPerLie(int val){
+        setVal(2,val);
+    }
+}

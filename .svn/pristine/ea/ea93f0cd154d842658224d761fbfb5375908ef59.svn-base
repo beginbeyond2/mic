@@ -1,0 +1,960 @@
+package com.micsig.tbook.scope.horizontal;
+
+import android.util.Log;
+
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.Data.WaveData;
+import com.micsig.tbook.scope.Display.Display;
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.Sample.IMemDepth;
+import com.micsig.tbook.scope.Sample.MemDepthFactory;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.ScopeFrozen;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.channel.RefChannel;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Observable;
+import java.util.Observer;
+
+/**
+ * Created by zhuzh on 2018/3/13.
+ */
+
+public class HorizontalAxis implements Observer {
+    private static final String TAG = "HorizontalAxis";
+    private static volatile HorizontalAxis instance = null;
+
+    public static HorizontalAxis getInstance() {
+        if (instance == null) {
+            synchronized (HorizontalAxis.class) {
+                if (instance == null) {
+                    instance = new HorizontalAxis();
+                }
+            }
+        }
+        return instance;
+    }
+
+    public static final int WPI_STANDARD = 0; //未启用缩放窗口是的标准窗口
+    public static final int WPI_SMALL = WPI_STANDARD; //缩放窗口中尺寸较小的一个
+    public static final int WPI_LARGE = 1; //缩放窗口中尺寸较大的一个
+
+    private static final int TSI_MIN = 0;
+    public static final int TSI_1KS = TSI_MIN; //1000s
+    public static final int TSI_500S = 1;//1
+    public static final int TSI_200S = 2;//2
+    public static final int TSI_100S = 3;
+    public static final int TSI_50S = 4;
+    public static final int TSI_20S = 5;//5
+    public static final int TSI_10S = 6;
+    public static final int TSI_5S = 7;
+    public static final int TSI_2S = 8;
+    public static final int TSI_1S = 9;
+    public static final int TSI_500mS = 10;//10
+    public static final int TSI_200mS = 11;
+    public static final int TSI_100mS = 12;
+    public static final int TSI_50mS = 13;
+    public static final int TSI_20mS = 14;
+    public static final int TSI_10mS = 15;//15
+    public static final int TSI_5mS = 16;
+    public static final int TSI_2mS = 17;
+    public static final int TSI_1mS = 18;
+    public static final int TSI_500uS = 19;
+    public static final int TSI_200uS = 20;//20
+    public static final int TSI_100uS = 21;
+    public static final int TSI_50uS = 22;
+    public static final int TSI_20uS = 23;
+    public static final int TSI_10uS = 24;
+    public static final int TSI_5uS = 25;//25
+    public static final int TSI_2uS = 26;
+    public static final int TSI_1uS = 27;
+    public static final int TSI_500nS = 28;
+    public static final int TSI_200nS = 29;
+    public static final int TSI_100nS = 30;//30
+    public static final int TSI_50nS = 31;
+    public static final int TSI_20nS = 32;
+    public static final int TSI_10nS = 33;
+    public static final int TSI_5nS = 34;
+    public static final int TSI_2nS = 35;//35
+    public static final int TSI_1nS = 36;
+    public static final int TSI_500pS = 37;
+    public static final int TSI_250pS = 38;
+    private static final int TSI_MAX = TSI_250pS;//TSI_1nS
+
+    private long timePoseMain = 0;//主窗口或放大模式缩略窗口：中心点相对触发位置的偏移量。单位0.1ps
+    private long timePoseZoom = 0;//放大模式放大窗口：屏幕中心点相对触发位置的偏移量。单位0.1ps
+    private int timeScaleIdMain = TSI_5mS;
+    private int timeScaleIdZoom = TSI_5mS;
+    private int startX = 0;
+    private int endX = 0;
+    private List<Double> xAxis = new ArrayList<>();
+    private HorizontalAxisAction horizontalAxisAction;
+    private boolean scaleFollowingCh = true;
+
+    public HorizontalAxis() {
+        horizontalAxisAction = new HorizontalAxisAction(this);
+        EventFactory.addEventObserver(EventFactory.EVENT_CHANNEL_OPEN, this);
+        EventFactory.addEventObserver(EventFactory.EVENT_CHANNEL_CLOSE, this);
+        EventFactory.addEventObserver(EventFactory.EVENT_DISPLAY_ZOOM, this);
+        EventFactory.addEventObserver(EventFactory.EVENT_MEM_DEPTH, this);
+        EventFactory.addEventObserver(EventFactory.EVENT_SCOPE_STATE, this);
+        EventFactory.addEventObserver(EventFactory.EVENT_FORCE_MEM_DEPTH, this);
+        EventFactory.addEventObserver(EventFactory.EVENT_CHANGE_CH_TIMEBASE, this);
+        InitStdXAxis();
+    }
+    public static boolean isValidScaleId(int timeScaleId){
+        return minGear <=  timeScaleId && maxGear >= timeScaleId;
+    }
+    public static boolean isRoolScale(int timeScale) {
+        return timeScale <= TSI_100mS;
+    }
+
+    public static boolean isRoolScale() {
+        return HorizontalAxis.getInstance().timeScaleIdMain <= TSI_100mS;
+    }
+
+    private static int minGear = TSI_MIN;
+    private static int maxGear = TSI_MAX;
+
+    public static int getMinGear() {
+        return minGear;
+    }
+
+    public static void setMinGear(int gear) {
+        minGear = gear;
+    }
+
+    public static int getMaxGear() {
+        return maxGear;
+    }
+
+    public static void setMaxGear(int gear) {
+        maxGear = gear;
+    }
+
+    public void InitStdXAxis() {
+        xAxis.clear();
+        for (int i = minGear; i <= maxGear; i++) {
+            xAxis.add(stdTimeScaleIdVal(i));
+        }
+    }
+
+    public void initXAxis() {
+        boolean bChange = false;
+        synchronized (this) {
+            int l = xAxis.size();
+            xAxis.clear();
+            for (int i = minGear; i <= maxGear; i++) {
+                xAxis.add(timeScaleIdVal(i));
+            }
+            if( l != xAxis.size()){
+                bChange = true;
+            }
+        }
+        if(bChange) {
+            EventFactory.sendEvent(EventFactory.EVENT_TIME_SCALE_LIST);
+        }
+    }
+
+    public int timeValtoTimeScaleId(double val) {
+        synchronized (this) {
+            for (int i = maxGear; i > minGear; i--) {
+                if (i < xAxis.size()) {
+                    if (val < ((xAxis.get(i) + xAxis.get(i - 1)) / 2))
+                        return i;
+                }
+            }
+        }
+        return minGear;
+    }
+
+    private double timeScaleIdVal(int timeScaleId) {
+
+        IMemDepth memDepth = MemDepthFactory.getMemDepth();
+        double val = stdTimeScaleIdVal(timeScaleId);
+
+        if (memDepth.isSpecialTimeScale()) {
+            int stdTimeScaleId;
+            Scope scope = Scope.getInstance();
+            double timeScaleRatio = memDepth.getTimeScaleRatio(timeScaleId);
+            val *= timeScaleRatio;
+
+            if (scope.isRun()) {
+                if (!scope.isZoom()) {
+                    return val;
+                }
+                stdTimeScaleId = getTimeScaleIdOfView(WPI_STANDARD);
+            } else {
+                stdTimeScaleId = ScopeFrozen.getInstance().getTimeScaleId();
+            }
+
+            //小于等于标准时基档时，上述计算的肯定正确，只有展开时才可能会修改时基档
+            if (timeScaleId <= stdTimeScaleId)
+                return val;
+
+            //zoom且时基大于缩略图、静态，只有这两种情况才有可能需要对时基特殊处理
+            //注意，对于参考波形，时基不用特殊处理
+            double timeScaleStd = stdTimeScaleIdVal(stdTimeScaleId) * memDepth.getTimeScaleRatio(stdTimeScaleId);
+            double timeScaleNow = stdTimeScaleIdVal(timeScaleId) * timeScaleRatio;
+            double iScreenNum = timeScaleStd / timeScaleNow;//屏数计算
+            double iLieNum = (float) (iScreenNum * ScopeBase.getWidth());//总列数
+            double tmp = iLieNum / scope.zunMemDepth();//插值倍数
+
+            if (tmp > 1.01) {//插值
+                if ((tmp > 62.5 - 0.01 && tmp < 62.5 + 0.01)//temp == 62.5
+                        || (tmp > 31.25 - 0.01 && tmp < 31.25 + 0.01))//temp == 31.25
+                {
+                    val = val * 5.0 / 4;
+                } else if ((tmp > 1.6 - 0.01 && tmp < 1.6 + 0.01)) {
+                    val = val * 4 / 5;
+                }
+            } else {//抽样
+                tmp = 500 / tmp;//500列对应多少数据
+                int x = (int) (tmp + 0.1);
+                if (x % 500 != 0) {//每列个数为小数
+                    if (x % 100 == 0) {//每列个数乘以5为整数（如1.6，3.2）
+                        val = val * 5.0 / 4;
+                    }
+                }
+            }
+        }
+
+        return val;
+    }
+
+    public static double stdTimeScaleIdVal(int timeScaleId) {
+        double ret = 1e-9d;
+        switch (timeScaleId) {
+            case TSI_1KS:
+                ret = 1000;
+                break;
+            case TSI_500S:
+                ret = 500;
+                break;
+            case TSI_200S:
+                ret = 200;
+                break;
+            case TSI_100S:
+                ret = 100;
+                break;
+            case TSI_50S:
+                ret = 50;
+                break;
+            case TSI_20S:
+                ret = 20;
+                break;
+            case TSI_10S:
+                ret = 10;
+                break;
+            case TSI_5S:
+                ret = 5;
+                break;
+            case TSI_2S:
+                ret = 2;
+                break;
+            case TSI_1S:
+                ret = 1;
+                break;
+            case TSI_500mS:
+                ret = 0.5;
+                break;
+            case TSI_200mS:
+                ret = 0.2;
+                break;
+            case TSI_100mS:
+                ret = 0.1;
+                break;
+            case TSI_50mS:
+                ret = 0.05;
+                break;
+            case TSI_20mS:
+                ret = 0.02;
+                break;
+            case TSI_10mS:
+                ret = 0.01;
+                break;
+            case TSI_5mS:
+                ret = 0.005;
+                break;
+            case TSI_2mS:
+                ret = 0.002;
+                break;
+            case TSI_1mS:
+                ret = 0.001;
+                break;
+            case TSI_500uS:
+                ret = 500e-6;
+                break;
+            case TSI_200uS:
+                ret = 200e-6;
+                break;
+            case TSI_100uS:
+                ret = 100e-6;
+                break;
+            case TSI_50uS:
+                ret = 50e-6;
+                break;
+            case TSI_20uS:
+                ret = 20e-6;
+                break;
+            case TSI_10uS:
+                ret = 10e-6;
+                break;
+            case TSI_5uS:
+                ret = 5e-6;
+                break;
+            case TSI_2uS:
+                ret = 2e-6;
+                break;
+            case TSI_1uS:
+                ret = 1e-6;
+                break;
+            case TSI_500nS:
+                ret = 500e-9;
+                break;
+            case TSI_200nS:
+                ret = 200e-9;
+                break;
+            case TSI_100nS:
+                ret = 100e-9;
+                break;
+            case TSI_50nS:
+                ret = 50e-9;
+                break;
+            case TSI_20nS:
+                ret = 20e-9;
+                break;
+            case TSI_10nS:
+                ret = 10e-9;
+                break;
+            case TSI_5nS:
+                ret = 5e-9;
+                break;
+            case TSI_2nS:
+                ret = 2e-9;
+                break;
+            case TSI_1nS:
+                ret = 1e-9;
+                break;
+            case TSI_500pS:
+                ret = 500e-12;
+                break;
+            case TSI_250pS:
+            default:
+                ret = 250e-12;
+                break;
+        }
+        return ret;
+    }
+
+    public List<Double> getxAxis() {
+        synchronized (this) {
+            return new ArrayList<>(xAxis);
+        }
+    }
+
+    public int getWPIId() {
+        int id = WPI_STANDARD;
+        if (Display.getInstance().isZoom())
+            id = WPI_LARGE;
+        return id;
+    }
+
+    public double getTimeScaleIdVal() {
+        return getTimeScaleIdVal(getTimeScaleIdOfView());
+    }
+
+    public double getTimeScaleIdVal(int timeScaleId) {
+
+        double val = 0;
+        synchronized (this) {
+            if (timeScaleId >= minGear && timeScaleId <= maxGear) {
+                int idx = timeScaleId - minGear;
+                if(idx < xAxis.size()) {
+                    val = xAxis.get(idx);
+                }
+            } else {
+                throw new IllegalArgumentException();
+            }
+        }
+
+        return val;
+    }
+
+    public int getTimeScaleIdOfView() {
+        return getTimeScaleIdOfView(getWPIId());
+    }
+
+    public void setTimeScaleIdOfView(int timeScaleId) {
+        setTimeScaleIdOfView(getWPIId(), timeScaleId);
+    }
+
+    public void setTimeScaleIdOfView(int WPIId, int timeScaleId) {
+        if (WPIId == WPI_LARGE) {
+            timeScaleIdZoom = timeScaleId;
+            horizontalAxisAction.timeScaleIdChange();
+        } else {
+            timeScaleIdMain = timeScaleId;
+            horizontalAxisAction.timeScaleIdChange();
+        }
+
+    }
+
+    public int getTimeScaleIdOfView(int WPIId) {
+        if (WPIId == WPI_LARGE) return timeScaleIdZoom;
+        return timeScaleIdMain;
+    }
+
+    public long getTimePosOfView() {
+        return getTimePosOfView(getWPIId());
+    }
+
+    public void setTimePosOfView(long timePos) {
+        setTimePosOfView(getWPIId(), timePos);
+    }
+
+    public long getTimePosOfView(int WPIId) {
+        if (WPIId == WPI_LARGE) return timePoseZoom;
+        return timePoseMain;
+    }
+
+    public void setTimePosOfView(int WPIId, long timePos) {
+        if (WPIId == WPI_LARGE) {
+            timePoseZoom = timePos;
+            horizontalAxisAction.timePosChange();
+        } else {
+            timePoseMain = timePos;
+            horizontalAxisAction.timePosChange();
+        }
+    }
+
+    public boolean isGreater100ms() {
+        return (timeScaleIdMain <= TSI_100mS);
+    }
+
+    //根据档位，触发时间 计算 触发时刻在屏幕对应像素
+    public long getTimePoseOfGrid(double timeScale, long timePos) {
+        long offset;
+        timeScale = (double) ScopeBase.getHorizonPerGridPixels() * timePos / (timeScale * 1e13);
+//        if (timeScale < 0)
+//            offset = (long) (timeScale - 0.5);
+//        else
+//            offset = (long) (timeScale + 0.5);
+
+        return Math.round(timeScale);
+    }
+
+    public static long TimebaseToPix(int WPIId,double val) {
+        Scope scope = Scope.getInstance();
+        double timeScale;
+        if (WPIId == WPI_STANDARD) {
+            timeScale = scope.timeScale_mainBoard()/ScopeBase.getHorizonPerGridPixels();
+        } else {
+            timeScale = scope.timeScale_zoomBoard()/ScopeBase.getHorizonPerGridPixels();
+        }
+
+        return (long)(val>0?val/timeScale + 0.5:val/timeScale-0.5);
+    }
+    public static double PixToTimebase(int WPIId, long pix){
+        Scope scope = Scope.getInstance();
+        double timeScale;
+        if (WPIId == WPI_STANDARD) {
+            timeScale = scope.timeScale_mainBoard()/ScopeBase.getHorizonPerGridPixels();
+        } else {
+            timeScale = scope.timeScale_zoomBoard()/ScopeBase.getHorizonPerGridPixels();
+        }
+        return pix*timeScale;
+    }
+    //获得触发时刻屏幕位置
+    public long getTimePoseOfGrid(int WPIId) {
+        Scope scope = Scope.getInstance();
+        double timeScale;
+        if (WPIId == WPI_STANDARD) {
+            timeScale = scope.timeScale_mainBoard();
+        } else {
+            timeScale = scope.timeScale_zoomBoard();
+        }
+        return getTimePoseOfGrid(timeScale, getTimePosOfView(WPIId));
+    }
+
+    //修改触发时刻负数
+    public void correctTimePose() {
+        long pos = getTimePosOfView(WPI_STANDARD);
+        long pos1 = correctTimePose(pos);
+        if (pos != pos1)
+            setTimePosOfView(WPI_STANDARD, pos1);
+    }
+
+    public long correctTimePose(long pos) {
+        Scope scope = Scope.getInstance();
+        if (scope.isZoom())
+            return pos;
+        if (scope.isUsersetReset()){
+            return pos;
+        }
+
+        long timeScreen_n = -(long) (scope.timeOneScreen_main() * scope.screenNum_Main() + 0.1);
+//        Logger.i(TAG, "correctTimePose() ==>[0]"
+//                +" pos:"+pos+"["+(pos/1e13)+"]"
+//                +" timeOneScreen_main:"+(scope.timeOneScreen_main()/1e13)
+//                +" screenNum_Main:"+scope.screenNum_Main()
+//                +" timeScreen_n:"+(timeScreen_n/1e13)
+//        + "run:" + scope.isRun());
+        if (scope.isRun()) {
+            if (pos < timeScreen_n) {
+                pos = timeScreen_n;
+            }
+        } else {
+
+            long half_timeScreen_n = timeScreen_n/2;
+            long xpos = ScopeFrozen.getInstance().getTimePosOfView();
+            if (pos < 0) {
+                if(xpos < half_timeScreen_n) {
+                    if(pos < timeScreen_n) {
+                        pos = timeScreen_n;
+                    }
+                } else {
+                    half_timeScreen_n += xpos;
+                    if (pos < half_timeScreen_n) {
+                        pos = half_timeScreen_n;
+                    }
+                }
+            } else {
+                if(xpos > -half_timeScreen_n) {
+                    if(pos < xpos+half_timeScreen_n) {
+                        pos = xpos+half_timeScreen_n;
+                    }
+                    if(pos > xpos-half_timeScreen_n) {
+                        pos = xpos-half_timeScreen_n;
+                    }
+                } else if(xpos < half_timeScreen_n) {
+                    if(pos > 0) {
+                        pos = 0;
+                    }
+                } else {
+                    half_timeScreen_n -= xpos;
+                    if (pos > -half_timeScreen_n) {
+                        pos = -half_timeScreen_n;
+                    }
+                }
+            }
+        }
+        return pos;
+    }
+
+    //根据档位，屏幕像素位置放回时间
+    public long getTimePose(double timeScale, long pos) {
+        timeScale = timeScale * 1e13 * pos / ScopeBase.getHorizonPerGridPixels();
+        long offset;
+        if (timeScale < 0)
+            offset = (long) (timeScale - 0.5);
+        else
+            offset = (long) (timeScale + 0.5);
+        return offset;
+    }
+
+    //当触发时刻左右移动时，进行极限限定
+    public void correctTimePose_poseMove() {
+        Scope scope = Scope.getInstance();
+        boolean zoom = scope.isZoom();
+
+        long posMain = getTimePosOfView(WPI_STANDARD);
+        long pos = getTimePosOfView();
+        long halfTime = scope.timeOneScreen_main() / 2;
+        if (zoom) {
+            long lx1 = halfTime - posMain;
+            long lx2 = halfTime + posMain;
+            if (-pos > lx1) {//判断数据头是否在屏幕中心偏右
+                setTimePosOfView(-lx1);
+            } else if (pos > lx2) {//判断数据尾是否在屏幕中心偏左
+                setTimePosOfView(lx2);
+            }
+        }
+    }
+/*
+    public void timePoseOfViewChange(long pix){
+        Scope scope=Scope.getInstance();
+        boolean zoom = scope.isZoom();
+
+        double f;
+        if(zoom)
+        {
+            f  = scope.timeScale_zoomBoard();
+        }
+        else
+        {
+            f  = scope.timeScale_mainBoard();
+        }
+
+        if(scope.isRun())//停止状态不限制
+        {
+            long screenNum;
+            if(zoom)
+                screenNum = (int)(scope.screenNum_zoom()*100+0.1);
+            else
+                screenNum = (int)(scope.screenNum_Main()*100+0.1);
+            long allGrid = screenNum* ScopeBase.getWidth()/100;
+
+            if(zoom)
+            {
+                long pos = pix * gridTime;
+                S64 zunDepth = memDepthInSampleGroup();
+
+                double num1 = screenNum_Main();
+                int x1 = virtualHorizonPixelsOfOutputWindow(zunDepth/num1);
+                double num2 = 1;
+                num2 = screenNum_zoom();
+                Q_UNUSED(num2);
+                S128 tm1((S64)(num1*x1+0.1));//数据总列数
+                tm1 = tm1*timeOneScreen_main()/(2*x1);//数据总时间/2
+                S64 halfDataTime = tm1.L;//1半数据的时间
+
+                //S64 t_std = pos;
+                S64 tst;//触发位置距离数据中心的时间
+
+                tst = timePosOfView(false, Wave::WPI_STANDARD);
+
+                S64 t_main;//主视图的触发位置
+                S64 oneScreenTime; //主视图一屏的时间:
+
+                t_main = pos;
+                oneScreenTime = timeOneScreen_zoom();
+                Q_UNUSED(oneScreenTime);
+                if(tst < -halfDataTime)
+                {//触发位置在右，并且到达数据尾巴还超过，这时候单屏时，屏幕左边应该有空白显示区
+                    //即触发位置位于数据的最后一个；
+                    //主视图左右不对称
+                    //详细公式：t = halfDataTime*2+t+(config.timePosOfView(0, Wave::WPI_STANDARD)-t)
+                    //        +(config.timePosOfView(0, Wave::WPI_LARGE)
+                    //        -config.timePosOfView(0, Wave::WPI_STANDARD));
+                    tst = halfDataTime*2+t_main;//数据头距离屏幕中心的时间计算
+
+                    if(tst < 0)
+                    {
+                        t_main = -halfDataTime*2;
+                        offset = t_main /gridTime;
+                    }
+                    else
+                    {
+                        S128 t3 = halfDataTime*2;
+                        t3 = t3 - tst;
+                        if(t3 < 0)
+                        {
+                            offset = 0;
+                        }
+                    }
+                }
+                else
+                {
+                    //详细公式：t = halfDataTime+(config.timePosOfView(0, Wave::WPI_STANDARD)-t)
+                    //        +(config.timePosOfView(0, Wave::WPI_LARGE)
+                    //        -config.timePosOfView(0, Wave::WPI_STANDARD));
+                    //tst = halfDataTime - tst + t_main;//数据头距离屏幕中心的时间计算
+                    //还需要考虑动态时，触发不在采样点上；
+                    S64 tst1 = tst;
+                    tst = halfDataTime - tst + t_main + (tst % (1000*1000*10/maxInputClk_AD()));//数据头距离屏幕中心的时间计算
+
+                    if(tst < 0)
+                    {
+                        t_main = -(halfDataTime - tst1 + (tst1 % (1000*1000*10/maxInputClk_AD())));
+                        offset = t_main /gridTime;
+                    }
+                    else
+                    {
+                        S128 t3 = halfDataTime*2;
+                        t3 = t3 - tst;
+                        if(t3 < 0)
+                        {
+                            t_main = halfDataTime*2 - halfDataTime + tst1 - (tst1 % (1000*1000*10/maxInputClk_AD()));
+                            offset = t_main /gridTime;
+                        }
+                    }
+                }
+
+            }
+            else
+            {
+                if(offset < -allGrid)
+                    offset = -allGrid;
+            }
+        }
+        else
+        {
+            S64 pos = offset * gridTime;
+            S64 zunDepth = freezeWave.zunSampDepth;
+
+            double num1 = stw_screenNum_Main();
+            int x1 = virtualHorizonPixelsOfOutputWindow(zunDepth/num1);
+            double num2 = 1;
+            int x2 = horizonPixelsOfOutputWindow();
+            int zoom = DispZoom(0);
+            if(zoom)
+            {
+                x2 = virtualHorizonPixelsOfOutputWindow(zunDepth/num2);
+                num2 = stw_screenNum_zoom();
+            }
+            Q_UNUSED(x2);
+            S128 tm1((S64)(num1*x1+0.1));//数据总列数
+            tm1 = tm1*timeOneScreen_main()/(2*x1);//数据总时间/2
+            S64 halfDataTime = tm1.L;//1半数据的时间
+            //printf("1/2 time of datas=%lld\n",halfDataTime);
+            //计算数据头距离缩略窗口中心的时间: tst
+            //S64 t_std = timePosOfView(0, Wave::WPI_STANDARD);//触发位置（0.1ps）
+            S64 t_std = pos;
+            S64 tst;//触发位置距离数据中心的时间
+
+            tst = this->freezeWave.timePosOfView;
+
+            S64 t_main;//主视图的触发位置
+            S64 oneScreenTime; //主视图一屏的时间:
+
+            if(zoom)
+            {
+                //t_main = timePosOfView(0, Wave::WPI_LARGE);
+                t_main = pos;
+                oneScreenTime = timeOneScreen_zoom();
+            }
+            else
+            {
+                t_main = t_std;
+                oneScreenTime = timeOneScreen_main();
+            }
+            Q_UNUSED(oneScreenTime);
+            if(tst < -halfDataTime)
+            {//触发位置在右，并且到达数据尾巴还超过，这时候单屏时，屏幕左边应该有空白显示区
+                //即触发位置位于数据的最后一个；
+                //主视图左右不对称
+                //详细公式：t = halfDataTime*2+t+(config.timePosOfView(0, Wave::WPI_STANDARD)-t)
+                //        +(config.timePosOfView(0, Wave::WPI_LARGE)
+                //        -config.timePosOfView(0, Wave::WPI_STANDARD));
+                tst = halfDataTime*2+t_main;//数据头距离屏幕中心的时间计算
+                if(tst < 0)
+                {
+                    t_main = -halfDataTime*2;
+                    offset = t_main /gridTime;
+                }
+                else
+                {
+                    S128 t3 = halfDataTime*2;
+                    t3 = t3 - tst;
+                    if(t3 < 0)
+                    {
+                        offset = 0;
+                    }
+                }
+            }
+            else
+            {
+                //详细公式：t = halfDataTime+(config.timePosOfView(0, Wave::WPI_STANDARD)-t)
+                //        +(config.timePosOfView(0, Wave::WPI_LARGE)
+                //        -config.timePosOfView(0, Wave::WPI_STANDARD));
+                //tst = halfDataTime - tst + t_main;//数据头距离屏幕中心的时间计算
+                //还需要考虑动态时，触发不在采样点上；
+                S64 tst1 = tst;
+                tst = halfDataTime - tst + t_main + (tst % (1000*1000*10/maxInputClk_AD()));//数据头距离屏幕中心的时间计算
+                if(tst < 0)
+                {
+                    t_main = -(halfDataTime - tst1 + (tst1 % (1000*1000*10/maxInputClk_AD())));
+                    offset = t_main /gridTime;
+                }
+                else
+                {
+                    S128 t3 = halfDataTime*2;
+                    t3 = t3 - tst;
+                    if(t3 < 0)
+                    {
+                        t_main = halfDataTime*2 - halfDataTime + tst1 - (tst1 % (1000*1000*10/maxInputClk_AD()));
+                        offset = t_main /gridTime;
+                    }
+                }
+            }
+        }
+
+        S64 pos = offset * gridTime;
+#define MAX_TIME_POS ((S64)MS_GRID_H*1000*1000*1000*1000*1000*10) //12ks, 单位0.1ps
+        if(pos > MAX_TIME_POS)
+            pos = MAX_TIME_POS;
+    *position  = pos;
+    }
+    */
+
+    //根据档位，屏幕像素位置放回时间
+    public long getTimePose(int WPIId, long pos) {
+        Scope scope = Scope.getInstance();
+        double timeScale;
+        if (WPIId == WPI_STANDARD) {
+            timeScale = scope.timeScale_mainBoard();
+        } else {
+            timeScale = scope.timeScale_zoomBoard();
+        }
+        return getTimePose(timeScale, pos);
+    }
+
+    //根据档位，屏幕像素位置放回时间
+    public long getTimePose(long pos) {
+        return getTimePose(getWPIId(), pos);
+    }
+
+    public static final long TIME_FS_100 = 10_000_000_000_000L;
+    private static final long MAX_TIME_POS = (long) ScopeBase.getHorizonGridCnt() * 1000 * 1000 * 1000 * 1000 * 1000 * 10;
+
+    //档位，触发时间，偏移像素，返回新触发时间
+    public long timePoseOfViewChangeEx(double timeScale, long timePos, long offset) {
+
+        long gridTime = (long) (timeScale * 1e13 + 0.1);//0.1ps
+        gridTime /= ScopeBase.getHorizonPerGridPixels();
+        offset = timePos / gridTime - offset;
+        long pos = offset * gridTime;
+        if (pos > MAX_TIME_POS)
+            pos = MAX_TIME_POS;
+        timePos = pos;
+        return timePos;
+    }
+
+    public long getTimePoseOfViewPix() {
+        return getTimePoseOfGrid(getWPIId());
+    }
+
+    //移动触发位置触发位置
+    public void setTimePoseOfViewPix(long pos) {
+
+        pos = getTimePose(pos);
+//        Logger.i(TAG, "setTimePoseOfViewPix() ==>"+" [2]pos:"+pos+" - "+(1.0*pos/1e13));
+        if (pos > MAX_TIME_POS) {
+            pos = MAX_TIME_POS;
+        }
+        pos = correctTimePose(pos);
+//        Logger.i(TAG, "setTimePoseOfViewPix() ==>"+" [3]pos:"+pos+" - "+(1.0*pos/1e13));
+        setTimePosOfView(pos);
+    }
+
+    //秒为单位
+    public double getTimesPrePix() {
+        double timeScale = getTimeScaleIdVal();
+        timeScale /= ScopeBase.getHorizonPerGridPixels();
+        return timeScale;
+    }
+
+    //秒转100飞秒，0.1ps
+    public static long Sto100FS(double s) {
+        return (long) (s * 1000 * 1000 * 1000 * 1000 * 10 + 0.01);
+    }
+
+    //100飞秒单位
+    public long getTimesPrePixExt() {
+        return Sto100FS(getTimesPrePix());
+    }
+
+    public synchronized int getStartX() {
+        return startX;
+    }
+
+    public synchronized void setStartX(int startX) {
+        this.startX = startX;
+    }
+
+    public synchronized int getEndX() {
+        return endX;
+    }
+
+    public synchronized void setEndX(int endX) {
+        this.endX = endX;
+    }
+
+
+    @Override
+    public void update(Observable observable, Object data) {
+        EventBase eventBase = (EventBase) data;
+        if (eventBase != null) {
+            switch (eventBase.getId()) {
+                case EventFactory.EVENT_CHANNEL_OPEN:
+                case EventFactory.EVENT_CHANNEL_CLOSE:
+                case EventFactory.EVENT_DISPLAY_ZOOM:
+                case EventFactory.EVENT_MEM_DEPTH:
+                case EventFactory.EVENT_SCOPE_STATE:
+                case EventFactory.EVENT_FORCE_MEM_DEPTH:
+                    initXAxis();
+                    break;
+                case EventFactory.EVENT_CHANGE_CH_TIMEBASE:
+                    double timeBase = (double) eventBase.getData();
+                    Logger.i(TAG, " timeBase= " + timeBase + " ,scaleFollowingCh= " + scaleFollowingCh);
+                    int chIdx = eventBase.getChannelIndex();
+                    if (scaleFollowingCh) {
+                        changeScaleByRef(timeBase);
+                        //调整完时基之后，进行触发位置同步
+                        if (ChannelFactory.isRefCh(chIdx)) {
+                            RefChannel refChannel = ChannelFactory.getRefChannel(chIdx);
+                            if (refChannel != null && refChannel.getRefType() != WaveData.FFT_WAVE) {
+                                EventFactory.sendEvent(new EventBase(EventFactory.EVENT_SET_CH_TIMEPOS, refChannel.getRefXPos_original() * 1E-13));
+                            }
+                        }
+                    }
+                    break;
+            }
+        }
+    }
+
+    private void changeScaleByRef(double timeBase) {
+        Logger.d(TAG, "changeScaleByRef timeBase= " + timeBase);
+        int scaleIsd = -1;
+        for (int i = 0; i < xAxis.size(); i++) {
+            if (xAxis.get(i) == timeBase) {
+                scaleIsd = i;
+                break;
+            }
+        }
+        if (scaleIsd >= 0) {
+            setTimeScaleIdOfView(scaleIsd);
+        }
+    }
+
+    public static int BaudrateToTimeScale(int baudrate) {
+        if (baudrate <= 0) {
+            return TSI_50mS;
+        }
+        double tsis[] = {1000, 500, 200, 100, 50, 20, 10, 5, 2, 1,
+                0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.002, 0.001,
+                500e-6, 200e-6, 100e-6, 50e-6, 20e-6, 10e-6, 5e-6, 2e-6, 1e-6,
+                500e-9, 200e-9, 100e-9, 50e-9, 20e-9, 10e-9, 5e-9, 2e-9, 1e-9};
+        double ctsi = 9.6 / baudrate;
+        int ret = TSI_50mS;
+        int max = tsis.length;
+        for (int i = 0; i < max - 1; i++) {
+            if (tsis[i] > ctsi && ctsi >= tsis[i + 1]) {
+                ctsi = tsis[i + 1];
+                if ((i + 1) > max) i = 18;
+                ret = (i + 1);
+                break;
+            }
+        }
+        return ret;
+    }
+
+
+    /**
+     * scpi调用该方法，查询给定触发时刻的时间值对应在屏幕上的位置信息
+     *
+     * @param timePosVal 给定触发时刻的时间值
+     * @return 对应屏幕上的位置信息，中间为0，范围从[-350 ~ 349]
+     */
+    public long SCPIQueryPixInScreenFromTImePosVal(double timePosVal) {
+        double pix = timePosVal * ScopeBase.getHorizonPerGridPixels() / getTimeScaleIdVal();
+//        if (pix < -350) pix = -350;
+//        if(pix > 349) pix = 349;
+        return Math.round(pix);
+    }
+
+    public void setScaleFollowingCh(boolean followingCh) {
+        this.scaleFollowingCh = followingCh;
+    }
+
+    public boolean getScaleFollowingCh() {
+        return this.scaleFollowingCh;
+    }
+
+
+}

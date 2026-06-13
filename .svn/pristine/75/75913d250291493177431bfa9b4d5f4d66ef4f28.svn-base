@@ -1,0 +1,91 @@
+package com.micsig.tbook.scope.fpga;
+
+import com.micsig.tbook.scope.Bus.ARINC429Bus;
+import com.micsig.tbook.scope.Bus.IBus;
+
+/**
+ * Created by zhuzh on 2018-5-30.
+ */
+
+public class FPGAReg_BUS_429 extends FPGAReg_BUS {
+    public FPGAReg_BUS_429(int addr) {
+        super(addr, 20);
+    }
+    public void setSrc(int val){
+        setVal(0,2,val);
+    }
+    public void setRate(int val){
+        setVal(4,14,val);
+    }
+    public void setFormat(int val){
+        setVal(30,2,val);
+    }
+    public void setTriggerMode(int val){
+        setVal(1,0,5,val);
+    }
+    public void setData(int idx,int val){
+        setVal(2+idx,val);
+    }
+
+
+    @Override
+    public void configBus(int fpgaIdx,IBus iBus) {
+        ARINC429Bus bus = (ARINC429Bus) iBus;
+        int format = bus.getFormat();
+        int triggerType = bus.getTriggerType();
+        int data = bus.getData(triggerType);
+        int label = bus.getLabel(triggerType);
+        int sdi = bus.getSdi(triggerType);
+        int ssm = bus.getSSM(triggerType);
+        int src = (bus.getSrcChIdx());
+        FPGAReg_BUS_LEVEL busLevel = (FPGAReg_BUS_LEVEL) FPGACommand.getReg(fpgaIdx,FPGA_BUS_LEVEL);
+        setSrc(chIdx2BusSrc(src));
+
+        busLevel.setBusSrcExt(getBusIdx(),((src>>2)&0x1));
+        setRate(125000000/bus.getBaudRate() - 1);
+        setFormat(format);
+        setTriggerMode(triggerType);
+        switch (triggerType) {
+            case ARINC429Bus.ARINC429_TRIGGER_WORD:
+                setData(1,bus.getWord());
+                break;
+            case ARINC429Bus.ARINC429_TRIGGER_LABEL:
+                setData(0,label);
+                break;
+            case ARINC429Bus.ARINC429_TRIGGER_LABEL_SDI:
+                setData(0,label);
+            case ARINC429Bus.ARINC429_TRIGGER_SDI:
+                setData(1,sdi);
+                break;
+            case ARINC429Bus.ARINC429_TRIGGER_LABEL_DATA:
+                setData(0,label);
+            case ARINC429Bus.ARINC429_TRIGGER_DATA:
+            {
+                switch (format){
+                    case ARINC429Bus.ARINC429_LABEL_SDI_DATA_SSM:
+                        setData(1,data<<4);
+                        break;
+                    case ARINC429Bus.ARINC429_LABEL_DATA_SSM:
+                        setData(1,data<<2);
+                        break;
+                    case ARINC429Bus.ARINC429_LABEL_DATA:
+                        setData(1,data);
+                        break;
+                }
+            }
+            break;
+            case ARINC429Bus.ARINC429_TRIGGER_LABEL_SSM:
+                setData(0,label);
+            case ARINC429Bus.ARINC429_TRIGGER_SSM:
+                setData(1,ssm);
+                break;
+            default:
+                setData(0,0);
+                setData(1,0);
+                break;
+        }
+        setLevel(busLevel,src,IBus.IDLE_LEVEL_HIGH);
+        busLevel.setSrc(getBusIdx(),chIdx2BusSrc(src));
+        FPGACommand.sendCmd(busLevel);
+    }
+}

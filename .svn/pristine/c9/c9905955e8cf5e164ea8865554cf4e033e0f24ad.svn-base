@@ -1,0 +1,247 @@
+<resources>
+
+    <!--底部菜单-->
+    <string name="menu_bottom_adjust">Тонкая настройка</string>
+    <string name="menu_bottom_save">БыстрСохр</string>
+    <string name="menu_bottom_cursor">курсор</string>
+    <string name="menu_bottom_time">10:13</string>
+    <string name="menu_bottom_qiuck_screen">Захват экрана</string>
+    <string name="menu_bottom_qiuck_zoom">пересчет</string>
+    <string name="menu_bottom_qiuck_all_measure">Все измерения</string>
+    <string name="menu_bottom_qiuck_serials_txt">Серийный текст</string>
+    <string name="menu_bottom_qiuck_center_menu">меню</string>
+    <string name="dialog_center_menu_half_timebase">временная база</string>
+    <string name="dialog_center_menu_half_level">уровень</string>
+    <string name="dialog_center_menu_half_hor_cursor">горизонтальный курсор</string>
+    <string name="dialog_center_menu_half_ver_cursor">вертикальный курсор</string>
+    <string name="dialog_center_menu_half_channels">каналы</string>
+    <string name="internal_storage">Внутренняя память</string>
+    <string name="new_folder"> Новая папка</string>
+    <string name="seleced_folder">  Выбранная папка</string>
+    <string name="file_selection_not_supported"> Выбор файлов не поддерживается</string>
+    <string name="label_folder">Папка</string>
+    <string name="toast_create_success">Успешно создано</string>
+    <string name="toast_create_failure">Не удалось создать</string>
+    <string name="error_already_exists">Уже существует</string>
+    <string name="label_file">Файл</string>
+    <!-- TopTriggerSerials -->
+    <string name="topSerialsHeadData">данные</string>
+    <string name="topSerialsHeadData1">Данные 1</string>
+    <string name="topSerialsHeadData2">Данные 2</string>
+    <string name="topSerialsHeadLabel">тег</string>
+    <string name="topSerialsHeadSdi">SDI</string>
+    <string name="topSerialsHeadSsm">SSM</string>
+    <string name="topSerialsHeadId">ID</string>
+    <string name="topSerialsHeadDlc">DLC</string>
+    <string name="topSerialsHeadAddr">адрес</string>
+    <string name="topSerialsHeadCondition">состояние</string>
+
+    <string name="m1553bCsWordCsWordHead">Инструкция / статусное слово</string>
+    <string name="m1553bDataWordDataHead">Слово данных</string>
+    <string name="m1553bRtAddrRtAddrHead">Адрес удаленного терминала</string>
+    <string name="spiDataDataHead">Установить биты</string>
+
+    <string name="mainTopLeftStateRun">пробег</string>
+    <string name="mainTopLeftStateStop">остановить</string>
+    <string name="mainTopLeftStateWait">подождите</string>
+    <string name="mainTopLeftStateAuto">автоматическая</string>
+    <string name="mainTopLeftSD">SD</string>
+    <string name="mainTopLeftLength">87.5K</string>
+    <string name="mainTopLeftRate">3.13MSa/s</string>
+    <string name="mainTopCenterShow">0ps</string>
+    <string name="mainRightSample">256 в среднем</string>
+
+    <string name="view_savewithhead_title">имя</string>
+    <string name="view_savewithhead_input">1704060001</string>
+    <string name="view_savewithhead_confirm">Сохранить</string>
+    <string name="view_seekbarwithhead_title">яркость</string>
+    <string name="view_seekbarwithhead_show">66%</string>
+    <string name="view_display_brightness">яркость</string>
+    <string name="view_display_transparency">Transparency</string>
+    <string name="view_display_intensity">прочность</string>
+    <string name="view_afterglow_clearup">удаление</string>
+    <string name="view_horizontallist_title">регулировать</string>
+    <string name="view_display_adjust">регулировать</string>
+    <string name="view_horizontallist_show">100мс</string>
+    <string name="view_trigger_inhibitiontimetitle">Время торможения</string>
+    <string name="view_trigger_inhibitiontimevalue">200ns</string>
+    <string name="view_trigger_pulsewidth">1us</string>
+    <string name="view_trigger_logic">1us</string>
+    <string name="trigger_pulsewidth">Ширина импульса</string>
+    <string name="trigger_overTime">Тайм-аут</string>
+    <string name="triggervideo_linehead">ряд</string>
+    <string name="triggervideo_linedetail">1</string>
+    <string name="triggeruart_datatitle">данные</string>
+    <string name="triggeruart_datadetail">56</string>
+    <string name="triggerslope_timehighhead">Максимальное время</string>
+    <string name="triggerslope_timelowhead">Минимальное время</string>
+    <string name="triggerrunt_timehigh">Максимальное время</string>
+    <string name="triggerrunt_timelow">Минимальное время</string>
+    <string name="triggerlogic_timehigh">Максимальное время</string>
+    <string name="triggerlogic_timelow">Минимальное время</string>
+    <string name="triggerpulsewidth_timehigh">Максимальное время</string>
+    <string name="triggerpulsewidth_timelow">Минимальное время</string>
+    <string name="triggernedge_time">время</string>
+    <string name="triggernedge_edge">край</string>
+    <string name="triggernedge_edgevalue">345</string>
+    <string name="settingoscillograph_saveas">Сохранить в</string>
+    <string name="settingfactory_pleasesure">Подтвердите, пожалуйста, восстановить ли заводские настройки!</string>
+    <string name="settingfactory_sure">Здесь</string>
+    <string name="settingcalibration_pleasesure">Обязательно снимите датчик перед калибровкой!</string>
+    <string name="settingcalibration_sure">определить</string>
+    <string name="autosetting_levelhead">Пороговый уровень</string>
+    <string name="autosetting_leveldetail">10</string>
+    <string name="oscillograpg_storage">память</string>
+    <string name="oscillograpg_recovery">восстановление</string>
+    <string name="measure_clear">удаление</string>
+    <string name="measure_relationto">Относительно</string>
+    <string name="sure">определить</string>
+    <string name="save_saveto">Сохранить в</string>
+    <string name="save_r1">R1</string>
+    <string name="save_r2">R2</string>
+    <string name="save_r3">R3</string>
+    <string name="save_r4">R4</string>
+
+    <string name="dialogcount_title">N край</string>
+    <string name="dialogcount_x1">1x</string>
+    <string name="dialogcount_x100">100x</string>
+    <string name="dialogcount_subtract">-</string>
+    <string name="dialogcount_add">+</string>
+    <string name="dialogmeasuredelay_head">Ch1</string>
+    <string name="dialogmeasurephase_head">Ch1</string>
+    <string name="dialogscale_head">логика</string>
+    <string name="dialogscale_show">9.00ms</string>
+
+    <string name="serialsUserDefine">изготовленный на заказ</string>
+
+    <string name="mainBottomScreenRecorderStart">Начать запись видео:</string>
+    <string name="mainBottomScreenRecorderEnd">Конец записи видео.</string>
+    <string name="mainBottomScreenShot">Успех захвата экрана:</string>
+
+    <string name="topSlipUsersetSaveRecoveryDefaultName">дефолт</string>
+    <string name="topSlipUsersetSaveRecoveryStorage">Сохранено успешно</string>
+    <string name="topSlipUsersetSaveRecoveryRecovery">Успешное выздоровление</string>
+    <string name="msgForGoHomeWhenLockScreen">Текущая сенсорная функция отключена
+        \nЕсли вы хотите войти на рабочий стол, откроется сенсорная функция
+        \nПодтвердите вход на рабочий стол. Снова нажмите кнопку «Домой»
+        \nНажмите другие клавиши, чтобы вернуться.
+    </string>
+
+    <string name="topBtn">Верхняя половина</string>
+    <string name="bottomBtn">Нижняя половина</string>
+    <string name="topZeroTitle">Нулевая калибровка</string>
+    <string name="topADGainTitle">Калибровка усиления AD</string>
+    <string name="topADZeroTitle">AD калибровка нуля</string>
+    <string name="centerChGain">Калибровка усиления канала (требуется калибровочный сигнал)</string>
+    <string name="bottomZeroTitle">Нулевая калибровка</string>
+    <string name="bottomOffsetTitle">Калибровка коэффициента смещения</string>
+    <string name="bottomChDiffTitle">Калибровка разности каналов</string>
+    <string name="calibration">(Калиброванный)</string>
+    <string name="unCalibration">(не откалиброван)</string>
+
+    <string name="topSaveSaveInToast">U диск не обнаружен</string>
+
+    <string name="dialogMsgExitToHome">Вы уверены, что выйти на домашнюю страницу?</string>
+    <string name="dialogMsgInSlowTimeBase">Переключаясь в режим прокрутки, БПФ выйдет!</string>
+    <string name="keyBoardMsgBeyond">Превышение предела ввода</string>
+    <string name="msgClickFFTInRoll">В режиме прокрутки его нельзя установить в состояние FFT!</string>
+    <string name="msgBatteryLow">Аккумулятор разряжен, подключите адаптер!</string>
+    <string name="msgParameterLimited">Предел параметра!</string>
+    <string name="msgOpenMathInModeXY">В режиме XY математический канал не поддерживается!</string>
+
+    <string name="msgSelfAdjustRun">Самокалибровка идет ...</string>
+    <string name="msgSelfAdjustSuccess">Самокалибровка прошла успешно!</string>
+    <string name="msgSelfAdjustFail">Самокалибровка не удалась! Код ошибки:%1$s</string>
+
+    <string name="msgTopSaveNameExisted">Имя файла%1$s уже существует!</string>
+    <string name="msgTopSaveBinNoSupport">Сохранение канала в виде данных бина не поддерживается!</string>
+    <string name="msgTopSaveBinSuccess">Форма волны%1$s успешно сохранена!</string>
+    <string name="msgTopSaveBinFailed">Не удалось сохранить сигнал%1$s!</string>
+
+    <string name="serialsWordTitleS1">S1</string>
+    <string name="serialsWordTitleS2">S2</string>
+    <string name="serialsWordTitleS3">S3</string>
+    <string name="serialsWordTitleS4">S4</string>
+    <string name="serialsWordTitleS12">S1&amp;S2</string>
+    <string name="serialsWordClear">ясно</string>
+    <string name="serialsWordTip">Пожалуйста, сначала откройте канал!</string>
+    <string name="serialsWordUartTitleBin">двоичный</string>
+    <string name="serialsWordUartTitleHex">наговор</string>
+    <string name="serialsWordUartTitleASCII">ASCII</string>
+    <string name="serialsWordUartTip">Пожалуйста, сначала сохраните настройки s1 и s2 одинаковыми.</string>
+    <string name="serialsWordLinTitleCh">Ch</string>
+    <string name="serialsWordLinTitleTime">время</string>
+    <string name="serialsWordLinTitleId">ID</string>
+    <string name="serialsWordLinTitleData">данные</string>
+    <string name="serialsWordLinTitleError">ошибка</string>
+    <string name="serialsWordLinTitleCheck">Проверить</string>
+    <string name="serialsWordLinTitleTrigger">спусковой крючок</string>
+    <string name="serialsWordCanTitleCh">Ch</string>
+    <string name="serialsWordCanTitleTime">время</string>
+    <string name="serialsWordCanTitleId">ID</string>
+    <string name="serialsWordCanTitleType">тип</string>
+    <string name="serialsWordCanTitleDlc">DLC</string>
+    <string name="serialsWordCanTitleData">данные</string>
+    <string name="serialsWordCanTitleCrc">CRC</string>
+    <string name="serialsWordCanTitleError">ошибка</string>
+    <string name="serialsWordCanTitleTrigger">спусковой крючок</string>
+    <string name="serialsWordSpiTitleCh">Ch</string>
+    <string name="serialsWordSpiTitleTime">время</string>
+    <string name="serialsWordSpiTitleData">данные</string>
+    <string name="serialsWordSpiTitleTrigger">спусковой крючок</string>
+    <string name="serialsWordI2cTitleCh">Ch</string>
+    <string name="serialsWordI2cTitleTime">время</string>
+    <string name="serialsWordI2cTitleAddr">адрес</string>
+    <string name="serialsWordI2cTitleData">данные</string>
+    <string name="serialsWordI2cTitleConfirm">подтвердить</string>
+    <string name="serialsWordI2cTitleTrigger">спусковой крючок</string>
+    <string name="serialsWordI2cTitleRestart">перезапуск</string>
+    <string name="serialsWordM429TitleCh">Ch</string>
+    <string name="serialsWordM429TitleTime">время</string>
+    <string name="serialsWordM429TitleLabel">LABEL</string>
+    <string name="serialsWordM429TitleSdi">SDI</string>
+    <string name="serialsWordM429TitleData">данные</string>
+    <string name="serialsWordM429TitleSsm">SSM</string>
+    <string name="serialsWordM429TitleError">ошибка</string>
+    <string name="serialsWordM429TitleTrigger">спусковой крючок</string>
+    <string name="serialsWordM1553bTitleCh">Ch</string>
+    <string name="serialsWordM1553bTitleTime">время</string>
+    <string name="serialsWordM1553bTitleType">тип</string>
+    <string name="serialsWordM1553bTitleRAdr">RADR</string>
+    <string name="serialsWordM1553bTitleData">данные</string>
+    <string name="serialsWordM1553bTitleTrigger">спусковой крючок</string>
+    <string name="serialsWordM1553bTitleError">ошибка</string>
+    <string name="serialsWordUartMsg">РАМКИ TX:%1$s\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tERR:%2$s (%3$s)</string>
+    <string name="serialsWordCanMsg">КАДРЫ:%1$s\t\t\t\t\t\t\t\t\t\t\t\tSPEC:%2$s\t\t\t\t\t\t\t\t\t\t\t\tERR FR:%3$s (%4$s)</string>
+    <string name="serialsWordM429Msg">СЛОВА:%1$s\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tERRORS:%2$s (%3$s)</string>
+
+    <string name="rightMathMenuFftMeasure_DC">Прямой ток</string>
+    <string name="rightMathMenuFftMeasure_Freq">частота</string>
+    <string name="rightMathMenuFftMeasure_Amp">амплитудное</string>
+
+    <string name="screenShotSuccess">Успех захвата экрана:</string>
+    <string name="saveRecoveryFileIsNotExist">Файл не существует! Загрузите конфигурацию по умолчанию!</string>
+    <string name="rightMathAxbUnitTitle">блок</string>
+
+    <string name="msgNumberFormatException">Ввод незаконен</string>
+    <string name="mainCenterMenuAuto">автоматическая</string>
+    <string name="mainCenterMenuRunStop">Хватит бегать</string>
+    <string name="mainCenterMenuSEQ">Одиночная последовательность</string>
+    <string name="sysNoSupport">Версия системы слишком мала для поддержки этой функции!</string>
+
+    <string name="msgMathAdvanceFormulaError">Ошибка %2$s в расположении %1$s</string>
+    <string name="msgMathAdvanceFormulaNull"> Выражение не может быть пустым</string>
+    <string name="mainCenterMenuAutoRange">автоматический\\nдиапазон</string>
+    <string name="mainCenterMenuZero">нуль</string>
+    <string name="dialog_ok">Конечно</string>
+    <string name="dialog_cancel">Отмена</string>
+    <string name="menu_bottom_qiuck_home">Дом</string>
+    <string name="menu_bottom_qiuck_segment">сегментированная навигация</string>
+    <string name="mainTopLeftStateNormal">обычный</string>
+    <string name="serials">сериалы</string>
+    <string name="msgAutoZeroFailed">Автоматическая калибровка нуля не удалась</string>
+    <string name="msgAutoZeroSuccess">Автоматическая калибровка нуля завершена</string>
+    <string name="msgAutoZeroRunning">Выполняется автоматическая калибровка нуля</string>
+
+    <string name="mathRefSerialsSlip_display">дисплей</string>
+</resources>

@@ -1,0 +1,715 @@
+package com.micsig.tbook.tbookscope.wavezone.wave;
+
+import android.content.Context;
+import android.graphics.Canvas;
+import android.os.Handler;
+import android.os.Message;
+
+import com.chillingvan.canvasgl.ICanvasGL;
+import com.micsig.base.FilterThread;
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.Data.SerialData;
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.channel.SerialChannel;
+import com.micsig.tbook.tbookscope.LoadCache;
+import com.micsig.tbook.tbookscope.config.ScopeConfig;
+import com.micsig.tbook.tbookscope.main.maincenter.serialsword.ISerialsWord;
+import com.micsig.tbook.tbookscope.rightslipmenu.serials.RightLayoutSerials;
+import com.micsig.tbook.tbookscope.rxjava.RxBus;
+import com.micsig.tbook.tbookscope.rxjava.RxEnum;
+import com.micsig.tbook.tbookscope.structdata.ExternalKeysCommand;
+import com.micsig.tbook.tbookscope.tools.Tools;
+import com.micsig.tbook.tbookscope.util.App;
+import com.micsig.tbook.tbookscope.util.CacheUtil;
+import com.micsig.tbook.tbookscope.wavezone.ISerialBus;
+import com.micsig.tbook.tbookscope.wavezone.IWorkMode;
+import com.micsig.tbook.tbookscope.wavezone.wave.wavedata.SerialBusStruct;
+import com.micsig.tbook.tbookscope.wavezone.wave.wavedata.SerialBusTxtStructParse;
+import com.micsig.tbook.tbookscope.wavezone.wave.wavedata.SerialImageBuffer;
+import com.micsig.tbook.tbookscope.wavezone.wave.wavedata.SerialImageDoubleCache;
+import com.micsig.tbook.tbookscope.wavezone.wave.wavedata.SerialTxtBuffer;
+import com.micsig.tbook.ui.wavezone.TChan;
+
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Observable;
+import java.util.Observer;
+import java.util.concurrent.LinkedBlockingQueue;
+
+import io.reactivex.rxjava3.functions.Consumer;
+
+
+/**
+ * Created by liwb on 2017/5/19.
+ */
+
+public class SerialBusManage implements IWaveShowManage, ISerialBus, IWorkMode {
+    private static final String TAG = "SerialBusManage";
+
+    public static final int SerialBus_S1 = TChan.S1;
+    public static final int SerialBus_S2 = TChan.S2;
+    public static final int SerialBus_S3 = TChan.S3;
+    public static final int SerialBus_S4 = TChan.S4;
+
+    //region  单例创建
+    public static class SerialBusManageHolder {
+        public static final SerialBusManage instance = new SerialBusManage();
+    }
+
+    public static SerialBusManage getInstance() {
+        return SerialBusManageHolder.instance;
+    }
+    //endregion
+
+    //region 私有变量
+    public class DataBean{
+        private ByteBuffer SerialByteBuffer=ByteBuffer.allocate(1024*1024);
+        private long timeToPix;
+        private int startX,endX;
+    }
+
+    private Object lock=new Object();
+    private Map<Integer, SerialBus> mapSerialBus = new HashMap<>();
+//    private ByteBuffer serialByteBufferS1 = ByteBuffer.allocate(1024 * 1024);
+//    private ByteBuffer serialByteBufferS2 = ByteBuffer.allocate(1024 * 1024);
+//    private long timeToPixS1, timeToPixS2;
+//    private int startXS1, startXS2, endXS1, endXS2;
+    private DataBean[] dataBean=new DataBean[TChan.MaxSerial];
+    private DrawSerialUIHandle drawSerialUIHandle;
+    private List<IForceRefreshUI> listForceRefreshUI = new ArrayList<>();
+    private Context context=App.get().getApplicationContext();
+    //endregion
+
+    public SerialBusManage() {
+        TChan.foreachSerial((ch)->{
+            int idx= ch-TChan.S1;
+            dataBean[idx]=new DataBean();
+        });
+
+        TChan.foreachSerial((ch)-> {
+            SerialBus serialBus = new SerialBus();
+            serialBus.setLineNameId(ch);
+            serialBus.setY(CacheUtil.get().getDouble(CacheUtil.MAIN_WAVE_SERIAL_Y_POSITION + ch) * ScopeBase.getToUICoff());
+            serialBus.setVisible(true);
+            serialBus.setColor(TChan.getChannelColor(context,ch));
+            mapSerialBus.put(ch, serialBus);
+        });
+
+        EventFactory.addEventObserver(EventFactory.EVENT_SERIAL_UPDATE, eventUIObserver);
+        EventFactory.addEventObserver(EventFactory.EVENT_SERIAL_TXT_UPDATE, eventUIObserver);
+
+        drawSerialUIHandle = new DrawSerialUIHandle();
+        initControl();
+
+        filterThread.setRunnable(new Runnable() {
+            @Override
+            public void run() {
+                //Thread.currentThread().setName("SerialBusParse");
+                serialBusUpdateParseToScreen();
+            }
+        });
+    }
+
+    private void initControl() {
+        RxBus.getInstance().getObservable(RxEnum.MAIN_LOAD_CACHE).subscribe(consumerLoadCache);
+        RxBus.getInstance().getObservable(RxEnum.MAIN_LOAD_CACHE_EX).subscribe(consumerLoadCache);
+        RxBus.getInstance().getObservable(RxEnum.MCUTOARM).subscribe(consumerMcuToArm);
+    }
+
+    public void init() {
+
+    }
+
+    private Consumer<LoadCache> consumerLoadCache = new Consumer<LoadCache>() {
+        @Override
+        public void accept(LoadCache loadCache) throws Exception {
+            setCache();
+        }
+    };
+
+
+    public void setCache() {
+        TChan.foreachSerial((ch) -> {
+            if (!Scope.getInstance().isInXYMode()) {
+                double s1Y = CacheUtil.get().getDouble(CacheUtil.MAIN_WAVE_SERIAL_Y_POSITION + ch);
+                s1Y = s1Y * ScopeBase.getToUICoff();
+                setPositionY(ch, s1Y);
+                int fpgaCh = TChan.toFpgaChNo(ch);
+                SerialChannel chan = ChannelFactory.getSerialChannel(fpgaCh);
+                if (chan != null) {
+                    chan.setPos(s1Y);
+                }
+            }
+        });
+    }
+
+    private Consumer<Integer> consumerMcuToArm = new Consumer<Integer>() {
+        @Override
+        public void accept(Integer integer) throws Exception {
+            switch (integer) {
+                case ExternalKeysCommand.MCUTOARM_RUNSTOP:
+                    Logger.i(TAG, "run|stop!");
+                    break;
+            }
+        }
+    };
+
+
+    public SerialBus getSerialBus(int chNo) {
+        for (SerialBus c : mapSerialBus.values()) {
+            if (c.getLineNameID() == chNo) {
+                return c;
+            }
+        }
+        return null;
+    }
+
+    //region 串型文本
+
+    /**
+     * 返回串形文件数据缓冲区
+     */
+    public SerialTxtBuffer getSerialTxtBuffer(int chNo_ISerialsWord) {
+        if (chNo_ISerialsWord == ISerialsWord.TYPE_S12) {
+            SerialBus serialbus = mapSerialBus.get(TChan.S1);
+            return serialbus.getSerialTxtBuffer();
+        } else if (TChan.isSerial(chNo_ISerialsWord)) {
+            SerialBus serialbus = mapSerialBus.get(chNo_ISerialsWord);
+            return serialbus.getSerialTxtBuffer();
+        }
+        return null;
+    }
+
+    public interface IForceRefreshUI {
+        void onForceRefreshUI();
+    }
+
+    public void AddForceRefresh(IForceRefreshUI onForceRefreshUI) {
+        listForceRefreshUI.add(onForceRefreshUI);
+    }
+
+    public void clearSerialBusTxtBuffer() {
+        SerialBusTxtStructParse.getInstance().InterruptedParse(-1);
+        Tools.sleep(100);
+        mapSerialBus.get(TChan.S1).getSerialTxtBuffer().clearAll();
+        mapSerialBus.get(TChan.S2).getSerialTxtBuffer().clearAll();
+        mapSerialBus.get(TChan.S3).getSerialTxtBuffer().clearAll();
+        mapSerialBus.get(TChan.S4).getSerialTxtBuffer().clearAll();
+        for (int i = 0; i < listForceRefreshUI.size(); i++) {
+            listForceRefreshUI.get(i).onForceRefreshUI();
+        }
+    }
+
+    /**
+     *
+     * @param chNo_ISerialsWord
+     * @param index_RightLayoutSerials
+     * @param isAll  true 返回全列表  false 返回一屏列表
+     * @return
+     */
+    public LinkedBlockingQueue getSerialTxtBufferQueue(int chNo_ISerialsWord, int index_RightLayoutSerials,boolean isAll) {
+        int propertyIndex= RightLayoutSerials.getPropertyIndex(index_RightLayoutSerials);
+        if (propertyIndex==-1) return null;
+        if (ScopeConfig.getConfig().isBusEnable(  propertyIndex) == false && App.IsDebug() == false)
+            return null;
+        switch (index_RightLayoutSerials) {
+            case RightLayoutSerials.SERIALS_UART: {
+                if (isAll) {
+                    if (chNo_ISerialsWord == ISerialsWord.TYPE_S12) {
+                        return getSerialTxtBuffer(chNo_ISerialsWord).getUartS1S2QueueTotal();
+                    } else {
+                        return getSerialTxtBuffer(chNo_ISerialsWord).getUartQueueTotal();
+                    }
+                }else {
+                    if (chNo_ISerialsWord == ISerialsWord.TYPE_S12){
+                        return getSerialTxtBuffer(chNo_ISerialsWord).getUartS1S2ListScreen();
+                    }
+                    else {
+                        return getSerialTxtBuffer(chNo_ISerialsWord).getUartListScreen();
+                    }
+                }
+            }
+            case RightLayoutSerials.SERIALS_LIN: {
+               if (isAll) {
+                   if (chNo_ISerialsWord == ISerialsWord.TYPE_S12) {
+                       return getSerialTxtBuffer(chNo_ISerialsWord).getLinS1S2QueueTotal();
+                   } else {
+                       return getSerialTxtBuffer(chNo_ISerialsWord).getLinQueueTotal();
+                   }
+               }else {
+                   if (chNo_ISerialsWord == ISerialsWord.TYPE_S12){
+                       return getSerialTxtBuffer(chNo_ISerialsWord).getLinS1S2ListScreen();
+                   }
+                   else {
+                       return getSerialTxtBuffer(chNo_ISerialsWord).getLinListScreen();
+                   }
+               }
+            }
+            case RightLayoutSerials.SERIALS_CAN: {
+                if (isAll) {
+                    if (chNo_ISerialsWord == ISerialsWord.TYPE_S12) {
+                        return getSerialTxtBuffer(chNo_ISerialsWord).getCanS1S2QueueTotal();
+                    } else {
+                        return getSerialTxtBuffer(chNo_ISerialsWord).getCanQueueTotal();
+                    }
+                }else {
+                    if (chNo_ISerialsWord == ISerialsWord.TYPE_S12){
+                        return getSerialTxtBuffer(chNo_ISerialsWord).getCanS1S2ListScreen();
+                    }
+                    else {
+                        return getSerialTxtBuffer(chNo_ISerialsWord).getCanListScreen();
+                    }
+                }
+            }
+            case RightLayoutSerials.SERIALS_SPI: {
+                if (isAll) {
+                    if (chNo_ISerialsWord == ISerialsWord.TYPE_S12) {
+                        return getSerialTxtBuffer(chNo_ISerialsWord).getSpiS1S2QueueTotal();
+                    } else {
+                        return getSerialTxtBuffer(chNo_ISerialsWord).getSpiQueueTotal();
+                    }
+                }else {
+                    if (chNo_ISerialsWord == ISerialsWord.TYPE_S12){
+                        return getSerialTxtBuffer(chNo_ISerialsWord).getSpiS1S2ListScreen();
+                    }
+                    else {
+                        return getSerialTxtBuffer(chNo_ISerialsWord).getSpiListScreen();
+                    }
+                }
+            }
+            case RightLayoutSerials.SERIALS_I2C: {
+                if (isAll) {
+                    if (chNo_ISerialsWord == ISerialsWord.TYPE_S12) {
+                        return getSerialTxtBuffer(chNo_ISerialsWord).getI2cS1S2QueueTotal();
+                    } else {
+                        return getSerialTxtBuffer(chNo_ISerialsWord).getI2cQueueTotal();
+                    }
+                }else {
+                    if (chNo_ISerialsWord == ISerialsWord.TYPE_S12){
+                        return getSerialTxtBuffer(chNo_ISerialsWord).getI2cS1S2ListScreen();
+                    }
+                    else {
+                        return getSerialTxtBuffer(chNo_ISerialsWord).getI2cListScreen();
+                    }
+                }
+            }
+            case RightLayoutSerials.SERIALS_M429: {
+                if (isAll) {
+                    if (chNo_ISerialsWord == ISerialsWord.TYPE_S12) {
+                        return getSerialTxtBuffer(chNo_ISerialsWord).getArinc429S1S2QueueTotal();
+                    } else {
+                        return getSerialTxtBuffer(chNo_ISerialsWord).getArinc429QueueTotal();
+                    }
+                }else {
+                    if (chNo_ISerialsWord == ISerialsWord.TYPE_S12){
+                        return getSerialTxtBuffer(chNo_ISerialsWord).getArinc429S1S2ListScreen();
+                    }
+                    else {
+                        return getSerialTxtBuffer(chNo_ISerialsWord).getArinc429ListScreen();
+                    }
+                }
+            }
+            case RightLayoutSerials.SERIALS_M1553B: {
+                if (isAll) {
+                    if (chNo_ISerialsWord == ISerialsWord.TYPE_S12) {
+                        return getSerialTxtBuffer(chNo_ISerialsWord).getMilstd1553bS1S2QueueTotal();
+                    } else {
+                        return getSerialTxtBuffer(chNo_ISerialsWord).getMilstd1553bQueueTotal();
+                    }
+                }else {
+                    if (chNo_ISerialsWord == ISerialsWord.TYPE_S12){
+                        return getSerialTxtBuffer(chNo_ISerialsWord).getMilstd1553bS1S2ListScreen();
+                    }
+                    else {
+                        return getSerialTxtBuffer(chNo_ISerialsWord).getMilstd1553bListScreen();
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 返回图像缓冲区队列
+     * @param serialNum
+     * @param t
+     * @return
+     * @param <T> SerialBusStruct.UartStruct 等结构
+     */
+    public <T> List<T> getSerialImgBufferQueue(int serialNum,Class<T> t){
+        return (mapSerialBus.get(serialNum).getImageBufferList(t));
+    }
+
+    /**
+     * 返回通道类型
+     * @param serialNum
+     * @return
+     */
+    public Class getSerialBusType(int serialNum){
+        int type= mapSerialBus.get(serialNum).getSerialBusType();
+        switch (type){
+            case SerialBusStruct.SerialBusType_UART:return SerialBusStruct.UartStruct.class;
+            case SerialBusStruct.SerialBusType_LIN:return SerialBusStruct.LinStruct.class;
+            case SerialBusStruct.SerialBusType_CAN:return SerialBusStruct.CanStruct.class;
+            case SerialBusStruct.SerialBusType_SPI:return SerialBusStruct.SpiStruct.class;
+            case SerialBusStruct.SerialBusType_I2C:return SerialBusStruct.I2cStruct.class;
+            case SerialBusStruct.SerialBusType_429:return SerialBusStruct.Arinc429Struct.class;
+            //case SerialBusStruct.SerialBusType_1553B:return SerialBusStruct.MilSTD1553bStruct.class;
+            default:
+                return SerialBusStruct.MilSTD1553bStruct.class;
+
+        }
+    }
+
+    //endregion
+
+    //region 操作
+    public void setVisible(int ChNo, boolean visible) {
+        boolean sAddByUser = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_ADD_BY_USER_SERIALS + TChan.toSerialNumber(ChNo));
+        boolean temp = visible && sAddByUser;
+        for (SerialBus c : mapSerialBus.values()) {
+            if (c.getLineNameID() == ChNo) {
+                c.setVisible(temp);
+            }
+        }
+    }
+
+    public void movePix(int px) {
+        for (Integer i : mapSerialBus.keySet()) {
+            SerialBus tem = mapSerialBus.get(i);
+            if (tem.isSelected()) {
+                tem.movePix(px);
+            }
+        }
+    }
+
+    public void addPixMov() {
+        for (Integer i : mapSerialBus.keySet()) {
+            SerialBus tem = mapSerialBus.get(i);
+            if (tem.isSelected()) {
+                tem.movePix(1);
+            }
+        }
+    }
+
+    public void subPixMove() {
+        for (Integer i : mapSerialBus.keySet()) {
+            SerialBus tem = mapSerialBus.get(i);
+            if (tem.isSelected()) {
+                tem.movePix(-1);
+            }
+        }
+    }
+
+    /**
+     * 返回当前的选择
+     *
+     * @param x
+     * @param y
+     * @return 无选择返回小于等于0
+     */
+    public int selectCursor(int x, int y) {
+        for (SerialBus c : mapSerialBus.values()) {
+            c.setSelected(false);
+        }
+        for (SerialBus c : mapSerialBus.values()) {
+            if (y >= c.getY() && y <= c.getY() + c.getHeight() && c.getVisible()) {
+                c.setSelected(true);
+                return c.getLineNameID();
+            }
+        }
+        return -1;
+    }
+
+    public void setSelectCursor(int ChNo) {
+        for (Integer i : mapSerialBus.keySet()) {
+            SerialBus tem = mapSerialBus.get(i);
+            if (tem.getLineNameID() == ChNo) {
+                tem.setSelected(true);
+            } else {
+                tem.setSelected(false);
+            }
+        }
+
+    }
+    //endregion
+
+    //region interface IworkMode
+
+    @Override
+    public void switchWorkMode(@WorkMode int workMode) {
+        for (SerialBus c : mapSerialBus.values()) {
+            c.switchWorkMode(workMode);
+        }
+    }
+
+    //endregion
+
+    //region interface IWaveShowManage
+
+    @Override
+    public int isSelected() {
+
+
+        for (SerialBus c : mapSerialBus.values()) {
+            if(c.isSelected()){
+                return c.getLineNameID();
+            }
+        }
+        return -1;
+    }
+
+    @Override
+    public void setOffsetY(int offsetY) {
+        for (SerialBus c : mapSerialBus.values()) {
+            if (c.isSelected() == true) {
+                c.setY(c.getY() - offsetY);
+            }
+        }
+    }
+
+    public void setPositionY(int serialsId, double position) {
+        for (SerialBus c : mapSerialBus.values()) {
+            if (c.getLineNameID() == serialsId) {
+                c.setY(position);
+                break;
+            }
+        }
+    }
+
+    @Override
+    public void draw(Canvas canvas) {
+
+    }
+
+    @Override
+    public void draw(ICanvasGL canvas) {
+        for (SerialBus c : mapSerialBus.values()) {
+            c.draw(canvas);
+        }
+    }
+
+//    @Override
+//    public Bitmap getWavesBitmap() {
+//        return null;
+//    }
+
+    //-liwb- 测试
+    public ByteBuffer getFromAssets(String fileName) {
+        String result = "";
+        try {
+            InputStream in = App.get().getResources().getAssets().open(fileName);
+            //获取文件的字节数
+            int lenght = in.available();
+            //创建byte数组
+            byte[] buffer = new byte[lenght];
+            //将文件中的数据读到byte数组中
+            in.read(buffer);
+            return ByteBuffer.wrap(buffer);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+
+    //endregion
+
+    //region  interface ISerialBusData数据绘图接口
+
+    @Override
+    public void OnTitleChange(int chNo, int serialBusType) {
+        SerialBus serialBus = mapSerialBus.get(chNo);
+        if(serialBus == null) return;
+        serialBus.OnTitleChange(chNo, serialBusType);
+    }
+
+    @Override
+    public void OnDataChange(int chNo, ByteBuffer bytes, long timeToPix, int startX, int endX) {
+        SerialBus serialbus = mapSerialBus.get(chNo);
+        if(serialbus == null) return;
+        serialbus.OnDataChange(chNo, bytes, timeToPix, startX, endX);
+    }
+
+    @Override
+    public void OnTxtDataChange(int chNo, ByteBuffer bytes) {
+    }
+    public void OnTxtDataChangeSync(int chNo, ByteBuffer bytes){
+        SerialBus serialbus = mapSerialBus.get(chNo);
+        try {
+            serialbus.putBytesToQueue(bytes);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+    //endregion
+
+    //region Observer接收数据
+    private FilterThread filterThread = new FilterThread("BUS");
+
+    private Observer eventUIObserver = new Observer() {
+        @Override
+        public void update(Observable observable, Object data) {
+            EventBase eventBase = (EventBase) data;
+            switch (eventBase.getId()) {
+                case EventFactory.EVENT_SERIAL_UPDATE:
+                    filterThread.run();
+                    break;
+                case EventFactory.EVENT_SERIAL_TXT_UPDATE: {
+                    SerialChannel sc = (SerialChannel) eventBase.getData();
+                    SerialData sd = (SerialData) sc.obtain();
+                    int ch=TChan.toUiChNo(sc.getChId());
+                    if (sd != null) {
+                        OnTxtDataChangeSync(ch,sd.getByteBuffer());
+                        sc.recycle(sd);
+                    }
+                }
+                break;
+            }
+        }
+
+
+    };
+
+    private void serialBusUpdateParseToScreen() {
+//        if (ChannelFactory.isChOpen(ChannelFactory.S1) == true ) {
+//            SerialChannel sc = ChannelFactory.getSerialChannel(ChannelFactory.S1);
+//            SerialData sd = (SerialData) sc.obtain();
+//            if (sd != null) {
+//                synchronized (lock) {
+//                        serialByteBufferS1.clear();
+//                        sd.getByteBuffer().position(0);
+//                        serialByteBufferS1.put(sd.getByteBuffer());
+//                        serialByteBufferS1.limit(sd.getByteBuffer().limit());
+//                        timeToPixS1 = sd.getTimePrePix();
+//                        startXS1 = sd.getStartX();
+//                        endXS1 = sd.getEndX();
+//
+//                        addSerialImageBuffer(TChan.S1,serialByteBufferS1,startXS1,endXS1,timeToPixS1);
+////                    Logger.i(TAG,"接收数据S1："+ SerialBusTxtStructParse.getDebugBytesToString(serialByteBufferS1,0,8));
+//                }
+//            }
+//            if (sc!=null && sd != null) sc.recycle(sd);
+//            drawSerialUIHandle.sendEmptyMessage(SerialBus_IMGS1);
+//        }
+//
+//        if (ChannelFactory.isChOpen(ChannelFactory.S2) == true ) {
+//            SerialChannel sc = ChannelFactory.getSerialChannel(ChannelFactory.S2);
+//            SerialData sd = (SerialData) sc.obtain();
+//            if (sd != null) {
+//                synchronized (lock) {
+//                        serialByteBufferS2.clear();
+//                        sd.getByteBuffer().position(0);
+//                        serialByteBufferS2.put(sd.getByteBuffer());
+//                        serialByteBufferS2.limit(sd.getByteBuffer().limit());
+//                        timeToPixS2 = sd.getTimePrePix();
+//                        startXS2 = sd.getStartX();
+//                        endXS2 = sd.getEndX();
+//                        addSerialImageBuffer(TChan.S2,serialByteBufferS2,startXS2,endXS2,timeToPixS2);
+////                    Logger.i(TAG,"接收数据S2："+ SerialBusTxtStructParse.getDebugBytesToString(serialByteBufferS2,0,8));
+//                }
+//            }
+//            if (sc!=null && sd != null) sc.recycle(sd);
+//            drawSerialUIHandle.sendEmptyMessage(SerialBus_IMGS2);
+//        }
+        TChan.foreachSerial((serialCh)->{
+            if (ChannelFactory.isChOpen(TChan.toFpgaChNo(serialCh)) == true ) {
+                SerialChannel sc = ChannelFactory.getSerialChannel(TChan.toFpgaChNo(serialCh));
+                SerialData sd = (SerialData) sc.obtain();
+                if (sd != null) {
+                    synchronized (lock) {
+                        dataBean[serialCh-TChan.S1].SerialByteBuffer.clear();
+                        sd.getByteBuffer().position(0);
+                        dataBean[serialCh-TChan.S1].SerialByteBuffer.put(sd.getByteBuffer());
+                        dataBean[serialCh-TChan.S1].SerialByteBuffer.limit(sd.getByteBuffer().limit());
+                        dataBean[serialCh-TChan.S1].timeToPix = sd.getTimePrePix();
+                        dataBean[serialCh-TChan.S1].startX = sd.getStartX();
+                        dataBean[serialCh-TChan.S1].endX = sd.getEndX();
+                        addSerialImageBuffer(serialCh, dataBean[serialCh-TChan.S1]);
+//                    Logger.i(TAG,"接收数据S2："+ SerialBusTxtStructParse.getDebugBytesToString(serialByteBufferS2,0,8));
+                    }
+                }
+                if (sc != null && sd != null) sc.recycle(sd);
+                drawSerialUIHandle.sendEmptyMessage(serialCh);
+            }
+        });
+    }
+
+
+    private void addSerialImageBuffer(int iwaveCh, DataBean dataBean){
+        if (dataBean.SerialByteBuffer != null && dataBean.SerialByteBuffer.limit() != 0 && dataBean.SerialByteBuffer.capacity() != 0) {
+
+            SerialImageBuffer sib = SerialImageDoubleCache.getInstance().getCacheShowed(iwaveCh);
+                ByteBuffer bb = sib.getBytes();
+                dataBean.SerialByteBuffer.position(0);
+                bb.clear();
+                bb.put(dataBean.SerialByteBuffer);
+                bb.limit(dataBean.SerialByteBuffer.limit());
+                bb.position(0);
+                sib.setBytes(bb);
+                sib.setEndX(dataBean.endX);
+                sib.setStartX(dataBean.startX);
+                sib.setTimeToPix(dataBean.timeToPix);
+                sib.setDeal(false);
+                SerialImageDoubleCache.getInstance().put(iwaveCh, sib);
+//            Logger.i(TAG,"iwaveCh:"+iwaveCh+" sib:"+sib.toString());
+//             Logger.i(TAG,"CH:"+iwaveCh+" ,key:"+sib.getKey()+" ,bytes:"+SerialBusTxtStructParse.getDebugBytesToString(sib.getBytes(),0,8));
+        }
+    }
+    //endregion
+
+    class DrawSerialUIHandle extends Handler {
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+//                case SerialBus_S1: {
+//                    synchronized (lock) {
+//                        DataBean bean= dataBean[msg.what-TChan.S1];
+//                        OnDataChange(msg.what, serialByteBufferS1, timeToPixS1, startXS1, endXS1);
+//                    }
+//                }
+//                break;
+//                case SerialBus_S2: {
+//                    synchronized (lock) {
+//                        OnDataChange(msg.what, serialByteBufferS2, timeToPixS2, startXS2, endXS2);
+//                    }
+//                }
+//                break;
+                case SerialBus_S1:
+                case SerialBus_S2:
+                case SerialBus_S3:
+                case SerialBus_S4:{
+                    synchronized (lock){
+                        DataBean bean= dataBean[msg.what-TChan.S1];
+                        OnDataChange(msg.what, bean.SerialByteBuffer, bean.timeToPix, bean.startX, bean.endX);
+                    }
+                }break;
+//                case SerialBus_TXTS1: {
+//                }
+//                break;
+//                case SerialBus_TXTS2: {
+//                }
+//                break;
+            }
+
+        }
+    }
+
+
+    public void changeSerialRect() {
+        for (SerialBus c : mapSerialBus.values()) {
+            c.changeRectHeight();
+        }
+    }
+
+
+
+}

@@ -1,0 +1,463 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:ui="http://schemas.android.com/tools"
+    android:layout_width="@dimen/screenWidth"
+    android:layout_height="@dimen/screenHeight"
+    android:windowContentOverlay="@null">
+
+
+    <!--40px-->
+<!--    <androidx.constraintlayout.widget.ConstraintLayout-->
+<!--        android:id="@+id/topstatus"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="@dimen/mainTopHeight"-->
+<!--        android:background="@color/color_Backcolor_MainMenu3"-->
+<!--        >-->
+
+<!--        <com.micsig.tbook.tbookscope.main.maintop.MainTopLayoutRightButton-->
+<!--            android:id="@+id/mainTopLayoutRightButton"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="@dimen/mainTopHeight"-->
+<!--            app:layout_constraintLeft_toLeftOf="parent"-->
+<!--            app:layout_constraintTop_toTopOf="parent"-->
+<!--            />-->
+
+<!--        <com.micsig.tbook.tbookscope.main.maintop.MainTopLayoutLeft-->
+<!--            android:id="@+id/mainTopLayoutLeft"-->
+<!--            android:layout_width="456px"-->
+<!--            android:layout_height="@dimen/mainTopHeight"-->
+<!--            app:layout_constraintLeft_toLeftOf="parent"-->
+<!--            app:layout_constraintTop_toTopOf="parent"-->
+<!--            />-->
+
+<!--        <com.micsig.tbook.tbookscope.main.maintop.MainTopLayoutCenter-->
+<!--            android:id="@+id/mainTopLayoutCenter"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="74px"-->
+<!--            app:layout_constraintLeft_toLeftOf="@+id/guide_line"-->
+<!--            app:layout_constraintRight_toRightOf="@+id/guide_line"-->
+<!--            app:layout_constraintTop_toTopOf="parent"-->
+<!--            android:background="@drawable/shape_frame_bg_black"-->
+<!--            android:padding="1px"-->
+<!--            />-->
+
+<!--        <androidx.constraintlayout.widget.Guideline-->
+<!--            android:id="@+id/guide_line"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:orientation="vertical"-->
+<!--            app:layout_constraintGuide_begin="900px" />-->
+
+
+<!--        <com.micsig.tbook.tbookscope.main.maintop.MainTopLayoutRight-->
+<!--            android:id="@+id/mainTopRight"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="74px"-->
+<!--            app:layout_constraintLeft_toRightOf="@+id/mainTopLayoutLeft"-->
+<!--            app:layout_constraintTop_toTopOf="parent"-->
+<!--            android:background="@drawable/shape_frame_bg_black"-->
+<!--            android:padding="1px"-->
+<!--            />-->
+
+<!--        &lt;!&ndash;顶部工具�? !&ndash;&gt;-->
+<!--    </androidx.constraintlayout.widget.ConstraintLayout>-->
+
+
+    <AbsoluteLayout
+        android:id="@+id/topstatus"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/mainTopHeight"
+        android:background="@color/color_Backcolor_MainMenu3"
+        >
+
+        <View
+            android:id="@+id/nullView"
+            android:layout_width="1px"
+            android:layout_height="1px"
+            android:layout_x="0px"
+            android:layout_y="0px" />
+
+        <com.micsig.tbook.tbookscope.main.maintop.MainTopLayoutRightButton
+            android:id="@+id/mainTopLayoutRightButton"
+            android:layout_width="@dimen/screenWidth"
+            android:layout_height="@dimen/mainTopHeight"
+            android:layout_x="0px"
+            android:layout_y="0px"
+            />
+
+        <com.micsig.tbook.tbookscope.main.maintop.MainTopLayoutLeft
+            android:id="@+id/mainTopLayoutLeft"
+            android:layout_width="414px"
+            android:layout_height="@dimen/mainTopHeight"
+            android:layout_x="0px"
+            android:layout_y="0px"
+            />
+
+        <com.micsig.tbook.tbookscope.main.maintop.MainTopLayoutRight
+            android:id="@+id/mainTopRight"
+            android:layout_width="298px"
+            android:layout_height="74px"
+            android:layout_x="414px"
+            android:layout_y="0px"
+            android:background="@drawable/shape_frame_bg_black"
+            android:padding="1px"
+            />
+
+        <com.micsig.tbook.tbookscope.main.maintop.MainTopLayoutCenter
+            android:id="@+id/mainTopLayoutCenter"
+            android:layout_width="320px"
+            android:layout_height="74px"
+            android:layout_x="740px"
+            android:layout_y="0px"
+            android:background="@drawable/shape_frame_bg_black"
+            android:padding="1px"
+            />
+
+        <!--顶部工具�? !-->
+    </AbsoluteLayout>
+
+    <!--1100px-->
+    <AbsoluteLayout
+        android:id="@+id/rlListView"
+        android:layout_width="match_parent"
+        android:layout_height="1100px"
+        android:layout_y="@dimen/mainTopHeight"
+        >
+
+        <include layout="@layout/leftbar"
+            android:visibility="gone"/>
+
+
+        <TextureView
+            android:id="@+id/textureView"
+            android:layout_width="@dimen/mainCenterWidth"
+            android:layout_height="@dimen/mainCenterHeightMeasureRow0"
+            android:layout_x="1px"
+            />
+        <View
+            android:id="@+id/viewSpace"
+            android:layout_width="1800px"
+            android:layout_height="@dimen/mainCenterHeightMeasureRow0"
+            android:layout_x="0px"
+            android:layout_y="0px"
+            android:background="@drawable/shape_frame_bg_transparent"
+            />
+
+        <include layout="@layout/middlebar" />
+
+        <!-- 中间工具�? !-->
+    </AbsoluteLayout>
+
+<!--    <ScrollView-->
+<!--        android:id="@+id/mainRightScroll"-->
+<!--        android:layout_width="65px"-->
+<!--        android:layout_height="match_parent"-->
+<!--        android:orientation="vertical"-->
+<!--        android:background="@color/bg_main_outside"-->
+<!--        android:layout_x="736px"-->
+<!--        android:layout_y="@dimen/mainRightY">-->
+
+<!--    <View-->
+<!--        android:layout_width="120px"-->
+<!--        android:layout_height="@dimen/screenHeight"-->
+<!--        android:background="@color/bg_main_outside"-->
+<!--        android:layout_x="1801px"-->
+<!--        android:layout_y="@dimen/mainRightY"-->
+<!--        />-->
+
+<!--    android:layout_height="1001px"-->
+    <com.micsig.tbook.ui.MSlideLayout
+        android:id="@+id/mainRightLayout"
+        android:layout_width="120px"
+        android:layout_height="@dimen/mainCenterHeightMeasureRow0"
+        android:layout_x="1800px"
+        android:layout_y="@dimen/mainTopHeight"
+        android:background="@color/bg_main_outside"
+        android:orientation="vertical">
+<!--        android:paddingBottom="1px"-->
+
+        <include layout="@layout/bottom_rightchannel_masters_eight" />
+
+        <include layout="@layout/bottom_rightchannel_masters_four" />
+
+        <include layout="@layout/bottom_rightchannel_masters_double" />
+
+<!--        <include-->
+<!--            android:id="@+id/menu_right2"-->
+<!--            layout="@layout/bottom_rightother_masters" />-->
+
+<!--        <include-->
+<!--            android:id="@+id/menu_right2"-->
+<!--            layout="@layout/bottom_rightother_serials" />-->
+
+    </com.micsig.tbook.ui.MSlideLayout>
+
+
+<!--    </ScrollView>-->
+
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/cl_triggerLevel"
+        android:layout_width="120px"
+        android:layout_height="@dimen/mainCenterHeightMeasureRow0"
+        android:layout_x="1800px"
+        android:layout_y="@dimen/mainTopHeight">
+<!--        android:paddingVertical="1px"-->
+<!--        android:layout_y="@dimen/newMainTopHeight"-->
+
+        <View
+            android:id="@+id/levelSwipeLeft"
+            android:layout_width="6px"
+            android:layout_height="12px"
+            android:background="@drawable/level_swipe_left"
+            app:layout_constraintBottom_toBottomOf="@+id/triggerLevel"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/triggerLevel" />
+        <!--        android:layout_y="571px"-->
+        <!--        android:layout_x="@dimen/mainRightTriggerLevelX"-->
+
+        <com.micsig.tbook.ui.MTriggerLevel
+            android:id="@+id/triggerLevel"
+            android:layout_width="@dimen/mainRightTriggerLevelWidth"
+            android:layout_height="@dimen/mainRightTriggerLevelHeight"
+            android:clickable="true"
+            android:paddingEnd="0px"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintLeft_toRightOf="@+id/levelSwipeLeft"
+            app:layout_constraintTop_toTopOf="parent" />
+        <!--        android:layout_x="@dimen/mainRightTriggerLevelX"-->
+        <!--        android:layout_y="523px"-->
+<!--        android:layout_marginVertical="1px"-->
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+    <!--1120px + 80px = 1200px-->
+    <AbsoluteLayout
+        android:layout_width="@dimen/screenWidth"
+        android:layout_height="80px"
+        android:layout_x="1px"
+        android:layout_y="1120px">
+
+        <include layout="@layout/bottombar_quick" />
+
+        <include layout="@layout/bottombar2" />
+
+        <!--        <include layout="@layout/bottombar" />-->
+        <!-- 底层工具�?!-->
+    </AbsoluteLayout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/statusBar"
+        android:layout_width="200px"
+        android:layout_height="76px"
+        android:background="@android:color/transparent"
+        android:layout_x="0px"
+        android:layout_y="0px"
+        android:paddingBottom="5px"
+        >
+        <TextView
+            android:id="@+id/time"
+            style="@style/textStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="22px"
+            android:textSize="20px"
+            android:text="@string/menu_bottom_time"
+            android:layout_marginStart="5px"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            />
+
+        <ImageView
+            android:id="@+id/usbPcLink"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/state_usb_pc_link"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toRightOf="@id/time"
+            android:layout_marginLeft="3px"
+            />
+
+        <ImageView
+            android:id="@+id/uDisk"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/state_udisk"
+            app:layout_constraintLeft_toRightOf="@+id/usbPcLink"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_marginStart="3px"
+            />
+
+        <ImageView
+            android:id="@+id/lan"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintLeft_toRightOf="@id/uDisk"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:background="@drawable/state_lan"
+            android:layout_marginStart="3px"
+            />
+
+        <ImageView
+            android:id="@+id/wifi"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/state_wifi"
+            app:layout_constraintLeft_toRightOf="@+id/lan"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_marginStart="3px"
+            />
+
+        <com.micsig.tbook.ui.main.BatteryView
+            android:id="@+id/battery"
+            android:layout_width="19px"
+            android:layout_height="24px"
+            app:layout_constraintLeft_toRightOf="@+id/wifi"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_marginStart="3px"
+            />
+
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+    <!-- 这里用来做一些特殊的处理，比如时基的档位要超出到显示的外面来 -->
+
+    <com.micsig.tbook.tbookscope.main.maincenter.MainLayoutCenterTestJZ
+        android:id="@+id/mainLayoutCenterTestsjz"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_x="@dimen/mainCenterChannelX"
+        android:layout_y="@dimen/mainCenterChannelY"
+        android:elevation="10px"
+        android:outlineSpotShadowColor="@android:color/transparent"
+        android:outlineAmbientShadowColor="@android:color/transparent"/>
+
+    <com.micsig.tbook.tbookscope.main.maincenter.MainLayoutCenterTest
+        android:id="@+id/mainLayoutCenterTests"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_x="@dimen/mainCenterChannelX"
+        android:layout_y="@dimen/mainCenterChannelY"
+        android:elevation="10px"
+        android:outlineSpotShadowColor="@android:color/transparent"
+        android:outlineAmbientShadowColor="@android:color/transparent"/>
+
+    <com.micsig.tbook.tbookscope.main.maincenter.MainLayoutCenterChannel
+        android:id="@+id/mainLayoutCenterChannels"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_x="@dimen/mainCenterChannelX"
+        android:layout_y="@dimen/mainCenterChannelY"
+        android:elevation="10dp"
+        android:outlineSpotShadowColor="@android:color/transparent"
+        android:outlineAmbientShadowColor="@android:color/transparent"
+        />
+
+    <com.micsig.tbook.tbookscope.main.maincenter.MainLayoutCenterMenu
+        android:id="@+id/mainLayoutCenterMenu"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_x="0px"
+        android:layout_y="0px"
+        android:elevation="10dp"
+        android:outlineSpotShadowColor="@android:color/transparent"
+        android:outlineAmbientShadowColor="@android:color/transparent"
+        />
+
+    <com.micsig.tbook.tbookscope.main.maincenter.MainLayoutCenterSegmented
+        android:id="@+id/mainLayoutCenterSegmented"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_x="0px"
+        android:layout_y="0px"
+        android:elevation="10dp"
+        android:outlineSpotShadowColor="@android:color/transparent"
+        android:outlineAmbientShadowColor="@android:color/transparent"
+        />
+
+    <View
+        android:id="@+id/loading"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clickable="true" />
+
+    <include layout="@layout/dialogs" />
+
+    <include layout="@layout/briefdisplay_text" />
+
+    <!--垂直挡位调节按钮-->
+    <include layout="@layout/main_channel_vertical_scale" />
+
+    <com.micsig.tbook.ui.main.AnimationView
+        android:id="@+id/focusControl"
+        android:layout_width="1px"
+        android:layout_height="1px"
+        android:layout_x="0px"
+        android:layout_y="0px"
+        android:background="@drawable/pre_select"
+        android:visibility="gone"
+        android:elevation="10dp"
+        android:outlineSpotShadowColor="@android:color/transparent"
+        android:outlineAmbientShadowColor="@android:color/transparent"
+        />
+    <com.micsig.tbook.ui.main.AnimationView
+        android:id="@+id/focusControlBack"
+        android:layout_width="1px"
+        android:layout_height="1px"
+        android:layout_x="0px"
+        android:layout_y="0px"
+        android:background="@drawable/pre_select"
+        android:elevation="10dp"
+        android:outlineSpotShadowColor="@android:color/transparent"
+        android:outlineAmbientShadowColor="@android:color/transparent"
+        android:visibility="gone"
+        />
+
+    <FrameLayout
+        android:id="@+id/MaskLayerLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_x="0px"
+        android:layout_y="0px"
+        android:visibility="gone">
+
+        <View
+            android:layout_width="25px"
+            android:layout_height="25px"
+            android:layout_gravity="end"
+            android:layout_marginTop="3px"
+            android:layout_marginEnd="9px"
+            android:background="@drawable/lock_screen" />
+
+        <View
+            android:id="@+id/lock_screentClickState"
+            android:layout_width="55px"
+            android:layout_height="55px"
+            android:layout_gravity="end"
+            android:layout_marginTop="3px"
+            android:layout_marginEnd="34px"
+            android:background="@drawable/lock_screenclickstate"
+            android:visibility="gone" />
+
+    </FrameLayout>
+
+    <!--    <include layout="@layout/screen_recorder_time" />-->
+
+    <TextView
+        android:id="@+id/toast"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_toast"
+        android:gravity="center"
+        android:textColor="@color/textColorNewTopViewEnable"
+        android:textSize="20px" />
+
+
+    <!--Math/Ref/Bus按钮-->
+    <include layout="@layout/layout_bottom_right_other_channels" />
+
+
+</merge>

@@ -1,0 +1,175 @@
+package com.micsig.tbook.tbookscope.main.dialog;
+
+import android.content.Context;
+import android.os.Build;
+import android.util.AttributeSet;
+import android.util.Log;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.constraintlayout.widget.ConstraintLayout;
+
+import com.micsig.tbook.scope.channel.BaseChannel;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.measure.Measure;
+import com.micsig.tbook.scope.measure.MeasureStaticsBean;
+import com.micsig.tbook.tbookscope.R;
+import com.micsig.tbook.tbookscope.tools.Tools;
+import com.micsig.tbook.tbookscope.util.CacheUtil;
+import com.micsig.tbook.tbookscope.wavezone.measure.MeasureManage;
+import com.micsig.tbook.ui.wavezone.TChan;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Consumer;
+
+/**
+ * @auother Liwb
+ * @description:
+ * @data:2023-10-27 11:00
+ */
+public class DialogMeasureStaticsItem extends ConstraintLayout {
+    private Context context;
+    private ViewGroup rootView;
+    public DialogMeasureStaticsItem(@NonNull Context context) {
+        this(context,null);
+    }
+
+    public DialogMeasureStaticsItem(@NonNull Context context, @Nullable AttributeSet attrs) {
+        this(context, attrs,0);
+    }
+
+    public DialogMeasureStaticsItem(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
+        this.context=context;
+        initView();
+    }
+
+
+
+
+
+    private TextView row1,row2,row3,row4,row5,row6,title;
+    private List<Boolean> listParam=new ArrayList<>();
+    private List<TextView> listView=new ArrayList<>();
+    public Consumer<View> OnTxtClickEvent;
+    private void initView() {
+        rootView= (ViewGroup) View.inflate(context, R.layout.dialog_measure_statics_item,this);
+        row1=rootView.findViewById(R.id.txt_row1);
+        row2=rootView.findViewById(R.id.txt_row2);
+        row3=rootView.findViewById(R.id.txt_row3);
+        row4=rootView.findViewById(R.id.txt_row4);
+        row5=rootView.findViewById(R.id.txt_row5);
+        row6=rootView.findViewById(R.id.txt_row6);
+        title=rootView.findViewById(R.id.txt_title);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            this.setOnClickListener((v)->{
+                if (OnTxtClickEvent!=null) OnTxtClickEvent.accept(DialogMeasureStaticsItem.this);
+            });
+        }
+        listView.add(row1);
+        listView.add(row2);
+        listView.add(row3);
+        listView.add(row4);
+        listView.add(row5);
+        listView.add(row6);
+    }
+
+    public void clearTxt(){
+        row1.setText("");
+        row2.setText("");
+        row3.setText("");
+        row4.setText("");
+        row5.setText("");
+        row6.setText("");
+        title.setText("");
+        title.setVisibility(GONE);
+    }
+    public void UpdateParamVisible(){
+        listParam.clear();
+        boolean all= CacheUtil.get().getBoolean(CacheUtil.TOP_SLIP_MEASURE_STATIC_ALL);
+        boolean mean=CacheUtil.get().getBoolean(CacheUtil.TOP_SLIP_MEASURE_STATIC_MEAN);
+        boolean max=CacheUtil.get().getBoolean(CacheUtil.TOP_SLIP_MEASURE_STATIC_MAX);
+        boolean min=CacheUtil.get().getBoolean(CacheUtil.TOP_SLIP_MEASURE_STATIC_MIN);
+        boolean delta=CacheUtil.get().getBoolean(CacheUtil.TOP_SLIP_MEASURE_STATIC_DELTA);
+        boolean count=CacheUtil.get().getBoolean(CacheUtil.TOP_SLIP_MEASURE_STATIC_COUNT);
+        listParam.add(all);
+        listParam.add(mean);
+        listParam.add(max);
+        listParam.add(min);
+        listParam.add(delta);
+        listParam.add(count);
+//        Log.d("Tag.Debug", String.format("UpdateParamVisible: %s", Arrays.toString(listParam.toArray())));
+        for(int i=0;i<listParam.size();i++){
+            listView.get(i).setVisibility(listParam.get(i)?VISIBLE:GONE);
+        }
+    }
+
+    public void setTitle(){
+        row1.setText(R.string.dialog_measure_static_curr_value);
+        row2.setText(R.string.dialog_measure_static_avg_value);
+        row3.setText(R.string.dialog_measure_static_max_value);
+        row4.setText(R.string.dialog_measure_static_min_value);
+        row5.setText(R.string.dialog_measure_static_mean_var_value );
+        row6.setText(R.string.dialog_measure_static_count_value);
+    }
+    public void setTitleHide(){
+        title.setVisibility(GONE);
+    }
+    public void UpdateView(MeasureManage.MeasureItemStruct item,boolean isEnable){
+        int iWaveCh=item.getChannelId();
+        int measureId=item.getMeasureId();
+        int color= TChan.getChannelColor(context,iWaveCh);
+        title.setTextColor(color);
+        title.setText(MeasureManage.getEnclosedNumber(item.getNo() + 1) + item.getMeasureName());
+        if (item.isSelected() && isEnable){
+            this.setBackgroundResource(R.drawable.measure_item_select);
+        }else {
+            this.setBackground(null);
+        }
+        title.setVisibility(VISIBLE);
+        //update param
+        Measure measure=getHardwareMeasure(iWaveCh-1);
+        MeasureStaticsBean bean= measure.getMeasureStatics(measureId+16);
+
+
+
+        if (bean!=null && bean.getNums()>0){
+            row1.setText(Tools.updateMeasureData(iWaveCh-1,measureId,(float)bean.getVal()));
+            row2.setText(Tools.updateMeasureData(iWaveCh-1,measureId,(float)bean.getAverageVal()));
+            row3.setText(Tools.updateMeasureData(iWaveCh-1,measureId,(float)bean.getMaxVal()));
+            row4.setText(Tools.updateMeasureData(iWaveCh-1,measureId,(float)bean.getMinVal()));
+            row5.setText(Tools.updateMeasureData(iWaveCh-1,measureId,(float)bean.getMqdVal()));
+            row6.setText(String.valueOf(bean.getNums()));
+        }else{
+            row1.setText("__._");
+            row2.setText("__._");
+            row3.setText("__._");
+            row4.setText("__._");
+            row5.setText("__._");
+            row6.setText("__._");
+        }
+    }
+
+
+    private Measure getHardwareMeasure(int chId) {
+        BaseChannel baseChannel = null;
+        if (ChannelFactory.isDynamicCh(chId)) {
+            baseChannel = ChannelFactory.getDynamicChannel(chId);
+        } else if (ChannelFactory.isMathCh(chId)) {
+            baseChannel = ChannelFactory.getMathChannel(chId);
+        } else if (ChannelFactory.isRefCh(chId)) {
+            baseChannel = ChannelFactory.getRefChannel(chId);
+        }
+        if (baseChannel != null) {
+            return baseChannel.getMeasure();
+        }
+        return null;
+    }
+
+}

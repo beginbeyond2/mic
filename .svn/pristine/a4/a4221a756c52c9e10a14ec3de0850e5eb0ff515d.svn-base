@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingTop="10px"
+    android:paddingHorizontal="10px">
+
+    <com.micsig.tbook.ui.top.view.TopViewSpinner
+        android:id="@+id/setting_spinner"
+        android:layout_width="wrap_content"
+        android:layout_height="60px"
+        android:layout_marginStart="28px"
+        android:layout_marginTop="12px"
+        app:editWidth="600px"
+        app:headWidth="100px" />
+
+    <Button
+        android:id="@+id/btn_setting_browse"
+        style="@style/buttonStyleTop"
+        android:layout_width="120px"
+        android:layout_height="60px"
+        android:layout_alignTop="@+id/setting_spinner"
+        android:layout_alignBottom="@+id/setting_spinner"
+        android:layout_marginStart="50px"
+        android:layout_toRightOf="@+id/setting_spinner"
+        android:background="@drawable/selector_rightslip_button"
+        android:text="@string/top_save_browse" />
+
+    <Button
+        android:id="@+id/btn_setting_invoke"
+        style="@style/buttonStyleTop"
+        android:layout_width="120px"
+        android:layout_height="60px"
+        android:layout_alignTop="@+id/setting_spinner"
+        android:layout_alignBottom="@+id/setting_spinner"
+        android:layout_marginStart="50px"
+        android:layout_toRightOf="@+id/btn_setting_browse"
+        android:background="@drawable/selector_rightslip_button"
+        android:text="@string/top_slip_save_invoke" />
+
+    <CheckBox
+        android:id="@+id/check_file_only_show"
+        android:layout_width="wrap_content"
+        android:layout_height="54px"
+        android:layout_alignTop="@+id/btn_setting_invoke"
+        android:layout_marginLeft="105dp"
+        android:layout_marginTop="1dp"
+        android:layout_toRightOf="@+id/btn_setting_invoke"
+        android:button="@null"
+        android:checked="true"
+        android:drawablePadding="10px"
+        android:gravity="center_vertical"
+        android:text="@string/top_file_show_only"
+        android:textColor="@color/textColor"
+        android:textSize="@dimen/textSizeCur" />
+
+</RelativeLayout>

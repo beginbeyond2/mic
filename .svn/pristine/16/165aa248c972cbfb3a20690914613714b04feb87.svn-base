@@ -1,0 +1,254 @@
+package com.micsig.tbook.scope.Auto;
+
+import android.os.Looper;
+
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.ScopeMessage;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.fpga.FPGA_Status;
+
+import java.util.Observable;
+
+/**
+ * Created by zhuzh on 2018-6-29.
+ */
+
+public class AutoService extends ExitAuto {
+    private static final String TAG = "AutoService";
+
+
+
+    private static class AutoServiceHolder {
+        public static final AutoService instance = new AutoService();
+    }
+
+    public static AutoService getInstance() {
+        return AutoService.AutoServiceHolder.instance;
+    }
+
+
+    private AutoManage autoManage;
+    private FreqCounterManage freqCounterManage;
+    private volatile int autoFlag = 0;
+    private AutoService(){
+        super();
+        autoManage = new AutoManage(Auto.getInstance());
+        freqCounterManage = new FreqCounterManage();
+        autoThread.start();
+        EventFactory.addEventObserver(EventFactory.EVENT_CHANNEL_VSCALE_USER,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_TIME_SCALE,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_TRIGGER_LEVEL_USER,this);
+
+    }
+    private boolean isAutoThread(){
+        return (Thread.currentThread() == autoThread);
+    }
+    private boolean isMainThread(){
+        return Thread.currentThread() == Looper.getMainLooper().getThread();
+    }
+
+
+    private Thread autoThread = new Thread(TAG){
+        @Override
+        public void run() {
+
+            while(true){
+
+                if(autoFlag != 0){
+                    onDo();
+                }
+                if(autoManage.getAutoState() == AutoManage.AUTO_START
+                        && (autoFlag & 0x01) == 0)
+                {
+                    synchronized (this) {
+                        Logger.d(TAG,"AutoState:" + autoManage.getAutoState());
+                        if (autoManage.getAutoState() == AutoManage.AUTO_START) {
+
+                            autoManage.autoStop();
+                        }
+                    }
+                }
+
+                try {
+                    sleep(300,0);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    };
+
+    public void onDo(){
+        synchronized (this) {
+            if (isAuto()) {
+                if (autoManage.getAutoState() != AutoManage.AUTO_START) {
+                    autoManage.autoStart();
+                }
+            }
+        }
+        if(ScopeMessage.isEmpty()) {
+
+            FPGA_Status fpgaStatus = ScopeMessage.getInstance().getFpgaStatus();
+            if(fpgaStatus.getAuto(0).isVaild()){
+                if(isAuto()) {
+                    if(autoManage.getAutoState() == AutoManage.AUTO_START){
+                        if (autoManage.autoDo(fpgaStatus)) {
+                            Logger.e("AutoService is success over");
+                            autoStop();
+                        }
+                    }
+                }
+            }
+
+            if(fpgaStatus.getFreq().isVaild()){
+                boolean bFreqVaild = false;
+                if(isFreqCounter()) {
+                    bFreqVaild =  freqCounterManage.freqDo(fpgaStatus);
+                }
+                if(!bFreqVaild){
+                    FreqCounter.getInstance().setFreqVal(0);
+                }
+            }
+
+        }
+    }
+
+    public void autoStart(){
+        synchronized (this) {
+            Logger.d("autoStart");
+            autoFlag |= 1;
+        }
+    }
+
+    public void autoStop(){
+
+        synchronized (this) {
+            Logger.d("autoStop");
+            autoFlag &= ~1;
+        }
+    }
+
+    public void freqCounterStart(){
+        synchronized (this){
+            autoFlag |= (1<<1);
+        }
+    }
+
+    public void freqCounterStop(){
+        synchronized (this){
+            autoFlag &= ~(1<<1);
+        }
+    }
+
+    public synchronized boolean isAuto(){
+        return ((autoFlag & (1<<0)) != 0);
+    }
+
+    public boolean isFreqCounter(){
+        int flag = 0;
+        synchronized (this){
+            flag = autoFlag;
+        }
+        return ((flag & (1<<1)) != 0);
+    }
+    public static boolean isAutoEnable(){
+        return getInstance().isAuto();
+    }
+    public static boolean isFreqCounterEnable(){
+        return getInstance().isFreqCounter();
+    }
+    public static void setAuto(boolean bAuto){
+        if(bAuto){
+            getInstance().autoStart();
+        }else{
+            getInstance().autoStop();
+        }
+    }
+    public static void setFreqCounter(boolean bEnable){
+        if(bEnable){
+            getInstance().freqCounterStart();
+        }else{
+            getInstance().freqCounterStop();
+        }
+    }
+    private boolean isAutoRun(){
+        return (isAuto() && (autoManage.getAutoState() == AutoManage.AUTO_START));
+    }
+    @Override
+    public void update(Observable observable, Object data) {
+        EventBase eventBase = (EventBase)data;
+
+        if(isAutoRun() && eventBase != null){
+            if(isMainThread()){
+                if(Auto.getInstance().isAutoRangeEnable()) {
+                    switch (eventBase.getId()) {
+                        case EventFactory.EVENT_CHANNEL_VSCALE_USER:
+                            int chIdx = (int) eventBase.getData();
+                            if (ChannelFactory.isDynamicCh(chIdx)) {
+                                autoManage.modifyVertical(chIdx);
+                            }
+                            break;
+                        case EventFactory.EVENT_TIME_SCALE:
+                            autoManage.modifyTimebase();
+                            break;
+                        case EventFactory.EVENT_TRIGGER_LEVEL_USER:
+                            autoManage.modifyLevel();
+                            break;
+                        case EventFactory.EVENT_AFTERGLOW_CLEAR:
+                        case EventFactory.EVENT_CHANNEL_OPEN:
+                        case EventFactory.EVENT_CHANNEL_CLOSE:
+                        case EventFactory.EVENT_CHANNEL_ACTIVE:
+                        case EventFactory.EVENT_CHANNEL_POS:
+                        case EventFactory.EVENT_TIME_POS:
+                            break;
+                        default:
+                            super.update(observable,data);
+                            break;
+                    }
+                }else{
+                    boolean bExitAuto = false;
+                    switch (eventBase.getId()) {
+                        case EventFactory.EVENT_CHANNEL_VSCALE_USER:
+                            int chIdx = (int) eventBase.getData();
+                            if (ChannelFactory.isDynamicCh(chIdx)) {
+                                autoManage.modifyVertical(chIdx);
+                                bExitAuto = true;
+                            }
+                            break;
+                        default:
+                            super.update(observable,data);
+                            break;
+
+                    }
+                    if(bExitAuto){
+                        OnExitAuto();
+                    }
+                }
+            }else{
+                switch (eventBase.getId())
+                {
+                    case EventFactory.EVENT_DISPLAY_ZOOM:
+                        super.update(observable,data);
+                        break;
+                }
+            }
+
+        }
+    }
+
+    @Override
+    protected void OnExitAuto() {
+        if(isAuto()) {
+            setAuto(false);
+            Logger.e("AutoService is failed over");
+//            try{
+//                throw new IllegalArgumentException();
+//            }catch (Exception e){
+//                e.printStackTrace();
+//            }
+        }
+    }
+
+}

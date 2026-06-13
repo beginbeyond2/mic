@@ -1,0 +1,247 @@
+<resources>
+
+    <!--底部菜单-->
+    <string name="menu_bottom_adjust">미세 조정</string>
+    <string name="menu_bottom_save">빠른저장</string>
+    <string name="menu_bottom_cursor">커서</string>
+    <string name="menu_bottom_time">10:13</string>
+    <string name="menu_bottom_qiuck_screen">화면 캡처</string>
+    <string name="menu_bottom_qiuck_zoom">확대 / 축소</string>
+    <string name="menu_bottom_qiuck_all_measure">모든 측정</string>
+    <string name="menu_bottom_qiuck_serials_txt">연속 된 텍스트</string>
+    <string name="menu_bottom_qiuck_center_menu">메뉴</string>
+    <string name="dialog_center_menu_half_timebase">타임베이스</string>
+    <string name="dialog_center_menu_half_level">수평</string>
+    <string name="dialog_center_menu_half_hor_cursor">가로 커서</string>
+    <string name="dialog_center_menu_half_ver_cursor">수직 커서</string>
+    <string name="dialog_center_menu_half_channels">채널</string>
+    <string name="internal_storage">내부 저장 공간</string>
+    <string name="new_folder"> 새 폴더</string>
+    <string name="seleced_folder"> 선택된 폴더</string>
+    <string name="file_selection_not_supported"> 파일 선택을 지원하지 않습니다</string>
+    <string name="label_folder">폴더</string>
+    <string name="toast_create_success">성공적으로 생성되었습니다</string>
+    <string name="toast_create_failure">생성에 실패했습니다</string>
+    <string name="error_already_exists">이미 존재합니다</string>
+    <string name="label_file">파일</string>
+    <!-- TopTriggerSerials -->
+    <string name="topSerialsHeadData">데이터</string>
+    <string name="topSerialsHeadData1">데이터 1</string>
+    <string name="topSerialsHeadData2">데이터 2</string>
+    <string name="topSerialsHeadLabel">레이블</string>
+    <string name="topSerialsHeadSdi">SDI</string>
+    <string name="topSerialsHeadSsm">SSM</string>
+    <string name="topSerialsHeadId">신분증</string>
+    <string name="topSerialsHeadDlc">DLC</string>
+    <string name="topSerialsHeadAddr">주소</string>
+    <string name="topSerialsHeadCondition">조건</string>
+
+    <string name="m1553bCsWordCsWordHead">지시 / 상태 어</string>
+    <string name="m1553bDataWordDataHead">데이터 어</string>
+    <string name="m1553bRtAddrRtAddrHead">원격 터미널 주소</string>
+    <string name="spiDataDataHead">비트 설정</string>
+
+    <string name="mainTopLeftStateRun">달리기</string>
+    <string name="mainTopLeftStateStop">멈추다</string>
+    <string name="mainTopLeftStateWait">대기 중</string>
+    <string name="mainTopLeftStateAuto">자동</string>
+    <string name="mainTopLeftSD">SD</string>
+    <string name="mainTopLeftLength">87.5K</string>
+    <string name="mainTopLeftRate">3.13MSa/s</string>
+    <string name="mainTopCenterShow">0ps</string>
+    <string name="mainRightSample">평균 256</string>
+
+    <string name="view_savewithhead_title">이름</string>
+    <string name="view_savewithhead_input">1704060001</string>
+    <string name="view_savewithhead_confirm">저장</string>
+    <string name="view_seekbarwithhead_title">밝기</string>
+    <string name="view_seekbarwithhead_show">66 %</string>
+    <string name="view_display_brightness">밝기</string>
+    <string name="view_display_transparency">Transparency</string>
+    <string name="view_display_intensity">강도</string>
+    <string name="view_afterglow_clearup">지우기</string>
+    <string name="view_horizontallist_title">조정</string>
+    <string name="view_display_adjust">조정</string>
+    <string name="view_horizontallist_show">100ms</string>
+    <string name="view_trigger_inhibitiontimetitle">억제 시간</string>
+    <string name="view_trigger_inhibitiontimevalue">200ns</string>
+    <string name="view_trigger_pulsewidth">1us</string>
+    <string name="view_trigger_logic">1us</string>
+    <string name="trigger_pulsewidth">펄스 폭</string>
+    <string name="trigger_overTime">시간 초과</string>
+    <string name="triggervideo_linehead">선</string>
+    <string name="triggervideo_linedetail">1</string>
+    <string name="triggeruart_datatitle">데이터</string>
+    <string name="triggeruart_datadetail">56</string>
+    <string name="triggerslope_timehighhead">최대 시간</string>
+    <string name="triggerslope_timelowhead">최소 시간</string>
+    <string name="triggerrunt_timehigh">최대 시간</string>
+    <string name="triggerrunt_timelow">최소 시간</string>
+    <string name="triggerlogic_timehigh">최대 시간</string>
+    <string name="triggerlogic_timelow">최소 시간</string>
+    <string name="triggerpulsewidth_timehigh">최대 시간</string>
+    <string name="triggerpulsewidth_timelow">최소 시간</string>
+    <string name="triggernedge_time">시간</string>
+    <string name="triggernedge_edge">가장자리</string>
+    <string name="triggernedge_edgevalue">345</string>
+    <string name="settingoscillograph_saveas">저장 대상</string>
+    <string name="settingfactory_pleasesure">공장 설정 복원 여부를 확인하십시오!</string>
+    <string name="settingfactory_sure">예</string>
+    <string name="settingcalibration_pleasesure">교정 전에 프로브를 제거하십시오!</string>
+    <string name="settingcalibration_sure">결정</string>
+    <string name="autosetting_levelhead">임계 값 수준</string>
+    <string name="autosetting_leveldetail">10</string>
+    <string name="oscillograpg_storage">저장</string>
+    <string name="oscillograpg_recovery">복구</string>
+    <string name="measure_clear">지우기</string>
+    <string name="measure_relationto">상대적인</string>
+    <string name="sure">결정</string>
+    <string name="save_saveto">저장 대상</string>
+    <string name="save_r1">R1</string>
+    <string name="save_r2">R2</string>
+    <string name="save_r3">R3</string>
+    <string name="save_r4">R4</string>
+
+    <string name="dialogcount_title">N 가장자리</string>
+    <string name="dialogcount_x1">1 배</string>
+    <string name="dialogcount_x100">100 배</string>
+    <string name="dialogcount_subtract">-</string>
+    <string name="dialogcount_add">+</string>
+    <string name="dialogmeasuredelay_head">Ch1</string>
+    <string name="dialogmeasurephase_head">Ch1</string>
+    <string name="dialogscale_head">논리</string>
+    <string name="dialogscale_show">9.00ms</string>
+
+    <string name="serialsUserDefine">맞춤</string>
+
+    <string name="mainBottomScreenRecorderStart">비디오 녹화 시작 :</string>
+    <string name="mainBottomScreenRecorderEnd">비디오 녹화를 끝내십시오.</string>
+    <string name="mainBottomScreenShot">화면 캡처 성공 :</string>
+
+    <string name="topSlipUsersetSaveRecoveryDefaultName">기본값</string>
+    <string name="topSlipUsersetSaveRecoveryStorage">성공적으로 저장되었습니다.</string>
+    <string name="topSlipUsersetSaveRecoveryRecovery">성공적인 복구</string>
+    <string name="msgForGoHomeWhenLockScreen">현재 터치 기능이 꺼져 있습니다
+        \n바탕 화면으로 들어가려면 터치 기능이 열립니다
+        \n바탕 화면으로 들어가려면 확인하고, 다시 "홈"버튼을 누르십시오
+        \n돌아가려면 다른 키를 누르십시오.
+    </string>
+
+    <string name="topBtn">상반기</string>
+    <string name="bottomBtn">하반부</string>
+    <string name="topZeroTitle">영점 조정</string>
+    <string name="topADGainTitle">AD 이득 보정</string>
+    <string name="topADZeroTitle">AD 제로 교정</string>
+    <string name="centerChGain">채널 이득 교정 (교정 신호 필요)</string>
+    <string name="bottomZeroTitle">영점 조정</string>
+    <string name="bottomOffsetTitle">오프셋 계수 보정</string>
+    <string name="bottomChDiffTitle">채널 차이 보정</string>
+    <string name="calibration">(보정 된)</string>
+    <string name="unCalibration">(보정되지 않음)</string>
+
+    <string name="topSaveSaveInToast">U 디스크가 감지되지 않음</string>
+
+    <string name="dialogMsgExitToHome">홈 페이지를 종료 하시겠습니까?</string>
+    <string name="dialogMsgInSlowTimeBase">스크롤 모드로 전환하면 FFT가 종료됩니다!</string>
+    <string name="keyBoardMsgBeyond">입력 한도 초과</string>
+    <string name="msgClickFFTInRoll">스크롤 모드에서는 fft 상태로 설정할 수 없습니다!</string>
+    <string name="msgBatteryLow">배터리가 너무 낮 으면 어댑터를 연결하십시오!</string>
+    <string name="msgParameterLimited">매개 변수 한도!</string>
+    <string name="msgOpenMathInModeXY">XY 모드에서는 수학 채널이 지원되지 않습니다!</string>
+
+    <string name="msgSelfAdjustRun">자체 교정 진행 중 ...</string>
+    <string name="msgSelfAdjustSuccess">자체 교정이 성공적입니다!</string>
+    <string name="msgSelfAdjustFail">자체 교정에 실패했습니다! 오류 코드 :%1$s</string>
+
+    <string name="msgTopSaveNameExisted">파일 이름%1$s이 (가) 이미 존재합니다!</string>
+    <string name="msgTopSaveBinNoSupport">채널을 bin 데이터로 저장하는 것은 지원되지 않습니다!</string>
+    <string name="msgTopSaveBinSuccess">파형%1$s이 성공적으로 저장되었습니다!</string>
+    <string name="msgTopSaveBinFailed">저장 한 파형%1$s에 실패했습니다!</string>
+
+    <string name="serialsWordTitleS1">S1</string>
+    <string name="serialsWordTitleS2">S2</string>
+    <string name="serialsWordTitleS3">S3</string>
+    <string name="serialsWordTitleS4">S4</string>
+    <string name="serialsWordTitleS12">S1&amp;S2</string>
+    <string name="serialsWordClear">지우기</string>
+    <string name="serialsWordTip">채널을 먼저여십시오!</string>
+    <string name="serialsWordUartTitleBin">이진</string>
+    <string name="serialsWordUartTitleHex">16 진수</string>
+    <string name="serialsWordUartTitleASCII">ASCII</string>
+    <string name="serialsWordUartTip">s1과 s2의 설정을 먼저 동일하게 유지하십시오.</string>
+    <string name="serialsWordLinTitleCh">채널</string>
+    <string name="serialsWordLinTitleTime">시간</string>
+    <string name="serialsWordLinTitleId">신분증</string>
+    <string name="serialsWordLinTitleData">데이터</string>
+    <string name="serialsWordLinTitleError">오류</string>
+    <string name="serialsWordLinTitleCheck">확인</string>
+    <string name="serialsWordLinTitleTrigger">방아쇠</string>
+    <string name="serialsWordCanTitleCh">채널</string>
+    <string name="serialsWordCanTitleTime">시간</string>
+    <string name="serialsWordCanTitleId">신분증</string>
+    <string name="serialsWordCanTitleType">종류</string>
+    <string name="serialsWordCanTitleDlc">DLC</string>
+    <string name="serialsWordCanTitleData">데이터</string>
+    <string name="serialsWordCanTitleCrc">CRC</string>
+    <string name="serialsWordCanTitleError">오류</string>
+    <string name="serialsWordCanTitleTrigger">방아쇠</string>
+    <string name="serialsWordSpiTitleCh">채널</string>
+    <string name="serialsWordSpiTitleTime">시간</string>
+    <string name="serialsWordSpiTitleData">데이터</string>
+    <string name="serialsWordSpiTitleTrigger">방아쇠</string>
+    <string name="serialsWordI2cTitleCh">채널</string>
+    <string name="serialsWordI2cTitleTime">시간</string>
+    <string name="serialsWordI2cTitleAddr">주소</string>
+    <string name="serialsWordI2cTitleData">데이터</string>
+    <string name="serialsWordI2cTitleConfirm">확인</string>
+    <string name="serialsWordI2cTitleTrigger">방아쇠</string>
+    <string name="serialsWordI2cTitleRestart">다시 시작</string>
+    <string name="serialsWordM429TitleCh">채널</string>
+    <string name="serialsWordM429TitleTime">시간</string>
+    <string name="serialsWordM429TitleLabel">LABEL</string>
+    <string name="serialsWordM429TitleSdi">SDI</string>
+    <string name="serialsWordM429TitleData">데이터</string>
+    <string name="serialsWordM429TitleSsm">SSM</string>
+    <string name="serialsWordM429TitleError">오류</string>
+    <string name="serialsWordM429TitleTrigger">방아쇠</string>
+    <string name="serialsWordM1553bTitleCh">채널</string>
+    <string name="serialsWordM1553bTitleTime">시간</string>
+    <string name="serialsWordM1553bTitleType">종류</string>
+    <string name="serialsWordM1553bTitleRAdr">RAdr</string>
+    <string name="serialsWordM1553bTitleData">데이터</string>
+    <string name="serialsWordM1553bTitleTrigger">방아쇠</string>
+    <string name="serialsWordM1553bTitleError">오류</string>
+    <string name="serialsWordUartMsg">TX 프레임 :%1$s\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tERR :%2$s (%3$s)</string>
+    <string name="serialsWordCanMsg">FRAME :%1$s\t\t\t\t\t\t\t\t\t\t\t\tSPEC :%2$s\t\t\t\t\t\t\t\t\t\t\t\tERR FR : %3$s (%4$s)</string>
+    <string name="serialsWordM429Msg">단어 :%1$s\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tERRORS :%2$s (%3$s)</string>
+
+    <string name="rightMathMenuFftMeasure_DC">DC</string>
+    <string name="rightMathMenuFftMeasure_Freq">주파수</string>
+    <string name="rightMathMenuFftMeasure_Amp">진폭</string>
+
+    <string name="screenShotSuccess">화면 캡처 성공 :</string>
+    <string name="saveRecoveryFileIsNotExist">파일이 없습니다! 기본 구성을로드하십시오!</string>
+    <string name="rightMathAxbUnitTitle">단위</string>
+
+    <string name="msgNumberFormatException">입력이 잘못되었습니다</string>
+    <string name="mainCenterMenuAuto">자동</string>
+    <string name="mainCenterMenuRunStop">달리기</string>
+    <string name="mainCenterMenuSEQ">단일 시퀀스</string>
+    <string name="sysNoSupport">이 기능을 지원하기에 시스템 버전이 너무 낮습니다!</string>
+
+    <string name="msgMathAdvanceFormulaError">위치 %1$s 에서 %2$s 오류</string>
+    <string name="msgMathAdvanceFormulaNull">식은 비워 둘 수 없습니다</string>
+    <string name="mainCenterMenuZero">영</string>
+    <string name="mainCenterMenuAutoRange">자동\\n범위</string>
+    <string name="dialog_ok">확신하는</string>
+    <string name="dialog_cancel">취소</string>
+    <string name="menu_bottom_qiuck_home">집</string>
+    <string name="menu_bottom_qiuck_segment">세분화된 탐색</string>
+    <string name="mainTopLeftStateNormal">정상</string>
+    <string name="serials">연재물</string>
+    <string name="msgAutoZeroFailed">자동 영점 보정 실패</string>
+    <string name="msgAutoZeroSuccess">자동 영점 교정 완료</string>
+    <string name="msgAutoZeroRunning">자동 영점 보정 진행 중</string>
+
+    <string name="mathRefSerialsSlip_display">디스플레이</string>
+</resources>

@@ -1,0 +1,22 @@
+package com.micsig.tbook.scope.Sample;
+
+import java.util.List;
+
+/**
+ * Created by zhuzh on 2018/3/13.
+ */
+
+public interface IMemDepth {
+    int getMemDepth();
+    int getMemDepthItemNum();
+    List<String> getMemDepthItemName();
+    void setMemDepthItem(int idx);
+    int getMemDepthItem();
+    int getSampleMemDepth();
+    int getSampleMemDepth(int chCnt);
+    double getTimeScaleRatio(int timeScaleId);
+    double getTimeScaleRatio(int timeScaleId, int memDepthItemIdx);
+    boolean isSpecialTimeScale();
+    int [] getMathCouArray();
+    void forceMemDepthChange();
+}

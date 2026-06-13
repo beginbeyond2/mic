@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <com.micsig.tbook.ui.MTextView
+        android:id="@+id/lbl_seg"
+        style="@style/textStyle"
+        android:layout_width="120px"
+        android:layout_height="60px"
+        android:gravity="center_vertical|end"
+        android:layout_marginStart="33px"
+        android:textColor="@color/textColorTop"
+        android:text="@string/sampleSegmented"
+        />
+    <com.micsig.tbook.ui.MSwitchBox
+        android:id="@+id/segmentedState"
+        android:layout_width="72px"
+        android:layout_height="36px"
+        android:layout_alignTop="@+id/lbl_seg"
+        android:layout_alignBottom="@+id/lbl_seg"
+        android:layout_marginStart="16px"
+        android:layout_toEndOf="@+id/lbl_seg"
+         />
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/segmentedNumber"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@id/segmentedState"
+        android:layout_marginStart="175px"
+        app:headWidth="120px" />
+
+    <TextView
+        android:id="@+id/segmentedUsersetNumber"
+        style="@style/editTextStyle"
+        android:layout_width="120px"
+        android:layout_height="60px"
+        android:gravity="center_vertical|end"
+        android:layout_marginStart="40px"
+        android:layout_marginTop="0px"
+        android:layout_alignBaseline="@+id/segmentedState"
+        android:layout_toEndOf="@id/segmentedNumber"/>
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/segmentedDisplay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/segmentedState"
+        android:layout_marginTop="20px"
+        android:layout_marginStart="33px"
+        app:headWidth="120px" />
+
+    <TextView
+        android:id="@+id/segmentedFitStart"
+        android:layout_width="120px"
+        android:layout_height="60px"
+        style="@style/editTextStyle"
+        android:gravity="center_vertical|end"
+        android:layout_alignBottom="@id/segmentedDisplay"
+        android:layout_toEndOf="@id/segmentedDisplay"
+        android:layout_marginStart="50px"
+        />
+
+    <TextView
+        android:id="@+id/segmentedFitEnd"
+        android:layout_width="120px"
+        android:layout_height="60px"
+        style="@style/editTextStyle"
+        android:gravity="center_vertical|end"
+        android:layout_alignBottom="@id/segmentedDisplay"
+        android:layout_toEndOf="@id/segmentedFitStart"
+        android:layout_marginStart="30px"
+         />
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/segmentedOrder"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@id/segmentedDisplay"
+        android:layout_toEndOf="@id/segmentedDisplay"
+        android:layout_marginStart="25px"
+        android:layout_marginTop="20px"
+        app:headWidth="100px" />
+</RelativeLayout>

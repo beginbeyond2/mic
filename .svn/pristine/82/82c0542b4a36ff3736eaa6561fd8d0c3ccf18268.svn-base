@@ -1,0 +1,35 @@
+package com.micsig.tbook.scope.Calibrate;
+
+import java.util.List;
+
+public interface IHW {
+    public void setChPga();
+    public void setChPgaGain(int []val);
+
+    public void setAdGain(int fpgaIdx);
+
+    public void ChPowerEnable( boolean bEnable);
+    public  void changeChVolScale();
+
+
+
+    //校准相关------------------------------------------------------------------------------------
+    public void clearCalibrationState();
+    public void saveCalibrationState();
+    public void setCalibrationState(int idx,boolean bState);
+    public boolean isCalibrationState(int idx);
+    public void loadCalibrationState();
+    public int loadCalibration();
+    public boolean saveCalibration();
+    public boolean saveFactoryCalibration();
+    public boolean saveUserCalibration();
+    public int getRatioDangCnt();
+    public void backUpCabteRegister();
+    public void restoreCabteRegister();
+
+    public boolean isTopCalibration();
+
+    public List<String> getCalibrationItems();
+    public boolean getCalibrationItemState(int idx,StringBuilder sb);
+
+}

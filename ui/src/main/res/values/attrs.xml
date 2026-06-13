@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+    <attr name="touchDownBitmap" format="reference" />
+    <attr name="touchUpBitmap" format="reference" />
+    <attr name="checkedBitmap" format="reference" />
+    <attr name="unCheckedBitmap" format="reference" />
+    <attr name="text_x" format="dimension" />
+    <attr name="text_y" format="dimension" />
+    <attr name="textCenterX" format="boolean" />
+    <attr name="uiLayout" format="reference" />
+
+    <attr name="Channel" format="enum">
+        <enum name="Default" value="-1"/>
+        <enum name="CH1" value="0"/>
+        <enum name="CH2" value="1"/>
+        <enum name="CH3" value="2"/>
+        <enum name="CH4" value="3"/>
+        <enum name="MATH" value="4"/>
+        <enum name="R1" value="5"/>
+        <enum name="R2" value="6"/>
+        <enum name="R3" value="7"/>
+        <enum name="R4" value="8"/>
+        <enum name="S1" value="9"/>
+        <enum name="S2" value="10"/>
+    </attr>
+
+    <declare-styleable name="MSwitchBox">
+        <attr name="Channel"/>
+        <attr name="switchWidth" format="dimension"/>
+        <attr name="switchHeight" format="dimension"/>
+    </declare-styleable>
+
+    <declare-styleable name="MButton">
+        <attr name="touchDownBitmap" />
+        <attr name="touchUpBitmap" />
+        <attr name="android:text" />
+        <attr name="android:textColor" />
+        <attr name="android:textSize" />
+        <attr name="textCenterX" />
+        <attr name="text_x" />
+        <attr name="text_y" />
+    </declare-styleable>
+
+    <attr name="checkedTextColor" format="color" />
+    <attr name="unCheckedTextColor" format="color" />
+    <declare-styleable name="MButton_CheckBox">
+        <attr name="checkedBitmap" />
+        <attr name="unCheckedBitmap" />
+        <attr name="android:text" />
+        <attr name="android:textColor" />
+        <attr name="checkedTextColor" />
+        <attr name="unCheckedTextColor" />
+        <attr name="android:textSize" />
+        <attr name="textCenterX" />
+        <attr name="text_x" />
+        <attr name="text_y" />
+    </declare-styleable>
+
+    <declare-styleable name="MButton_RadioGroup">
+        <attr name="uiLayout" />
+    </declare-styleable>
+
+
+    <attr name="bgColor" format="color" />
+    <declare-styleable name="TopViewHorizontalPicker">
+        <attr name="bgColor" />
+        <attr name="android:textColor" />
+        <attr name="android:textSize" />
+        <attr name="values" format="reference" />
+        <attr name="android:ellipsize" />
+        <attr name="android:marqueeRepeatLimit" />
+        <attr name="dividerSize" format="dimension" />
+        <attr name="sideItems" format="integer" />
+    </declare-styleable>
+
+    <declare-styleable name="EHorizontalSelectedView">
+        <attr name="otherTextSize" format="dimension" />
+        <attr name="selectTextSize" format="dimension" />
+        <attr name="seeSize" format="integer" />
+        <attr name="selectColor" format="color" />
+        <attr name="otherColor" format="color" />
+    </declare-styleable>
+
+    <attr name="horizontalPickerStyle" format="reference" />
+
+    <attr name="itemWidth" format="dimension" />
+    <attr name="itemHeight" format="dimension" />
+    <attr name="itemTextSize" format="dimension" />
+
+    <attr name="itemBgViewFlag">
+        <enum name="firstTitle" value="1" />
+        <enum name="twoTitle" value="2" />
+    </attr>
+    <declare-styleable name="TopViewTitleWithScroll">
+        <attr name="itemBgViewFlag" />
+        <attr name="itemTextSize" />
+    </declare-styleable>
+
+    <attr name="array" format="reference" />
+    <attr name="headWidth" format="dimension" />
+    <attr name="bgRadioGroup" format="reference" />
+    <attr name="bgRadioButton" format="reference" />
+    <attr name="itemTextColor" format="color" />
+    <declare-styleable name="TopViewRadioGroup">
+        <attr name="head" />
+        <attr name="array" />
+        <attr name="headWidth" />
+        <attr name="itemWidth" />
+        <attr name="itemHeight" />
+        <attr name="bgRadioGroup" />
+        <attr name="bgRadioButton" />
+        <attr name="itemTextColor" />
+        <attr name="android:textSize"/>
+    </declare-styleable>
+    <declare-styleable name="TopViewTimeSelector">
+        <attr name="type" format="enum">
+            <enum name="start" value="0"/>
+            <enum name="stop" value="1"/>
+        </attr>>
+
+    </declare-styleable>
+    <attr name="head" format="string" />
+    <attr name="editHint" format="string" />
+    <attr name="editCenter" format="boolean" />
+    <attr name="editWidth" format="dimension" />
+    <attr name="orientationV" format="boolean"/>
+    <attr name="headMarginBottom" format="dimension" />
+    <attr name="headViewGravityLeft" format="boolean" />
+    <declare-styleable name="TopViewEdit">
+        <attr name="head" />
+        <attr name="headWidth" />
+        <attr name="editCenter" />
+        <attr name="editHint" />
+        <attr name="editWidth" />
+        <attr name="headTextSize" />
+        <attr name="orientationV" />
+        <attr name="headMarginBottom" />
+        <attr name="headViewGravityLeft" />
+    </declare-styleable>
+
+    <attr name="buttonWidth" format="dimension" />
+    <declare-styleable name="TopViewSave">
+        <attr name="headWidth" />
+        <attr name="editWidth" />
+        <attr name="buttonWidth" />
+    </declare-styleable>
+
+    <attr name="seekBarWidth" format="dimension" />
+    <declare-styleable name="TopViewSeekBar">
+        <attr name="headWidth" />
+        <attr name="seekBarWidth" />
+    </declare-styleable>
+
+    <attr name="headPlace">
+        <enum name="top" value="1" />
+        <enum name="left" value="2" />
+    </attr>
+    <attr name="arrayOrientation">
+        <enum name="vertical" value="1" />
+        <enum name="horizontalEachRow2" value="2" />
+        <enum name="horizontalEachRow3" value="3" />
+        <enum name="horizontalEachRow4" value="4" />
+    </attr>
+    <attr name="firstShowCount" format="integer" />
+    <attr name="itemStartAndEndBgHalfCorner" format="boolean" />
+    <attr name="itemHalfCornerEach" >
+        <enum name="each_74_39" value="1"/>
+        <enum name="each_74_39_2" value="2"/>
+        <enum name="each_74_34" value="3"/>
+        <enum name="each_120_60" value="4"/>
+        <enum name="each_108_54" value="5"/>
+    </attr>
+    <attr name="itemBgViewResId" format="reference" />
+    <attr name="headHeight" format="dimension" />
+    <attr name="headMarginLeft" format="dimension" />
+    <attr name="headTextSize" format="dimension" />
+    <attr name="itemMargin" format="dimension" />
+    <attr name="listPadLeft" format="dimension" />
+    <attr name="headGravityOnHor">
+        <enum name="center" value="1" />
+        <enum name="left" value="2" />
+    </attr>
+    <declare-styleable name="RightSlipViewSelect">
+        <attr name="head" />
+        <attr name="array" />
+        <attr name="headWidth" />
+        <attr name="headHeight" />
+        <attr name="headMarginLeft" />
+        <attr name="headTextSize" />
+        <attr name="headGravityOnHor" />
+        <attr name="listPadLeft" />
+        <attr name="itemWidth" />
+        <attr name="itemHeight" />
+        <attr name="itemMargin" />
+        <attr name="headPlace" />
+        <attr name="arrayOrientation" />
+        <attr name="itemBgViewResId" />
+        <attr name="itemStartAndEndBgHalfCorner" />
+        <attr name="itemHalfCornerEach" />
+        <attr name="firstShowCount" />
+        <attr name="itemTextLines" format="integer" />
+    </declare-styleable>
+
+    <declare-styleable name="TopViewSpinner">
+        <attr name="headWidth" />
+        <attr name="editWidth" />
+    </declare-styleable>
+
+</resources>

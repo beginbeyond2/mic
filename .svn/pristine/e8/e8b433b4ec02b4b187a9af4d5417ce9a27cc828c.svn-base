@@ -1,0 +1,137 @@
+package com.micsig.tbook.scope.Sample;
+
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.horizontal.HorizontalAxis;
+
+
+
+/**
+ * Created by zhuzh on 2018-7-19.
+ */
+
+
+public class MemDepth36M extends MemDepth{
+    public MemDepth36M(int memDepth) {
+        super(memDepth);
+        addItem("Auto");
+        addItem("36/18M");
+        addItem("3.6/1.8M");
+        addItem("360/180K");
+        addItem("36/18K");
+    }
+    @Override
+    public int getSampleMemDepth() {
+        Scope scope = Scope.getInstance();
+        return getSampleMemDepth(scope.getChannelSampOnCnt());
+    }
+    @Override
+    public int getSampleMemDepth(int chCnt) {
+
+
+        SegmentSample segmentSample = SegmentSample.getInstance();
+        int cfg = 3600;
+
+        int coef = 1;
+
+        switch(chCnt)
+        {
+            case 4:
+                coef = 1;
+                break;
+            default:
+                coef = 2;
+                break;
+        }
+        switch(getMemDepthItem()){
+            case 1: return cfg * 1000 * 10 / coef;
+            case 2: return cfg * 1000 / coef;
+            case 3: return cfg * 100 / coef;
+            case 4: return cfg * 10 / coef;
+            default:
+            case 0:
+            {
+                int a = getAuto(cfg,coef);
+                if(segmentSample.isSegmentEnable()){
+                    int s = getSegment(cfg,coef);
+                    if(s > a){
+                        s = a;
+                    }
+                    return s;
+                }
+                return a;
+            }
+        }
+    }
+
+    private int getSegment(int cfg,int coef){
+
+        SegmentSample segmentSample = SegmentSample.getInstance();
+        int num = segmentSample.getSegmentNums() + 1;
+        int [] zunArray = {36*1000*1000,36*100*1000,360*1000,3600};
+        int s = 0;
+        num *= coef * 2;
+        for(int i=0;i<zunArray.length;i++){
+            s = segmentSample.getSegmentSample(zunArray[i]);
+            if(num <= s){
+                s = zunArray[i];
+                break;
+            }
+        }
+        return s/coef;
+    }
+
+    private int getAuto(int cfg,int coef){
+        Scope scope = Scope.getInstance();
+        HorizontalAxis xAxis = HorizontalAxis.getInstance();
+        if(scope.isInScrollMode() || scope.isInSlowScaleMode()){
+            return cfg * 100/coef;
+        }
+
+        int mainScaleId = xAxis.getTimeScaleIdOfView(HorizontalAxis.WPI_STANDARD);
+
+        if(mainScaleId < HorizontalAxis.TSI_500uS)
+            return cfg *1000 * 10/coef;
+        switch(mainScaleId)
+        {
+            case HorizontalAxis.TSI_500uS: return 18000000/coef;
+            case HorizontalAxis.TSI_200uS: return 7200000/coef;
+            case HorizontalAxis.TSI_100uS: return 3600000/coef;
+            case HorizontalAxis.TSI_50uS:  return 1800000/coef;
+            case HorizontalAxis.TSI_20uS:  return 720000/coef;
+            case HorizontalAxis.TSI_10uS:  return 360000/coef;
+            case HorizontalAxis.TSI_5uS:   return 180000/coef;
+            case HorizontalAxis.TSI_2uS:   return 72000/coef;
+            case HorizontalAxis.TSI_1uS:   return 36000/coef;
+            case HorizontalAxis.TSI_500nS: return 18000/coef;
+            case HorizontalAxis.TSI_200nS: return 7200/coef;
+            case HorizontalAxis.TSI_100nS: return 3600/coef;
+            case HorizontalAxis.TSI_50nS:
+            case HorizontalAxis.TSI_20nS:
+            case HorizontalAxis.TSI_10nS:
+            case HorizontalAxis.TSI_5nS:
+            case HorizontalAxis.TSI_2nS:
+            case HorizontalAxis.TSI_1nS:
+            default:        return 1800;
+        }
+    }
+
+    @Override
+    public double getTimeScaleRatio(int timeScaleId) {
+        return 1.0;
+    }
+
+    @Override
+    public double getTimeScaleRatio(int timeScaleId, int memDepthItemIdx) {
+        return 1.0;
+    }
+
+    @Override
+    public boolean isSpecialTimeScale() {
+        return true;
+    }
+
+    @Override
+    public int[] getMathCouArray() {
+        return new int[]{360000};
+    }
+}

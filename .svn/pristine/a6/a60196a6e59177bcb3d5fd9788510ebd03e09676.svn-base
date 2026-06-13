@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@drawable/boarder">
+
+
+
+    <TextView
+        android:id="@+id/dialog_delect_confirm_content"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="确定要删除"
+        android:textSize="15sp"
+        android:textColor="@color/folder_text_color"
+        android:layout_marginTop="12dp"
+        android:gravity="center" />
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/dialog_delect_confirm_content"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btn_cancel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/option_cancel_mlh"
+            android:textColor="@color/folder_text_color"
+            android:background = "?android:attr/selectableItemBackground"
+            android:textAllCaps="false"
+            android:padding="12dp" />
+
+        <Button
+            android:id="@+id/btn_delete"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/option_delete_mlh"
+            android:textColor="@color/red_delete"
+            android:background = "?android:attr/selectableItemBackground"
+            android:textAllCaps="false"
+            android:padding="12dp" />
+
+    </LinearLayout>
+
+</RelativeLayout>

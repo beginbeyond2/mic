@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <View
+        android:id="@+id/outView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="300px"
+        android:background="@drawable/shape_frame_bg_black"
+        android:padding="15px"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <RadioButton
+            android:id="@+id/head"
+            style="@style/textStyle"
+            android:layout_width="120px"
+            android:layout_height="60px"
+            android:background="@drawable/bg_radiobutton_middle"
+            android:button="@null"
+            android:checked="true"
+            android:gravity="center"
+            android:text="@string/dialogmeasuredelay_head" />
+
+        <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+            android:id="@+id/selfPosition"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20px"
+            android:layout_toEndOf="@id/head"
+            app:array="@array/measureDelayPosition" />
+
+        <TextView
+            android:id="@+id/to"
+            style="@style/textStyle"
+            android:layout_width="120px"
+            android:layout_height="60px"
+            android:layout_below="@id/head"
+            android:layout_alignTop="@+id/otherMath"
+            android:layout_alignBottom="@+id/otherMath"
+            android:gravity="center"
+            android:text="@string/measure_relationto" />
+
+        <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+            android:id="@+id/otherChannel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/selfPosition"
+            android:layout_alignStart="@id/selfPosition"
+            android:layout_marginTop="20px"
+            app:array="@array/channelsNameEight" />
+
+        <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+            android:id="@+id/otherMath"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/otherChannel"
+            android:layout_alignStart="@id/selfPosition"
+            android:layout_marginTop="20px"
+            app:array="@array/measureDelayToChannel" />
+
+        <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+            android:id="@+id/otherPosition"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/otherMath"
+            android:layout_alignStart="@id/selfPosition"
+            android:layout_marginTop="20px"
+            app:array="@array/measureDelayPosition" />
+
+        <Button
+            android:id="@+id/sure"
+            style="@style/buttonStyle"
+            android:layout_width="120px"
+            android:layout_height="60px"
+            android:layout_below="@id/otherPosition"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="15px"
+            android:gravity="center"
+            android:text="@string/sure" />
+    </RelativeLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

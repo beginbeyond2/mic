@@ -1,0 +1,629 @@
+
+#include "scpi_cmd_curs.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include "scpi_help.h"
+#include "../../SCPICommandCallBackJava.h"
+#include "../../Log.h"
+
+
+//�򿪻�ر�ˮƽ��깦��
+scpi_result_t CURS_HOR(scpi_t * context)
+{
+    bool  param1;
+    if (!SCPI_ParamBool(context, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+
+    setParam_1Boolean(context->env,context->param,param1);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+
+//    CXYSceneItem * pXYSceneItem  = gMainWindow->scene3->getCurSceneItem();
+//    IModuleCursor::instanceEx(0);
+//    bool flagHerOn(false);
+//
+//    if(gMainWindow->isInXYMode()) {
+//        IModuleCursor::instanceEx(pXYSceneItem->getIndex());
+//        if(pXYSceneItem->getHCursorsActive()) flagHerOn = true;
+//    } else {
+//        if(gMainWindow->scene->cursorGroup->isCursorOn(CursorGroup::CUI_H)) flagHerOn = true;
+//    }
+//
+//    if((true==flagHerOn && false==param1)
+//            || (false==flagHerOn && true==param1))
+//    {
+//        gMainWindow->on_btnCursorH_clicked();
+//    }
+    return SCPI_RES_OK;
+}
+
+//��ѯˮƽ��깦��
+scpi_result_t CURS_HORQ(scpi_t * context)
+{
+//    CXYSceneItem * pXYSceneItem  = gMainWindow->scene3->getCurSceneItem();
+//    IModuleCursor::instanceEx(0);
+//    bool flagHerOn(false);
+//
+//    if(gMainWindow->isInXYMode()) {
+//        IModuleCursor::instanceEx(pXYSceneItem->getIndex());
+//        if(pXYSceneItem->getHCursorsActive()) flagHerOn = true;
+//    } else {
+//        if(gMainWindow->scene->cursorGroup->isCursorOn(CursorGroup::CUI_H)) flagHerOn = true;
+//    }
+//    SCPI_ResultBool(context,flagHerOn);
+
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+//�򿪻�رմ�ֱ��깦��
+scpi_result_t CURS_VERT(scpi_t * context)
+{
+    bool  param1;
+    if (!SCPI_ParamBool(context, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+
+    setParam_1Boolean(context->env,context->param,param1);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+
+//    CXYSceneItem * pXYSceneItem  = gMainWindow->scene3->getCurSceneItem();
+//    IModuleCursor::instanceEx(0);
+//    bool flagVerOn(false);
+//
+//    if(gMainWindow->isInXYMode()) {
+//        IModuleCursor::instanceEx(pXYSceneItem->getIndex());
+//        if(pXYSceneItem->getVCursorsActive()) flagVerOn = true;
+//    } else {
+//        if(gMainWindow->scene->cursorGroup->isCursorOn(CursorGroup::CUI_V)) flagVerOn = true;
+//    }
+//
+//    if((true==flagVerOn && false==param1)
+//            || (false==flagVerOn && true==param1))
+//    {
+//        gMainWindow->on_btnCursorV_clicked();
+//    }
+    return SCPI_RES_OK;
+}
+
+//��ѯ��ֱ��깦��
+scpi_result_t CURS_VERTQ(scpi_t * context)
+{
+//    CXYSceneItem * pXYSceneItem  = gMainWindow->scene3->getCurSceneItem();
+//    IModuleCursor::instanceEx(0);
+//    bool flagVerOn(false);
+//    if(gMainWindow->isInXYMode()) {
+//        IModuleCursor::instanceEx(pXYSceneItem->getIndex());
+//        if(pXYSceneItem->getVCursorsActive()) flagVerOn = true;
+//    } else {
+//        if(gMainWindow->scene->cursorGroup->isCursorOn(CursorGroup::CUI_V)) flagVerOn = true;
+//    }
+//    SCPI_ResultBool(context,flagVerOn);
+
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+//���ô�ֱ���A��λ��
+scpi_result_t CURS_PLUS_CXA(scpi_t * context)
+{
+    int  param1;
+    if (!SCPI_ParamInt(context, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Int(context->env,context->param,param1);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+
+    //ע�⣺xyģʽ����Ļ���Ϊ0�㣬����ģʽ��������Ϊ0��
+//    if(gMainWindow->isInXYMode())
+//    {
+//        CXYSceneItem * pXYSceneItem  = gMainWindow->scene3->getCurSceneItem();
+//        IModuleCursor::instanceEx(pXYSceneItem->getIndex());
+//        param1 =  pXYSceneItem->getCursorPos(XYZone::CID_V1) + param1;
+//        pXYSceneItem->setCursorPos(XYZone::CID_V1,param1);
+//    }
+//    else
+//    {
+//        param1 = IModuleCursor::instance()->getPosByIdx(CT_V,0) + param1;
+//        IModuleCursor::instance()->posSet(param1, CT_V, 0);
+//    }
+    return SCPI_RES_OK;
+}
+//���ô�ֱ���A��λ��
+scpi_result_t CURS_CXA(scpi_t * context)
+{
+    int  param1;
+    if (!SCPI_ParamInt(context, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Int(context->env,context->param,param1);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    //ע�⣺xyģʽ����Ļ���Ϊ0�㣬����ģʽ��������Ϊ0��
+//    if(gMainWindow->isInXYMode())
+//    {
+//        if (param1<0 || param1>400) return SCPI_RES_ERR;
+//        CXYSceneItem * pXYSceneItem  = gMainWindow->scene3->getCurSceneItem();
+//        IModuleCursor::instanceEx(pXYSceneItem->getIndex());
+//        pXYSceneItem->setCursorPos(XYZone::CID_V1,param1);
+//    }
+//    else
+//    {   if (param1<-350 || param1>350) return SCPI_RES_ERR;
+//        IModuleCursor::instance()->posSet(param1, CT_V, 0);
+//    }
+    return SCPI_RES_OK;
+}
+
+//��ѯ��ֱ���A��λ��
+scpi_result_t CURS_CXAQ(scpi_t * context)
+{
+    int pos = 0;
+//    if(gMainWindow->isInXYMode())
+//    {
+//        CXYSceneItem * pXYSceneItem  = gMainWindow->scene3->getCurSceneItem();
+//        IModuleCursor::instanceEx(pXYSceneItem->getIndex());
+//        pos = pXYSceneItem->getCursorPos(XYZone::CID_V1);
+//    }
+//    else
+//    {
+//        pos = IModuleCursor::instance()->getPosByIdx(CT_V, 0);
+//    }
+//    SCPI_ResultInt(context,pos);
+
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+scpi_result_t CURS_PLUS_CXB(scpi_t * context)
+{
+    int  param1;
+    if (!SCPI_ParamInt(context, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Int(context->env,context->param,param1);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    //ע�⣺xyģʽ����Ļ���Ϊ0�㣬����ģʽ��������Ϊ0��
+//    if(gMainWindow->isInXYMode())
+//    {
+//        CXYSceneItem * pXYSceneItem  = gMainWindow->scene3->getCurSceneItem();
+//        IModuleCursor::instanceEx(pXYSceneItem->getIndex());
+//        param1 =  pXYSceneItem->getCursorPos(XYZone::CID_V2) + param1;
+//        pXYSceneItem->setCursorPos(XYZone::CID_V2,param1);
+//    }
+//    else
+//    {
+//        param1 = IModuleCursor::instance()->getPosByIdx(CT_V,1) + param1;
+//        IModuleCursor::instance()->posSet(param1, CT_V, 1);
+//    }
+    return SCPI_RES_OK;
+}
+//���ô�ֱ���B��λ��
+scpi_result_t CURS_CXB(scpi_t * context)
+{
+    int  param1;
+    if (!SCPI_ParamInt(context, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Int(context->env,context->param,param1);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+//    if(gMainWindow->isInXYMode())
+//    {
+//        if (param1<0 || param1>400)return SCPI_RES_ERR;
+//        CXYSceneItem * pXYSceneItem  = gMainWindow->scene3->getCurSceneItem();
+//        IModuleCursor::instanceEx(pXYSceneItem->getIndex());
+//        pXYSceneItem->setCursorPos(XYZone::CID_V2,param1);
+//    }
+//    else
+//    {   if (param1<-350 || param1>350) return SCPI_RES_ERR;
+//        IModuleCursor::instance()->posSet(param1, CT_V, 1);
+//    }
+    return SCPI_RES_OK;
+}
+
+//��ѯ��ֱ���B��λ��
+scpi_result_t CURS_CXBQ(scpi_t * context)
+{
+    int pos = 0;
+//    if(gMainWindow->isInXYMode())
+//    {
+//        CXYSceneItem * pXYSceneItem  = gMainWindow->scene3->getCurSceneItem();
+//        IModuleCursor::instanceEx(pXYSceneItem->getIndex());
+//        pos = pXYSceneItem->getCursorPos(XYZone::CID_V2);
+//    }
+//    else
+//    {
+//        pos = IModuleCursor::instance()->getPosByIdx(CT_V, 1);
+//    }
+//    SCPI_ResultInt(context,pos);
+
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+scpi_result_t CURS_PLUS_CYA(scpi_t * context)
+{
+    int  param1;
+    if (!SCPI_ParamInt(context, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Int(context->env,context->param,param1);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+
+    //ע�⣺xyģʽ����Ļ���Ϊ0�㣬����ģʽ��������Ϊ0��
+//    if(gMainWindow->isInXYMode())
+//    {
+//        CXYSceneItem * pXYSceneItem  = gMainWindow->scene3->getCurSceneItem();
+//        IModuleCursor::instanceEx(pXYSceneItem->getIndex());
+//        param1 =  pXYSceneItem->getCursorPos(XYZone::CID_H1) + param1;
+//        pXYSceneItem->setCursorPos(XYZone::CID_H1,param1);
+//    }
+//    else
+//    {
+//        param1 = IModuleCursor::instance()->getPosByIdx(CT_H,0) + param1;
+//        IModuleCursor::instance()->posSet(param1, CT_H, 0);
+//    }
+    return SCPI_RES_OK;
+}
+
+//����ˮƽ���A��λ��
+scpi_result_t CURS_CYA(scpi_t * context)
+{
+    int  param1;
+    if (!SCPI_ParamInt(context, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Int(context->env,context->param,param1);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+//    if(gMainWindow->isInXYMode())
+//    {
+//        if (param1<0 || param1>400) return SCPI_RES_ERR;
+//        CXYSceneItem * pXYSceneItem  = gMainWindow->scene3->getCurSceneItem();
+//        IModuleCursor::instanceEx(pXYSceneItem->getIndex());
+//        pXYSceneItem->setCursorPos(XYZone::CID_H1,param1);
+//    }
+//    else
+//    {
+//        if (param1<-250 || param1>250) return SCPI_RES_ERR;
+//        IModuleCursor::instance()->posSet(param1, CT_H, 0);
+//    }
+    return SCPI_RES_OK;
+}
+
+//��ѯˮƽ���A��λ��
+scpi_result_t CURS_CYAQ(scpi_t * context)
+{
+    int pos = 0;
+//    if(gMainWindow->isInXYMode())
+//    {
+//        CXYSceneItem * pXYSceneItem  = gMainWindow->scene3->getCurSceneItem();
+//        IModuleCursor::instanceEx(pXYSceneItem->getIndex());
+//        pos = pXYSceneItem->getCursorPos(XYZone::CID_H1);
+//    }
+//    else
+//    {
+//        pos = IModuleCursor::instance()->getPosByIdx(CT_H, 0);
+//    }
+//    SCPI_ResultInt(context,pos);
+
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+scpi_result_t CURS_PLUS_CYB(scpi_t * context)
+{
+    int  param1;
+    if (!SCPI_ParamInt(context, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Int(context->env,context->param,param1);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    //ע�⣺xyģʽ����Ļ���Ϊ0�㣬����ģʽ��������Ϊ0��
+//    if(gMainWindow->isInXYMode())
+//    {
+//        CXYSceneItem * pXYSceneItem  = gMainWindow->scene3->getCurSceneItem();
+//        IModuleCursor::instanceEx(pXYSceneItem->getIndex());
+//        param1 =  pXYSceneItem->getCursorPos(XYZone::CID_H2) + param1;
+//        pXYSceneItem->setCursorPos(XYZone::CID_H2,param1);
+//    }
+//    else
+//    {
+//        param1 = IModuleCursor::instance()->getPosByIdx(CT_H,1) + param1;
+//        IModuleCursor::instance()->posSet(param1, CT_H, 1);
+//    }
+    return SCPI_RES_OK;
+}
+
+//����ˮƽ���B��λ��
+scpi_result_t CURS_CYB(scpi_t * context)
+{
+    int  param1;
+    if (!SCPI_ParamInt(context, &param1, true))
+    {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Int(context->env,context->param,param1);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+//    if(gMainWindow->isInXYMode())
+//    {
+//        if (param1<0 || param1>400)return SCPI_RES_ERR;
+//        CXYSceneItem * pXYSceneItem  = gMainWindow->scene3->getCurSceneItem();
+//        IModuleCursor::instanceEx(pXYSceneItem->getIndex());
+//        pXYSceneItem->setCursorPos(XYZone::CID_H2,param1);
+//    }
+//    else
+//    {
+//        if (param1<-250 || param1>250) return SCPI_RES_ERR;
+//        IModuleCursor::instance()->posSet(param1, CT_H, 1);
+//    }
+    return SCPI_RES_OK;
+}
+
+//��ѯˮƽ���B��λ��
+scpi_result_t CURS_CYBQ(scpi_t * context)
+{
+    int pos = 0;
+//    if(gMainWindow->isInXYMode())
+//    {
+//        CXYSceneItem * pXYSceneItem  = gMainWindow->scene3->getCurSceneItem();
+//        IModuleCursor::instanceEx(pXYSceneItem->getIndex());
+//        pos = pXYSceneItem->getCursorPos(XYZone::CID_H2);
+//    }
+//    else
+//    {
+//        pos = IModuleCursor::instance()->getPosByIdx(CT_H, 1);
+//    }
+//    SCPI_ResultInt(context,pos);
+
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+
+//��ѯ��ֱ���A��Xֵ
+scpi_result_t CURS_XAVQ(scpi_t * context)
+{
+//    double val = 0;
+//    if(gMainWindow->isInXYMode())
+//    {
+//        CXYSceneItem * pXYSceneItem  = gMainWindow->scene3->getCurSceneItem();
+//        IModuleCursor::instanceEx(pXYSceneItem->getIndex());
+//        val = pXYSceneItem->GetX1Value();
+//    }
+//    else
+//    {
+//
+//        int idx = IModuleCursor::instance()->lastVerActiveCursor();
+//        if(idx == 0) val = gMainWindow->scene->cursorGroup->getV1();
+//        else val = gMainWindow->scene->cursorGroup->getV2();
+//    }
+//    SCPI_ResultDouble(context,val);
+
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+//��ѯ��ֱ���B��Xֵ
+scpi_result_t CURS_XBVQ(scpi_t * context)
+{
+//    double val = 0;
+//    if(gMainWindow->isInXYMode())
+//    {
+//        CXYSceneItem * pXYSceneItem  = gMainWindow->scene3->getCurSceneItem();
+//        IModuleCursor::instanceEx(pXYSceneItem->getIndex());
+//        val = pXYSceneItem->GetX2Value();
+//    }
+//    else
+//    {
+//
+//        int idx = IModuleCursor::instance()->lastVerActiveCursor();
+//        if(idx == 1) val = gMainWindow->scene->cursorGroup->getV1();
+//        else val = gMainWindow->scene->cursorGroup->getV2();
+//    }
+//    SCPI_ResultDouble(context,val);
+
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+//��ѯˮƽ���A��Yֵ
+scpi_result_t CURS_YAVQ(scpi_t * context)
+{
+    double val = 0;
+//    if(gMainWindow->isInXYMode())
+//    {
+//        CXYSceneItem * pXYSceneItem  = gMainWindow->scene3->getCurSceneItem();
+//        IModuleCursor::instanceEx(pXYSceneItem->getIndex());
+//        val = pXYSceneItem->GetY1Value();
+//    }
+//    else
+//    {
+//
+//        int idx = IModuleCursor::instance()->lastHorActiveCursor();
+//        if(idx == 0) val = gMainWindow->scene->cursorGroup->getH1();
+//        else val = gMainWindow->scene->cursorGroup->getH2();
+//    }
+//    SCPI_ResultDouble(context,val);
+
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+//��ѯˮƽ���B��Yֵ
+scpi_result_t CURS_YBVQ(scpi_t * context)
+{
+//    double val = 0;
+//    if(gMainWindow->isInXYMode())
+//    {
+//        CXYSceneItem * pXYSceneItem  = gMainWindow->scene3->getCurSceneItem();
+//        IModuleCursor::instanceEx(pXYSceneItem->getIndex());
+//        val = pXYSceneItem->GetY2Value();
+//    }
+//    else
+//    {
+//
+//        int idx = IModuleCursor::instance()->lastHorActiveCursor();
+//        if(idx == 1) val = gMainWindow->scene->cursorGroup->getH1();
+//        else val = gMainWindow->scene->cursorGroup->getH2();
+//    }
+//    SCPI_ResultDouble(context,val);
+
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+//��ѯ��ֱ���A��B֮��Ĳ�ֵ����λ��ˮƽ��λ��ͬ
+scpi_result_t CURS_XDELQ(scpi_t * context)
+{
+//    double val = 0;
+//    if(gMainWindow->isInXYMode())
+//    {
+//        CXYSceneItem * pXYSceneItem  = gMainWindow->scene3->getCurSceneItem();
+//        IModuleCursor::instanceEx(pXYSceneItem->getIndex());
+//        val = pXYSceneItem->GetX1Value() - pXYSceneItem->GetX2Value();
+//    }
+//    else
+//    {
+//        val = gMainWindow->scene->cursorGroup->getT1ToT2();
+//        val=val*1e-12;
+//    }
+//    SCPI_ResultDouble(context,val);
+
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+//��ѯˮƽ���A��B֮��Ĳ�ֵ����λ�봹ֱ��λ��ͬ
+scpi_result_t CURS_YDELQ(scpi_t * context)
+{
+//    double val = 0;
+//    if(gMainWindow->isInXYMode())
+//    {
+//        CXYSceneItem * pXYSceneItem  = gMainWindow->scene3->getCurSceneItem();
+//        IModuleCursor::instanceEx(pXYSceneItem->getIndex());
+//        val = pXYSceneItem->GetY1Value() - pXYSceneItem->GetY2Value();
+//    }
+//    else
+//    {
+//        val = gMainWindow->scene->cursorGroup->getCV1ToCV2();
+//    }
+//    SCPI_ResultDouble(context,val);
+
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+//��ѯˮƽ���A��B֮��Ĳ�ֵ�봹ֱ���A��B֮��Ĳ�ֵ֮��ı�ֵ(��λS/V��S/A)
+scpi_result_t CURS_RATQ(scpi_t * context)
+{
+//    double val = 0;
+//    if(gMainWindow->isInXYMode())
+//    {
+//        CXYSceneItem * pXYSceneItem  = gMainWindow->scene3->getCurSceneItem();
+//        IModuleCursor::instanceEx(pXYSceneItem->getIndex());
+//        val = (pXYSceneItem->GetX1Value() - pXYSceneItem->GetX2Value())
+//                /(pXYSceneItem->GetY1Value() - pXYSceneItem->GetY2Value());
+//    }
+//    else
+//    {
+//        val = gMainWindow->scene->cursorGroup->getCV1ToCV2()
+//                /gMainWindow->scene->cursorGroup->getT1ToT2();
+//        val=val*1e+12;
+//    }
+//    SCPI_ResultDouble(context,val);
+
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+//���ù�������ͨ��Դ
+scpi_result_t CURS_SOUR(scpi_t * context)
+{
+//    ERROR_XY_MODE;
+    int param1;
+    if (!SCPI_ParamChoice(context, allCh, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+//    CH_IDX idx = (CH_IDX)getCh(param1);
+//    if(!Channel::isRefCh(idx)
+//            && !Channel::isDynamicCh(idx)
+//            && idx!=CI_MATH)
+//    {
+//        return SCPI_RES_ERR;
+//    }
+//
+//    Channel::IModuleChannel *mc= dynamic_cast<Channel::IModuleChannel *>(
+//           ProcessCenter::IModuleRegisterDesk::module(ProcessCenter::MI_CHANNEL));
+//    if(!mc->isChOpened(idx))
+//    {
+//        return SCPI_RES_ERR;
+//    }
+//    gMainWindow->channelSelIndiactor->SelCh(idx);
+    setParam_1Int(context->env,context->param,param1);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+//��ѯ��������ͨ��Դ
+scpi_result_t CURS_SOURQ(scpi_t * context)
+{
+//    ERROR_XY_MODEQ;
+//    Channel::IModuleChannel *mc= dynamic_cast<Channel::IModuleChannel *>(
+//           ProcessCenter::IModuleRegisterDesk::module(ProcessCenter::MI_CHANNEL));
+//    CH_IDX idx = mc->active();
+//    if(!isRefCh(idx) && idx != CI_MATH && !isDynamicCh(idx))
+//    {
+//        DEBUG_RETURN("ERROR UNKNOW!");
+//        return SCPI_RES_ERR;
+//    }
+//    SCPI_ResultString(context,gMainWindow->chToStr(idx));
+
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+//��ѯ��ֱ���x1��x2֮���1/x����λHZ
+scpi_result_t CURS_FREQ(scpi_t * context)
+{
+//    double val = 0;
+//    if(gMainWindow->isInXYMode())
+//    {
+//        return SCPI_RES_ERR;
+//    }
+//    else{
+//      val = gMainWindow->scene->cursorGroup->getDeltaFre();
+//      //printf("-liwb- val:%f\n",val);
+//      SCPI_ResultDouble(context,val);
+//    }
+
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+scpi_result_t CURS_TRACE(scpi_t* context)
+{
+    bool  param1;
+    if (!SCPI_ParamBool(context, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Boolean(context->env,context->param,param1);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+scpi_result_t CURS_TRACEQ(scpi_t* context)
+{
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+

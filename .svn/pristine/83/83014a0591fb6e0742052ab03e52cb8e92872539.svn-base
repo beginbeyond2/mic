@@ -1,0 +1,179 @@
+package com.micsig.tbook.scope.Action;
+
+import android.util.Log;
+
+import com.micsig.base.Logger;
+import com.micsig.tbook.hardware.HardwareProduct;
+import com.micsig.tbook.scope.Calibrate.HwConfig;
+import com.micsig.tbook.scope.Display.Display;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.channel.Channel;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.fpga.FPGACommand;
+import com.micsig.tbook.scope.horizontal.HorizontalAxis;
+
+/**
+ * Created by zhuzh on 2018/3/13.
+ */
+
+public class HardwareMessage {
+    private static final String TAG = "HardwareMessage";
+
+    public static final int HARD_ID_OFFSET_MASK = 0xFF << 1;
+    public static final int HARD_ID_OFFSET_CH1 = 1<<1;
+    public static final int HARD_ID_OFFSET_CH2 = 1<<2;
+    public static final int HARD_ID_OFFSET_CH3 = 1<<3;
+    public static final int HARD_ID_OFFSET_CH4 = 1<<4;
+    public static final int HARD_ID_OFFSET_CH5 = 1<<5;
+    public static final int HARD_ID_OFFSET_CH6 = 1<<6;
+    public static final int HARD_ID_OFFSET_CH7 = 1<<7;
+    public static final int HARD_ID_OFFSET_CH8 = 1<<8;
+
+    public static final int HARD_ID_CH_COUP_MASK = 0xFF<<9;
+    public static final int HARD_ID_CH_COUP_CH1= 1<<9;
+    public static final int HARD_ID_CH_COUP_CH2= 1<<10;
+    public static final int HARD_ID_CH_COUP_CH3= 1<<11;
+    public static final int HARD_ID_CH_COUP_CH4= 1<<12;
+    public static final int HARD_ID_CH_COUP_CH5= 1<<13;
+    public static final int HARD_ID_CH_COUP_CH6= 1<<14;
+    public static final int HARD_ID_CH_COUP_CH7= 1<<15;
+    public static final int HARD_ID_CH_COUP_CH8= 1<<16;
+
+    public static final int HARD_ID_CH_vSCALE_MASK = 0xFF<<17;
+    public static final int HARD_ID_CH_vSCALE_CH1=1<<17;
+    public static final int HARD_ID_CH_vSCALE_CH2=1<<18;
+    public static final int HARD_ID_CH_vSCALE_CH3=1<<19;
+    public static final int HARD_ID_CH_vSCALE_CH4=1<<20;
+    public static final int HARD_ID_CH_vSCALE_CH5=1<<21;
+    public static final int HARD_ID_CH_vSCALE_CH6=1<<22;
+    public static final int HARD_ID_CH_vSCALE_CH7=1<<23;
+    public static final int HARD_ID_CH_vSCALE_CH8=1<<24;
+
+
+
+    private int fpgaNums = 1;
+
+    public HardwareMessage(){
+        fpgaNums = HwConfig.getInstance().getFpgaNums();
+    }
+
+    public void resume(){
+        ctrlChOffset();
+        ctrlChCoup();
+        ctrlChV();
+        FPGACommand cmd = FPGACommand.getInstance();
+        for(int i=0;i<fpgaNums;i++) {
+            cmd.AdInit(i);
+        }
+    }
+    public void pause(){
+
+    }
+    public void chSampleChange(){
+        Scope scope = Scope.getInstance();
+
+        boolean[] bSampleChange = {false};
+        ChannelFactory.forEachCh(channel -> {
+            if(scope.isChannelInSample(channel.getChId())){
+                if(!channel.isSample()){
+                    channel.setSample(true);
+                    bSampleChange[0] = true;
+                }
+            }else {
+                if(channel.isSample()){
+                    channel.setSample(false);
+                    bSampleChange[0] = true;
+                }
+            }
+            channel.setNeedWave(true);
+//            Log.i(TAG,"CH" + (channel.getChId()+1) + ",isChannelInSample = "
+//                    + scope.isChannelInSample(channel.getChId()) + ",channel.isSample = " + channel.isSample()
+//                    + ",needWave = " + channel.isNeedWave());
+        });
+        if(bSampleChange[0]) {
+            if (Display.getInstance().isZoom()) {
+                Display.getInstance().zoomChange();
+            }
+            if(HardwareProduct.isMHO68V1()
+                    || HardwareProduct.isMHO68V2()) {
+
+                int cnt = scope.getChannelSampOnCnt();
+                HorizontalAxis horizontalAxis = HorizontalAxis.getInstance();
+                int scaleId = horizontalAxis.getTimeScaleIdOfView();
+                int maxGear = cnt == ChannelFactory.CH_CNT ? HorizontalAxis.TSI_500pS : HorizontalAxis.TSI_250pS;
+                if (scaleId > maxGear) {
+                    scaleId = maxGear;
+                }
+                HorizontalAxis.setMaxGear(maxGear);
+                horizontalAxis.initXAxis();
+                horizontalAxis.setTimeScaleIdOfView(scaleId);
+            }
+        }
+    }
+    volatile int HW_CMD = 0;
+    public void add(int arg1,int arg2){
+        HW_CMD |= arg1;
+    }
+    private int getCmd(){
+        return HW_CMD;
+    }
+    private  void clearCmd(int cmd){
+        HW_CMD = HW_CMD & ~cmd;
+    }
+
+    private boolean isMask(int val){
+        return val != 0;
+    }
+    public synchronized boolean isDelayRun(){
+        return (HW_CMD != 0);
+    }
+
+    public void run(){
+        Scope scope = Scope.getInstance();
+        if(!scope.isRun()) return;
+        int cmd = getCmd();
+        Log.d(TAG,"beging hw:" + Integer.toHexString(cmd));
+
+        if (isMask(cmd & (HARD_ID_OFFSET_MASK))) {
+            ctrlChOffset();
+        }
+        if (isMask(cmd & (HARD_ID_CH_COUP_MASK))) {
+            ctrlChCoup();
+        }
+        if (isMask(cmd & (HARD_ID_CH_vSCALE_MASK))) {
+            ctrlChV();
+        }
+        clearCmd(cmd);
+        Log.d(TAG,"end hw:" + Integer.toHexString(cmd));
+    }
+    private void ctrlChOffset(){
+        FPGACommand cmd = FPGACommand.getInstance();
+        for(int i=0;i<fpgaNums;i++) {
+            cmd.gntR_ChOffsetDa(i);
+        }
+        cmd.cmdDevice(cmd.isCalibrate() ? 100 : 90);
+    }
+    private void ctrlChCoup(){
+        FPGACommand cmd = FPGACommand.getInstance();
+        ChannelHardw.getInstance().changeChCoup();
+        cmd.cmdDevice(cmd.isCalibrate() ? 200 : 150);
+    }
+    private void ctrlChV(){
+        ChannelHardw hardw = ChannelHardw.getInstance();
+        FPGACommand cmd = FPGACommand.getInstance();
+        cmd.cmdDevice(cmd.isCalibrate() ? 300 : 200);
+        hardw.changeChVolScale();
+        hardw.ctrlAD8370Gain();
+
+        for(int i=0;i<fpgaNums;i++) {
+            hardw.wrte_ad_gain(i);
+            cmd.updateChCapacitance(i);
+            cmd.ADCalibrate();
+            cmd.ChangeResistance(i);
+            cmd.updataReg(i);
+        }
+        cmd.adSync();
+        cmd.cmdDevice(cmd.isCalibrate() ? 200 : 150);
+
+    }
+}

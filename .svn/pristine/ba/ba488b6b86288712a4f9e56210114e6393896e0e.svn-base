@@ -1,0 +1,199 @@
+package com.micsig.tbook.tbookscope.rxjava;
+
+import com.micsig.tbook.tbookscope.middleware.mq.MQBase;
+import com.micsig.tbook.tbookscope.middleware.mq.MQEnum;
+import com.micsig.tbook.tbookscope.middleware.mq.msg.MsgChActiveChange;
+import com.micsig.tbook.tbookscope.middleware.mq.msg.MsgChOpenClose;
+
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Created by liwb on 2017/5/16.
+ */
+
+public class RxBusRegister {
+    public RxBusRegister() {
+        initRegister();
+        initMsg();
+    }
+
+    private void initRegister() {
+        for(RxEnum bean: RxEnum.values()){
+            RxBus.getInstance().register(bean);
+        }
+    }
+
+    public void unRegister() {
+        for(RxEnum bean: RxEnum.values()){
+            RxBus.getInstance().unregister(bean);
+        }
+    }
+
+    private static HashMap<RxEnum, HashMap<MQEnum,Class>> msgClass=new HashMap<>();
+    public static void initMsg(){
+        init_SaveLoad();
+        init_chActiveChange();
+        init_ChParamChange();
+        init_MathParamChange();
+        init_RefParamChange();
+        init_SerialParamChange();
+
+        init_TriggerChange();
+
+    }
+    private static void init_SaveLoad(){
+//        msgClass.put(RxEnum.LOAD_SCOPE_PARAM,new HashMap<>());
+//        HashMap map=msgClass.get(RxEnum.LOAD_SCOPE_PARAM);
+//        map.put(MQEnum.LOAD_SCOPE_FPGA, MsgLoadScope.class);
+//        map.put(MQEnum.LOAD_SCOPE_UI,MsgLoadScope.class);
+//        map.put(MQEnum.LOAD_SCOPE_COMPLETE,MsgLoadScope.class);
+
+    }
+
+    private static void init_chActiveChange(){
+        msgClass.put(RxEnum.MQ_CHANNEL_ACTIVE_CHANGE,new HashMap<>());
+        HashMap map=msgClass.get(RxEnum.MQ_CHANNEL_ACTIVE_CHANGE);
+        map.put(MQEnum.CH_OPEN, MsgChOpenClose.class);
+        map.put(MQEnum.CH_CLOSE, MsgChOpenClose.class);
+        map.put(MQEnum.CH_ACTIVE, MsgChActiveChange.class);
+    }
+
+    private static void init_ChParamChange(){
+//        msgClass.put(RxEnum.CHANNEL_PARAM_CHANGE,new HashMap<>());
+//        HashMap map=msgClass.get(RxEnum.CHANNEL_PARAM_CHANGE);
+//        map.put(MQEnum.CH_INVERT, MsgChParamChange.class);
+//        map.put(MQEnum.CH_COUPLE,MsgChParamChange.class);
+//        map.put(MQEnum.CH_PROBE,MsgChParamChange.class);
+//        map.put(MQEnum.CH_PROBE_VALUE,MsgChParamChange.class);
+//        map.put(MQEnum.CH_BANDWIDTH,MsgChParamChange.class);
+//        map.put(MQEnum.CH_BANDWIDTH_VALUE,MsgChParamChange.class);
+//        map.put(MQEnum.CH_IMP,MsgChParamChange.class);
+//        map.put(MQEnum.CH_V_SCALE_REF,MsgChParamChange.class);
+//        map.put(MQEnum.CH_LABEL,MsgChParamChange.class);
+//        map.put(MQEnum.CH_DELAY,MsgChParamChange.class);
+//        map.put(MQEnum.CH_OFFSET,MsgChParamChange.class);
+//        map.put(MQEnum.CH_FINE,MsgChParamChange.class);
+//        map.put(MQEnum.CH_FINE_VALUE,MsgChParamChange.class);
+//        map.put(MQEnum.CH_POSITION, MsgChParamChange.class);
+//        map.put(MQEnum.CH_EXTENT,MsgChParamChange.class);
+    }
+
+    private  static void init_TriggerChange(){
+//        msgClass.put(RxEnum.TRIGGER_CHANGE,new HashMap<>());
+//        HashMap map=msgClass.get(RxEnum.TRIGGER_CHANGE);
+//        map.put(MQEnum.TRIGGER_SRC_CHANGE, MsgTriggerChange.class);
+//        map.put(MQEnum.TRIGGER_TYPE_CHANGE, MsgTriggerChange.class);
+//        map.put(MQEnum.TRIGGER_LEVEL_CHANGE,MsgTriggerChange.class);
+//        map.put(MQEnum.TRIGGER_MOVE_COMPLETE,MsgTriggerChange.class);
+//        map.put(MQEnum.THRESHOLD_LEVEL_CHANGE,MsgTriggerChange.class);
+//        map.put(MQEnum.THRESHOLD_SRC_CHANGE,MsgTriggerChange.class);
+    }
+    private static void init_MathParamChange(){
+//        msgClass.put(RxEnum.MATH_PARAM_CHANGE,new HashMap<>());
+//        HashMap map=msgClass.get(RxEnum.MATH_PARAM_CHANGE);
+//        map.put(MQEnum.MATH_OPEN, MsgMathParamChange.class);
+//        map.put(MQEnum.MATH_CLOSE, MsgMathParamChange.class);
+//        map.put(MQEnum.MATH_TYPE, MsgMathParamChange.class);
+//        map.put(MQEnum.MATH_DW_SOURCE1, MsgMathParamChange.class);
+//        map.put(MQEnum.MATH_DW_SOURCE2, MsgMathParamChange.class);
+//        map.put(MQEnum.MATH_DW_OPERATOR, MsgMathParamChange.class);
+//        map.put(MQEnum.MATH_FFT_TYPE, MsgMathParamChange.class);
+//        map.put(MQEnum.MATH_FFT_SOURCE, MsgMathParamChange.class);
+//        map.put(MQEnum.MATH_FFT_WINDOW, MsgMathParamChange.class);
+//        map.put(MQEnum.MATH_FFT_PERSIST_TYPE, MsgMathParamChange.class);
+//        map.put(MQEnum.MATH_FFT_PERSIST_VALUE, MsgMathParamChange.class);
+//        map.put(MQEnum.MATH_AXB_UNIT, MsgMathParamChange.class);
+//        map.put(MQEnum.MATH_AXB_SOUCE, MsgMathParamChange.class);
+//        map.put(MQEnum.MATH_AXB_A, MsgMathParamChange.class);
+//        map.put(MQEnum.MATH_AXB_B, MsgMathParamChange.class);
+//        map.put(MQEnum.MATH_ADV_EXPRESS, MsgMathParamChange.class);
+//        map.put(MQEnum.MATH_ADV_VALUE1, MsgMathParamChange.class);
+//        map.put(MQEnum.MATH_ADV_VALUE2, MsgMathParamChange.class);
+//        map.put(MQEnum.MATH_ADV_UNIT, MsgMathParamChange.class);
+//        map.put(MQEnum.MATH_VERMODE, MsgMathParamChange.class);
+//        map.put(MQEnum.MATH_POSITION,MsgMathParamChange.class);
+//        map.put(MQEnum.MATH_EXTENT,MsgMathParamChange.class);
+    }
+    private static void init_RefParamChange(){
+//        msgClass.put(RxEnum.REF_PARAM_CHANGE,new HashMap<>());
+//        HashMap map=msgClass.get(RxEnum.REF_PARAM_CHANGE);
+//        map.put(MQEnum.REF_OPEN, MsgRefParamChange.class);
+//        map.put(MQEnum.REF_CLOSE, MsgRefParamChange.class);
+//        map.put(MQEnum.REF_EXTENT, MsgRefParamChange.class);
+//        map.put(MQEnum.REF_POSITION,MsgRefParamChange.class);
+//        map.put(MQEnum.REF_TIMEBASE_X,MsgRefParamChange.class);
+//        map.put(MQEnum.REF_TIMEBASE_EXTENT,MsgRefParamChange.class);
+    }
+    private static void init_SerialParamChange() {
+//        msgClass.put(RxEnum.SERIAL_PARAM_CHANGE, new HashMap<>());
+//        HashMap map = msgClass.get(RxEnum.SERIAL_PARAM_CHANGE);
+//        map.put(MQEnum.SERIAL_OPEN, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_CLOSE, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_TYPE, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_UART_SOURCE, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_UART_IDLE_LEVEL, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_UART_CHECK, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_UART_BIT, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_UART_BAUD_RATE, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_UART_DISPLAY_FORMAT, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_LIN_SOURCE, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_LIN_IDLE_LEVEL, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_LIN_BAUD_RATE, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_CAN_SOURCE, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_CAN_SIGNAL_TYPE, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_CAN_BAUD_RATE, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_CAN_BAUD_RATE_PERCENT, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_CAN_FD_BAUD_RATE, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_CAN_FD_BAUD_RATE_PERCENT, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_CAN_STANDARD, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_SPI_CLOCK_SOURCE, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_SPI_CLOCK_LEVEL, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_SPI_DATA, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_SPI_DATA_LEVEL, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_SPI_CS_ENABLE, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_SPI_CS_SOURCE, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_SPI_CS_LEVEL, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_SPI_BIT, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_I2C_DATA_SOURCE, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_I2C_CLOCK_SOURCE, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_A429_SOURCE, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_A429_FORMAT, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_A429_DISPLAY_FORMAT, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_A429_BAUD_RATE, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_M1553B_SOURCE, MsgSerialParamChange.class);
+//        map.put(MQEnum.SERIAL_M1553B_DISPLAY_FORMAT, MsgSerialParamChange.class);
+    }
+
+
+    public static MQEnum parseMqEnum(Object o){
+        RxEnum rxEnum= ((MQBase)o).getRxType();
+        MQEnum mqEnum= ((MQBase)o).getMqType();
+        HashMap<MQEnum,Class> classList=msgClass.get(rxEnum);
+        for(Map.Entry<MQEnum,Class> item:classList.entrySet() ){
+            if (item.getKey()==mqEnum){
+                return item.getKey();
+            }
+        }
+        return MQEnum.NULL;
+    }
+    public static <T> T createMsg(RxEnum rxEnum,MQEnum mqEnum){
+        HashMap<MQEnum,Class> classList=msgClass.get(rxEnum);
+        for(Map.Entry<MQEnum,Class> item:classList.entrySet()){
+            if (mqEnum==item.getKey()){
+                try {
+                    MQBase base= (MQBase) item.getValue().newInstance();
+                    base.setMqType(mqEnum);
+                    base.setRxType(rxEnum);
+                    return (T)base;
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                } catch (InstantiationException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        return null;
+    }
+
+}

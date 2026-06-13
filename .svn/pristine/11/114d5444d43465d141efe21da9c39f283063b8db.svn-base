@@ -1,0 +1,483 @@
+package com.micsig.tbook.scope.surface;
+
+import android.content.Context;
+import android.graphics.Color;
+import android.graphics.SurfaceTexture;
+import android.util.Log;
+
+import com.chillingvan.canvasgl.glcanvas.RawTexture;
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.Data.IDataBuffer;
+import com.micsig.tbook.scope.Data.IDataListener;
+import com.micsig.tbook.scope.Display.Display;
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.ScopeMessage;
+import com.micsig.tbook.scope.Trigger.Trigger;
+import com.micsig.tbook.scope.Trigger.TriggerFactory;
+import com.micsig.tbook.scope.channel.Channel;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.channel.IChannel;
+import com.micsig.tbook.scope.channel.SerialChannel;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Observable;
+import java.util.Observer;
+
+/**
+ * Created by zhuzh on 2018-3-27.
+ */
+
+public class SurfaceDataRecv implements Observer {
+
+    private static final String TAG = "SurfaceDataRecv";
+    private SurfacePreview surfacePreview;
+    private SurfaceDevice mDevice;
+
+
+    public SurfaceDataRecv(Context context, Object surface, int height) {
+        mDevice = new SurfaceDevice(context);
+        initSurface(surface,mDevice.getDevCnt(), height);
+        EventFactory.addEventObserver(EventFactory.EVENT_CHANNEL_OPEN,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_CHANNEL_ACTIVE,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_DISPLAY_MODE,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_DIAPLAY_WAVE_BRIGHTNESS,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_AFTERGLOW_CLEAR,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_AFTERGLOW_TIME,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_AFTERGLOW_ENABLE,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_WAVE_CLEAR,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_SAMPLE_VALID,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_SCOPE_STATE,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_DISPLAY_CCT,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_TRIGGER_TYPE,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_TIME_SCALE,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_AFTERGLOW_MATH_CLEAR,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_AFTERGLOW_MATH,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_WAVE_OFFSET,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_DISPLAY_BACKGROUND,this);
+
+
+    }
+
+    public ByteBuffer getBuffer(){
+        if(surfacePreview != null){
+            return surfacePreview.getRgbaByffer();
+        }
+        return null;
+    }
+    public int getStride(){
+        if(surfacePreview != null){
+            return surfacePreview.getStride();
+        }
+        return ScopeBase.getWidth();
+    }
+    private void initSurface(Object surface,int nums, int height) {
+        Log.d(TAG, "initSurface() called with: surface = [" + surface + "], nums = [" + nums + "], height = [" + height + "]");
+        SurfacePreview.setMaxChLayer(nums);
+        SurfacePreview.setMaxMathLayer(ChannelFactory.getMathChNums());
+        SurfacePreview.setMaxRefLayer(ChannelFactory.getRefChNums());
+
+        surfacePreview = new SurfacePreview(ScopeBase.getWidth(), height, surface, nums);
+
+        surfacePreview.setOnSurfaceTextureSet(new SurfaceTextureRenderer.OnSurfaceTextureSet() {
+            @Override
+            public void onSet(int idx,SurfaceTexture surfaceTexture, RawTexture surfaceTextureRelatedTexture) {
+                if(mDevice != null) {
+                    Log.d(TAG, "onSet() called with: idx = [" + idx + "], surfaceTexture = [" + surfaceTexture + "], RawTextureId = [" + surfaceTextureRelatedTexture.getId() + "]");
+                    mDevice.openDevice(idx,surfaceTexture);
+                }
+            }
+        });
+        surfacePreview.setDataListener(dataListener);
+        surfacePreview.setLayerTextureValidListener(new SurfacePreview.OnLayerTextureValidListener() {
+            @Override
+            public void OnLayerTextureListener(List<LayerTexture> layerTexturelist) {
+                EventBase eventBase = new EventBase(EventFactory.EVENT_SURFACE_CREATED,SurfaceDataRecv.this);
+                EventFactory.sendEvent(eventBase);
+                UpdateLayerZorder();
+                UpdateChZorder();
+                DisplayMode();
+                DisplayBrightness();
+                setAfterglow();
+                upAfterglowState();
+                CCT();
+                setOffset(false,0,0);
+                setOffset(true,0,0);
+            }
+        });
+        surfacePreview.start();
+    }
+
+    public void setPreViewHeight(Object surface, int height) {
+        surfacePreview.setSize(ScopeBase.getWidth(), height);
+    }
+
+    public SurfaceNative getSurfaceNative(int layer){
+        return  surfacePreview.getSurfaceNative(layer);
+    }
+
+    public void closeSurface() {
+        EventBase eventBase = new EventBase(EventFactory.EVENT_SURFACE_DESTROYED,this);
+        EventFactory.sendEvent(eventBase);
+        EventFactory.delEventObserver(EventFactory.EVENT_CHANNEL_OPEN,this);
+        EventFactory.delEventObserver(EventFactory.EVENT_CHANNEL_ACTIVE,this);
+        EventFactory.delEventObserver(EventFactory.EVENT_DISPLAY_MODE,this);
+        EventFactory.delEventObserver(EventFactory.EVENT_DIAPLAY_WAVE_BRIGHTNESS,this);
+        EventFactory.delEventObserver(EventFactory.EVENT_AFTERGLOW_CLEAR,this);
+        EventFactory.delEventObserver(EventFactory.EVENT_AFTERGLOW_TIME,this);
+        EventFactory.delEventObserver(EventFactory.EVENT_AFTERGLOW_ENABLE,this);
+        EventFactory.delEventObserver(EventFactory.EVENT_WAVE_CLEAR,this);
+        EventFactory.delEventObserver(EventFactory.EVENT_SAMPLE_VALID,this);
+        EventFactory.delEventObserver(EventFactory.EVENT_SCOPE_STATE,this);
+        EventFactory.delEventObserver(EventFactory.EVENT_DISPLAY_CCT,this);
+        EventFactory.delEventObserver(EventFactory.EVENT_TRIGGER_TYPE,this);
+        EventFactory.delEventObserver(EventFactory.EVENT_SYNCHEADER_CHANGE,this);
+        EventFactory.delEventObserver(EventFactory.EVENT_TIME_SCALE,this);
+        EventFactory.delEventObserver(EventFactory.EVENT_AFTERGLOW_MATH_CLEAR,this);
+        EventFactory.delEventObserver(EventFactory.EVENT_AFTERGLOW_MATH,this);
+        EventFactory.delEventObserver(EventFactory.EVENT_WAVE_OFFSET,this);
+        EventFactory.delEventObserver(EventFactory.EVENT_DISPLAY_BACKGROUND,this);
+        if (mDevice != null) {
+            mDevice.closeDevice();
+            mDevice = null;
+        }
+
+        if (surfacePreview != null) {
+            surfacePreview.end();
+            surfacePreview = null;
+        }
+    }
+    private IDataListener dataListener = null;
+    public void setDataListener(IDataListener dataListener) {
+        if(surfacePreview != null) {
+            surfacePreview.setDataListener(dataListener);
+        }
+        this.dataListener = dataListener;
+    }
+
+    private void UpdateChZorder(){
+        List<Channel> chList = new ArrayList<Channel>();
+        int maxIdx = ChannelFactory.getMaxChIdx();
+        for(int i=ChannelFactory.CH1;i<maxIdx;i++){
+            chList.add(ChannelFactory.getDynamicChannel(i));
+        }
+        chList.sort(new Comparator<Channel>() {
+            @Override
+            public int compare(Channel lhs, Channel rhs) {
+                if (lhs.getzOrder() < rhs.getzOrder()) return 1;
+                else if (lhs.getzOrder() > rhs.getzOrder()) return -1;
+                else return 0;
+            }
+        });
+
+        int []zorder = new int[ChannelFactory.CH_CNT];
+
+        int n = 0,m = ChannelFactory.CH5;
+        for(int i=0;i<chList.size();i++){
+            int id = chList.get(i).getChId();
+            if(id < ChannelFactory.CH5){
+                zorder[n++] = id;
+            }else{
+                zorder[m++] = id;
+            }
+        }
+
+        surfacePreview.setChZorder(zorder);
+    }
+
+    private void UpdateOffset(){
+        SlideFinger slideFinger = SlideFinger.getInstance();
+        int x = 0,y = 0;
+        switch (slideFinger.getSlideDirection() ){
+            case SlideFinger.MOVE_LEFTRIGHT:
+                x = Math.round(slideFinger.getHorizontalOffset());
+                break;
+            case SlideFinger.MOVE_UPDOWN:
+                y = Math.round(slideFinger.getVerticalOffset());
+                break;
+            default:
+        }
+        surfacePreview.setChIdx(slideFinger.getChIdx());//放在setOffset之前，更新对应的chIdx
+        setOffset(slideFinger.isMathCh(),x,y);
+    }
+    private void setOffset(boolean bMath,int x,int y){
+        surfacePreview.setZoom(Scope.getInstance().isZoom());
+        surfacePreview.setOffset(bMath,-x,y);
+    }
+    private void UpdateLayerZorder(){
+
+        IChannel channel;
+        int []chMaxZorder ={-1,-1};
+        boolean []bVisiable = {false,false};
+        LayerTexture layerTexture;
+        int layer = SurfacePreview.LAYER_CH1;
+        for(int i=ChannelFactory.CH1;i<=ChannelFactory.REF8;i++){
+            channel = ChannelFactory.getValidChannel(i);
+            if(channel != null){
+                if(i == 0){
+                    chMaxZorder[0] = channel.getzOrder();
+                }
+                if(ChannelFactory.isDynamicCh(i)) {
+                    if (channel.isOpen()) {
+                        int idx = i / 4;
+                        bVisiable[idx] = true;
+                        if(chMaxZorder[idx] < channel.getzOrder()){
+                            chMaxZorder[idx] = channel.getzOrder();
+                        }
+                    }
+                }else{
+                    layer = SurfacePreview.LAYER_MATH1 + i - ChannelFactory.MATH1;
+                    layerTexture = surfacePreview.getLayerTexture(layer);
+                    if(layerTexture != null) {
+                        layerTexture.setZorder(channel.getzOrder());
+                        layerTexture.setVisiable(channel.isOpen());
+                    }
+                }
+            }
+
+        }
+        for(int i=SurfacePreview.LAYER_CH1;i<SurfacePreview.LAYER_CH_MAX;i++){
+            layerTexture = surfacePreview.getLayerTexture(i);
+            if(layerTexture != null) {
+                int idx= i - SurfacePreview.LAYER_CH1;
+                layerTexture.setVisiable(bVisiable[idx]);
+                layerTexture.setZorder(chMaxZorder[idx]);
+            }
+        }
+
+        surfacePreview.UpdateLayerZorder();
+    }
+    private void DisplayMode(){
+       surfacePreview.forceClearWave();
+       surfacePreview.getLayerTexture(SurfacePreview.LAYER_XY).setVisiable(Display.getInstance().isXYMode());
+    }
+    private void DisplayBrightness(){
+        surfacePreview.setBrightness(Display.getInstance().getBrightness());
+    }
+    private void clear(){
+        SerialChannel channel;
+        IDataBuffer dataBuffer;
+        for (int i = 0; i < ChannelFactory.SERIAL_CNT; i++) {
+            channel = ChannelFactory.getSerialChannel(ChannelFactory.S1+i);
+
+            if(channel != null
+                    && channel.isOpen()) {
+                dataBuffer = channel.dequeue();
+                if (dataBuffer != null) {
+                    dataBuffer.write(null,0,0);
+                    channel.enqueue(dataBuffer);
+                }
+            }
+
+        }
+        EventFactory.sendEvent(EventFactory.EVENT_SERIAL_UPDATE);
+
+        surfacePreview.clear();
+
+    }
+    private void upAfterglowState(){
+
+        Scope scope = Scope.getInstance();
+        if(scope.isRun()){
+            boolean bAfterglow = false;
+            bAfterglow = Display.getInstance().getPersistType()
+                    != Display.PERSIST_TYPE_NONE;
+            if(scope.isInScrollMode() || scope.isInSlowScaleMode()){
+                bAfterglow = false;
+            }
+            surfacePreview.setAfterglow(SurfacePreview.LAYER_CH1,bAfterglow);
+            surfacePreview.setAfterglow(SurfacePreview.LAYER_CH2,bAfterglow);
+        }
+    }
+
+    private void sampleValid(boolean isSample){
+        ScopeMessage.getInstance().setClearWave(false);
+        Scope scope = Scope.getInstance();
+
+        if(!isSample){
+            if(scope.isRun()) {
+                surfacePreview.afterglowClear();
+                surfacePreview.requestRender();
+                ms_sleep(50);
+                surfacePreview.lockSampleCnt();
+            }else{
+                //mho 需要等点阵先完成
+                ms_sleep(50);
+            }
+            surfacePreview.setSample(scope.isRun());
+        }
+    }
+    private void ms_sleep(long ms){
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void afterglowClear(){
+        //if(Scope.getInstance().isRun())
+        {
+            surfacePreview.afterglowClear();
+        }
+    }
+    private void afterglowMathClear(){
+        surfacePreview.afterglowMathClear();
+    }
+
+    private void setAfterglowMath(){
+        boolean bAfterglow = true;
+        long ms = 200;
+        Display display = Display.getInstance();
+
+        switch (display.getFftPersistType()){
+            default:
+            case Display.PERSIST_TYPE_NONE:
+                bAfterglow = false;
+                break;
+            case Display.PERSIST_TYPE_AUTO:
+                ms = 100;
+                break;
+            case Display.PERSIST_TYPE_NORMAL:
+                ms = display.getFftPersistAdjustTime();
+                break;
+            case Display.PERSIST_TYPE_INFINITE:
+                ms = -1;
+                break;
+        }
+        for(int i= ChannelFactory.MATH1;i<ChannelFactory.getMaxMathIdx();i++){
+            int n = i - ChannelFactory.MATH1;
+            if(ChannelFactory.isMath_FFT_Ch(i)){
+                surfacePreview.setAfterglowTime(SurfacePreview.LAYER_MATH1 + n,ms);
+                surfacePreview.setAfterglow(SurfacePreview.LAYER_MATH1 + n,bAfterglow);
+            }else{
+                surfacePreview.setAfterglow(SurfacePreview.LAYER_MATH1 + n,false);
+            }
+        }
+    }
+    private void setAfterglow(){
+        boolean bAfterglow = true;
+        long ms = 100;
+        switch (Display.getInstance().getPersistType()){
+            default:
+            case Display.PERSIST_TYPE_NONE:
+                bAfterglow = false;
+                break;
+            case Display.PERSIST_TYPE_AUTO:
+                ms = 100;
+                break;
+            case Display.PERSIST_TYPE_NORMAL:
+                ms = Display.getInstance().getPersistAdjustTime();
+                break;
+            case Display.PERSIST_TYPE_INFINITE:
+                ms = -1;
+                break;
+        }
+        surfacePreview.setAfterglow(SurfacePreview.LAYER_CH1,bAfterglow);
+        surfacePreview.setAfterglowTime(SurfacePreview.LAYER_CH1,ms);
+        surfacePreview.setAfterglow(SurfacePreview.LAYER_CH2,bAfterglow);
+        surfacePreview.setAfterglowTime(SurfacePreview.LAYER_CH2,ms);
+    }
+
+    private void run_stop(){
+        Scope scope = Scope.getInstance();
+        if(scope.isRun()){
+            mDevice.clear();
+            surfacePreview.setSample(true);
+            upAfterglowState();
+        }
+        surfacePreview.setRunAutoAfterflow(scope.isRun());
+    }
+
+    private void CCT(){
+        surfacePreview.setCCTEnable(Display.getInstance().isCCT());
+    }
+
+    private  void setLightType(){
+        int val = TriggerFactory.getTriggerType() == Trigger.TRIG_TYPE_VIDEO ?  1 : 0;
+        surfacePreview.setLightType(val);
+    }
+
+
+    @Override
+    public void update(Observable observable, Object data) {
+        EventBase e = (EventBase) data;
+        if(e != null){
+            switch(e.getId()){
+                case EventFactory.EVENT_CHANNEL_ACTIVE:
+                {
+                    int chActivate = ChannelFactory.getChActivate();
+                    ChannelFactory.setMathActive(chActivate);
+                    ChannelFactory.setRefActive(chActivate);
+                    //这里不需要break;
+                }
+                case EventFactory.EVENT_CHANNEL_OPEN:
+
+                    UpdateChZorder();
+                    UpdateLayerZorder();
+                    afterglowClear();
+                    break;
+                case EventFactory.EVENT_DISPLAY_MODE:
+                    DisplayMode();
+                    break;
+                case EventFactory.EVENT_DIAPLAY_WAVE_BRIGHTNESS:
+                    DisplayBrightness();
+                    break;
+                case EventFactory.EVENT_AFTERGLOW_CLEAR:
+                    afterglowClear();
+                    break;
+                case EventFactory.EVENT_AFTERGLOW_MATH_CLEAR:
+                    afterglowMathClear();
+                    break;
+                case EventFactory.EVENT_AFTERGLOW_MATH:
+                    setAfterglowMath();
+                    afterglowMathClear();
+                    upAfterglowState();
+                    break;
+                case EventFactory.EVENT_AFTERGLOW_TIME:
+                case EventFactory.EVENT_AFTERGLOW_ENABLE:
+                    setAfterglow();
+                    upAfterglowState();
+                    break;
+                case EventFactory.EVENT_WAVE_CLEAR:
+                    clear();
+                    break;
+                case EventFactory.EVENT_SAMPLE_VALID: {
+                    boolean [] bSample = (boolean []) e.getData();
+                    if(bSample != null && bSample[1]) {
+                        sampleValid(bSample[2]);
+                    }
+
+                }
+                    break;
+                case EventFactory.EVENT_SCOPE_STATE:
+                    run_stop();
+                    break;
+                case EventFactory.EVENT_DISPLAY_CCT:
+                    CCT();
+                    break;
+                case EventFactory.EVENT_TRIGGER_TYPE:
+                    setLightType();
+                    break;
+                case EventFactory.EVENT_TIME_SCALE:
+                    upAfterglowState();
+                    break;
+                case EventFactory.EVENT_WAVE_OFFSET:
+                    UpdateOffset();
+                    break;
+                case EventFactory.EVENT_DISPLAY_BACKGROUND: {
+                    Display display = Display.getInstance();
+//                    surfacePreview.setBackgroundColor(display.isXYMode() ? Color.TRANSPARENT : display.getWaveBackground());
+                    surfacePreview.setBackgroundColor(display.getWaveBackground());
+                    break;
+                }
+
+            }
+        }
+    }
+}

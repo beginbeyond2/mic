@@ -1,0 +1,15 @@
+package com.micsig.tbook.scope.fpga;
+
+import com.micsig.tbook.hardware.HardwareProduct;
+
+public class FPGAReg_PROBE_DA12 extends FPGAReg {
+    public FPGAReg_PROBE_DA12() {
+        super(FPGA_PROBE_DA12, 8);
+    }
+
+    public void setDaValue(int chIdx,int val) {
+        chIdx  = 3 - chIdx;
+        setVal(chIdx >> 1, (chIdx & 0x01) * 16, 16, val);
+    }
+
+}

@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AbsoluteLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="@dimen/screenWidth"
+    android:layout_height="@dimen/screenHeight">
+
+    <TextView
+        android:id="@+id/tipsSelfAdjust"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_x="80px"
+        android:layout_y="120px"
+        android:text="@string/msgSelfAdjustRun"
+        android:textAllCaps="false"
+        android:textColor="@android:color/holo_red_light"
+        android:textSize="22px"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/tipsFactoryAdjust"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_x="80px"
+        android:layout_y="80px"
+        android:textAllCaps="false"
+        android:textColor="@android:color/holo_red_light"
+        android:textSize="20px"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/tipsAdjustZero"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_x="80px"
+        android:layout_y="120px"
+        android:text="@string/msgAutoZeroRunning"
+        android:textAllCaps="false"
+        android:textColor="@android:color/holo_red_light"
+        android:textSize="20px"
+        android:visibility="gone"
+        />
+
+    <TextView
+        android:id="@+id/briefDisplayTextTimeBase"
+        android:layout_width="@dimen/mainCenterWidth"
+        android:layout_height="27px"
+        android:layout_x="0px"
+        android:layout_y="1060px"
+        android:gravity="center"
+        android:text="200ms"
+        android:textAllCaps="false"
+        android:textColor="@android:color/white"
+        android:textSize="20px"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/briefDisplayTextEightCh1"
+        android:layout_width="100px"
+        android:layout_height="27px"
+        android:layout_x="1695px"
+        android:layout_y="110px"
+        android:gravity="center_vertical|end"
+        android:text="200ms"
+        android:textAllCaps="false"
+        android:textColor="@color/colorCh1"
+        android:textSize="22px"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/briefDisplayTextEightCh2"
+        android:layout_width="100px"
+        android:layout_height="27px"
+        android:layout_x="1695px"
+        android:layout_y="395px"
+        android:gravity="center_vertical|end"
+        android:text="200ms"
+        android:textAllCaps="false"
+        android:textColor="@color/colorCh2"
+        android:textSize="22px"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/briefDisplayTextEightCh3"
+        android:layout_width="100px"
+        android:layout_height="27px"
+        android:layout_x="1695px"
+        android:layout_y="680px"
+        android:gravity="center_vertical|end"
+        android:text="200ms"
+        android:textAllCaps="false"
+        android:textColor="@color/colorCh3"
+        android:textSize="22px"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/briefDisplayTextEightCh4"
+        android:layout_width="100px"
+        android:layout_height="27px"
+        android:layout_x="1695px"
+        android:layout_y="970px"
+        android:gravity="center_vertical|end"
+        android:text="200ms"
+        android:textAllCaps="false"
+        android:textColor="@color/colorCh4"
+        android:textSize="22px"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/briefDisplayTextEightCh5"
+        android:layout_width="100px"
+        android:layout_height="27px"
+        android:layout_x="1695px"
+        android:layout_y="1260px"
+        android:gravity="center_vertical|end"
+        android:text="200ms"
+        android:textAllCaps="false"
+        android:textColor="@color/colorCh5"
+        android:textSize="22px"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/briefDisplayTextEightCh6"
+        android:layout_width="100px"
+        android:layout_height="27px"
+        android:layout_x="1695px"
+        android:layout_y="1550px"
+        android:gravity="center_vertical|end"
+        android:text="200ms"
+        android:textAllCaps="false"
+        android:textColor="@color/colorCh6"
+        android:textSize="22px"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/briefDisplayTextEightCh7"
+        android:layout_width="100px"
+        android:layout_height="27px"
+        android:layout_x="1695px"
+        android:layout_y="1840px"
+        android:gravity="center_vertical|end"
+        android:text="200ms"
+        android:textAllCaps="false"
+        android:textColor="@color/colorCh7"
+        android:textSize="22px"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/briefDisplayTextEightCh8"
+        android:layout_width="100px"
+        android:layout_height="27px"
+        android:layout_x="1695px"
+        android:layout_y="2130px"
+        android:gravity="center_vertical|end"
+        android:text="200ms"
+        android:textAllCaps="false"
+        android:textColor="@color/colorCh8"
+        android:textSize="22px"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/briefDisplayTextFourCh1"
+        android:layout_width="100px"
+        android:layout_height="27px"
+        android:layout_x="1695px"
+        android:layout_y="110px"
+        android:gravity="center_vertical|end"
+        android:text="200ms"
+        android:textAllCaps="false"
+        android:textColor="@color/colorCh1"
+        android:textSize="22px"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/briefDisplayTextFourCh2"
+        android:layout_width="100px"
+        android:layout_height="27px"
+        android:layout_x="1695px"
+        android:layout_y="395px"
+        android:gravity="center_vertical|end"
+        android:text="200ms"
+        android:textAllCaps="false"
+        android:textColor="@color/colorCh2"
+        android:textSize="22px"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/briefDisplayTextFourCh3"
+        android:layout_width="100px"
+        android:layout_height="27px"
+        android:layout_x="1695px"
+        android:layout_y="780px"
+        android:gravity="center_vertical|end"
+        android:text="200ms"
+        android:textAllCaps="false"
+        android:textColor="@color/colorCh3"
+        android:textSize="22px"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/briefDisplayTextFourCh4"
+        android:layout_width="100px"
+        android:layout_height="27px"
+        android:layout_x="1695px"
+        android:layout_y="1000px"
+        android:gravity="center_vertical|end"
+        android:text="200ms"
+        android:textAllCaps="false"
+        android:textColor="@color/colorCh4"
+        android:textSize="22px"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+
+    <TextView
+        android:id="@+id/briefDisplayTextDoubleCh1"
+        android:layout_width="100px"
+        android:layout_height="27px"
+        android:layout_x="1695px"
+        android:layout_y="175px"
+        android:gravity="center_vertical|end"
+        android:text="200ms"
+        android:textAllCaps="false"
+        android:textColor="@color/colorCh1"
+        android:textSize="22px"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/briefDisplayTextDoubleCh2"
+        android:layout_width="100px"
+        android:layout_height="27px"
+        android:layout_x="1695px"
+        android:layout_y="590px"
+        android:gravity="center_vertical|end"
+        android:text="200ms"
+        android:textAllCaps="false"
+        android:textColor="@color/colorCh2"
+        android:textSize="22px"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+
+    <TextView
+        android:id="@+id/briefDisplayTextMath"
+        android:layout_width="100px"
+        android:layout_height="27px"
+        android:layout_x="1695px"
+        android:layout_y="120px"
+        android:gravity="center_vertical|end"
+        android:text="200ms"
+        android:textAllCaps="false"
+        android:textColor="@color/colorMath"
+        android:textSize="22px"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/briefDisplayTextRef"
+        android:layout_width="100px"
+        android:layout_height="27px"
+        android:layout_x="1695px"
+        android:layout_y="405px"
+        android:gravity="center_vertical|end"
+        android:text="200ms"
+        android:textAllCaps="false"
+        android:textColor="@color/colorRefActive"
+        android:textSize="22px"
+        android:textStyle="bold"
+        android:visibility="gone" />
+</AbsoluteLayout>

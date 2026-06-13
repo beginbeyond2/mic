@@ -1,0 +1,135 @@
+package com.micsig.tbook.scope.Auto;
+
+
+
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.Display.Display;
+import com.micsig.tbook.scope.Sample.MemDepthFactory;
+import com.micsig.tbook.scope.Sample.Sample;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.Trigger.Trigger;
+import com.micsig.tbook.scope.Trigger.TriggerCommon;
+import com.micsig.tbook.scope.Trigger.TriggerEdge;
+import com.micsig.tbook.scope.Trigger.TriggerFactory;
+import com.micsig.tbook.scope.Trigger.TriggerLevel;
+import com.micsig.tbook.scope.channel.Channel;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.fpga.FPGA_Status;
+import com.micsig.tbook.scope.horizontal.HorizontalAxis;
+
+/**
+ * Created by zhuzh on 2018-7-3.
+ */
+
+public abstract class AutoAtion {
+    protected Auto auto;
+
+    public AutoAtion(Auto auto){
+        this.auto = auto;
+
+    }
+    public abstract void onModifyVertical(int chIdx);
+
+    public abstract void onModifyTimebase();
+
+    public abstract void onModifyLevel() ;
+
+    //返回值为true时，自动完成
+    public abstract boolean onAtion(FPGA_Status fpgaStatus);
+    public void autoPrePared(){
+        Logger.d("autoPrePared");
+        Scope scope = Scope.getInstance();
+        Display display = Display.getInstance();
+        display.setDrawType(Display.DRAWTYPE_LINE);
+        if(display.isZoom()) {
+            display.setZoom(false);
+        }
+        display.setDisplayMode(Display.DISPLAY_YT);
+        display.setHorRef(Display.HORREF_CENTER);
+        //display.setCCT(false);
+
+
+        Channel channel;
+        for(int i=0;i<scope.getChNum();i++){
+            channel = ChannelFactory.getDynamicChannel(i);
+
+            channel.setBandWidthType(Channel.BANDWIDTH_TYPE_FULL,Channel.getMaxBandWidth());
+
+            channel.setInvert(false);
+
+            if(channel.getCoupleType() == Channel.COUPLE_TYPE_GND) {
+                channel.setCoupleType(Channel.COUPLE_TYPE_DC);
+            }
+            if(channel.getVerticalMode() == Channel.VERTICAL_MODE_SCREEN_CENTER){
+                channel.setVerticalMode(Channel.VERTICAL_MODE_CH_ZERO);
+            }
+            if(channel.getResistanceType() == Channel.RESISTANCE_50){
+                channel.setResistanceType(Channel.RESISTANCE_1M);
+            }
+            if((!auto.isAutoRangeEnable())
+                    && auto.isAutoChannelEnable()){
+                if(!ChannelFactory.isChOpen(i)){
+                    ChannelFactory.chOpen(i);
+                }
+            }
+        }
+        TriggerCommon triggerCommon = TriggerFactory.getInstance().getTriggerCommon();
+        triggerCommon.setTriggerType(Trigger.TRIG_TYPE_EDGE);
+        triggerCommon.setTriggerMode(TriggerCommon.TM_AUTO);
+        triggerCommon.setTriggerHoldOffTime(200);
+        TriggerEdge trigger = (TriggerEdge) TriggerFactory.getTriggerObj();
+
+        trigger.setTriggerCouple(TriggerEdge.COUPLING_DIRECT);
+        trigger.setTriggerEdge(TriggerEdge.TET_ASC);
+        TriggerLevel triggerLevel = trigger.getTriggerLevel();
+        if(triggerLevel != null) {
+            triggerLevel.setPos(0);
+            int chIdx = trigger.getTriggerSource();
+            if(!ChannelFactory.isChOpen(chIdx)){
+                ChannelFactory.chOpen(chIdx);
+            }
+        }
+
+        Sample sample = Sample.getInstance();
+        boolean []bSmaple = {false};
+        ChannelFactory.forEachMath(mathChannel->{
+            if(mathChannel.isOpen() && mathChannel.isDifferential()){
+                bSmaple[0] = true;
+            }
+        });
+
+        if(bSmaple[0]){
+            sample.setSampleType(Sample.SAMPLE_TYPE_AVERAGE);
+            sample.setSampleNum(Sample.SAMPLE_TYPE_AVERAGE,4);
+        }else{
+            sample.setSampleType(Sample.SAMPLE_TYPE_NORMAL);
+        }
+
+        MemDepthFactory.getMemDepth().setMemDepthItem(0);
+
+        HorizontalAxis.getInstance().setTimePosOfView(0);
+        resetChPos();
+    }
+
+    public void resetChPos(){
+        Channel channel;
+        Scope scope = Scope.getInstance();
+        int offset = ScopeBase.getHeight()/(ChannelFactory.getDynamicChannelOpenCount() * 2);
+        int nums = 0;
+
+        for (int i = 0; i < scope.getChNum(); i++) {
+            channel = ChannelFactory.getDynamicChannel(i);
+            if (channel != null && channel.isOpen()) {
+                double pos = (ScopeBase.getHeight() / 2 - offset * (1 + nums * 2));
+                channel.setPos(pos * ScopeBase.getToUICoff());
+                nums++;
+            }
+        }
+//        TriggerEdge trigger = (TriggerEdge) TriggerFactory.getTriggerObj();
+//        int chIdx = trigger.getTriggerSource();
+//        if(!ChannelFactory.isChActivate(chIdx)){
+//            ChannelFactory.chActivate(chIdx);
+//        }
+    }
+}

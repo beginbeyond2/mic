@@ -1,0 +1,639 @@
+package com.micsig.tbook.tbookscope.wavezone.wave;
+
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
+
+import com.chillingvan.canvasgl.ICanvasGL;
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.tbookscope.GlobalVar;
+import com.micsig.tbook.tbookscope.config.ScopeConfig;
+import com.micsig.tbook.tbookscope.tools.Tools;
+import com.micsig.tbook.tbookscope.util.App;
+import com.micsig.tbook.tbookscope.util.CacheUtil;
+import com.micsig.tbook.tbookscope.wavezone.ISerialBus;
+import com.micsig.tbook.tbookscope.wavezone.IWorkMode;
+import com.micsig.tbook.tbookscope.wavezone.WorkModeManage;
+import com.micsig.tbook.tbookscope.wavezone.wave.wavedata.ICharacterEncoding;
+import com.micsig.tbook.tbookscope.wavezone.wave.wavedata.SerialBusStruct;
+import com.micsig.tbook.tbookscope.wavezone.wave.wavedata.SerialBusStructParse;
+import com.micsig.tbook.tbookscope.wavezone.wave.wavedata.SerialBusTxtStructParse;
+import com.micsig.tbook.tbookscope.wavezone.wave.wavedata.SerialImageBuffer;
+import com.micsig.tbook.tbookscope.wavezone.wave.wavedata.SerialImageDoubleCache;
+import com.micsig.tbook.tbookscope.wavezone.wave.wavedata.SerialTxtBuffer;
+import com.micsig.tbook.ui.wavezone.IWave;
+import com.micsig.tbook.ui.wavezone.TChan;
+
+import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+/**
+ * Created by liwb on 2017/9/26.
+ */
+
+public class SerialBus implements IWave, ISerialBus, IWorkMode {
+    private static final String TAG = "SerialBus";
+
+    //region Iwave 接口属性
+    private int nameID;
+    private long x;
+    private double y = 350;//屏幕上实际像素位置
+    private double posY;//1000对应的位置
+    private int color;
+    private boolean selected;
+    private OnSelectChangeEvent onSelectChangeEvent = null;
+    private OnMovingWaveEvent onMovingWaveEvent = null;
+    private boolean visible;
+    //endregion
+
+    private Bitmap bmpData;
+    private Canvas canvasData;
+    private Paint mPaint;
+    private boolean isChanageBitmap = false;
+    private ICanvasGL canvasGL;
+    public void onRefresh(){
+        if(canvasGL != null){
+            canvasGL.onRefreshTexture();
+        }
+    }
+    private int serialBusType = SerialBusStruct.SerialBusType_UART;
+    private ByteBuffer bytes = null;
+    private long timeToPix;
+    private int startX, endX;
+    private int contentTop;
+    private Rect rectTextWidth = new Rect();
+    private Rect CursorRect;
+
+    private final Object lock=new Object();
+    private SerialBusToParseRunnable toParseRunnable=new SerialBusToParseRunnable();
+    final ExecutorService fixedThreadPool = Executors.newFixedThreadPool(1);
+
+    private SerialTxtBuffer serialTxtBuffer = new SerialTxtBuffer();
+
+    private SerialBusStructParse serialBusStructParse=new SerialBusStructParse();
+
+    public SerialTxtBuffer getSerialTxtBuffer() {
+        return this.serialTxtBuffer;
+    }
+    //endregion
+
+    //region 结构
+    public SerialBusStruct.UartSettingStruct uartSettingStruct = SerialBusStruct.getInstance().new UartSettingStruct();
+    public SerialBusStruct.LinSettingStruct linSettingStruct = SerialBusStruct.getInstance().new LinSettingStruct();
+    public SerialBusStruct.CanSettingStruct canSettingStruct = SerialBusStruct.getInstance().new CanSettingStruct();
+    public SerialBusStruct.SpiSettingStruct spiSettingStruct = SerialBusStruct.getInstance().new SpiSettingStruct();
+    public SerialBusStruct.I2cSettingStruct i2cSettingStruct = SerialBusStruct.getInstance().new I2cSettingStruct();
+    public SerialBusStruct.Arinc429SettingStruct arinc429SettingStruct = SerialBusStruct.getInstance().new Arinc429SettingStruct();
+    public SerialBusStruct.MilSID1553bSettingStruct milSID1553bSettingStruct = SerialBusStruct.getInstance().new MilSID1553bSettingStruct();
+
+    //region uart
+    public void setUartChecked(boolean checked) {
+        uartSettingStruct.setChecked(checked);
+//        this.checked = checked;
+    }
+
+    public void setUartBits(int bits) {
+        uartSettingStruct.setUartLength(bits);
+//        this.bits = bits;
+    }
+
+    public void setUartEncoding(int encoding) {
+        uartSettingStruct.setEncoding(encoding);
+//        this.encoding = uartSettingStruct.getEncoding();
+    }
+    //endregion
+
+    //region lin
+    public void setLinEncoding(int encoding) {
+        linSettingStruct.setEncoding(encoding);
+        this.encoding = linSettingStruct.getEncoding();
+    }
+    //endregion
+
+    //region can
+    public void setCanEncoding(int encoding) {
+        canSettingStruct.setEncoding(encoding);
+        this.encoding = canSettingStruct.getEncoding();
+    }
+    //endregion
+
+    //region spi
+    public void setSPIEncoding(int encoding) {
+        spiSettingStruct.setEncoding(encoding);
+        this.encoding = spiSettingStruct.getEncoding();
+    }
+
+    public void setSpiBits(int bits) {
+        spiSettingStruct.setDataBit(bits);
+//        this.bits = spiSettingStruct.getDataBit();
+    }
+    //endregion
+
+    //region i2c
+    public void setI2CEncoding(int encoding) {
+        i2cSettingStruct.setEncoding(encoding);
+        this.encoding = i2cSettingStruct.getEncoding();
+    }
+    //endregion
+
+    //region 429
+    public void set429Encoding(int encoding) {
+        arinc429SettingStruct.setEncoding(encoding);
+        this.encoding = arinc429SettingStruct.getEncoding();
+    }
+    //endregion
+
+    //region 1553B
+    public void set1553bEncoding(int encoding) {
+        milSID1553bSettingStruct.setEncoding(encoding);
+        this.encoding = milSID1553bSettingStruct.getEncoding();
+    }
+    //endregion
+
+    // false奇偶校验 ,true 无校验
+    private boolean checked = false;
+    //字节位
+    private int bits = 8;
+    //显示文本
+    private int encoding = ICharacterEncoding.Hex;
+
+    //endregion
+
+    //region serialTxtBuffer
+
+    //endregion
+    private Bitmap[][] resBmp = new Bitmap[TChan.MaxSerial][6];
+    public SerialBus() {
+        resBmp[TChan.S1-TChan.S1][0] = Tools.readSvgBmp(com.micsig.tbook.ui.R.drawable.s1_n);
+        resBmp[TChan.S1-TChan.S1][1] = Tools.readSvgBmp(com.micsig.tbook.ui.R.drawable.s1_n_down);
+        resBmp[TChan.S1-TChan.S1][2] = Tools.readSvgBmp(com.micsig.tbook.ui.R.drawable.s1_n_up);
+        resBmp[TChan.S1-TChan.S1][3] = Tools.readSvgBmp(com.micsig.tbook.ui.R.drawable.s1_s);
+        resBmp[TChan.S1-TChan.S1][4] = Tools.readSvgBmp(com.micsig.tbook.ui.R.drawable.s1_s_down);
+        resBmp[TChan.S1-TChan.S1][5] = Tools.readSvgBmp(com.micsig.tbook.ui.R.drawable.s1_s_up);
+
+        resBmp[TChan.S2-TChan.S1][0] = Tools.readSvgBmp(com.micsig.tbook.ui.R.drawable.s2_n);
+        resBmp[TChan.S2-TChan.S1][1] = Tools.readSvgBmp(com.micsig.tbook.ui.R.drawable.s2_n_down);
+        resBmp[TChan.S2-TChan.S1][2] = Tools.readSvgBmp(com.micsig.tbook.ui.R.drawable.s2_n_up);
+        resBmp[TChan.S2-TChan.S1][3] = Tools.readSvgBmp(com.micsig.tbook.ui.R.drawable.s2_s);
+        resBmp[TChan.S2-TChan.S1][4] = Tools.readSvgBmp(com.micsig.tbook.ui.R.drawable.s2_s_down);
+        resBmp[TChan.S2-TChan.S1][5] = Tools.readSvgBmp(com.micsig.tbook.ui.R.drawable.s2_s_up);
+
+        resBmp[TChan.S3-TChan.S1][0] = Tools.readSvgBmp(com.micsig.tbook.ui.R.drawable.s3_n);
+        resBmp[TChan.S3-TChan.S1][1] = Tools.readSvgBmp(com.micsig.tbook.ui.R.drawable.s3_n_down);
+        resBmp[TChan.S3-TChan.S1][2] = Tools.readSvgBmp(com.micsig.tbook.ui.R.drawable.s3_n_up);
+        resBmp[TChan.S3-TChan.S1][3] = Tools.readSvgBmp(com.micsig.tbook.ui.R.drawable.s3_s);
+        resBmp[TChan.S3-TChan.S1][4] = Tools.readSvgBmp(com.micsig.tbook.ui.R.drawable.s3_s_down);
+        resBmp[TChan.S3-TChan.S1][5] = Tools.readSvgBmp(com.micsig.tbook.ui.R.drawable.s3_s_up);
+
+        resBmp[TChan.S4-TChan.S1][0] = Tools.readSvgBmp(com.micsig.tbook.ui.R.drawable.s4_n);
+        resBmp[TChan.S4-TChan.S1][1] = Tools.readSvgBmp(com.micsig.tbook.ui.R.drawable.s4_n_down);
+        resBmp[TChan.S4-TChan.S1][2] = Tools.readSvgBmp(com.micsig.tbook.ui.R.drawable.s4_n_up);
+        resBmp[TChan.S4-TChan.S1][3] = Tools.readSvgBmp(com.micsig.tbook.ui.R.drawable.s4_s);
+        resBmp[TChan.S4-TChan.S1][4] = Tools.readSvgBmp(com.micsig.tbook.ui.R.drawable.s4_s_down);
+        resBmp[TChan.S4-TChan.S1][5] = Tools.readSvgBmp(com.micsig.tbook.ui.R.drawable.s4_s_up);
+
+
+
+        bmpData = Bitmap.createBitmap(GlobalVar.get().getWaveZoneWidth_Pix(IWorkMode.WorkMode_YT), 25, Bitmap.Config.ARGB_8888);
+        canvasData = new Canvas(bmpData);
+        mPaint = new Paint();
+//        mPaint.setTypeface(Typeface.MONOSPACE);
+        mPaint.setTextSize(20);
+        mPaint.setAntiAlias(true);
+        mPaint.setDither(true);
+        mPaint.setTextAlign(Paint.Align.CENTER);
+//        // 设置光源的方向
+//        float[] direction = new float[]{ 1, 1, 1 };
+//        //设置环境光亮度
+//        float light = 0.4f;
+//        // 选择要应用的反射等级
+//        float specular = 6;
+//        // 向mask应用一定级别的模糊
+//        float blur = 3.5f;
+//        EmbossMaskFilter emboss=new EmbossMaskFilter(direction,light,specular,blur);
+//        mPaint.setMaskFilter(emboss);
+//        mPaint.setStyle(Paint.Style.FILL_AND_STROKE);
+//        mPaint.setStrokeWidth(1.5f);
+
+        CursorRect = new Rect();
+        CursorRect.left = 0;
+        CursorRect.top = 0;
+        CursorRect.right = GlobalVar.get().getWaveZoneWidth_Pix(WorkModeManage.getInstance().getmWorkMode());
+        CursorRect.bottom = GlobalVar.get().getWaveZoneHeight_Pix(WorkModeManage.getInstance().getmWorkMode());
+    }
+
+    private void draw() {
+        forceDrawLastData(this.nameID);
+        isChanageBitmap = true;
+        onRefresh();
+    }
+
+
+    private void structToParam(int serialBusType) {
+        switch (serialBusType) {
+            case SerialBusStruct.SerialBusType_UART: {
+                if (Scope.getInstance().isRun()) {
+                    this.encoding = uartSettingStruct.getEncoding();
+                    this.bits = uartSettingStruct.getUartLength();
+                    this.checked = uartSettingStruct.isChecked();
+                }
+            }
+            break;
+            case SerialBusStruct.SerialBusType_LIN: {
+                this.encoding = linSettingStruct.getEncoding();
+            }
+            break;
+            case SerialBusStruct.SerialBusType_CAN: {
+                this.encoding = canSettingStruct.getEncoding();
+            }
+            break;
+            case SerialBusStruct.SerialBusType_SPI: {
+                if (Scope.getInstance().isRun()) {
+                    this.encoding = spiSettingStruct.getEncoding();
+                    this.bits = spiSettingStruct.getDataBit();
+                }
+            }
+            break;
+            case SerialBusStruct.SerialBusType_I2C: {
+                this.encoding = i2cSettingStruct.getEncoding();
+            }
+            break;
+            case SerialBusStruct.SerialBusType_429: {
+                this.encoding = arinc429SettingStruct.getEncoding();
+            }
+            break;
+            case SerialBusStruct.SerialBusType_1553B: {
+                this.encoding = milSID1553bSettingStruct.getEncoding();
+            }
+            break;
+        }
+    }
+    //region ISerialBus
+
+    private PorterDuffXfermode clearMode = new PorterDuffXfermode(PorterDuff.Mode.CLEAR);
+    private PorterDuffXfermode srcMode = new PorterDuffXfermode(PorterDuff.Mode.SRC);
+
+    @Override
+    public void OnTitleChange(int chNo, int serialBusType) {
+        //模拟数据
+        if (bytes != null && bytes.limit() != 0 && bytes.capacity() != 0) {
+            SerialImageBuffer sib = SerialImageDoubleCache.getInstance().getLastCache(chNo);
+            if (sib!=null) {
+                sib.setDeal(false);
+                SerialImageDoubleCache.getInstance().put(chNo, sib);
+            }else {
+                bytes.limit(0);
+            }
+        }
+        this.serialBusType = serialBusType;
+        toParseRunnable.chNo=chNo;
+        fixedThreadPool.execute(toParseRunnable);
+    }
+
+    @Override
+    public void OnDataChange(int chNo, ByteBuffer bytes, long timeToPix, int startX, int endX) {
+        this.bytes = bytes;
+        toParseRunnable.chNo=chNo;
+        fixedThreadPool.execute(toParseRunnable);
+    }
+
+    public void forceDrawLastData(int iwaveCh){
+        //模拟数据
+            SerialImageBuffer sib = SerialImageDoubleCache.getInstance().getLastCache(iwaveCh);
+            if (sib!=null) {
+                sib.setDeal(false);
+                SerialImageDoubleCache.getInstance().put(iwaveCh, sib);
+            }
+        toParseRunnable.chNo=iwaveCh;
+        fixedThreadPool.execute(toParseRunnable);
+    }
+
+
+    @Override
+    public void OnTxtDataChange(int chNo, ByteBuffer bytes) {
+    }
+
+    private void drawSerialBus(int chNo) {
+
+        structToParam(serialBusType);
+        if (this.visible) {
+            String titleName = "";
+            switch (serialBusType) {
+                case SerialBusStruct.SerialBusType_UART:
+                    titleName = TChan.getChannelName(chNo) + " UART";
+                    break;
+                case SerialBusStruct.SerialBusType_LIN:
+                    titleName = TChan.getChannelName(chNo) + " LIN";
+                    break;
+                case SerialBusStruct.SerialBusType_CAN:
+                    titleName = TChan.getChannelName(chNo) + " CAN";
+                    break;
+                case SerialBusStruct.SerialBusType_SPI:
+                    titleName = TChan.getChannelName(chNo) + " SPI";
+                    break;
+                case SerialBusStruct.SerialBusType_I2C:
+                    titleName = TChan.getChannelName(chNo) + " I2C";
+                    break;
+                case SerialBusStruct.SerialBusType_429:
+                    titleName = TChan.getChannelName(chNo) + " 429";
+                    break;
+                case SerialBusStruct.SerialBusType_1553B:
+                    titleName = TChan.getChannelName(chNo) + " 1553B";
+                    break;
+            }
+
+            synchronized (lock) {
+                int titleLen = getTextWidth(titleName) + 16;
+                boolean noPermission = (!ScopeConfig.getConfig().isBusEnable(serialBusType) && !App.IsDebug());
+                if (bytes == null || bytes.limit() == 0 || bytes.capacity() == 0 || noPermission) {
+                    mPaint.setXfermode(clearMode);
+                    canvasData.drawPaint(mPaint);
+                    mPaint.setXfermode(srcMode);
+                    if (startX < titleLen) startX = titleLen;
+                    if (endX < startX) endX = startX;
+                    if (startX == endX) endX = GlobalVar.get().getScreen().width();
+                    if (!noPermission)
+                        canvasData.drawLine(startX, bmpData.getHeight() / 2, endX, bmpData.getHeight() / 2, mPaint);
+                } else {
+                    //这里解析数据进行画图
+//                    String ch = this.getLineNameID() == TChan.S1 ? SerialBusManage.SerialBus_STRINGSHOWS1 : SerialBusManage.SerialBus_STRINGSHOWS2;
+                    int ch = this.getLineNameID();
+                    for (SerialImageBuffer sib : SerialImageDoubleCache.getInstance().getCache(chNo).values()) {
+                        if (sib.isDeal() || sib.getBytes() == null) continue;
+                        sib.setDoing(true);
+                        mPaint.setXfermode(clearMode);
+                        canvasData.drawPaint(mPaint);
+                        mPaint.setXfermode(srcMode);
+                        ByteBuffer bytes = sib.getBytes();
+                        long timeToPix = sib.getTimeToPix();
+                        int startX = sib.getStartX();
+                        int endX = sib.getEndX();
+                        serialBusStructParse.toParse(ch, titleLen, serialBusType, canvasData, mPaint, bytes, timeToPix, encoding, bits, checked, startX, endX);
+//                           Tools.saveImgOverlap(bmpData,"S"+this.getLineNameID()+".jpeg", App.get().getApplicationContext());
+                        sib.setDeal(true);
+                        sib.setDoing(false);
+                        SerialImageDoubleCache.getInstance().put(chNo, sib.getKey(), sib);
+                    }
+                }
+                mPaint.setXfermode(srcMode);
+                mPaint.setStrokeWidth(4.0f);
+                mPaint.setColor(Color.BLACK);
+                mPaint.setStyle(Paint.Style.STROKE);
+                float x = (float) titleLen / 2;
+                float y = (float) ((bmpData.getHeight() - Tools.getTextRect(titleName, mPaint).height()) / 2 + Tools.getTextRect(titleName, mPaint).height());
+                canvasData.drawText(titleName, x, y, mPaint);//画title描边
+                mPaint.setStrokeWidth(0);
+                mPaint.setColor(this.color);
+                mPaint.setStyle(Paint.Style.FILL);
+                canvasData.drawText(titleName, x, y, mPaint);//画title
+                canvasData.drawBitmap(resBmp[chNo - TChan.S1][selected ? 3 : 0], 0, (bmpData.getHeight() - resBmp[chNo - TChan.S1][3].getHeight()) / 2, mPaint);
+                isChanageBitmap = true;
+                onRefresh();
+//                Tools.saveImgOverlap(bmpData,"serialbus"+chNo+".jpg",App.get().getApplicationContext());
+            }
+        }
+//        isChanageBitmap = true;
+    }
+
+    public void putBytesToQueue(ByteBuffer bytes) throws InterruptedException {
+        serialTxtBuffer.putBytesToQueue(bytes);
+        boolean b = SerialBusTxtStructParse.getInstance().getParsing(this.getLineNameID());
+
+        //if (!b)
+        {
+            String chName=TChan.getChannelName(this.getLineNameID());
+            SerialBusTxtStructParse.getInstance().toParseByRunable(chName, serialTxtBuffer, this.serialBusType, encoding, bits, checked);
+        }
+    }
+    //endregion
+
+    public @SerialBusStruct.SerialBusType int getSerialBusType(){
+        return serialBusType;
+    }
+
+    private int getTextWidth(String text) {
+        mPaint.getTextBounds(text, 0, text.length(), rectTextWidth);
+        int w = rectTextWidth.width();
+        int h = rectTextWidth.height();
+        return w;
+    }
+
+    public int getHeight() {
+        return bmpData.getHeight();
+    }
+
+    //region IWAVE
+
+    @Override
+    public void moveLine(int offsetX, int offsetY) {
+
+    }
+
+    @Override
+    public void draw(Canvas canvas) {
+
+    }
+
+    @Override
+    public void draw(ICanvasGL canvas) {
+        if (visible) {
+            synchronized (lock) {
+                canvasGL = canvas;
+                if(isChanageBitmap){
+                    canvas.invalidateTextureContent(bmpData,null);
+                }
+                canvas.drawBitmap(bmpData, 0, (int) Math.round(this.getPosY() * ScopeBase.getToUICoff()));
+                isChanageBitmap = false;
+            }
+
+        }
+    }
+
+    @Override
+    public void resultIniRect() {
+
+    }
+
+    @Override
+    public void setLineNameId(int nameId) {
+        this.nameID = nameId;
+    }
+
+    @Override
+    public int getLineNameID() {
+        return this.nameID;
+    }
+
+    @Override
+    public long getX() {
+        return this.x;
+    }
+
+    @Override
+    public double getY() {
+        return this.y;
+    }
+
+    @Override
+    public void setX(long x) {
+        this.x = x;
+        draw();
+    }
+
+    @Override
+    public void setY(double y) {
+        if (y <= CursorRect.left) {
+            this.y = 0;
+        } else if (y >= CursorRect.height() - bmpData.getHeight()) {
+            this.y = CursorRect.height() - bmpData.getHeight();
+        } else {
+            this.y = y;
+        }
+        if(ScopeBase.getToFPGACoff() == 1.0) {
+            ScopeBase.setConvertScale(CacheUtil.get().getInt(CacheUtil.MAIN_WAVE_ZONE_HEIGHT));
+        }
+        this.posY = this.y * ScopeBase.getToFPGACoff();
+        boolean isZoom = WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_YTZOOM;
+        CacheUtil.get().putMap(CacheUtil.MAIN_WAVE_SERIAL_Y_POSITION + getLineNameID(), String.valueOf(isZoom ? this.posY * GlobalVar.get().toYTCoef() : this.posY));
+        draw();
+        if (this.onMovingWaveEvent != null) {
+            onMovingWaveEvent.OnMovingWave(this, x, this.y, false, false);
+        }
+    }
+
+    public double getPosY() {
+        return posY;
+    }
+
+    @Override
+    public void setColor(int color) {
+        this.color = color;
+        mPaint.setColor(this.color);
+        draw();
+    }
+
+    @Override
+    public int getColor() {
+        return this.color;
+    }
+
+    @Override
+    public void setVisible(boolean visible) {
+        this.visible = visible;
+        draw();
+    }
+
+    @Override
+    public boolean getVisible() {
+        return this.visible;
+    }
+
+    @Override
+    public void setSelected(boolean selected) {
+        this.selected = selected;
+        draw();
+    }
+
+    @Override
+    public boolean isSelected() {
+        return this.selected;
+    }
+
+    @Override
+    public void movePix(double px) {
+        double y = getPosY() * ScopeBase.getToUICoff();
+        px = px * ScopeBase.getToUICoff();
+        setY(y + px);
+    }
+
+    @Override
+    public void setOnSelectChangeEvent(OnSelectChangeEvent onSelectChangeEvent) {
+
+    }
+
+    @Override
+    public void setOnMovingWaveEvent(OnMovingWaveEvent onMovingWaveEvent) {
+        this.onMovingWaveEvent = onMovingWaveEvent;
+    }
+
+    //endregion
+
+
+    //region interface IworkMode
+
+    @Override
+    public void switchWorkMode(@WorkMode int workMode) {
+        double y = CacheUtil.get().getDouble(CacheUtil.MAIN_WAVE_SERIAL_Y_POSITION + getLineNameID());
+        y = y * ScopeBase.getToUICoff();
+        switch (workMode) {
+            case IWorkMode.WorkMode_YT: {
+                this.y = y;
+            }
+            break;
+            case IWorkMode.WorkMode_YTZOOM: {// 12为CacheUtil中 MAIN_WAVE_SERIAL_Y_POSITION 存储值对应的图标高
+                this.y = (y + 12) * GlobalVar.get().toZoomCoef() - 12;
+            }
+            break;
+        }
+        this.posY = this.y * ScopeBase.getToFPGACoff();
+        CursorRect.right = GlobalVar.get().getWaveZoneWidth_Pix(workMode);
+        CursorRect.bottom = GlobalVar.get().getWaveZoneHeight_Pix(workMode);
+    }
+
+    //endregion
+
+    class SerialBusToParseRunnable implements Runnable{
+        private int chNo;
+        @Override
+        public void run() {
+                drawSerialBus(chNo);
+        }
+    }
+
+
+    /**
+     * 获得图像解码数据,带深度复制
+     * @param t
+     * @return
+     * @param <T>   SerialBusStruct.UartStruct类型等
+     */
+    public <T> List<T> getImageBufferList(Class<T> t){
+       try {
+           if (t.isAssignableFrom(SerialBusStruct.UartStruct.class)) {
+               return (List<T>) Tools.jsonToArrayList(serialBusStructParse.getListUart(),SerialBusStruct.UartStruct.class);
+           } else if (t.isAssignableFrom(SerialBusStruct.LinStruct.class)) {
+               List<SerialBusStruct.LinStruct> l=serialBusStructParse.getListLin();
+               return (List<T>)Tools.jsonToArrayList(l,SerialBusStruct.LinStruct.class);
+           } else if (t.isAssignableFrom(SerialBusStruct.CanStruct.class)) {
+                return (List<T>) Tools.jsonToArrayList(serialBusStructParse.getListCan(),SerialBusStruct.CanStruct.class);
+
+           } else if (t.isAssignableFrom(SerialBusStruct.SpiStruct.class)) {
+               return (List<T>) Tools.jsonToArrayList(serialBusStructParse.getListSpi(),SerialBusStruct.SpiStruct.class);
+           } else if (t.isAssignableFrom(SerialBusStruct.I2cStruct.class)) {
+               return (List<T>) Tools.jsonToArrayList(serialBusStructParse.getListI2c(), SerialBusStruct.I2cStruct.class);
+           } else if (t.isAssignableFrom(SerialBusStruct.Arinc429Struct.class)) {
+               return (List<T>) Tools.jsonToArrayList(serialBusStructParse.getList429(),SerialBusStruct.Arinc429Struct.class);
+           } else {
+               return (List<T>) Tools.jsonToArrayList(serialBusStructParse.getList1553b(),SerialBusStruct.MilSTD1553bStruct.class);
+           }
+       }catch (Exception e){
+           e.printStackTrace();
+           return null;
+       }
+
+    }
+
+
+    public void changeRectHeight() {
+        switchWorkMode(WorkModeManage.getInstance().getmWorkMode());//重新计算ui位置，更新点击选中位置
+   }
+
+}

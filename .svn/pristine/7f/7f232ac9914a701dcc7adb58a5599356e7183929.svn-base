@@ -1,0 +1,50 @@
+package com.micsig.tbook.scope.Action;
+
+
+import com.micsig.tbook.scope.Calibrate.HwConfig;
+import com.micsig.tbook.scope.Calibrate.IHW;
+
+/**
+ * Created by zhuzh on 2018-3-30.
+ */
+
+public class ChannelHardw {
+    private static volatile ChannelHardw instance = null;
+
+    public static ChannelHardw getInstance() {
+        if (instance == null) {
+            synchronized (ChannelHardw.class) {
+                if (instance == null ) {
+                    instance = new ChannelHardw();
+                }
+            }
+        }
+        return instance;
+    }
+
+    private IHW ihw;
+    private ChannelHardw(){
+        ihw = HwConfig.getInstance().getHW();
+    }
+    public void changeChCoup(){
+        ihw.changeChVolScale();
+    }
+    public void changeChVolScale() {
+        ihw.changeChVolScale();
+    }
+    public void ChPowerEnable( boolean bEnable){
+
+        ihw.ChPowerEnable(bEnable);
+    }
+    public void ctrlAD8370Gain(){
+        ihw.setChPga();
+    }
+
+    public void wrte_ad_gain(int fpgaIdx){
+        ihw.setAdGain(fpgaIdx);
+    }
+
+    public void set_ch_AD8370Gain(int []val){
+        ihw.setChPgaGain(val);
+    }
+}

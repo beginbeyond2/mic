@@ -1,0 +1,489 @@
+package com.micsig.tbook.tbookscope.main.maintop;
+
+import android.content.Context;
+import android.graphics.Color;
+import android.graphics.Rect;
+import android.util.AttributeSet;
+import android.view.InputDevice;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.ViewConfiguration;
+import android.widget.RelativeLayout;
+
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.Event.EventUIObserver;
+import com.micsig.tbook.scope.Sample.SegmentSample;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.ScopeFrozen;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.channel.IChannel;
+import com.micsig.tbook.scope.channel.MathChannel;
+import com.micsig.tbook.scope.channel.RefChannel;
+import com.micsig.tbook.scope.horizontal.HorizontalAxis;
+import com.micsig.tbook.tbookscope.R;
+import com.micsig.tbook.tbookscope.main.mainbottom.MainTopMsgRightGone;
+import com.micsig.tbook.tbookscope.wavezone.trigger.TriggerTimebase;
+import com.micsig.tbook.ui.util.svg.SvgNodeInfo;
+import com.micsig.tbook.ui.wavezone.IChan;
+import com.micsig.tbook.tbookscope.middleware.command.Command;
+import com.micsig.tbook.tbookscope.middleware.mq.MQEnum;
+import com.micsig.tbook.tbookscope.middleware.mq.msg.MsgChActiveChange;
+import com.micsig.tbook.tbookscope.rxjava.RxBus;
+import com.micsig.tbook.tbookscope.rxjava.RxBusRegister;
+import com.micsig.tbook.tbookscope.rxjava.RxEnum;
+import com.micsig.tbook.tbookscope.top.layout.sample.TopMsgSampleMode;
+import com.micsig.tbook.tbookscope.top.layout.sample.TopMsgSampleSegmented;
+import com.micsig.tbook.tbookscope.top.layout.sample.TopMsgSegmentedState;
+import com.micsig.tbook.tbookscope.util.CacheUtil;
+import com.micsig.tbook.tbookscope.wavezone.IWorkMode;
+import com.micsig.tbook.tbookscope.wavezone.WorkModeBean;
+import com.micsig.tbook.tbookscope.wavezone.trigger.MainWaveMsgTriggerTimeBase;
+import com.micsig.tbook.ui.MTriggerTime;
+import com.micsig.tbook.ui.util.StrUtil;
+import com.micsig.tbook.ui.util.TBookUtil;
+import com.micsig.tbook.ui.wavezone.TChan;
+
+import io.reactivex.rxjava3.functions.Consumer;
+
+
+/**
+ * Created by yangj on 2017/5/8.
+ * 2018.1.29  liwb   修改触发时刻控件，重新连接到MTriggerTime控件上。原因：占用CPU过高。
+ */
+
+public class MainTopLayoutCenter extends RelativeLayout {
+
+    private static final String TAG = "MainTopLayoutCenter";
+    private Context context;
+    private MTriggerTime slider;
+
+    public MainTopLayoutCenter(Context context) {
+        this(context, null);
+    }
+
+    public MainTopLayoutCenter(Context context, AttributeSet attrs) {
+        this(context, attrs, 0);
+    }
+
+    public MainTopLayoutCenter(Context context, AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
+        this.context = context;
+        initView(context, attrs, defStyleAttr);
+        initControl();
+    }
+
+    private void initView(Context context, AttributeSet attrs, int defStyleAttr) {
+        View.inflate(context, R.layout.layout_maintop_center, this);
+        slider = (MTriggerTime) findViewById(R.id.slider);
+        this.setOnTouchListener(this::onTouchEvent);
+    }
+
+    float oldDown,oldDownY;
+    boolean mScrolling;
+    public Consumer<Boolean> OnClickEvent;
+    private long lastClickTime = 0;
+    private boolean isDoubleClick = false;
+
+    private boolean onTouchEvent(View view, MotionEvent event) {
+        boolean isFromMouse = event.isFromSource(InputDevice.SOURCE_MOUSE);//判断是否来自鼠标点击
+        switch (event.getAction()){
+            case MotionEvent.ACTION_DOWN:{
+                oldDown=event.getX();
+                oldDownY=event.getY();
+                mScrolling=false;
+                long clickTime = System.currentTimeMillis();
+                if (clickTime - lastClickTime < 300) {
+                    //双击事件
+                    isDoubleClick = true;
+                } else {
+                    lastClickTime = clickTime;
+                }
+            }break;
+
+            case MotionEvent.ACTION_UP:{
+                double min= ViewConfiguration.get(getContext()).getScaledTouchSlop();
+                if (Math.abs(oldDown - event.getX()) <=min && Math.abs(oldDownY-event.getY())<=min ) {
+                    if (OnClickEvent!=null) {
+                        try {
+                            if (isDoubleClick && isFromMouse && checkDoubleClick((int) event.getX(), (int) event.getY())) {
+                                OnClickEvent.accept(true);
+                                isDoubleClick = false;
+                            } else {
+                                OnClickEvent.accept(false);
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        } catch (Throwable e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    mScrolling = true;
+                } else {
+                    mScrolling = false;
+                }
+
+            }break;
+        }
+        return mScrolling;
+    }
+
+    private boolean checkDoubleClick(int x, int y) {
+        Rect rect = slider.getTriggerRect();
+        Logger.d(TAG, "handleDoubleClick x = " + x + " ,y= " + y + " ,rect =" + rect);
+        return rect.contains(x, y);
+    }
+
+    private void initControl() {
+        RxBus.getInstance().getObservable(RxEnum.MAINWAVE_TRIGGERTIMEBASE).subscribe(consumerMainWaveTriggerTimeBase);
+        //RxBus.getInstance().getObservable(RxEnum.MAINBOTTOM_TIMEBASE).subscribe(consumerMainBottomTimeBase);
+
+        RxBus.getInstance().getObservable(RxEnum.MAIN_TOPRIGHT_GONE).subscribe(consumerTopRightGone);
+        RxBus.getInstance().getObservable(RxEnum.MAIN_TOPCENTER_TEXT_GONE).subscribe(consumerTopRightGone);
+        RxBus.getInstance().getObservable(RxEnum.WAVEZONE_WORKMODE_CHANGE).subscribe(consumerWorkModeChange);
+        RxBus.getInstance().getObservable(RxEnum.TOPLAYOUT_SAMPLESEGMENTED_STATE).subscribe(consumerSegmentedState);
+        RxBus.getInstance().getObservable(RxEnum.TOPLAYOUT_SAMPLEMODE).subscribe(consumerTopLayoutSampleMode);
+        RxBus.getInstance().getObservable(RxEnum.TOPLAYOUT_SAMPLESEGMENTED).subscribe(consumerSampleSegment);
+        RxBus.getInstance().dealObservable(RxEnum.MQ_CHANNEL_ACTIVE_CHANGE,this::OnChanActiveChange);
+        RxBus.getInstance().getObservable(RxEnum.MQ_MSG_CHANNEL_SELECT_COLOR).subscribe(consumerSelectColor);
+
+        EventFactory.addEventObserver(EventFactory.EVENT_SEGMENT_FRAMES, eventUIObserver);
+        EventFactory.addEventObserver(EventFactory.EVENT_UI_SAMPLE_GRAPH, eventUIObserver);
+        EventFactory.addEventObserver(EventFactory.EVENT_UI_DEPTH_SAMPFRE_REFLASH, uiObserver);
+    }
+
+
+
+    public boolean containsRect(MotionEvent event){
+        if (MotionEvent.ACTION_UP==event.getAction()){
+            int x=(int)event.getRawX();
+            int y=(int)event.getRawY();
+            Rect r1=new Rect();
+
+            this.getGlobalVisibleRect(r1);
+            if (r1.contains(x,y) && this.getVisibility()==View.VISIBLE){
+                return true;
+            }else {
+                return false;
+            }
+        }else {
+            return false;
+        }
+    }
+
+    private Consumer<MainWaveMsgTriggerTimeBase> consumerMainWaveTriggerTimeBase = new Consumer<MainWaveMsgTriggerTimeBase>() {
+        @Override
+        public void accept(MainWaveMsgTriggerTimeBase msgTimeBase) throws Exception {
+            long x = msgTimeBase.getX();
+            double iconTPercent = x * 1.0 / 7;
+            long ps = HorizontalAxis.getInstance().getTimePosOfView();//单位：1e-13s
+            slider.setIconTPercent((float) iconTPercent);
+//                        .setTipPercent(40)
+            slider.setTrigger(TBookUtil.getTime3FromPs(ps))
+                    .updateUI();
+        }
+    };
+
+
+/*
+    private Consumer<MainBottomMsgTimeBase> consumerMainBottomTimeBase = new Consumer<MainBottomMsgTimeBase>() {
+        @Override
+        public void accept(MainBottomMsgTimeBase msgTimeBase) throws Exception {
+            if (!StrUtil.isEmpty(msgTimeBase.getTimeBase())) {
+                long ns = TBookUtil.getPsFromTime(msgTimeBase.getTimeBase()) / 1000;
+                slider.setMultiple(2).updateUI();
+            }
+//            if (msgTimeBase.isLeft()) {
+//                slider.setMultiple(2).updateUI();
+//            } else if (msgTimeBase.isRight()) {
+//                slider.setMultiple(3).updateUI();
+//            }
+        }
+    };
+    */
+
+    private void OnChanActiveChange(Object obj) {
+        MQEnum mqEnum = RxBusRegister.parseMqEnum(obj);
+        if (mqEnum != MQEnum.CH_ACTIVE) return;
+
+        IChan ch = ((MsgChActiveChange) obj).getChan();
+        int color;
+        if (ch == IChan.CH_NULL) {
+            color = Color.TRANSPARENT;
+        }  else {
+            color = TChan.getChannelColor(context, TChan.toUiChNo(ch.getValue()));
+        }
+        slider.setPassagewayColor(color).updateUI();
+        displayRateLength(ch.getValue() + 1);
+
+//        TriggerTimebase.getInstance().setVisible(!IChan.isRef(ch));
+    }
+
+
+
+    private void displayRateLength(int ch) {
+        if (TChan.isSerial(ch) || ch == TChan.NULL) {
+//            slider.setMemoryDepth("");
+//            slider.setSampleRate("");
+            slider.setMemoryDepthVisible(false);
+            slider.setSampleRateVisible(false);
+//            tvLength.setText("");
+//            tvRate.setText("");
+        } else {
+            slider.setMemoryDepthVisible(true);
+            slider.setSampleRateVisible(true);
+            int len = getDepthLen();
+            slider.setMemoryDepth(TBookUtil.getFourFromD((double) len));
+            double dx = getSampRate();
+            slider.setSampleRate(TBookUtil.getFourFromD(dx) + "Sa/s");
+        }
+        slider.updateUI();
+    }
+
+    private void setSegmentShowState() {
+        boolean isYT = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_DISPLAY_COMMON_TIMEBASE) == 0;
+        boolean isNoSegment = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_SAMPLE_SEGMENTED_STATE) == 0;
+        slider.setSegmentVisible(isYT && isNoSegment);
+        slider.updateUI();
+    }
+
+    private Consumer<TopMsgSampleSegmented> consumerSampleSegment = new Consumer<TopMsgSampleSegmented>() {
+        @Override
+        public void accept(TopMsgSampleSegmented msgSampleSegmented) throws Exception {
+            setSegmentShowState();
+        }
+    };
+
+    private Consumer<MainTopMsgRightGone> consumerTopRightGone = new Consumer<MainTopMsgRightGone>() {
+        @Override
+        public void accept(MainTopMsgRightGone mainTopMsgRightGone) throws Exception {
+            boolean visible = mainTopMsgRightGone.isVisible();
+            slider.setCanMove(visible);
+            slider.updateUI();
+        }
+    };
+
+    private Consumer<WorkModeBean> consumerWorkModeChange = new Consumer<WorkModeBean>() {
+        @Override
+        public void accept(WorkModeBean workModeBean) throws Exception {
+            switch (workModeBean.getNextWorkMode()) {
+                case IWorkMode.WorkMode_YT:
+                case IWorkMode.WorkMode_YTZOOM:
+                    MainTopLayoutCenter.this.setVisibility(VISIBLE);
+                    break;
+                case IWorkMode.WorkMode_XY:
+                    MainTopLayoutCenter.this.setVisibility(INVISIBLE);
+                    break;
+            }
+        }
+    };
+    private Consumer<TopMsgSegmentedState> consumerSegmentedState = new Consumer<TopMsgSegmentedState>() {
+        @Override
+        public void accept(TopMsgSegmentedState msgSegmentedState) throws Exception {
+            // 串型文本打开与关闭，是通过分段存储消息过来的
+            boolean isSerialsTxt = CacheUtil.get().getBoolean(CacheUtil.MAIN_BOTTOM_SLIP_SERIALBUSTXT);
+            MainTopLayoutCenter.this.setEnabled(!isSerialsTxt);
+        }
+    };
+    private Consumer<TopMsgSampleMode> consumerTopLayoutSampleMode = new Consumer<TopMsgSampleMode>() {
+        @Override
+        public void accept(TopMsgSampleMode msgSample) throws Exception {
+            switch (msgSample.getSample().getIndex()) {
+                case 0:
+                case 3:
+                    slider.setSampleType(msgSample.getSample().getText()).updateUI();
+                    break;
+                case 1:
+                case 2:
+                    if (!StrUtil.isEmpty(msgSample.getSample().getSimpleText())) {
+                        slider.setSampleType(msgSample.getDetail() + msgSample.getSample().getSimpleText()).updateUI();
+                    } else {
+                        slider.setSampleType(msgSample.getDetail() + msgSample.getSample().getText()).updateUI();
+                    }
+                    break;
+            }
+
+        }
+    };
+
+
+    private EventUIObserver eventUIObserver = new EventUIObserver() {
+        @Override
+        public void update(Object data) {
+            EventBase eventBase = (EventBase) data;
+            if (eventBase.getId() == EventFactory.EVENT_SEGMENT_FRAMES) {
+                SegmentSample segmentSample = SegmentSample.getInstance();
+                String strTxt = "";
+                if (Scope.getInstance().isRun()) {
+                    int nums = segmentSample.getSegmentNums();
+                    if (nums > segmentSample.getMaxSegmentNums())
+                        nums = segmentSample.getMaxSegmentNums();
+                    strTxt = "" + segmentSample.getSegmentFrames() + "/" + nums;
+                } else {
+                    Scope scope = Scope.getInstance();
+                    int nums = scope.getSegmentFrameNums();
+                    int val = (scope.getSegmentFrameNo() + 1);
+                    if (SegmentSample.getInstance().getSegmentDisplayType()==SegmentSample.SEGMENT_DISPLAY_FITTING){
+                        val = scope.getSegmentFrameNo() ;
+                    }
+                    if (val>nums) val=nums;
+                    if (nums <= 0) val = 0;
+                    strTxt = "" + val + "/" + nums;
+                }
+                if (slider.getSegmentedBuffer().equalsIgnoreCase(strTxt) == false) {
+                    slider.setSegmentedBuffer(strTxt).updateUI();
+                }
+            } else if (eventBase.getId() == EventFactory.EVENT_UI_SAMPLE_GRAPH) {
+                int idx = ChannelFactory.getChActivate();
+                int temp = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_USERSET_REF_TIMEBASE);
+                if (ChannelFactory.isDynamic_or_math_Ch(idx) || ChannelFactory.isSerialCh(idx) || temp == 0) {
+                    HorizontalAxis horizontalAxis = HorizontalAxis.getInstance();
+                    Scope scope = Scope.getInstance();
+                    ScopeFrozen scopeFrozen = ScopeFrozen.getInstance();
+
+                    //屏数
+                    float screenNum;
+                    if (scope.isZoom()) {
+                        screenNum = (float) scope.screenNum_zoom();
+                        slider.setNormalMultiple((float) scope.screenNum_Main());//#2796
+                    } else {
+                        screenNum = (float) scope.screenNum_Main();
+                        slider.setNormalMultiple(1);
+                    }
+                    slider.setMultiple(screenNum);
+
+                    //触发位置
+                    long timePosMain;
+                    if (scope.isRun())
+                        timePosMain = horizontalAxis.getTimePosOfView(HorizontalAxis.WPI_STANDARD);
+                    else
+                        timePosMain = scopeFrozen.getTimePosOfView();
+                    float percent;
+                    if (scope.isZoom()) {
+                        percent = 0.5f - (float) timePosMain / (scope.timeOneScreen_main());
+                    } else {
+                        percent = 0.5f - (float) timePosMain / (scope.timeOneScreen_main() * screenNum);
+                    }
+                    slider.setIconTPercent(percent);
+                    long timePos = horizontalAxis.getTimePosOfView();
+                    //slider.setText(timePos + "s");
+                    Command.get().getTimebase().Position(TBookUtil.getSFromTime(TBookUtil.getSFrom100Fs(timePos)), false);
+                    slider.setTrigger(TBookUtil.getSFrom100Fs(timePos));
+
+                    //中心位置
+                    float fx;
+                    if (scope.isRun() && !scope.isZoom()) {
+                        fx = 0.5f - (float) timePos / (scope.timeOneScreen_main() * screenNum);
+                        if (fx >= 1.0)
+                            fx = 1.5f - fx;
+                        else
+                            fx = 0.5f;
+                    } else {
+                        timePos = timePos - timePosMain;
+                        if (scope.isZoom())
+                            fx = 0.5f + (float) timePos / (scope.timeOneScreen_main());
+                        else
+                            fx = 0.5f + (float) timePos / (scope.timeOneScreen_main() * screenNum);
+                    }
+                    slider.setTipPercent(fx);
+                    slider.updateUI();
+                } else if (ChannelFactory.isMathCh(idx)) {
+                    slider.updateUI();
+                } else if (ChannelFactory.isRefCh(idx)) {
+//                    HorizontalAxis horizontalAxis = HorizontalAxis.getInstance();
+//                    Scope scope = Scope.getInstance();
+//                    ScopeFrozen scopeFrozen = ScopeFrozen.getInstance();
+
+                    RefChannel refChannel = ChannelFactory.getRefChannel(idx);
+                    //屏数
+                    double screenNum = refChannel.getScreenNum();
+                    slider.setMultiple((float) screenNum);
+
+                    //触发位置
+                    if (refChannel.getRefType() != 2) {
+                        long timePosPix = refChannel.getTimePoseOfViewPix_original_originalScale();
+                        float percent = 0.5f - (float) timePosPix / ScopeBase.getWidth();
+                        slider.setIconTPercent(percent);
+                        long timePos = refChannel.getTimePosOfView();
+                        //slider.setText(timePos + "s");
+                        Command.get().getTimebase().Position(TBookUtil.getSFromTime(TBookUtil.getSFrom100Fs(timePos)), false);
+                        slider.setTrigger(TBookUtil.getSFrom100Fs(timePos));
+                    } else {
+                        //骚操作
+                        slider.setTrigger("  ");
+                    }
+
+
+                    //中心位置
+                    double fx = refChannel.getRefMovPix() / screenNum;
+                    fx = 0.5f - fx / ScopeBase.getWidth();
+                    slider.setTipPercent((float) fx);
+
+                    slider.updateUI();
+                }
+                RxBus.getInstance().post(RxEnum.MQ_MSG_UPDATE_TIMEBASE, slider.getTrigger() + ";" + idx);
+            }
+        }
+    };
+
+    EventUIObserver uiObserver = new EventUIObserver() {
+        @Override
+        public void update(Object data) {
+            EventBase eventBase = (EventBase) data;
+            if (eventBase.getId() == EventFactory.EVENT_UI_DEPTH_SAMPFRE_REFLASH) {
+                int len = getDepthLen();
+                slider.setMemoryDepth(TBookUtil.getFourFromD((double) len));
+                double dx = getSampRate();
+                slider.setSampleRate(TBookUtil.getFourFromD(dx) + "Sa/s");
+//                displayRateLength(ChannelFactory.getChActivate()+1);
+            }
+        }
+    };
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        return true;
+    }
+
+    private int getDepthLen() {
+        IChannel channel = ChannelFactory.getInstance().getWaveChannel();
+        int len = 0;
+        if (channel != null) {
+            int chId = channel.getChId();
+            //Logger.i("current ch=ch"+(chId+1));
+            if (ChannelFactory.isDynamicCh(chId))
+                len = (int) Scope.getInstance().zunMemDepth();
+            else if (ChannelFactory.isMathCh(chId))
+                len = ((MathChannel) channel).getWaveLen();
+            else
+                len = ((RefChannel) channel).getWaveLen();
+        }
+        return len;
+    }
+
+    private double getSampRate() {
+        IChannel channel = ChannelFactory.getInstance().getWaveChannel();
+        if (channel != null) {
+            return channel.getSampleRate2display();
+        }
+        return 0;
+    }
+
+    private Consumer<String> consumerSelectColor = new Consumer<String>() {
+        @Override
+        public void accept(String colorInfo) throws Throwable {
+            if (colorInfo.isEmpty()) return;
+            Logger.i(TAG, "selectColorInfo= " + colorInfo + " ,ChActivate= " + ChannelFactory.getChActivate());
+            String[] info = colorInfo.split(";");
+            int chIndex = Integer.parseInt(info[0]);
+            String colorStr = info[1];
+            if (TChan.toFpgaChNo(chIndex) == ChannelFactory.getChActivate()) {
+                slider.setPassagewayColor(Color.parseColor(colorStr)).updateUI();
+            }
+        }
+    };
+
+
+}

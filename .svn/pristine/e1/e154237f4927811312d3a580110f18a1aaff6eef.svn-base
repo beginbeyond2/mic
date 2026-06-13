@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AbsoluteLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.micsig.tbook.tbookscope.rightslipmenu.dialog.DialogChannelLabel
+        android:id="@+id/dialogChannelLabel"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <com.micsig.tbook.tbookscope.top.popwindow.keyboardtext.TopDialogTextKeyBoard
+        android:id="@+id/dialogTextKeyBoard"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_x="0px"
+        android:layout_y="0px" />
+
+    <com.micsig.tbook.tbookscope.top.popwindow.TopDialogMeasureDelay
+        android:id="@+id/dialogMeasureDelay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <com.micsig.tbook.tbookscope.top.popwindow.TopDialogMeasurePhase
+        android:id="@+id/dialogMeasurePhase"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <com.micsig.tbook.tbookscope.top.popwindow.TopDialogMeasureTValue
+        android:id="@+id/dialogMeasureTValue"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <com.micsig.tbook.tbookscope.top.popwindow.TopDialogCount
+        android:id="@+id/dialogTopCount"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <com.micsig.tbook.tbookscope.top.popwindow.TopDialogScale
+        android:id="@+id/dialogTopScale"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <com.micsig.tbook.tbookscope.rightslipmenu.dialog.DialogBaudRate
+        android:id="@+id/dialogBaudRate"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <com.micsig.tbook.tbookscope.top.popwindow.keyboardnumber.TopDialogNumberKeyBoard
+        android:id="@+id/dialogNumberKeyBoard"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <com.micsig.tbook.tbookscope.top.popwindow.keyboardfloat.TopDialogFloatKeyBoard
+        android:id="@+id/dialogFloatKeyBoard"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <com.micsig.tbook.tbookscope.top.popwindow.keyboardfloat.TopDialogFullFloatKeyBoard
+        android:id="@+id/dialogFullFloatKeyBoard"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <com.micsig.tbook.tbookscope.top.popwindow.keyboardformula.TopDialogFormulaKeyBoard
+        android:id="@+id/dialogFormulaKeyBoard"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <com.micsig.tbook.tbookscope.top.popwindow.TopDialogNumberPicker
+        android:id="@+id/dialogNumberPicker"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <com.micsig.tbook.tbookscope.rightslipmenu.dialog.DialogBandWidth
+        android:id="@+id/dialogBandWidth"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+    <com.micsig.tbook.tbookscope.rightslipmenu.dialog.DialogBandWidthHz
+        android:id="@+id/dialogBandWidthHz"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <com.micsig.tbook.tbookscope.rightslipmenu.dialog.DialogProbeMultiple
+        android:id="@+id/dialogProbeMultiple"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+    <com.micsig.tbook.tbookscope.rightslipmenu.dialog.DialogProbeInterface
+        android:id="@+id/dialogProbeInterface"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+    <com.micsig.tbook.tbookscope.rightslipmenu.dialog.DialogMathFFTPersist
+        android:id="@+id/dialogMathFFTPersist"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
+    <com.micsig.tbook.tbookscope.rightslipmenu.dialog.DialogRefRecall
+        android:id="@+id/dialogRefRecall"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <com.micsig.tbook.ui.top.view.selectHorList.TopViewSelectHorListToList
+        android:id="@+id/selectListToList"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+
+    <com.micsig.tbook.ui.top.view.selectHorList.TopViewSelectHorListToList
+        android:id="@+id/fft_selectListToList"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <com.micsig.tbook.tbookscope.main.maincenter.MainLayoutCenterTimeBase
+        android:id="@+id/mainCenterTimeBase"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <com.micsig.tbook.tbookscope.main.dialog.DialogOk
+        android:id="@+id/dialogOk"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
+
+    <com.micsig.tbook.tbookscope.main.dialog.MainDialogMenuHalf
+        android:id="@+id/dialogMenuHalf"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
+
+    <com.micsig.tbook.tbookscope.rightslipmenu.dialog.DialogLoadRefCsvWave
+        android:id="@+id/dialogLoadRefCsv"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
+
+    <com.micsig.tbook.tbookscope.rightslipmenu.dialog.DialogSelectColor
+        android:id="@+id/dialogSelectColor"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
+
+
+    <com.micsig.tbook.tbookscope.rightslipmenu.dialog.DialogSetChannelInfo
+        android:id="@+id/dialogSetChannelInfo"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
+
+
+    <!--这个放在最后，用以显示再其他Dialog之上-->
+    <com.micsig.tbook.tbookscope.main.dialog.DialogOkCancel
+        android:id="@+id/dialogOkCancel"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
+
+</AbsoluteLayout>

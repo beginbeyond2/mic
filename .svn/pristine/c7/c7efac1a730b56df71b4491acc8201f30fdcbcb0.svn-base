@@ -1,0 +1,74 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+buildscript {
+    repositories {
+//        jcenter()
+//        maven {
+//            url 'https://maven.google.com/'
+//            name 'Google'
+//        }
+//        maven { url "https://jitpack.io" }
+//        maven{ url 'https://maven.aliyun.com/repository/public/'}
+//        maven{ url 'https://maven.aliyun.com/repository/google/'}
+//        maven {
+//            url "https://jitpack.io"
+//        }
+        maven {
+            allowInsecureProtocol=true
+            url 'http://192.168.5.99:8081/repository/maven-public/'
+        }
+        flatDir {
+            dirs '../libs'
+        }
+    }
+
+
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:7.0.0'
+
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+    }
+}
+
+allprojects {
+    repositories {
+//        jcenter()
+//        maven {
+//            url 'https://maven.google.com/'
+//            name 'Google'
+//        }
+
+
+//        maven{ url 'https://maven.aliyun.com/repository/public/'}
+//        maven{ url 'https://maven.aliyun.com/repository/google/'}
+//        maven {
+//            url "https://jitpack.io"
+//        }
+        maven {
+            allowInsecureProtocol=true
+            url 'http://192.168.5.99:8081/repository/maven-public/'
+        }
+        flatDir {
+            dirs '../libs'
+        }
+    }
+    gradle.projectsEvaluated {
+        tasks.withType(JavaCompile) {
+            options.compilerArgs << '-Xbootclasspath/p:app/libs/framework.jar'
+            options.encoding = "utf-8"
+        }
+    }
+
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
+ext {
+    //'CI' environment variables is set in CI(eg. Jenkins) configuration page
+    ci = 'true'.equals(System.getenv('CI'))
+    testing = 'true'.equals(System.getenv('TESTING'))
+    develop = 'true'.equals(System.getenv('DEVELOP'))
+}

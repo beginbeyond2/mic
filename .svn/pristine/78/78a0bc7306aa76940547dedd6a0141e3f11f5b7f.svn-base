@@ -1,0 +1,28 @@
+package com.micsig.tbook.scope.fpga;
+
+/**
+ * Created by zhuzh on 2018-5-30.
+ */
+
+public class FPGAReg_BUS_LEVEL extends FPGAReg {
+    public FPGAReg_BUS_LEVEL() {
+        super(FPGA_BUS_LEVEL, 4);
+    }
+    public void setLevel(int busIdx,int chIdx,int val){
+        setVal(busIdx * 4 + chIdx,1,val);
+    }
+
+    public void setBusSrcExt(int busIdx,int val){
+        setVal(8 + busIdx * 4,4,val & 0xF);
+    }
+
+    public void setLevelExt(int busIdx, int chIdx, int val) {
+        setVal(16 + busIdx * 4 + chIdx, 1, val);
+    }
+
+    public void setSrc(int busIdx,int val){
+        int fpgaIdx = getFpgaIdx();
+        setVal(24 + fpgaIdx * 4 + busIdx * 2,2,val);
+    }
+
+}

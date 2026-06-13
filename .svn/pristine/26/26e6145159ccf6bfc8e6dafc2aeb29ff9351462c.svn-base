@@ -1,0 +1,248 @@
+<resources>
+
+    <!--底部菜单-->
+    <string name="menu_bottom_adjust">Messa a punto</string>
+    <string name="menu_bottom_save">Salvataggio\nRapido</string>
+    <string name="menu_bottom_cursor">cursore</string>
+    <string name="menu_bottom_time">10:13</string>
+    <string name="menu_bottom_qiuck_screen">Cattura dello schermo</string>
+    <string name="menu_bottom_qiuck_zoom">scalata</string>
+    <string name="menu_bottom_qiuck_all_measure">Tutte le misure</string>
+    <string name="menu_bottom_qiuck_serials_txt">Testo seriale</string>
+    <string name="menu_bottom_qiuck_center_menu">menu</string>
+    <string name="dialog_center_menu_half_timebase">tempo base</string>
+    <string name="dialog_center_menu_half_level">livello</string>
+    <string name="dialog_center_menu_half_hor_cursor">cursore orizzontale</string>
+    <string name="dialog_center_menu_half_ver_cursor">cursore verticale</string>
+    <string name="dialog_center_menu_half_channels">canali</string>
+
+    <!-- TopTriggerSerials -->
+    <string name="topSerialsHeadData">dati</string>
+    <string name="topSerialsHeadData1">Dati 1</string>
+    <string name="topSerialsHeadData2">Dati 2</string>
+    <string name="topSerialsHeadLabel">etichetta</string>
+    <string name="topSerialsHeadSdi">SDI</string>
+    <string name="topSerialsHeadSsm">SSM</string>
+    <string name="topSerialsHeadId">ID</string>
+    <string name="topSerialsHeadDlc">DLC</string>
+    <string name="topSerialsHeadAddr">Ind</string>
+    <string name="topSerialsHeadCondition">condizione</string>
+
+    <string name="m1553bCsWordCsWordHead">Istruzione / parola di stato</string>
+    <string name="m1553bDataWordDataHead">Parola dati</string>
+    <string name="m1553bRtAddrRtAddrHead">Indirizzo del terminale remoto</string>
+    <string name="spiDataDataHead">Imposta bit</string>
+
+    <string name="mainTopLeftStateRun">corsa</string>
+    <string name="mainTopLeftStateStop">Stop</string>
+    <string name="mainTopLeftStateWait">aspettare</string>
+    <string name="mainTopLeftStateAuto">automatico</string>
+    <string name="mainTopLeftSD">SD</string>
+    <string name="mainTopLeftLength">87.5K</string>
+    <string name="mainTopLeftRate">3.13MSa/s</string>
+    <string name="mainTopCenterShow">0ps</string>
+    <string name="mainRightSample">256ave</string>
+
+    <string name="view_savewithhead_title">nome</string>
+    <string name="view_savewithhead_input">1704060001</string>
+    <string name="view_savewithhead_confirm">Salva</string>
+    <string name="view_seekbarwithhead_title">luminosità</string>
+    <string name="view_seekbarwithhead_show">66%</string>
+    <string name="view_display_brightness">luminosità</string>
+    <string name="view_display_transparency">Transparency</string>
+    <string name="view_display_intensity">forza</string>
+    <string name="view_afterglow_clearup">rimuovere</string>
+    <string name="view_horizontallist_title">regolare</string>
+    <string name="view_display_adjust">regolare</string>
+    <string name="view_horizontallist_show">100ms</string>
+    <string name="view_trigger_inhibitiontimetitle">Tempo di inibizione</string>
+    <string name="view_trigger_inhibitiontimevalue">200ns</string>
+    <string name="view_trigger_pulsewidth">1us</string>
+    <string name="view_trigger_logic">1us</string>
+    <string name="trigger_pulsewidth">Larghezza di impulso</string>
+    <string name="trigger_overTime">timeout</string>
+    <string name="triggervideo_linehead">fila</string>
+    <string name="triggervideo_linedetail">1</string>
+    <string name="triggeruart_datatitle">dati</string>
+    <string name="triggeruart_datadetail">56</string>
+    <string name="triggerslope_timehighhead">Tempo massimo</string>
+    <string name="triggerslope_timelowhead">Tempo minimo</string>
+    <string name="triggerrunt_timehigh">Tempo massimo</string>
+    <string name="triggerrunt_timelow">Tempo minimo</string>
+    <string name="triggerlogic_timehigh">Tempo massimo</string>
+    <string name="triggerlogic_timelow">Tempo minimo</string>
+    <string name="triggerpulsewidth_timehigh">Tempo massimo</string>
+    <string name="triggerpulsewidth_timelow">Tempo minimo</string>
+    <string name="triggernedge_time">tempo</string>
+    <string name="triggernedge_edge">bordo</string>
+    <string name="triggernedge_edgevalue">345</string>
+    <string name="settingoscillograph_saveas">Salva in</string>
+    <string name="settingfactory_pleasesure">Si prega di confermare se ripristinare le impostazioni di fabbrica!</string>
+    <string name="settingfactory_sure">si tratta di</string>
+    <string name="settingcalibration_pleasesure">Assicurarsi di rimuovere la sonda prima della calibrazione!</string>
+    <string name="settingcalibration_sure">determinare</string>
+    <string name="autosetting_levelhead">Livello di soglia</string>
+    <string name="autosetting_leveldetail">10</string>
+    <string name="oscillograpg_storage">memoria</string>
+    <string name="oscillograpg_recovery">recupero</string>
+    <string name="measure_clear">rimuovere</string>
+    <string name="measure_relationto">Relativo a</string>
+    <string name="sure">determinare</string>
+    <string name="save_saveto">Salva in</string>
+    <string name="save_r1">R1</string>
+    <string name="save_r2">R2</string>
+    <string name="save_r3">R3</string>
+    <string name="save_r4">R4</string>
+
+    <string name="dialogcount_title">N bordo</string>
+    <string name="dialogcount_x1">1x</string>
+    <string name="dialogcount_x100">100x</string>
+    <string name="dialogcount_subtract">-</string>
+    <string name="dialogcount_add">+</string>
+    <string name="dialogmeasuredelay_head">Ch1</string>
+    <string name="dialogmeasurephase_head">Ch1</string>
+    <string name="dialogscale_head">logica</string>
+    <string name="dialogscale_show">9.00ms</string>
+
+    <string name="serialsUserDefine">costume</string>
+
+    <string name="mainBottomScreenRecorderStart">Inizia a registrare video:</string>
+    <string name="mainBottomScreenRecorderEnd">Termina la registrazione del video.</string>
+    <string name="mainBottomScreenShot">Successo della cattura dello schermo:</string>
+
+    <string name="topSlipUsersetSaveRecoveryDefaultName">difetto</string>
+    <string name="topSlipUsersetSaveRecoveryStorage">Salvato con successo</string>
+    <string name="topSlipUsersetSaveRecoveryRecovery">Recupero riuscito</string>
+    <string name="msgForGoHomeWhenLockScreen">La funzione touch corrente è disattivata
+        \nPer accedere al desktop, si aprirà la funzione touch
+        \nConferma per accedere al desktop, premi nuovamente il pulsante "Home".
+        \nPremi altri tasti per tornare
+    </string>
+
+    <string name="topBtn">Metà superiore</string>
+    <string name="bottomBtn">Metà inferiore</string>
+    <string name="topZeroTitle">Calibrazione zero</string>
+    <string name="topADGainTitle">Calibrazione guadagno AD</string>
+    <string name="topADZeroTitle">Taratura dello zero AD</string>
+    <string name="centerChGain">Calibrazione del guadagno del canale (richiede il segnale di calibrazione)</string>
+    <string name="bottomZeroTitle">Calibrazione zero</string>
+    <string name="bottomOffsetTitle">Calibrazione del coefficiente di offset</string>
+    <string name="bottomChDiffTitle">Calibrazione della differenza di canale</string>
+    <string name="calibration">(Calibrata)</string>
+    <string name="unCalibration">(non calibrato)</string>
+
+    <string name="topSaveSaveInToast">Nessun disco U rilevato</string>
+
+    <string name="dialogMsgExitToHome">Sei sicuro di uscire dalla home page?</string>
+    <string name="dialogMsgInSlowTimeBase">Passando alla modalità di scorrimento, la FFT uscirà!</string>
+    <string name="keyBoardMsgBeyond">Superamento del limite di input</string>
+    <string name="msgClickFFTInRoll">Nella modalità di scorrimento, non può essere impostato sullo stato fft!</string>
+    <string name="msgBatteryLow">La batteria è troppo bassa, si prega di collegare ladattatore!</string>
+    <string name="msgParameterLimited">Limite di parametro!</string>
+    <string name="msgOpenMathInModeXY">In modalità XY, il canale Math non è supportato!</string>
+
+    <string name="msgSelfAdjustRun">Lautocalibrazione è in corso ...</string>
+    <string name="msgSelfAdjustSuccess">Lautocalibrazione ha successo!</string>
+    <string name="msgSelfAdjustFail">Autocalibrazione fallita! Codice di errore:%1$s</string>
+
+    <string name="msgTopSaveNameExisted">Il nome del file%1$s esiste già!</string>
+    <string name="msgTopSaveBinNoSupport">Salvataggio del canale poiché i dati del cestino non sono supportati!</string>
+    <string name="msgTopSaveBinSuccess">Forma donda%1$s salvata con successo!</string>
+    <string name="msgTopSaveBinFailed">Forma donda%1$s salvata fallita!</string>
+
+    <string name="serialsWordTitleS1">S1</string>
+    <string name="serialsWordTitleS2">S2</string>
+    <string name="serialsWordTitleS3">S3</string>
+    <string name="serialsWordTitleS4">S4</string>
+    <string name="serialsWordTitleS12">S1&amp;S2</string>
+    <string name="serialsWordClear">chiaro</string>
+    <string name="serialsWordTip">Per favore apri prima il canale!</string>
+    <string name="serialsWordUartTitleBin">binario</string>
+    <string name="serialsWordUartTitleHex">Hex</string>
+    <string name="serialsWordUartTitleASCII">ASCII</string>
+    <string name="serialsWordUartTip">Si prega di mantenere le impostazioni di s1 e s2 lo stesso prima.</string>
+    <string name="serialsWordLinTitleCh">Ch</string>
+    <string name="serialsWordLinTitleTime">tempo</string>
+    <string name="serialsWordLinTitleId">ID</string>
+    <string name="serialsWordLinTitleData">dati</string>
+    <string name="serialsWordLinTitleError">errore</string>
+    <string name="serialsWordLinTitleCheck">Controllare</string>
+    <string name="serialsWordLinTitleTrigger">grilletto</string>
+    <string name="serialsWordCanTitleCh">Ch</string>
+    <string name="serialsWordCanTitleTime">tempo</string>
+    <string name="serialsWordCanTitleId">ID</string>
+    <string name="serialsWordCanTitleType">tipo</string>
+    <string name="serialsWordCanTitleDlc">DLC</string>
+    <string name="serialsWordCanTitleData">dati</string>
+    <string name="serialsWordCanTitleCrc">CRC</string>
+    <string name="serialsWordCanTitleError">errore</string>
+    <string name="serialsWordCanTitleTrigger">grilletto</string>
+    <string name="serialsWordSpiTitleCh">Ch</string>
+    <string name="serialsWordSpiTitleTime">tempo</string>
+    <string name="serialsWordSpiTitleData">dati</string>
+    <string name="serialsWordSpiTitleTrigger">grilletto</string>
+    <string name="serialsWordI2cTitleCh">Ch</string>
+    <string name="serialsWordI2cTitleTime">tempo</string>
+    <string name="serialsWordI2cTitleAddr">indirizzo</string>
+    <string name="serialsWordI2cTitleData">dati</string>
+    <string name="serialsWordI2cTitleConfirm">confermare</string>
+    <string name="serialsWordI2cTitleTrigger">grilletto</string>
+    <string name="serialsWordI2cTitleRestart">nuovo inizio</string>
+    <string name="serialsWordM429TitleCh">Ch</string>
+    <string name="serialsWordM429TitleTime">tempo</string>
+    <string name="serialsWordM429TitleLabel">ETICHETTA</string>
+    <string name="serialsWordM429TitleSdi">SDI</string>
+    <string name="serialsWordM429TitleData">dati</string>
+    <string name="serialsWordM429TitleSsm">SSM</string>
+    <string name="serialsWordM429TitleError">errore</string>
+    <string name="serialsWordM429TitleTrigger">grilletto</string>
+    <string name="serialsWordM1553bTitleCh">Ch</string>
+    <string name="serialsWordM1553bTitleTime">tempo</string>
+    <string name="serialsWordM1553bTitleType">tipo</string>
+    <string name="serialsWordM1553bTitleRAdr">RADR</string>
+    <string name="serialsWordM1553bTitleData">dati</string>
+    <string name="serialsWordM1553bTitleTrigger">grilletto</string>
+    <string name="serialsWordM1553bTitleError">errore</string>
+    <string name="serialsWordUartMsg">TX FRAMES:%1$s\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tERR:%2$s(%3$s)</string>
+    <string name="serialsWordCanMsg">FRAMES:%1$s\t\t\t\t\t\t\t\t\t\t\t\tSPEC:%2$s\t\t\t\t\t\t\t\t\t\t\t\tERR FR:%3$s(%4$s)</string>
+    <string name="serialsWordM429Msg">WORDS:%1$s\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tERRORS:%2$s(%3$s)</string>
+
+    <string name="rightMathMenuFftMeasure_DC">A corrente continua</string>
+    <string name="rightMathMenuFftMeasure_Freq">frequenza</string>
+    <string name="rightMathMenuFftMeasure_Amp">ampiezza</string>
+
+    <string name="screenShotSuccess">Successo della cattura dello schermo:</string>
+    <string name="saveRecoveryFileIsNotExist">Il file non esiste! Carica la configurazione di default !!</string>
+    <string name="rightMathAxbUnitTitle">unità</string>
+
+    <string name="msgNumberFormatException">L input è illegale</string>
+    <string name="mainCenterMenuAuto">automatico</string>
+    <string name="mainCenterMenuRunStop">Smetti di correre</string>
+    <string name="mainCenterMenuSEQ">Singola sequenza</string>
+    <string name="sysNoSupport">La versione del sistema è troppo bassa per supportare questa funzione!</string>
+
+    <string name="msgMathAdvanceFormulaError">%2$s errore nella posizione %1$s</string>
+    <string name="msgMathAdvanceFormulaNull">L espressione non può essere vuota</string>
+    <string name="dialog_ok">Sicuro</string>
+    <string name="dialog_cancel">Annulla</string>
+    <string name="mainCenterMenuZero">zero</string>
+    <string name="mainCenterMenuAutoRange">automatico\\ngamma</string>
+    <string name="menu_bottom_qiuck_segment">navigazione segmentata</string>
+    <string name="menu_bottom_qiuck_home">Casa</string>
+    <string name="mainTopLeftStateNormal">normale</string>
+    <string name="serials">seriali</string>
+    <string name="msgAutoZeroFailed">Calibrazione zero automatica non riuscita</string>
+    <string name="msgAutoZeroSuccess">Taratura zero automatica completata</string>
+    <string name="msgAutoZeroRunning">Taratura automatica dello zero in corso</string>
+
+    <string name="mathRefSerialsSlip_display">display</string>
+    <string name="internal_storage">Spazio di archiviazione interno</string>
+    <string name="new_folder"> Nuova cartella</string>
+    <string name="seleced_folder"> Cartella selezionata</string>
+    <string name="file_selection_not_supported"> La selezione di file non è supportata</string>
+    <string name="label_folder">Cartella</string>
+    <string name="toast_create_success">Creata con successo</string>
+    <string name="toast_create_failure">Creazione non riuscita</string>
+    <string name="error_already_exists">Esiste già</string>
+    <string name="label_file">File</string>
+</resources>

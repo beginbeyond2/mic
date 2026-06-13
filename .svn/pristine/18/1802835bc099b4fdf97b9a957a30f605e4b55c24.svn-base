@@ -1,0 +1,230 @@
+package com.micsig.tbook.scope.Calibrate;
+
+import android.os.Bundle;
+import android.os.Message;
+import android.os.SystemClock;
+import android.util.Log;
+import android.util.SparseBooleanArray;
+
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+
+import java.util.ArrayList;
+import java.util.Observable;
+import java.util.Observer;
+
+/**
+ * Created by xuj on 2018/7/17.
+ * 工厂校准
+ * 上半部校准：begin_upPard()
+ * 下半部校准：begin_downPard()
+ * 独立项校准：begin(int)和begin(int,Object)
+ * 目前只有通道增益校准需要用到begin(int,Object)
+ */
+
+public class FactorCalibrate implements Observer {
+    public static final String ERROR_KEY = "Error code";
+
+    private static final String TAG = "FactorCalibrate";
+    private static volatile FactorCalibrate instance = null;
+    private Bundle bundle = new Bundle();
+    /** 是否正在校准 */
+    private volatile boolean calibrating=false;
+    /**校准结果 true：校准正确  false：校准错误  */
+    private SparseBooleanArray calResult=new SparseBooleanArray();
+
+    public static FactorCalibrate getInstance() {
+        if (instance == null) {
+            synchronized (FactorCalibrate.class) {
+                if (instance == null) {
+                    instance = new FactorCalibrate();
+                }
+            }
+        }
+        return instance;
+    }
+
+    private int type = 0;
+
+    //启动独立项校准
+    public synchronized void begin(int idx) {
+        if (CalibrateService.isCalibrateTypeValid(idx))
+            type = idx;
+        else
+            return;
+
+        calibrating=true;
+        stateArray = null;
+        stateIdx = 1;
+        EventFactory.addEventObserver(EventFactory.EVENT_CALIBRATE_ITEM_FINISH, this);
+        CalibrateService.getInstance().sendMsg(CalibrateService.CALIBRATE_BEGIN_FACTOR);
+        CalibrateService.getInstance().start(idx);
+        bundle.clear();
+        CabteRegister.getInstance().backUpCabteRegister();
+    }
+
+    //启动独立项校准，带参数传递，如通道增益校准，见ChGainCalibrate.setParam
+    public void begin(int idx, Object param) {
+        if (CalibrateService.isCalibrateTypeValid(idx))
+            type = idx;
+        else
+            return;
+        CalibrateService.getInstance().getCalibrate(idx).setParam(param);
+        begin(idx);
+    }
+
+    //启动上半部校准
+    public void begin_upPard() {
+        calibrating=true;
+        stateArray = stateArray_upPart;
+        stateIdx = 0;
+        EventFactory.addEventObserver(EventFactory.EVENT_CALIBRATE_ITEM_FINISH, this);
+        CalibrateService.getInstance().sendMsg(CalibrateService.CALIBRATE_BEGIN_FACTOR);
+        stateMachine(0);
+        bundle.clear();
+        CabteRegister.getInstance().backUpCabteRegister();
+    }
+
+    //启动下半部校准
+    public void begin_downPard() {
+        calibrating=true;
+        stateArray = stateArray_downPart;
+        stateIdx = 0;
+        EventFactory.addEventObserver(EventFactory.EVENT_CALIBRATE_ITEM_FINISH, this);
+        CalibrateService.getInstance().sendMsg(CalibrateService.CALIBRATE_BEGIN_FACTOR);
+        stateMachine(0);
+        bundle.clear();
+        CabteRegister.getInstance().backUpCabteRegister();
+    }
+
+    /*** 强制校准结束 */
+    public void forceEnd() {
+        if (calibrating) {
+            bundle.putInt(ERROR_KEY, 11);
+            CabteRegister.getInstance().restoreCabteRegister();
+            Log.e(TAG, "校准过程被强制打断，全部校准系数恢复");
+            end();
+        }
+    }
+
+    private void end() {
+       if (calibrating) {
+           CalibrateService.getInstance().end();
+           EventFactory.delEventObserver(EventFactory.EVENT_CALIBRATE_ITEM_FINISH, this);
+           EventFactory.sendEvent(new EventBase(EventFactory.EVENT_FACTOR_CALIBRATE_END, bundle));
+           synchronized (this) {
+               calibrating = false;
+           }
+       }
+    }
+
+    //上半部校准
+    private int[] stateArray_upPart = {
+//            CalibrateService.AD_OFFSET_CALIBRATE,
+            CalibrateService.ZERO_CALIBRATE,
+    };
+    //下半部校准
+    private int[] stateArray_downPart = {
+            CalibrateService.ZERO_CALIBRATE,
+    };
+    private int[] stateArray = null;
+
+    //获取校准项的个数
+    public static int getJIaoZhunCnt() {
+        if (getInstance().stateArray != null)
+            return getInstance().stateArray.length;
+        else
+            return 1;
+    }
+
+    //获取校准项的id
+    public static int getCablicationID(int idx) {
+        if (getInstance().stateArray != null)
+            return getInstance().stateArray[idx];
+        else
+            return getInstance().type;
+    }
+
+    //获取校准项的参数，如通道增益校准的档位
+    public static Object getCablicationParam(int id) {
+        if (CalibrateService.isCalibrateTypeValid(id)) {
+            return CalibrateService.getInstance().getCalibrate(id).getParam();
+        } else
+            return 0;
+    }
+
+
+    private int stateIdx = 0;
+
+    private void stateMachine(int err) {
+        int N;
+        if (stateArray != null)
+            N = stateArray.length;
+        else
+            N = 1;
+
+        if (stateIdx < N && err == 0) {
+            Message message = new Message();
+            message.what = CalibrateService.CALIBRATE_ITEM_BEGIN;
+            message.obj = new EventBase(EventFactory.EVENT_FACTOR_CALIBRATE_ITEM_START, stateArray != null ? stateArray[stateIdx] : -1);
+
+            CalibrateService calibrateService = CalibrateService.getInstance();
+            calibrateService.sendMsg(message);
+            calibrateService.getCalibrate(stateArray[stateIdx]).setFactorCalibrate(true);
+            calibrateService.start(stateArray[stateIdx]);
+            stateIdx++;
+        } else {
+            //存储校准系数
+            if (err == 0) {
+                long s = SystemClock.elapsedRealtime();
+                CabteRegister.getInstance().saveFactoryCalibrateParam();
+                Log.d(TAG,"saveTime:" + (SystemClock.elapsedRealtime() - s));
+            }
+            end();
+        }
+    }
+
+    /**
+     * 当前状态是否正在校准......
+     * @return
+     */
+    public synchronized boolean isCalibrating() {
+        return calibrating;
+    }
+
+    /**
+     * 返回校准结果
+     * */
+    public boolean getCalResult(int key){
+        boolean b=calResult.get(key);
+        return b;
+    }
+
+    @Override
+    public void update(Observable observable, Object data) {
+        EventBase eventBase = (EventBase) data;
+        if (eventBase.getId() == EventFactory.EVENT_CALIBRATE_ITEM_FINISH) {
+            Calibrate calibrate = CalibrateService.getInstance().getCalibrate();
+            ArrayList<String> stringList=(ArrayList<String>) calibrate.getResultString();
+
+            for (String x:stringList
+                 ) {
+                Log.i(TAG, x);
+            }
+
+            bundle.putStringArrayList(calibrate.getTAG(), (ArrayList<String>) calibrate.getResultString());
+            calResult.put(this.type,true);
+            if (calibrate.getErrcode() != 0) {
+                calResult.put(this.type,false);
+                //校准有错误
+                bundle.putInt(ERROR_KEY, calibrate.getErrcode());
+                CabteRegister.getInstance().restoreCabteRegister();
+                Log.e(TAG, "校准错误，全部校准系数恢复");
+            }
+            Logger.i("scpi","type:"+type+" 校准完成");
+            stateMachine(calibrate.getErrcode());
+        }
+    }
+
+}

@@ -1,0 +1,9 @@
+package com.micsig.tbook.tbookscope;
+
+/**
+ * Created by yangj on 2017/5/25.
+ */
+
+public class ActivityMsgOnStop {
+
+}

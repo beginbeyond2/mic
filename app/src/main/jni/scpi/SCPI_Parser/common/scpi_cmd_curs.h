@@ -1,0 +1,46 @@
+#ifndef SCPI_CMD_CURS_H
+#define SCPI_CMD_CURS_H
+
+#include "../inc/scpi.h"
+
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
+scpi_result_t CURS_HOR(scpi_t * context);//�򿪻�ر�ˮƽ��깦��
+scpi_result_t CURS_HORQ(scpi_t * context);//��ѯˮƽ��깦��
+scpi_result_t CURS_VERT(scpi_t * context);//�򿪻�رմ�ֱ��깦��
+scpi_result_t CURS_VERTQ(scpi_t * context);//��ѯ��ֱ��깦��
+scpi_result_t CURS_CXA(scpi_t * context);//���ô�ֱ���A��λ��
+scpi_result_t CURS_PLUS_CXA(scpi_t * context);//���ô�ֱ���A��λ��
+scpi_result_t CURS_CXAQ(scpi_t * context);//��ѯ��ֱ���A��λ��
+scpi_result_t CURS_CXB(scpi_t * context);//���ô�ֱ���B��λ��
+scpi_result_t CURS_PLUS_CXB(scpi_t * context);//���ô�ֱ���B��λ��
+scpi_result_t CURS_CXBQ(scpi_t * context); //��ѯ��ֱ���B��λ��
+scpi_result_t CURS_CYA(scpi_t * context);//����ˮƽ���A��λ��
+scpi_result_t CURS_PLUS_CYA(scpi_t * context);//����ˮƽ���A��λ��
+scpi_result_t CURS_CYAQ(scpi_t * context);//��ѯˮƽ���A��λ��
+scpi_result_t CURS_CYB(scpi_t * context);//����ˮƽ���B��λ��
+scpi_result_t CURS_PLUS_CYB(scpi_t * context);//����ˮƽ���B��λ��
+scpi_result_t CURS_CYBQ(scpi_t * context);//��ѯˮƽ���B��λ��
+scpi_result_t CURS_XAV(scpi_t * context);//��ѯ��ֱ���A��Xֵ
+scpi_result_t CURS_XBV(scpi_t * context);//��ѯ��ֱ���B��Xֵ
+scpi_result_t CURS_XAVQ(scpi_t * context);//��ѯ��ֱ���A��Xֵ
+scpi_result_t CURS_XBVQ(scpi_t * context);//��ѯ��ֱ���B��Xֵ
+scpi_result_t CURS_YAV(scpi_t * context);//��ѯˮƽ���A��Yֵ
+scpi_result_t CURS_YBV(scpi_t * context);//��ѯˮƽ���B��Yֵ
+scpi_result_t CURS_YAVQ(scpi_t * context);//��ѯˮƽ���A��Yֵ
+scpi_result_t CURS_YBVQ(scpi_t * context);//��ѯˮƽ���B��Yֵ
+scpi_result_t CURS_XDELQ(scpi_t * context);//��ѯ��ֱ���A��B֮��Ĳ�ֵ����λ��ˮƽ��λ��ͬ
+scpi_result_t CURS_YDELQ(scpi_t * context);//��ѯˮƽ���A��B֮��Ĳ�ֵ����λ�봹ֱ��λ��ͬ
+scpi_result_t CURS_RATQ(scpi_t * context);//��ѯˮƽ���A��B֮��Ĳ�ֵ�봹ֱ���A��B֮��Ĳ�ֵ֮��ı�ֵ
+scpi_result_t CURS_SOUR(scpi_t * context);//���ù�������ͨ��Դ
+scpi_result_t CURS_SOURQ(scpi_t * context);//��ѯ��������ͨ��Դ
+scpi_result_t CURS_FREQ(scpi_t * context);//��ѯ��ֱ���x1��x2֮���1/x����λHZ
+scpi_result_t CURS_TRACE(scpi_t* context);
+scpi_result_t CURS_TRACEQ(scpi_t* context);
+#ifdef  __cplusplus
+}
+#endif
+
+#endif // SCPI_CMD_CURS_H

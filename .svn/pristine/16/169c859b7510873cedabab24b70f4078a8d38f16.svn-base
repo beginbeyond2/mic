@@ -1,0 +1,321 @@
+package com.micsig.tbook.scope.Calibrate;
+
+import android.content.Context;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Message;
+import android.os.SystemClock;
+import android.util.Log;
+
+import androidx.annotation.NonNull;
+
+import com.chillingvan.canvasgl.BuildConfig;
+import com.micsig.base.DoubleUtil;
+import com.micsig.base.Logger;
+import com.micsig.base.Utils;
+import com.micsig.tbook.hardware.Hardware;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.channel.Channel;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.mem.Memory;
+import com.micsig.tbook.scope.vertical.VerticalAxis;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+
+
+/**
+ * Created by zhuzh on 2018-3-22.
+ * 校准数据存储
+ */
+
+public class CabteRegister {
+    private static final String TAG="CabteRegister";
+
+    private HW hw;
+    public HW getHw(){
+        return hw;
+    }
+
+    public void clearCalibrationState(){
+        hw.clearCalibrationState();
+    }
+    public void setCalibrationState(int idx,boolean bState){
+
+        hw.setCalibrationState(idx,bState);
+    }
+    public void setVer(int v){
+        hw.setVer(HW.CODE_VER);
+    }
+    public boolean isCalibrationState(int idx){
+        return hw.isCalibrationState(idx);
+    }
+    private void saveCalibrationState(){
+        hw.saveCalibrationState();
+    }
+
+    public boolean isTopCalibration(){
+        return hw.isTopCalibration();
+    }
+
+    public List<String> getCalibrationItems(){
+        return hw.getCalibrationItems();
+    }
+
+    public boolean getCalibrationItemState(int idx,StringBuilder sb){
+        return hw.getCalibrationItemState(idx,sb);
+    }
+
+    public synchronized void saveCalibrationStateParam(){
+
+        if(!mHandler.hasMessages(SAVE_STATE_PARAM)){
+            mHandler.sendEmptyMessage(SAVE_STATE_PARAM);
+        }
+    }
+    public synchronized void loadCalibrationState(){
+        hw.loadCalibrationState();
+    }
+
+    private static volatile CabteRegister instance = null;
+
+
+    public static CabteRegister getInstance(Context context) {
+        if (instance == null) {
+            synchronized (CabteRegister.class) {
+                if (instance == null && context != null) {
+                    instance = new CabteRegister(context);
+                    instance.verifyAll();
+
+                }
+            }
+        }
+        return instance;
+    }
+    public static CabteRegister getInstance() {
+        return instance;
+    }
+//    private CabteRegisterBean cabteRegister;
+    private Context mContext;
+
+    private HandlerThread handlerThread;
+    private Handler mHandler;
+
+    private static final int SAVE_FACTORY_PARAM = 0x1001;
+    private static final int SAVE_USER_PARAM = SAVE_FACTORY_PARAM + 1;
+
+    private static final int SAVE_STATE_PARAM = SAVE_USER_PARAM + 1;
+    private CabteRegister(Context context){
+
+        mContext = context;
+        //cabteRegister = new CabteRegisterBean(context);
+        hw = HwConfig.getInstance().getHW();
+        hw.loadCalibration();
+        hw.loadCalibrationState();
+        handlerThread = new HandlerThread("CabteRegister");
+        handlerThread.start();
+        mHandler = new Handler(handlerThread.getLooper()){
+            @Override
+            public void handleMessage(@NonNull Message msg) {
+                super.handleMessage(msg);
+                switch (msg.what){
+                    case SAVE_FACTORY_PARAM:
+                        saveFactoryCalibrate();
+                        saveUserCalibrate();
+                        break;
+                    case SAVE_USER_PARAM:
+                        saveUserCalibrate();
+                        break;
+                    case SAVE_STATE_PARAM:
+                        saveCalibrationState();
+                        break;
+                }
+            }
+        };
+    }
+
+    public float getChannelCoef(int chIdx,int dang,int idx){
+        return hw.getChannelCoef(chIdx,dang,idx);
+    }
+    public void setChannelCoef(int chIdx,int dang,int idx,float val){
+        hw.setChannelCoef(chIdx,dang,idx,val);
+    }
+
+
+    public synchronized void setChannelZero(int chIdx,int dwIdx,int pga,float val){
+        hw.setChannelZero(chIdx,dwIdx,pga,val);
+    }
+
+    public synchronized float getChannelZero(int chIdx,int dwIdx,int pga) {
+        return hw.getChannelZero(chIdx,dwIdx,pga);
+    }
+
+
+
+    public synchronized void setAdOffset(int chIdx,int chmode,int adIdx,int val){
+        hw.setAdOffset(chIdx,chmode,adIdx,val);
+    }
+
+    public synchronized int getADOffset(int chIdx,int chmode,int adIdx){
+        return hw.getAdOffset(chIdx,chmode,adIdx);
+    }
+
+    public synchronized int getChGain(int chIdx,int resistanceType,int vIdx,int chMode,int adIdx){
+        return hw.getChGain(chIdx,resistanceType,vIdx,chMode,adIdx);
+    }
+
+    public synchronized void setChGain(int chIdx,int resistanceType,int vIdx,int chMode,int adIdx,int val){
+        hw.setChGain(chIdx,resistanceType,vIdx,chMode,adIdx,val);
+    }
+
+
+   public int getChCapacitanceHigh(int chIdx,int dang){
+        return hw.getChCapacitanceHigh(chIdx,dang);
+   }
+
+   public void setChCapacitanceHigh(int chIdx,int dang,int val){
+        hw.setChCapacitanceHigh(chIdx,dang,val);
+   }
+
+    public synchronized boolean saveFactoryCalibrateParam(){
+        if(mHandler.hasMessages(SAVE_FACTORY_PARAM)){
+            mHandler.removeMessages(SAVE_FACTORY_PARAM);
+        }
+        mHandler.sendEmptyMessage(SAVE_FACTORY_PARAM);
+        return true;
+    }
+
+
+    private synchronized boolean saveFactoryCalibrate(){
+        return hw.saveFactoryCalibration();
+    }
+
+    private synchronized boolean saveUserCalibrate(){
+        return hw.saveUserCalibration();
+    }
+
+
+    public synchronized boolean saveUserCalibrateParam(){
+        if(mHandler.hasMessages(SAVE_USER_PARAM)){
+            mHandler.removeMessages(SAVE_FACTORY_PARAM);
+        }
+        mHandler.sendEmptyMessage(SAVE_USER_PARAM);
+        return true;
+    }
+
+    public void backUpCabteRegister() {
+        hw.backUpCabteRegister();
+    }
+    public void restoreCabteRegister() {
+        hw.restoreCabteRegister();
+    }
+
+    public boolean verifyChZeroCoef() {
+
+        return true;
+    }
+
+    void verifyAll() {
+
+    }
+
+    /** 恢复全部默认校准系*/
+    public void rstDefaultVal(){
+        hw.defaultVal();
+    }
+
+    public void rst_coefChannel(int ch,int dang,int resistanceType){
+        hw.defaultVal_coefChannel(ch,dang,resistanceType);
+    }
+
+    public double calc_coefChannel(int chIdx,double scaleVal,int idx){
+        double coef;
+        coef = hw.calc_coefChannel(chIdx,scaleVal,idx);
+        return coef;
+    }
+
+    public void calc_pga_fs_gain(int chIdx,double scaleVal,int []result){
+        hw.calc_pga_fs_gain(chIdx,scaleVal,result);
+    }
+
+
+    public String getCabteTime(){
+        return hw.getCabteTime();
+    }
+
+
+    public double vol_ChannelCoef_defaultEx(int chIdx,int dangwei,int pgaVal){
+        return hw.vol_ChannelCoef_defaultEx(chIdx,dangwei,pgaVal);
+    }
+
+    public double vol_ChannelCoef_default(int resistanceType,int dang){
+        return hw.vol_ChannelCoef_default(resistanceType,dang);
+    }
+
+    public static int getRatioIdx(int resistanceType,double v){
+        return getInstance().getHw().getRatioIdx(resistanceType,v);
+    }
+
+    public static int getRatioIdx2Dang(int resistanceType,int idx){
+        return getInstance().getHw().getRatioIdx2Dang(resistanceType,idx);
+    }
+    public static double getVerticalRange(int resistanceType,int dang){
+        return getInstance().getHw().getVerticalRange(resistanceType,dang);
+    }
+
+    public static int getRatioDangCnt(){
+        return getInstance().getHw().getRatioDangCnt();
+    }
+
+
+
+    public void calcPgaStep(int flag){
+        hw.calcPgaSetp(flag);
+    }
+    public void calcGain(int flag){
+        hw.calcGain(flag);
+    }
+
+
+    private double [] newInputV = {-1,-1,-1,-1,-1,-1,-1,-1};
+
+    private double [] chAmpV = {-1,-1,-1,-1,-1,-1,-1,-1};
+
+    public synchronized void setChAmp(int ch,double v){
+        if(ch >= 0 && ch < chAmpV.length) {
+            chAmpV[ch] = v;
+        }
+    }
+    public synchronized double getChAmp(int ch){
+        return chAmpV[ch];
+    }
+    public void setNewInputV(double v){
+        synchronized (this){
+            Arrays.fill(newInputV,v);
+        }
+    }
+    public void setNewInputV(double [] v){
+        synchronized (this){
+            if(v.length == newInputV.length){
+                System.arraycopy(v,0,newInputV,0,v.length);
+            }
+        }
+    }
+    public double getNewInputV(int ch){
+        synchronized (this){
+            if(ch >=0 && ch < newInputV.length) {
+                return newInputV[ch];
+            }else{
+                return -1;
+            }
+        }
+    }
+}

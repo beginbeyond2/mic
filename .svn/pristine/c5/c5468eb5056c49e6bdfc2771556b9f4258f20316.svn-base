@@ -1,0 +1,61 @@
+package com.micsig.tbook.scope.fpga;
+
+import android.util.Log;
+
+import com.micsig.tbook.hardware.HardwareProduct;
+import com.micsig.tbook.scope.Bus.IBus;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+
+/**
+ * Created by zhuzh on 2018-5-30.
+ */
+
+public abstract class FPGAReg_BUS extends FPGAReg {
+    public FPGAReg_BUS(int addr, int len) {
+        super(addr, len);
+    }
+    public abstract void configBus(int fpgaIdx,IBus iBus);
+    public int chIdx2BusSrc(int chIdx){
+        Scope scope = Scope.getInstance();
+        boolean  [] sel = new boolean[ChannelFactory.CH_CNT];
+        int cnt = scope.getChannelSampOnCnt(scope.isRun(true),sel);
+        int fpgaIdx = FPGACommand.chIdxToFpgaIdx(chIdx);
+        int beginIdx = FPGACommand.beginChIdx(fpgaIdx);
+        int endIdx = FPGACommand.endChIdx(fpgaIdx);
+        int src = 0;
+        if(cnt <= 4 ){
+            if(HardwareProduct.isMHO68V1()) {
+                for (int i = beginIdx; i < endIdx; i++) {
+                    if (sel[i]) {
+                        if (i == chIdx) {
+                            break;
+                        }
+                        src = 2;
+                    }
+                }
+            }else {
+                src = ((chIdx - beginIdx) / 2) * 2;
+            }
+        }else{
+            src = chIdx - beginIdx;
+        }
+        return src;
+    }
+    public int getBusIdx(){
+        int busIdx = 0;
+        if(getAddr() == FPGA_BUS2_ADDR){
+            busIdx = 1;
+        }
+        return busIdx;
+    }
+
+
+    protected void setLevel(FPGAReg_BUS_LEVEL busLevel,int chIdx,int idleLevel){
+        if(chIdx < ChannelFactory.CH5) {
+            busLevel.setLevel(getBusIdx(), chIdx2BusSrc(chIdx), idleLevel);
+        }else{
+            busLevel.setLevelExt(getBusIdx(), chIdx2BusSrc(chIdx), idleLevel);
+        }
+    }
+}

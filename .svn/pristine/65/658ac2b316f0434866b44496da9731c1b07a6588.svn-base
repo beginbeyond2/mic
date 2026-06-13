@@ -1,0 +1,208 @@
+package com.micsig.tbook.scope.probe;
+
+import android.util.Log;
+
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.ScopeMessage;
+
+public class ProbeUpgrade extends Thread {
+
+    private final static int BLOCK_SIZE = 128;
+    public volatile int chIdx;
+
+    public volatile byte [] datas;
+    private volatile int verCode = 0;
+    private volatile int mcuNums = 0;
+    private volatile String hwVer = "";
+    private volatile int mcuIdx = 0;
+    private volatile boolean bRun = false;
+    private volatile int state = 0;
+    private volatile boolean isBoot = false;
+    private volatile int totalPkgs = 0;
+    private volatile int curPkg = 0;
+    private volatile int counter = 0;
+    public ProbeUpgrade(int chIdx,String hwVer,int verCode,int mcuNums,boolean isBoot){
+        super();
+        Log.d("zhuzh", "ProbeUpgrade() called with: chIdx = [" + chIdx + "], hwVer = [" + hwVer + "], verCode = [" + verCode + "], mcuNums = [" + mcuNums + "], isBoot = [" + isBoot + "]");
+        this.chIdx = chIdx;
+        this.hwVer = hwVer;
+        this.verCode = verCode;
+        this.mcuNums = mcuNums;
+        this.isBoot = isBoot;
+        mcuIdx = mcuNums;
+        state = 0;
+        bRun = true;
+        start();
+    }
+    private void sendEvent(ProbeUpgradeInfo info){
+        Logger.d("zhuzh", "sendEvent() called with: info = [" + info + "]");
+        EventFactory.sendEvent(new EventBase(EventFactory.EVENT_PROBE_UPGRADE, info),true);
+    }
+    @Override
+    public void run() {
+        super.run();
+        if(mcuNums == 1){
+            state = 1;
+        }
+        if(isBoot){
+            state = 2;
+//            mcuIdx = 1;
+        }
+        counter = 0;
+        boolean bAbort = false;
+        sendEvent(new ProbeUpgradeInfo(chIdx,ProbeUpgradeInfo.UPGRADE_BEGIN,0));
+        while (bRun){
+            synchronized (this){
+                Log.d("zhuzh","state:" + state + ",mcuIdx:" + mcuIdx);
+                switch (state){
+                    case 0:
+                        sendCommand(ProbeCommand.probeUpgradeSSCommand(mcuIdx - 1));
+                        break;
+                    case 1:
+                        sendCommand(ProbeCommand.jumpBootCommand());
+                        break;
+                    case 2:
+                        ms_sleep(1000);
+                        onUpgradeBegin();
+                        break;
+                    case 3:
+                        onUpgrade();
+                        break;
+                    case 4:
+                        ms_sleep(2000);
+                        onUpgradeEnd();
+                        break;
+                }
+                try {
+                    this.wait(ProbeFactory.PROBE_TIMEOUT_MS * (ProbeFactory.PROBE_SEND_MAX + 1) );
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                counter++;
+                if(counter > 5){
+                    if(state == 1){
+                        state = 2;
+                        counter = 0;
+                    }else{
+                        bAbort = true;
+                        break;
+                    }
+                }
+            }
+        }
+        int val = 100;
+        if((bRun && bAbort)){
+            val = -1;
+        }else{
+            sendCommand(ProbeCommand.probeCommand(ProbeCommand.TYPE_PROBE_INFO), 1000);
+        }
+        sendEvent(new ProbeUpgradeInfo(chIdx,ProbeUpgradeInfo.UPGRADE_END,val));
+    }
+
+    public void ms_sleep(long ms){
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void onEnd(){
+        synchronized (this) {
+            mcuNums = 0;
+            bRun = false;
+            this.notifyAll();
+        }
+    }
+    private void setState(int state){
+        synchronized (this){
+            this.state = state;
+            counter = 0;
+            this.notifyAll();
+        }
+    }
+
+    public void AckJumpBootCommand(byte[] bytes,int offset,int len){
+        if(bytes[offset] > 0 && bytes[offset] < 0x0f ) {
+            setState(2);
+        }
+    }
+
+    public void AckUpgradeBegin(byte[] bytes,int offset,int len){
+        if(bytes[offset] == 0) {
+            setState(3);
+        }
+    }
+
+    public void AckUpgrade(byte[] bytes,int offset,int len){
+        int pkg = (bytes[offset + 0] << 8) | (bytes[offset + 1]);
+        if(pkg == curPkg+1) {
+            if (bytes[offset + 2] == 0) {
+                synchronized (this) {
+                    curPkg++;
+                }
+                if (curPkg < totalPkgs) {
+                    setState(3);
+                } else {
+                    setState(4);
+                }
+            }
+        }
+    }
+    public void AckUpgradeEnd(byte[] bytes,int offset,int len){
+        if(bytes[offset] == 0) {
+            synchronized (this) {
+                mcuIdx--;
+            }
+            if (mcuIdx > 0) {
+                setState(0);
+            } else {
+                onEnd();
+            }
+        }else {
+            synchronized (this) {
+                this.notifyAll();
+            }
+        }
+    }
+    public void AckUpgradeSS(byte[] bytes,int offset,int len){
+        if(bytes[offset] == 0) {
+            setState(1);
+        }
+    }
+
+    public void onUpgradeBegin(){
+        Logger.d("zhuzh","hwVer:" + hwVer +",verCode:" + verCode + ",mcuIdx:" + mcuIdx);
+        datas = ProbeUtils.readBin(hwVer,verCode,mcuIdx);
+        if(datas != null) {
+            totalPkgs = datas.length / BLOCK_SIZE;
+            curPkg = 0;
+            byte crc = 0;
+            for (byte data : datas) {
+                crc += data;
+            }
+            sendCommand(ProbeCommand.probeUpgradeBeginCommand(totalPkgs, crc));
+        }
+    }
+    public void onUpgrade(){
+        sendCommand(ProbeCommand.probeUpgradeCommand(curPkg + 1,datas,curPkg * BLOCK_SIZE,BLOCK_SIZE));
+        int progress = 0;
+        double n = 100.0 / mcuNums;
+        progress = (int) ((mcuNums - mcuIdx) * n + curPkg * n / totalPkgs);
+        sendEvent(new ProbeUpgradeInfo(chIdx,ProbeUpgradeInfo.UPGRADE_DATA,progress));
+    }
+    public void onUpgradeEnd(){
+        sendCommand(ProbeCommand.probeCommand(ProbeCommand.TYPE_PROBE_UPGRADE_END));
+
+    }
+    private void sendCommand(byte [] bytes){
+        ScopeMessage scopeMessage = ScopeMessage.getInstance();
+        scopeMessage.sendProbe(chIdx,bytes);
+    }
+    private void sendCommand(byte [] bytes,long ms){
+        ScopeMessage scopeMessage = ScopeMessage.getInstance();
+        scopeMessage.sendProbe(chIdx,bytes,ms);
+    }
+}

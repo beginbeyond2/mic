@@ -1,0 +1,150 @@
+package com.micsig.tbook.scope.Trigger;
+
+import com.micsig.tbook.scope.channel.Channel;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+
+import java.util.Arrays;
+
+/**
+ * Created by zhuzh on 2018/3/20.
+ */
+
+public abstract class Trigger {
+    //触发类型
+    public static final int TRIG_TYPE_START_ID = 0;
+    public static final int TRIG_TYPE_EDGE = TRIG_TYPE_START_ID;//边沿触发
+    public static final int TRIG_TYPE_LOW_PULSE = 1;//矮脉冲
+    public static final int TRIG_TYPE_PULSE = 2;//脉宽触发
+    public static final int TRIG_TYPE_LOGIC = 3;//逻辑触发
+    public static final int TRIG_TYPE_TIMEOUT = 4;//超时触发
+    public static final int TRIG_TYPE_VIDEO = 5;//视频触发
+    public static final int TRIG_TYPE_SLOPE = 6;//斜率触发
+    public static final int TRIG_TYPE_NEDGE = 7;//第n边沿触发
+    public static final int TRIG_TYPE_SERIAL1 = 8;//串行触发
+    public static final int TRIG_TYPE_SERIAL2 = 9;//串行触发
+    public static final int TRIG_TYPE_SERIAL3 = 10;//串行触发
+    public static final int TRIG_TYPE_SERIAL4 = 11;//串行触发
+    public static final int TRIG_TYPE_MAX_ID = 12;//最大的ID值加1
+
+
+    public static final int TRIGGER_RELATION_LESS_THAN = 0; //小于
+    public static final int TRIGGER_RELATION_MORE_THAN = 1; //大于
+    public static final int TRIGGER_RELATION_EQUAL = 2;         //等于
+    public static final int TRIGGER_RELATION_NOT_EQUAL = 3;     //不等于
+    public static final int TRIGGER_RELATION_TRUE = 4;      //变到真值时触发
+    public static final int TRIGGER_RELATION_FALSE = 5;     //变到假值时触发
+
+
+    public static final int TRIG_SRC_MAX = ChannelFactory.CH_CNT;
+
+    public static final int TRIG_TIME_UNIT = 8;//8ns
+    public static long triggerTime2FpgaUnit(long val){
+        return val/TRIG_TIME_UNIT;
+    }
+
+    private static int triggerSource_pre; //用于保存选中外部触发之前的的触发源，用以恢复。
+    private static int triggerSource_one; //用于保存触发源对应的通道号: 用于单个触发源的触发类型，这种触发类型，触发源是公共的
+    private int []triggerSource =new int[ChannelFactory.CH_CNT]; //用于逻辑触发保存触发源对应的通道号: 2个触发源，则用[0]和[1]。
+
+    private TriggerAction triggerAction;
+    public Trigger(int triggerType){
+        Arrays.fill(triggerSource,-1);
+        this.triggerType = triggerType;
+        triggerAction = new TriggerAction(this);
+    }
+
+    private int triggerType = TRIG_TYPE_START_ID;
+
+    public int getTriggerType() {
+        return triggerType;
+    }
+
+    public int getTriggerSource() {
+
+        return triggerSource_one;
+    }
+
+    public int getPreTriggerSource() {
+        return triggerSource_pre;
+    }
+
+    public void setTriggerSource(int triggerSource) {
+        if (ChannelFactory.isDynamicCh(triggerSource)) {
+            triggerSource_pre = triggerSource;
+        }
+        if (triggerSource != triggerSource_one) {
+            triggerSource_one = triggerSource;
+            triggerSourceChange();
+        }
+    }
+    protected abstract boolean isMultitriggerSource();
+    public int getTriggerSource(int idx) {
+        if(isMultitriggerSource() && isValidIdx(idx)) {
+            return triggerSource[idx];
+        }
+        return getTriggerSource();
+    }
+
+    public boolean isTriggerSource(int chIdx) {
+        for (int i = 0; i < getTriggerSourceCnt(); i++) {
+            if (getTriggerSource(i) == chIdx) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void setTriggerSource(int idx,int triggerSource) {
+        if(isMultitriggerSource()) {
+            if (isValidIdx(idx)) {
+                if (triggerSource != this.triggerSource[idx]) {
+                    this.triggerSource[idx] = triggerSource;
+
+                    triggerSourceChange();
+                }
+            }
+        }
+        else {
+            setTriggerSource(triggerSource);
+        }
+    }
+
+    public TriggerLevel getTriggerLevel(int chIdx){
+        return getTriggerLevel(TriggerLevel.TRIGGER_LEVEL_NORMAL,chIdx);
+    }
+
+    public TriggerLevel getTriggerLevel(){
+        return getTriggerLevel(getTriggerSource());
+    }
+
+    public TriggerLevel getTriggerLevel(int triggerLevelType,int chIdx){
+
+        Channel channel = ChannelFactory.getDynamicChannel(chIdx);
+        if(channel != null) {
+            return channel.getTriggerLevel(triggerLevelType);
+        }
+        return null;
+    }
+
+    public int getSrcTriggerLevelCnt(){
+        return 1;
+    }
+
+    public static boolean isValidIdx(int idx){
+        if (idx >= 0 && idx <= TRIG_SRC_MAX) {
+            return true;
+        }
+        return false;
+    }
+
+    public abstract int getTriggerSourceCnt();
+
+    public  void triggerSourceChange(){
+        triggerAction.triggerSourceChange();
+    }
+
+    protected void triggerParamChange(){
+        triggerAction.triggerParamChange();
+    }
+
+}

@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <View
+        android:id="@+id/menuhalf_outView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <RelativeLayout
+        android:id="@+id/menuhalf_leftlayout"
+        android:layout_width="wrap_content"
+        android:layout_height="163px"
+        android:layout_marginStart="523px"
+        android:layout_marginTop="770px"
+        android:background="@drawable/shape_frame_bg_black"
+        android:clickable="true"
+        android:gravity="center"
+        android:padding="17px">
+
+        <Button
+            android:id="@+id/menuhalf_timeBase"
+            style="@style/buttonStyle"
+            android:layout_width="120px"
+            android:layout_height="129px"
+            android:background="@drawable/bg_halfmenu_timebase"
+            android:gravity="bottom|center"
+            android:paddingBottom="15px"
+            android:text="@string/dialog_center_menu_half_timebase"
+            android:textAllCaps="false" />
+
+        <Button
+            android:id="@+id/menuhalf_level"
+            style="@style/buttonStyle"
+            android:layout_width="120px"
+            android:layout_height="129px"
+            android:layout_toEndOf="@id/menuhalf_timeBase"
+            android:background="@drawable/bg_halfmenu_level"
+            android:gravity="bottom|center"
+            android:paddingBottom="15px"
+            android:text="@string/dialog_center_menu_half_level"
+            android:textAllCaps="false" />
+
+        <Button
+            android:id="@+id/menuhalf_cursorH"
+            style="@style/buttonStyle"
+            android:layout_width="120px"
+            android:layout_height="129px"
+            android:layout_toEndOf="@id/menuhalf_level"
+            android:background="@drawable/bg_halfmenu_cursor"
+            android:gravity="bottom|center"
+            android:paddingBottom="15px"
+            android:text="@string/dialog_center_menu_half_hor_cursor"
+            android:textAllCaps="false" />
+
+        <Button
+            android:id="@+id/menuhalf_cursorV"
+            style="@style/buttonStyle"
+            android:layout_width="120px"
+            android:layout_height="129px"
+            android:layout_toEndOf="@id/menuhalf_cursorH"
+            android:background="@drawable/bg_halfmenu_cursor2"
+            android:gravity="bottom|center"
+            android:paddingBottom="15px"
+            android:text="@string/dialog_center_menu_half_ver_cursor"
+            android:textAllCaps="false" />
+
+    </RelativeLayout>
+
+
+    <RelativeLayout
+        android:id="@+id/menuhalf_channel"
+        android:layout_width="wrap_content"
+        android:layout_height="163px"
+        android:layout_alignBottom="@+id/menuhalf_leftlayout"
+        android:layout_marginStart="18px"
+        android:layout_toEndOf="@id/menuhalf_leftlayout"
+        android:background="@drawable/shape_frame_bg_black"
+        android:clickable="true"
+        android:gravity="center"
+        android:padding="17px">
+
+        <ImageView
+            android:layout_width="112px"
+            android:layout_height="57px"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="34px"
+            android:scaleType="fitXY"
+            android:src="@drawable/bg_halfmenu_channel_bg"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/menuhalf_ch1"
+            style="@style/buttonStyle"
+            android:layout_width="86px"
+            android:layout_height="60px"
+            android:background="@drawable/selector_rightslip_button"
+            android:gravity="center"
+            android:text="CH1"
+            android:textColor="@color/colorCh1" />
+
+        <Button
+            android:id="@+id/menuhalf_ch2"
+            style="@style/buttonStyle"
+            android:layout_width="86px"
+            android:layout_height="60px"
+            android:layout_marginStart="8px"
+            android:layout_toEndOf="@id/menuhalf_ch1"
+            android:background="@drawable/selector_rightslip_button"
+            android:gravity="center"
+            android:text="CH2"
+            android:textColor="@color/colorCh2" />
+
+        <Button
+            android:id="@+id/menuhalf_ch3"
+            style="@style/buttonStyle"
+            android:layout_width="86px"
+            android:layout_height="60px"
+            android:layout_marginStart="8px"
+            android:layout_toEndOf="@id/menuhalf_ch2"
+            android:background="@drawable/selector_rightslip_button"
+            android:gravity="center"
+            android:text="CH3"
+            android:textColor="@color/colorCh3" />
+
+        <Button
+            android:id="@+id/menuhalf_ch4"
+            style="@style/buttonStyle"
+            android:layout_width="86px"
+            android:layout_height="60px"
+            android:layout_marginStart="8px"
+            android:layout_toEndOf="@id/menuhalf_ch3"
+            android:background="@drawable/selector_rightslip_button"
+            android:gravity="center"
+            android:text="CH4"
+            android:textColor="@color/colorCh4" />
+
+        <Button
+            android:id="@+id/menuhalf_ch5"
+            style="@style/buttonStyle"
+            android:layout_width="86px"
+            android:layout_height="60px"
+            android:layout_below="@id/menuhalf_ch1"
+            android:layout_marginTop="8px"
+            android:background="@drawable/selector_rightslip_button"
+            android:gravity="center"
+            android:text="CH5"
+            android:textColor="@color/colorCh5" />
+
+        <Button
+            android:id="@+id/menuhalf_ch6"
+            style="@style/buttonStyle"
+            android:layout_width="86px"
+            android:layout_height="60px"
+            android:layout_below="@id/menuhalf_ch1"
+            android:layout_marginStart="8px"
+            android:layout_marginTop="8px"
+            android:layout_toEndOf="@id/menuhalf_ch5"
+            android:background="@drawable/selector_rightslip_button"
+            android:gravity="center"
+            android:text="CH6"
+            android:textColor="@color/colorCh6" />
+
+        <Button
+            android:id="@+id/menuhalf_ch7"
+            style="@style/buttonStyle"
+            android:layout_width="86px"
+            android:layout_height="60px"
+            android:layout_below="@id/menuhalf_ch1"
+            android:layout_marginStart="8px"
+            android:layout_marginTop="8px"
+            android:layout_toEndOf="@id/menuhalf_ch6"
+            android:background="@drawable/selector_rightslip_button"
+            android:gravity="center"
+            android:text="CH7"
+            android:textColor="@color/colorCh7" />
+
+        <Button
+            android:id="@+id/menuhalf_ch8"
+            style="@style/buttonStyle"
+            android:layout_width="86px"
+            android:layout_height="60px"
+            android:layout_below="@id/menuhalf_ch1"
+            android:layout_marginStart="8px"
+            android:layout_marginTop="8px"
+            android:layout_toEndOf="@id/menuhalf_ch7"
+            android:background="@drawable/selector_rightslip_button"
+            android:gravity="center"
+            android:text="CH8"
+            android:textColor="@color/colorCh8" />
+
+    </RelativeLayout>
+</merge>

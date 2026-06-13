@@ -1,0 +1,177 @@
+package com.micsig.tbook.scope.Display;
+
+import android.util.Log;
+
+import com.micsig.tbook.scope.Action.FPGAMessage;
+import com.micsig.tbook.scope.Action.UiMessage;
+import com.micsig.tbook.scope.Action.XAction;
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.horizontal.HorizontalAxis;
+
+/**
+ * Created by zhuzh on 2018/3/15.
+ */
+
+public class DisplayAction extends XAction {
+    private static final String TAG = "DisplayAction";
+    public static final int FLAGS_NONE_LARGE_TIME_SCALE = 0x00;
+    public static final int FLAGS_RELOAD_LARGE_TIME_SCALE = 0x01;
+    public static final int FLAGS_RESET_BAKSCALEID = 0x02;
+
+    private Display display;
+    private int bakScaleId = -1;
+    private boolean isReloadLargeTimeScale = false;
+    private boolean isResetBakScaleId = false;
+
+    public DisplayAction(Display display){
+        this.display = display;
+    }
+
+    public void setZoomChangeFlags(int changeFlags) {
+        if((changeFlags & FLAGS_RELOAD_LARGE_TIME_SCALE) == FLAGS_RELOAD_LARGE_TIME_SCALE) {
+            isReloadLargeTimeScale = true;
+        }
+        if((changeFlags & FLAGS_RESET_BAKSCALEID) == FLAGS_RESET_BAKSCALEID) {
+            isResetBakScaleId = true;
+        }
+    }
+
+    public void zoomChange(boolean zoom){
+        Scope scope = Scope.getInstance();
+        HorizontalAxis horizontalAxis = HorizontalAxis.getInstance();
+
+        if(display.isZoom()) {
+
+            bakScaleId = horizontalAxis.getTimeScaleIdOfView(HorizontalAxis.WPI_STANDARD);
+            //进入zoom
+            int scaleNow = scope.enterZoom_SL_scale();
+            int scaleLast = horizontalAxis.getTimeScaleIdOfView(HorizontalAxis.WPI_STANDARD);
+
+            if (scaleLast <= scaleNow)
+                scaleLast = scaleNow;
+
+            double scaleNowTime = horizontalAxis.getTimeScaleIdVal(scaleNow);
+            double scaleLastTime = scaleNowTime;
+
+            if(isReloadLargeTimeScale) {
+                scaleLast = horizontalAxis.getTimeScaleIdOfView(HorizontalAxis.WPI_LARGE);
+                if(scaleLast <= scaleNow) scaleLast = scaleNow;
+                isReloadLargeTimeScale = false;
+            } else {
+                for (int i = scaleLast; i < HorizontalAxis.getMaxGear() + 1; i++) {
+                    scaleLast = i;
+                    scaleLastTime = horizontalAxis.getTimeScaleIdVal(i);
+                    if (((int) (scaleNowTime / scaleLastTime + 0.5)) > 9) {
+                        break;
+                    }
+                }
+            }
+
+            horizontalAxis.setTimeScaleIdOfView(HorizontalAxis.WPI_SMALL, scaleNow);
+            if(!zoom) {
+                horizontalAxis.setTimeScaleIdOfView(HorizontalAxis.WPI_LARGE, scaleLast);
+            }
+            long timePosNow = scope.enterZoom_SL_timePos();
+            long timePosLast = horizontalAxis.getTimePosOfView(HorizontalAxis.WPI_SMALL);
+
+            long halfTimeScreen_n = -scope.timeOneScreen_zoom() / 2;
+            if (timePosLast < halfTimeScreen_n)
+                timePosLast = halfTimeScreen_n;
+
+            horizontalAxis.setTimePosOfView(HorizontalAxis.WPI_LARGE, timePosLast);
+            horizontalAxis.setTimePosOfView(HorizontalAxis.WPI_SMALL, timePosNow);
+
+            sendUiMsg(UiMessage.UI_MESSAGE_TIME_SCALE_CHANGE);
+            sendUiMsg(UiMessage.UI_MESSAGE_ZOOM_ENTER);
+        } else {
+            if(isResetBakScaleId) {
+                isResetBakScaleId = false;
+                bakScaleId = -1;
+            }
+            //退出zoom
+            if(bakScaleId >= 0) {
+                horizontalAxis.setTimeScaleIdOfView(HorizontalAxis.WPI_STANDARD,
+                        bakScaleId);
+            } else {
+                horizontalAxis.setTimeScaleIdOfView(HorizontalAxis.WPI_STANDARD,
+                        horizontalAxis.getTimeScaleIdOfView(HorizontalAxis.WPI_STANDARD));
+            }
+            horizontalAxis.setTimePosOfView(HorizontalAxis.WPI_STANDARD,
+                    horizontalAxis.getTimePosOfView(HorizontalAxis.WPI_LARGE));
+            horizontalAxis.correctTimePose();
+            sendUiMsg(UiMessage.UI_MESSAGE_TIME_SCALE_CHANGE);
+        }
+
+        sendFpgaMsg(FPGAMessage.FPGA_CMD_DIS_MODE|FPGAMessage.FPGA_CMD_DIS|FPGAMessage.FPGA_CMD_DIS_PIX);
+        if(Scope.getInstance().isRun()){
+            sendFpgaMsg(0,FPGAMessage.FPGA_CMD_EXT_CHAZHI_COEF);
+        }
+        sendEvent(EventFactory.EVENT_DISPLAY_ZOOM);
+        sendUiMsg(UiMessage.UI_MESSAGE_DEPTH_SAMPFRE);
+        sendUiMsg(UiMessage.UI_MESSAGE_SIMPLE_WIN_DIS);
+
+    }
+
+    public void displayModeChange(){
+        sendEvent(EventFactory.EVENT_DISPLAY_MODE);
+        sendChSample();
+        sendFpgaMsg(FPGAMessage.FPGA_CMD_DIS_MODE|FPGAMessage.FPGA_CMD_DIS|FPGAMessage.FPGA_CMD_Y_PLACE);
+        sendUiMsg(UiMessage.UI_MESSAGE_DEPTH_SAMPFRE);
+    }
+
+    public void rollChange(){
+        if(HorizontalAxis.isRoolScale() && Scope.getInstance().isRun()){
+            if(display.isRoll()){
+                HorizontalAxis.getInstance().setTimePosOfView(0);
+                EventFactory.sendEvent(EventFactory.EVENT_TIME_POS);
+            }
+            sendFpgaMsg(FPGAMessage.FPGA_CMD_DIS
+                    | FPGAMessage.FPGA_CMD_SAMP_MODE
+                    | FPGAMessage.FPGA_CMD_SAMP_PLACE
+                    | FPGAMessage.FPGA_CMD_SAMP_ZUN_DEPTH);
+        }
+    }
+
+    public void persistAdjustTimeChange(){
+        sendEvent(EventFactory.EVENT_AFTERGLOW_TIME);
+    }
+
+    public void clearPersist(){
+        sendEvent(EventFactory.EVENT_AFTERGLOW_CLEAR);
+    }
+
+    public void clearFftPersist() {
+        EventFactory.sendEvent(new EventBase(EventFactory.EVENT_AFTERGLOW_MATH_CLEAR),true,200);
+    }
+
+    public void clearWave(){
+        sendEvent(EventFactory.EVENT_WAVE_CLEAR);
+    }
+
+    public void persistTypeChange(){
+        sendFpgaMsg(FPGAMessage.FPGA_CMD_DIS);
+        sendEvent(EventFactory.EVENT_AFTERGLOW_ENABLE);
+    }
+
+    public void brightnessChange(){ //波形亮度改变
+        sendFpgaMsg(FPGAMessage.FPGA_CMD_DIS_MODE|FPGAMessage.FPGA_CMD_DIS);
+        sendEvent(EventFactory.EVENT_DIAPLAY_WAVE_BRIGHTNESS);
+    }
+
+    public void drawTypeChange(){ //点模式和线模式
+        sendFpgaMsg(FPGAMessage.FPGA_CMD_DIS_MODE
+                |FPGAMessage.FPGA_CMD_DIS
+                ,FPGAMessage.FPGA_CMD_EXT_CHAZHI_COEF);
+        sendEvent(EventFactory.EVENT_DRAW_TYPE);
+    }
+
+    public void horRefChange(){
+        sendEvent(EventFactory.EVENT_HORREF);
+    }
+
+    public void cctChange(){
+        sendEvent(EventFactory.EVENT_DISPLAY_CCT);
+    }
+}

@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.micsig.tbook.tbookscope">
+
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.READ_USER_DICTIONARY" />
+    <uses-permission android:name="android.permission.WRITE_USER_DICTIONARY" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+
+    <uses-permission android:name="android.permission.SERIAL_PORT" />
+
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.READ_LOGS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+
+    <uses-permission
+        android:name="android.permission.INJECT_EVENTS"
+        tools:ignore="ProtectedPermissions" />
+
+    <application
+        android:name=".util.App"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="${APP_NAME_MAIN}"
+        android:largeHeap="true"
+        android:supportsRtl="false"
+        android:requestLegacyExternalStorage="true"
+        android:usesCleartextTraffic="true"
+        android:resizeableActivity="false"
+        android:hardwareAccelerated="true"
+        android:theme="@style/AppTheme2">
+
+        <!-- android:theme="@android:style/Theme.Material.NoActionBar.Fullscreen"> -->
+
+
+        <meta-data
+            android:name="ScopedStorage"
+            android:value="true" />
+        <activity
+            android:name=".MainActivity"
+            android:launchMode="singleInstance"
+            android:theme="@style/FirstActivity"
+            android:configChanges="fontScale|keyboard|keyboardHidden|locale|orientation|screenLayout|uiMode|screenSize|navigation"
+
+            android:windowSoftInputMode="stateAlwaysHidden">
+        </activity>
+        <activity
+            android:exported="true"
+            android:name=".first.FirstActivity"
+            android:launchMode="singleInstance"
+            android:alwaysRetainTaskState='true'
+            android:configChanges="fontScale|keyboard|keyboardHidden|locale|orientation|screenLayout|uiMode|screenSize|navigation"
+            >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <receiver android:name=".first.BootCompletedReceiver" android:exported="true">
+            <intent-filter android:priority="1000">
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+            <intent-filter android:priority="1000">
+                <action android:name="android.intent.action.ACTION_SHUTDOWN" />
+            </intent-filter>
+            <intent-filter android:priority="1000">
+                <action android:name="android.intent.action.STANDBY"/>
+            </intent-filter>
+            <intent-filter android:priority="1000">
+                <action android:name="android.intent.action.STANDBY_OUT"/>
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".first.LocaleChangeReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter android:priority="1000">
+                <action android:name="android.intent.action.LOCALE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+<!--        <receiver android:name=".broadcastreceiver.UDiskChangedReceiver">-->
+<!--            <intent-filter>-->
+<!--                <action android:name="android.intent.action.MEDIA_MOUNTED"/>-->
+<!--                <action android:name="android.intent.action.MEDIA_EJECT" />-->
+<!--                <data android:scheme="file"/>-->
+<!--            </intent-filter>-->
+<!--        </receiver>-->
+<!--        &lt;!&ndash;静态注册广播 &ndash;&gt;-->
+<!--        <receiver android:name=".broadcastreceiver.WifiChangedReceiver" android:enabled="true" android:exported="true">-->
+<!--            <intent-filter>-->
+<!--                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />-->
+<!--                <action android:name="android.net.wifi.WIFI_STATE_CHANGED" />-->
+<!--                <action android:name="android.net.wifi.STATE_CHANGE" />-->
+<!--            </intent-filter>-->
+<!--        </receiver>-->
+<!--        <receiver android:name=".broadcastreceiver.BatteryChangedReceiver">-->
+<!--            <intent-filter>-->
+<!--                <action android:name="android.intent.action.ACTION_POWER_CONNECTED"/>-->
+<!--                <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED"/>-->
+<!--            </intent-filter>-->
+<!--        </receiver>-->
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="com.micsig.tbook.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/filepaths" />
+        </provider>
+        <meta-data android:name="SCOPE_ID"
+            android:value="58d6379a-4b0b-4a78-8dbd-eb4854bb8df6
+            ,64ae652b-722e-4503-8ea5-6f769b660d36
+            ,c9b1d3b1-5c7b-4a1e-8f2d-6e3c9a8b4d1f
+        "/>
+<!--        <meta-data android:name="SCOPE_ID"-->
+<!--            android:value="${SCOPE_ID}"/>-->
+        <uses-library android:name="libOpenCL.so" android:required="false"/>
+    </application>
+
+</manifest>

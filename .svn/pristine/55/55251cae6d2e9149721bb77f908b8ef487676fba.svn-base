@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AbsoluteLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <View
+        android:id="@+id/outView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <View
+        android:layout_width="@dimen/rightSlipChannelWidth"
+        android:layout_height="@dimen/rightDialogHeight"
+        android:layout_x="@dimen/rightChannelDialogX"
+        android:layout_y="@dimen/rightDialogY"
+        android:background="@color/color_Enable" />
+
+    <RelativeLayout
+        android:layout_width="@dimen/rightSlipChannelWidth"
+        android:layout_height="wrap_content"
+        android:layout_x="1390px"
+        android:layout_y="@dimen/rightDialogY"
+        android:background="@drawable/shape_frame_bg_black"
+        android:gravity="center_horizontal"
+        android:paddingVertical="22px">
+
+        <com.micsig.tbook.ui.rightslipmenu.RightViewSelect
+            android:id="@+id/multiple"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:array="@array/channelProbeTypeMultiple"
+            app:arrayOrientation="horizontalEachRow4"
+            app:itemHeight="54px"
+            app:itemMargin="7px"
+            app:itemWidth="78px" />
+
+        <com.micsig.tbook.ui.rightslipmenu.RightViewUserDefineEdit
+            android:id="@+id/userDefineMultiple"
+            android:layout_width="170px"
+            android:layout_height="54px"
+            android:layout_alignEnd="@id/multiple"
+            android:layout_alignBottom="@id/multiple"
+            android:layout_marginEnd="7px"
+            android:layout_marginBottom="7px" />
+    </RelativeLayout>
+</AbsoluteLayout>

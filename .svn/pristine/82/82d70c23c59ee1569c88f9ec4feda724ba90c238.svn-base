@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <View
+        android:id="@+id/outView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="300px"
+        android:background="@drawable/shape_frame_bg_black"
+        android:padding="15px"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <RadioButton
+            android:id="@+id/head"
+            style="@style/textStyle"
+            android:layout_width="120px"
+            android:layout_height="60px"
+            android:background="@drawable/bg_radiobutton_middle"
+            android:button="@null"
+            android:checked="true"
+            android:gravity="center"
+            android:text="@string/dialogmeasurephase_head" />
+
+
+        <com.micsig.tbook.ui.top.view.TopViewEdit
+            android:id="@+id/tvalue_voltage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/head"
+            android:layout_marginTop="20px"
+            android:layout_marginStart="19px"
+            android:layout_marginEnd="29px"
+            app:editCenter="true"
+            app:editWidth="230px"
+            app:head="@string/tvalueVoltage"
+            app:headViewGravityLeft="false"
+            app:headTextSize="20px"
+            app:headWidth="125px" />
+        <com.micsig.tbook.ui.top.view.TopViewEdit
+            android:id="@+id/tvalue_edge_occurence"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/tvalue_voltage"
+            android:layout_marginTop="20px"
+            android:layout_marginStart="19px"
+            android:layout_marginEnd="29px"
+            app:editCenter="true"
+            app:editWidth="230px"
+            app:head="@string/tvalueEdge"
+            app:headViewGravityLeft="false"
+            app:headTextSize="20px"
+            app:headWidth="125px" />
+
+        <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+            android:id="@+id/tvalue_cursor"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/tvalue_edge_occurence"
+            android:layout_marginStart="28px"
+            android:layout_marginTop="20px"
+            app:array="@array/tValueCursor"
+            app:head="@string/tValueCursor" />
+
+        <Button
+            android:id="@+id/sure"
+            style="@style/buttonStyle"
+            android:layout_width="120px"
+            android:layout_height="60px"
+            android:layout_below="@+id/tvalue_cursor"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="15px"
+            android:gravity="center"
+            android:text="@string/sure" />
+    </RelativeLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

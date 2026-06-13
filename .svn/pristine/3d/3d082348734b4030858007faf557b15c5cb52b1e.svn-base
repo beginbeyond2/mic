@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.micsig.tbook.ui.rightslipmenu.InterceptTouchRelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/doubleWaveLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingStart="28px"
+    android:paddingTop="22px"
+    android:paddingEnd="22px">
+
+    <TextView
+        android:id="@+id/ch1doubleWaveSource1Head"
+        style="@style/rightHeadText"
+        android:layout_width="120px"
+        android:layout_height="54px"
+        android:layout_marginTop="7px"
+        android:gravity="center_vertical"
+        android:text="@string/mathSource1" />
+
+    <com.micsig.tbook.ui.rightslipmenu.RightViewSelect
+        android:id="@+id/doubleWaveSource1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        app:array="@array/channelsNameEight"
+        app:arrayOrientation="horizontalEachRow4"
+        app:itemHeight="54px"
+        app:itemMargin="7px"
+        app:itemWidth="108px" />
+
+    <com.micsig.tbook.ui.rightslipmenu.RightViewSelect
+        android:id="@+id/doubleWaveSymbol"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/doubleWaveSource1"
+        android:layout_alignLeft="@+id/doubleWaveSource1"
+        android:layout_alignRight="@+id/doubleWaveSource1"
+        android:layout_marginTop="7px"
+        android:layout_marginBottom="7px"
+        android:gravity="center"
+        app:array="@array/mathSymbol"
+        app:arrayOrientation="horizontalEachRow4"
+        app:itemHeight="54px"
+        app:itemMargin="14px"
+        app:itemWidth="54px" />
+
+    <TextView
+        android:id="@+id/ch1doubleWaveSource2Head"
+        style="@style/rightHeadText"
+        android:layout_width="120px"
+        android:layout_height="54px"
+        android:layout_below="@id/doubleWaveSymbol"
+        android:gravity="center_vertical"
+        android:text="@string/mathSource2" />
+
+    <com.micsig.tbook.ui.rightslipmenu.RightViewSelect
+        android:id="@+id/doubleWaveSource2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/doubleWaveSymbol"
+        android:layout_alignParentEnd="true"
+        app:array="@array/channelsNameEight"
+        app:arrayOrientation="horizontalEachRow4"
+        app:itemHeight="54px"
+        app:itemMargin="7px"
+        app:itemWidth="108px" />
+
+</com.micsig.tbook.ui.rightslipmenu.InterceptTouchRelativeLayout>

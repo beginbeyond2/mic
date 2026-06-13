@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/triggerSource"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="25px"
+        app:array="@array/triggerSource"
+        app:head="@string/triggerSource"
+        app:headWidth="100px" />
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/polar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/triggerSource"
+        android:layout_marginStart="124px"
+        android:layout_toEndOf="@+id/triggerSource"
+        app:array="@array/triggerVideoPolar"
+        app:head="@string/triggerVideoPolar"
+        app:headWidth="100px" />
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/standard"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/triggerSource"
+        android:layout_marginStart="25px"
+        android:layout_marginTop="10px"
+        app:array="@array/triggerVideoStandard"
+        app:head="@string/triggerVideoStandard"
+        app:headWidth="100px" />
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/trigger"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/standard"
+        android:layout_marginStart="25px"
+        android:layout_marginTop="10px"
+        app:array="@array/triggerVideoTriggerMore"
+        app:head="@string/triggerVideotrigger"
+        app:headWidth="100px" />
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/frequency"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/trigger"
+        android:layout_marginStart="25px"
+        android:layout_marginTop="10px"
+        app:array="@array/triggerVideoFrequencyLess"
+        app:head="@string/triggerVideoFrequency"
+        app:headWidth="100px" />
+
+    <LinearLayout
+        android:id="@+id/lineLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@id/trigger"
+        android:layout_alignBottom="@id/trigger"
+        android:layout_marginStart="10px"
+        android:layout_toEndOf="@id/standard"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/lineHead"
+            style="@style/textStyle"
+            android:layout_width="80px"
+            android:layout_height="60px"
+            android:layout_marginRight="16px"
+            android:gravity="center_vertical|end"
+            android:text="@string/triggervideo_linehead" />
+
+        <TextView
+            android:id="@+id/lineDetail"
+            style="@style/editTextStyleRight"
+            android:layout_width="120px"
+            android:layout_height="60px"
+            android:text="@string/triggervideo_linedetail" />
+    </LinearLayout>
+
+</RelativeLayout>

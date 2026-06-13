@@ -1,0 +1,686 @@
+package com.micsig.tbook.scope;
+
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Message;
+import android.os.SystemClock;
+import android.util.Log;
+
+import com.micsig.tbook.hardware.Hardware;
+import com.micsig.tbook.hardware.HardwareProduct;
+import com.micsig.tbook.scope.Action.FPGAMessage;
+import com.micsig.tbook.scope.Action.HardwareMessage;
+import com.micsig.tbook.scope.Action.UiMessage;
+import com.micsig.tbook.scope.Data.SyncHeader;
+import com.micsig.tbook.scope.Display.Display;
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.Sample.Sample;
+import com.micsig.tbook.scope.Sample.SegmentSample;
+import com.micsig.tbook.scope.fpga.FPGABoot;
+import com.micsig.tbook.scope.fpga.FPGA_Status;
+import com.micsig.tbook.scope.surface.DeviceFactory;
+import com.micsig.tbook.scope.surface.HwDevice;
+
+/**
+ * Created by zhuzh on 2018/3/13.
+ */
+
+public class ScopeMessage {
+    private static final String TAG = "ScopeMessageThread";
+
+    private static final int MSG_FPGA = 0x1001;
+    private static final int MSG_HARDWARE = MSG_FPGA + 1;
+    private static final int MSG_FPGA_RUN = MSG_HARDWARE + 1;
+    private static final int MSG_FPGA_BOOT = MSG_FPGA_RUN + 1;
+    private static final int MSG_SCOPE_RESUME = MSG_FPGA_BOOT + 1;
+    private static final int MSG_SCOPE_PAUSE = MSG_SCOPE_RESUME + 1;
+
+    private static final int MSG_TOUCH_RESUME = MSG_SCOPE_PAUSE + 1;
+    private static final int MSG_TOUCH_PAUSE = MSG_TOUCH_RESUME + 1;
+    private static final int MSG_READ_FPGA_ID = MSG_TOUCH_PAUSE + 1;
+    private static final int MSG_READ_FPGA_STATUS  = MSG_READ_FPGA_ID + 1;
+    private static final int MSG_CH_SAMPLE_CHANGE = MSG_READ_FPGA_STATUS + 1;
+    private static final int MSG_SAMPLE_STATE = MSG_CH_SAMPLE_CHANGE + 1;
+    private static final int MSG_UI = MSG_SAMPLE_STATE + 1;
+    private static final int MSG_UI_RUN = MSG_UI + 1;
+    private static final int MSG_FORCE_TRIGGER = MSG_UI_RUN + 1;
+    private static final int MSG_SEGMENT_TS = MSG_FORCE_TRIGGER + 1;
+    private static final int MSG_SEGMENT_FRAMES = MSG_SEGMENT_TS + 1;
+    private static final int MSG_50O_STATUS = MSG_SEGMENT_FRAMES + 1;
+    private static final int MSG_AD_CHECK = MSG_50O_STATUS + 1;
+    private static final int MSG_CMD_SEGMENT = MSG_AD_CHECK + 1;
+
+    private static final int MSG_AD_RESET = MSG_CMD_SEGMENT + 1;
+    private static final int MSG_PROBE_EVENT = MSG_AD_RESET + 1;
+    private static final int MSG_SEND_PROBE = MSG_PROBE_EVENT + 1;
+    private static final int MSG_CLEAR_WAVE = MSG_SEND_PROBE + 1;
+    private static final int MAG_AD_JZ = MSG_CLEAR_WAVE + 1;
+    private static final int MSG_PROBE_TIMER = MAG_AD_JZ + 1;
+    private static final int MSG_FPGA_CLOCK_INOUT_STATUS = MSG_PROBE_TIMER + 1;
+    private static final int MSG_FPGA_STATUS = MSG_FPGA_CLOCK_INOUT_STATUS + 1;
+
+    private static final int MSG_DELAY_MS = 20;
+    private static final int MSG_UI_DELAY_MS = 150;
+    private HandlerThread mHandlerThread;
+    private Handler mHandler;
+    private FPGAMessage fpgaMessage;
+    private UiMessage uiMessage;
+    private HardwareMessage hwMessage;
+    private volatile int syncHeader = 0;
+    private volatile boolean bMessageEmpty = true;
+
+    private static final int FPGA_ID = 0x46504741;
+
+    private int sysTemperature = 0;
+    private boolean bProbeResume = false;
+
+
+    private ScopeMessage(){
+        fpgaMessage = new FPGAMessage();
+        hwMessage = new HardwareMessage();
+        uiMessage = new UiMessage();
+        mHandlerThread = new HandlerThread(TAG);
+        mHandlerThread.start();
+        mHandler = new Handler(mHandlerThread.getLooper()){
+            @Override
+            public void handleMessage(Message msg) {
+
+                FPGABoot fpgaBoot = FPGABoot.getInstance();
+                Scope scope = Scope.getInstance();
+                Sample sample = Sample.getInstance();
+                Display display = Display.getInstance();
+                switch (msg.what){
+                    case MSG_SAMPLE_STATE:
+                        if(display.isXYMode()
+                                || sample.isSingle()
+                                || scope.isAuto()
+                                || scope.isSerialText()
+                                || scope.isEnableChannelZero()
+                                ||fpgaMessage.isCalibrate()){
+
+                            if(msg.arg1 >= Sample.SAMPLE_RUN){
+                                msg.arg1 = Sample.SAMPLE_RUN;
+                            }
+                        }
+
+                        if(msg.arg1 == Sample.SAMPLE_TRANSIENT_DIAPLAY){
+                            fpgaMessage.setTransientDisplayTimestamp(SystemClock.elapsedRealtime());
+                        }
+
+                        sample.setSampleState(msg.arg1);
+                        if(mHandler.hasMessages(MSG_FPGA_RUN)){
+                            mHandler.removeMessages(MSG_FPGA_RUN);
+                        }
+                        Message m = Message.obtain();
+                        m.what = MSG_FPGA_RUN;
+                        m.arg1 = m.arg2 = 0;
+                        mHandler.sendMessageAtFrontOfQueue(m);
+                        break;
+                    case MSG_CLEAR_WAVE:
+                        clearWave();
+                        break;
+                    case MSG_FPGA:
+                        fpgaMessage.add(msg.arg1,msg.arg2);
+                        break;
+                    case MSG_HARDWARE:
+                        hwMessage.add(msg.arg1, msg.arg2);
+                        break;
+                    case MSG_FPGA_RUN:
+                        if(fpgaBoot.isFpgaBootOK()) {
+                            if(isRun()) {
+                                if(fpgaMessage.isDelayRun()
+                                        || hwMessage.isDelayRun()) {
+                                    boolean bSync = true;
+                                    if(fpgaMessage.isDisplayTransient()){
+                                        bSync = fpgaMessage.display();
+                                        hwMessage.add(HardwareMessage.HARD_ID_OFFSET_MASK,0);
+                                    }else{
+                                        hwMessage.run();
+                                        fpgaMessage.run();
+                                        if (sample.getSampleState() == Sample.SAMPLE_RUN) {
+                                            setClearWave(true);
+                                        }
+                                    }
+                                    if(bSync) {
+                                        fpgaMessage.fpgaSync();
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    case MSG_FPGA_BOOT: {
+
+//                        for(int KK = 0;KK < 100;KK++)
+                        {
+                            int loadCounter = 0;
+                            int vId = 0;
+                            SyncHeader.upSyncHeader();
+                            fpgaMessage.stop();
+                            if (fpgaBoot.getFpgaType()
+                                    != FPGABoot.FPGA_TYPE_NONE) {
+                                ms_sleep(300);
+                            }
+
+                            Log.d(TAG, "bootType:" + msg.arg1);
+                            HwDevice hwDevice = DeviceFactory.allocDevice();
+                            do {
+                                hwDevice.suspend();
+                                ms_sleep(100);
+                                do {
+                                    loadCounter = 0;
+                                    fpgaBoot.loadFpga(msg.arg1);
+                                    while (loadCounter < 40) {
+                                        vId = fpgaMessage.fpgaId();
+
+                                        if (vId == FPGA_ID) {
+                                            break;
+                                        }
+                                        ms_sleep(1000);
+                                        loadCounter++;
+                                    }
+
+                                } while (vId != FPGA_ID);
+                                hwDevice.resume();
+                                if (!hwDevice.isAsyncOpen()) {
+                                    break;
+                                }
+                                if (hwDevice.isOpen()) {
+                                    break;
+                                }
+                            } while (true);
+
+                            EventFactory.sendEvent(new EventBase(EventFactory.EVENT_FPGA_LOAD_OK, msg.arg1),true);
+
+                            sysTemperature = Hardware.getInstance().getTemperature();
+                            Scope.fpgaVer = fpgaMessage.fpgaVersion();
+                            hwMessage.resume();
+                            fpgaMessage.cmdInit();
+                            fpgaMessage.resume();
+                            send50O();
+                            sendAdCheck();
+                            fpgaBoot.setFpgaBootOK(true);
+                            bProbeResume = true;
+                            Log.d(TAG,"boot end");
+                        }
+                    }
+                        break;
+                    case MSG_PROBE_EVENT:
+                        if(fpgaBoot.isFpgaBootOK()) {
+                            fpgaMessage.probeProcess();
+                        }
+                        break;
+                    case MSG_SEND_PROBE:
+                        fpgaMessage.sendProbe(msg.arg1,(byte[]) msg.obj);
+                        break;
+                    case MSG_PROBE_TIMER:
+                        fpgaMessage.checkProbe();
+                        checkProbeCommand();
+                        break;
+                    case MSG_SCOPE_PAUSE:
+                        hwMessage.pause();
+                        fpgaMessage.pause();
+                        break;
+                    case MSG_SCOPE_RESUME:
+//                        hwMessage.resume();
+                        fpgaMessage.resume();
+                        break;
+                    case MSG_TOUCH_PAUSE:
+                        fpgaMessage.touchPause();
+                        break;
+                    case MSG_TOUCH_RESUME:
+                        fpgaMessage.touchResume();
+                        break;
+                    case MSG_READ_FPGA_ID:
+                        if(fpgaMessage.fpgaId() != 0x46504741){
+                            sendAdCheck();
+                        }
+                        fpgaMessage.fpgaStatus();
+                        fpgaMessage.fpgaSync();
+                        break;
+
+                    case MSG_READ_FPGA_STATUS:{
+                            fpgaStatus(msg);
+                        }
+                        break;
+                    case MSG_CH_SAMPLE_CHANGE:
+                        if(isRun()) {
+                            hwMessage.chSampleChange();
+                        }else{
+                            if(!hasMessages(MSG_CH_SAMPLE_CHANGE)) {
+                                sendEmptyMessageDelayed(MSG_CH_SAMPLE_CHANGE, 100);
+                            }
+                        }
+                        break;
+                    case MSG_UI:
+                        uiMessage.add(msg.arg1);
+                        break;
+                    case MSG_UI_RUN:
+                        uiMessage.run();
+                        break;
+                    case MSG_FORCE_TRIGGER:
+                        fpgaMessage.forceTrigger();
+                        break;
+                    case MSG_SEGMENT_TS:
+                        fpgaMessage.segmentTimestamp();
+                        break;
+                    case MSG_SEGMENT_FRAMES:
+                        {
+                            SegmentSample segmentSample = SegmentSample.getInstance();
+                            if(segmentSample.isSegmentEnable()){
+                                int frams = fpgaMessage.getSegmentFrames();
+                                if(frams < 0) frams = 0;
+                                segmentSample.setSegmentFrames(frams);
+                                segmentFrames();
+                            }
+                        }
+                        break;
+                    case MSG_50O_STATUS: {
+                        int val = fpgaMessage.get50O();
+                        Scope.getInstance().setResistanceType(val);
+                        Scope.fpgaTemperature1  = fpgaMessage.getFpgaTemperature(0);
+                        Scope.fpgaTemperature2  = fpgaMessage.getFpgaTemperature(1);
+                        Hardware.getInstance().setTemperature(Math.max(Scope.fpgaTemperature1,Scope.fpgaTemperature2));
+                        if(HardwareProduct.isFanSpeed()){
+                            fpgaMessage.getFanSpeed(Scope.fanSpeed);
+                            Hardware.getInstance().setFanSpeed(Math.max(Scope.fanSpeed[0],Scope.fanSpeed[1]));
+                        }
+
+
+
+                        send50O();
+                        int t = Hardware.getInstance().getTemperature();
+                        if(Math.abs(sysTemperature - t) > 10){
+                            //Logger.d(TAG,"sysTemperature:" + sysTemperature + ",t:" + t);
+                            fpgaMessage.forceAdCalibation();
+                            sysTemperature = t;
+                        }
+
+                    }
+                    break;
+                    case MSG_FPGA_CLOCK_INOUT_STATUS:
+                        Scope.fpgaClockInStatus = fpgaMessage.getFpgaClockInOutStatus(true);
+                        Scope.fpgaClockOutStatus = fpgaMessage.getFpgaClockInOutStatus(false);
+                        break;
+                    case MSG_FPGA_STATUS:
+                        fpgaPhyStatus(fpgaMessage.getfpgaStatus());
+                        break;
+                    case MSG_CMD_SEGMENT:
+                        fpgaMessage.cmdSegment();
+                        break;
+                    case MSG_AD_RESET:
+                        fpgaMessage.cmdInit();
+                        break;
+                    case MAG_AD_JZ:
+                        fpgaMessage.ADCalibrate();
+                        break;
+                }
+
+                if(fpgaMessage.isDelayRun()){
+                    if(!hasMessages(MSG_FPGA_RUN)) {
+                        sendEmptyMessageDelayed(MSG_FPGA_RUN, MSG_DELAY_MS);
+                    }
+                }
+                if(uiMessage.isDelayRun()){
+                    if(!hasMessages(MSG_UI_RUN)) {
+                        sendEmptyMessageDelayed(MSG_UI_RUN, MSG_UI_DELAY_MS);
+                    }
+                }
+                synchronized (this){
+                    if(isMessageEmpty()
+                            && !hwMessage.isDelayRun()
+                            && !fpgaMessage.isDelayRun()){
+                        bMessageEmpty = true;
+                        syncHeader = SyncHeader.getSyncHeader();
+                        if(sample.getSampleState() == Sample.SAMPLE_TRANSIENT_RUN){
+                            sample.setSampleState(Sample.SAMPLE_TRANSIENT);
+                        }
+
+                        if (scope.isUI() /*&& bProbeResume*/) {//临时修正前四个模拟通道探头不识别
+                            bProbeResume = false;
+                            probeEvent(2500);
+                        }
+                    }
+                }
+            }
+        };
+        checkProbeCommand();
+    }
+    private volatile boolean bClearWave = false;
+    public void setClearWave(boolean bClearWave){
+
+        synchronized (this) {
+            this.bClearWave = bClearWave;
+            if(bClearWave) {
+                //Log.d(TAG, "setClearWave() called with: bClearWave = [" + bClearWave + "]");
+                if(mHandler.hasMessages(MSG_CLEAR_WAVE)){
+                    mHandler.removeMessages(MSG_CLEAR_WAVE);
+                }
+                mHandler.sendEmptyMessageDelayed(MSG_CLEAR_WAVE, 500);
+            }
+        }
+    }
+    private void clearWave(){
+        synchronized (this) {
+            if(bClearWave) {
+                bClearWave = false;
+                Scope scope = Scope.getInstance();
+                Sample sample = Sample.getInstance();
+                int s = sample.getSampleState();
+                if (s == Sample.SAMPLE_RUN) {
+                    scope.clearWave();
+                }else if(s > Sample.SAMPLE_RUN){
+                    scope.clearPersist();
+                }
+            }
+        }
+    }
+    private void ms_sleep(long ms){
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+    public FPGA_Status getFpgaStatus(){
+        FPGA_Status fpgaStatus = new FPGA_Status();
+        synchronized (this){
+            bMessageEmpty = false;
+            Message msg = mHandler.obtainMessage();
+            msg.what = MSG_READ_FPGA_STATUS;
+            msg.obj = fpgaStatus;
+            mHandler.sendMessage(msg);
+
+            try {
+                this.wait(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        return fpgaStatus;
+    }
+
+    public void fpgaStatus(Message msg){
+        synchronized (this) {
+            FPGA_Status fpgaStatus = (FPGA_Status) msg.obj;
+            if (fpgaStatus != null) {
+                fpgaMessage.getFPGA_Status(fpgaStatus);
+                this.notifyAll();
+            }
+        }
+    }
+    public boolean sendChSample(){
+        boolean bret = false;
+        synchronized (this){
+            bMessageEmpty = false;
+            if(mHandler.hasMessages(MSG_CH_SAMPLE_CHANGE)){
+                mHandler.removeMessages(MSG_CH_SAMPLE_CHANGE);
+            }
+            Message msg = mHandler.obtainMessage();
+            msg.what = MSG_CH_SAMPLE_CHANGE;
+            bret = mHandler.sendMessageAtFrontOfQueue(msg);
+        }
+        return bret;
+    }
+    public boolean sendFpgaId(){
+        synchronized (this){
+            bMessageEmpty = false;
+            return mHandler.sendEmptyMessage(MSG_READ_FPGA_ID);
+        }
+    }
+    volatile boolean bRun = true;
+    public synchronized boolean isRun(){
+        return bRun;
+    }
+    public void enableCommand(boolean bEnable){
+        synchronized (this){
+            bRun = bEnable;
+            if(bRun){
+                if(mHandler.hasMessages(MSG_FPGA_RUN)){
+                    mHandler.removeMessages(MSG_FPGA_RUN);
+                }
+                mHandler.sendEmptyMessage(MSG_FPGA_RUN);
+            }
+        }
+    }
+
+
+    public boolean sendResume(){
+        synchronized (this) {
+            bMessageEmpty = false;
+            if(mHandler.hasMessages(MSG_SCOPE_RESUME)){
+                mHandler.removeMessages(MSG_SCOPE_RESUME);
+            }
+            return mHandler.sendEmptyMessage(MSG_SCOPE_RESUME);
+        }
+    }
+    public boolean sendPause(){
+        synchronized (this) {
+            bMessageEmpty = false;
+            return mHandler.sendEmptyMessage(MSG_SCOPE_PAUSE);
+        }
+    }
+    public void segmentFrames(){
+        if(!mHandler.hasMessages(MSG_SEGMENT_FRAMES)) {
+            sendMessageDelayed(MSG_SEGMENT_FRAMES, 0, 0, 300);
+        }
+    }
+
+    public void cmdSegment(){
+        if(!mHandler.hasMessages(MSG_CMD_SEGMENT)){
+            mHandler.sendEmptyMessage(MSG_CMD_SEGMENT);
+        }
+    }
+
+    public void sendProbe(int chIdx,byte[] bytes,long ms){
+        Message msg = Message.obtain();
+        msg.what = MSG_SEND_PROBE;
+        msg.arg1 = chIdx;
+        msg.obj = bytes;
+        if(ms > 0) {
+            mHandler.sendMessageDelayed(msg, ms);
+        }else{
+            mHandler.sendMessage(msg);
+        }
+    }
+    public void sendProbe(int chIdx,byte[] bytes){
+        sendProbe(chIdx,bytes,0);
+    }
+
+    public void probeEvent(long ms){
+        if(!mHandler.hasMessages(MSG_PROBE_EVENT)){
+            if(ms > 0){
+                mHandler.sendEmptyMessageDelayed(MSG_PROBE_EVENT,ms);
+            }else{
+                mHandler.sendEmptyMessage(MSG_PROBE_EVENT);
+            }
+        }
+    }
+    public void probeEvent(){
+        probeEvent(0);
+    }
+
+    private void checkProbeCommand(){
+        if(!mHandler.hasMessages(MSG_PROBE_TIMER)){
+            mHandler.sendEmptyMessageDelayed(MSG_PROBE_TIMER,500);
+        }
+    }
+    private void send50O()
+    {
+        if(!mHandler.hasMessages(MSG_50O_STATUS)) {
+            sendMessageDelayed(MSG_50O_STATUS, 0, 0, 2000);
+        }
+    }
+    private void sendAdCheck(){
+//        if(!mHandler.hasMessages(MSG_AD_CHECK)) {
+//            mHandler.sendEmptyMessageDelayed(MSG_AD_CHECK,60*1000);
+//        }
+    }
+    public void sendADReset(){
+        if(!mHandler.hasMessages(MSG_AD_RESET)){
+            mHandler.sendEmptyMessage(MSG_AD_RESET);
+        }
+    }
+
+    public void segmentTimestamp(){
+        sendMessage(MSG_SEGMENT_TS,0,0);
+    }
+    public void forceTrigger(){
+        sendMessage(MSG_FORCE_TRIGGER,0,0);
+    }
+    public boolean sendFpgaBoot(int arg){
+        return sendMessage(MSG_FPGA_BOOT,arg,0);
+    }
+
+    public boolean sendFpgaMsgDelayed(int arg1,int arg2,long delayMillis){
+        return sendMessageDelayed(MSG_FPGA,arg1,arg2,delayMillis);
+    }
+    public boolean sendHwMsgDelayed(int arg1,int arg2,long delayMillis){
+        return sendMessageDelayed(MSG_HARDWARE,arg1,arg2,delayMillis);
+    }
+    public boolean sendFpgaMsg(int arg1,int arg2){
+
+        return sendMessage(MSG_FPGA,arg1,arg2);
+    }
+    public boolean sendUiMsg(int arg1){
+
+        if (arg1 == UiMessage.UI_MESSAGE_DEPTH_SAMPFRE)
+            EventFactory.sendEvent(EventFactory.EVENT_DEPTH_SAMPFRE_CHANGE);
+        return sendMessage(MSG_UI, arg1, 0);
+
+    }
+    public boolean sendHwMsg(int arg1,int arg2){
+        return sendMessage(MSG_HARDWARE,arg1,arg2);
+    }
+    private boolean sendMessage(int what,int arg1,int arg2){
+
+        synchronized (this) {
+            bMessageEmpty = false;
+            Message msg = Message.obtain();
+            msg.what = what;
+            msg.arg1 = arg1;
+            msg.arg2 = arg2;
+            if(what == MSG_HARDWARE || what == MSG_SAMPLE_STATE){
+                return mHandler.sendMessageAtFrontOfQueue(msg);
+            } else {
+                return mHandler.sendMessage(msg);
+            }
+        }
+    }
+
+    private boolean sendMessageDelayed(int what,int arg1,int arg2,long delayMillis){
+        synchronized (this) {
+            bMessageEmpty = false;
+            Message msg = Message.obtain();
+            msg.what = what;
+            msg.arg1 = arg1;
+            msg.arg2 = arg2;
+            return mHandler.sendMessageDelayed(msg, delayMillis);
+        }
+    }
+    private boolean isMessageEmpty(){
+        boolean bEmpty = true;
+        for (int i = MSG_FPGA; i <= MSG_SAMPLE_STATE; i++) {
+            if (mHandler.hasMessages(i)) {
+                bEmpty = false;
+                break;
+            }
+        }
+        return bEmpty;
+    }
+
+    public boolean messageFinished(){
+        synchronized (this) {
+            return bMessageEmpty;
+        }
+    }
+
+
+    private static volatile ScopeMessage instance = null;
+    public static ScopeMessage getInstance() {
+        if (instance == null) {
+            synchronized (ScopeMessage.class) {
+                if (instance == null ) {
+                    instance = new ScopeMessage();
+                }
+            }
+        }
+        return instance;
+    }
+    public static void runResume(){
+        getInstance().sendResume();
+    }
+    public static void runPause(){
+        getInstance().sendPause();
+    }
+
+    public static boolean isEmpty(){
+        return getInstance().messageFinished();
+    }
+
+
+    public int getTemperature(){
+        return Hardware.getInstance().getTemperature();
+    }
+    public int getSysTemperature(){
+        return sysTemperature;
+    }
+    public void forceAdCalibation(){
+        sysTemperature = 0;
+    }
+
+    public boolean setSampleState(int state){
+        return sendMessage(MSG_SAMPLE_STATE, state, state);
+    }
+    public void setADCalibrate(){
+        sendMessage(MAG_AD_JZ,0,0);
+    }
+
+
+    public void touchPause(){
+        Log.d(TAG, "touchPause() called");
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                fpgaMessage.touchPause();
+            }
+        });
+    }
+    public void touchResume(){
+        Log.d(TAG, "touchResume() called");
+        sendFpgaMsg(FPGAMessage.FPGA_CMD_DIS|FPGAMessage.FPGA_CMD_DIS_PIX,0);
+    }
+
+    public synchronized int getSyncHeader(){
+        return syncHeader;
+    }
+
+
+    public boolean getFpgaClockInOutStatus(boolean isIn) {
+        sendFpgaClockInOutMsg();
+        ms_sleep(50);
+        return isIn ? Scope.fpgaClockInStatus : Scope.fpgaClockOutStatus;
+    }
+
+    private void sendFpgaClockInOutMsg() {
+        mHandler.sendEmptyMessage(MSG_FPGA_CLOCK_INOUT_STATUS);
+    }
+
+    private int fpgaPhyStatus = 0;
+    public synchronized int getFpgaPhyStatus(){
+        fpgaPhyStatus = 0;
+        mHandler.sendEmptyMessage(MSG_FPGA_STATUS);
+        try {
+            this.wait(1000);
+        } catch (InterruptedException e) {
+            return -1;
+        }
+        return fpgaPhyStatus;
+    }
+    private synchronized void fpgaPhyStatus(int fpgaPhyStatus){
+        this.fpgaPhyStatus = fpgaPhyStatus;
+        this.notifyAll();
+    }
+
+
+}

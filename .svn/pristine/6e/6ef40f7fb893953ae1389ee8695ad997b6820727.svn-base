@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AbsoluteLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:ui="http://schemas.android.com/apk/res-auto"
+    android:layout_width="200px"
+    android:layout_height="50px"
+    android:layout_x="0px"
+    android:layout_y="0px"
+    android:id="@+id/rightSlipMenuBar_math"
+
+    >
+
+    <com.micsig.tbook.ui.MButton_CheckBox
+        android:id="@+id/ProbeType_vol"
+        android:layout_x="0px"
+        android:layout_y="0px"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Vol"
+        android:textColor="#ffffff"
+        android:textSize="16px"
+        ui:checkedBitmap="@drawable/channel_left_check"
+        ui:unCheckedBitmap="@drawable/channel_left_uncheck"
+        ui:text_x="15px"
+        ui:text_y="15px"
+        />
+
+    <com.micsig.tbook.ui.MButton_CheckBox
+        android:id="@+id/ProbeType_cur"
+        android:layout_x="80px"
+        android:layout_y="0px"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Cur"
+        android:textColor="#ffffff"
+        android:textSize="16px"
+        ui:checkedBitmap="@drawable/channel_right_check"
+        ui:unCheckedBitmap="@drawable/channel_right_uncheck"
+        ui:text_x="15px"
+        ui:text_y="15px"
+        />
+
+
+   
+
+</AbsoluteLayout>

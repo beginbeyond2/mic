@@ -1,0 +1,165 @@
+package com.micsig.tbook.scope.Bus;
+
+/**
+ * Created by zhuzh on 2018-5-29.
+ */
+
+public class ARINC429Bus extends IBus {
+    //format
+    public static final int ARINC429_LABEL_SDI_DATA_SSM = 0;
+    public static final int ARINC429_LABEL_DATA_SSM = 1;
+    public static final int ARINC429_LABEL_DATA = 2;
+    //trigger type
+    public static final int ARINC429_TRIGGER_WORD_BEGIN = 1;
+    public static final int ARINC429_TRIGGER_WORD_END = 2;
+    public static final int ARINC429_TRIGGER_WORD = 3;
+    public static final int ARINC429_TRIGGER_LABEL = 4;
+    public static final int ARINC429_TRIGGER_SDI = 5;
+    public static final int ARINC429_TRIGGER_DATA = 6;
+    public static final int ARINC429_TRIGGER_SSM = 7;
+    public static final int ARINC429_TRIGGER_LABEL_SDI = 8;
+    public static final int ARINC429_TRIGGER_LABEL_DATA = 9;
+    public static final int ARINC429_TRIGGER_LABEL_SSM = 10;
+    public static final int ARINC429_TRIGGER_WORD_ERROR = 11;
+    public static final int ARINC429_TRIGGER_WORD_INTERVAL = 12;
+    public static final int ARINC429_TRIGGER_VERIFY_ERROR = 13;
+    public static final int ARINC429_TRIGGER_ALL_ERROR = 14;
+    public static final int ARINC429_TRIGGER_ALL_0 = 15;
+    public static final int ARINC429_TRIGGER_ALL_1 = 16;
+    public static final int ARINC429_TRIGGER_MAX = 17;
+
+    private int srcChIdx = 0;
+    private int format = ARINC429_LABEL_SDI_DATA_SSM;
+    private int displayFormat = DISPLAY_HEX_DISPLAY;
+    private int baudRate = 100*1000;
+    private int triggerType = ARINC429_TRIGGER_WORD_BEGIN;
+    private int word = 0;
+    private int []label = new int[ARINC429_TRIGGER_MAX];
+    private int []sdi = new int[ARINC429_TRIGGER_MAX];
+    private int []data = new int[ARINC429_TRIGGER_MAX];
+    private int []SSM = new int[ARINC429_TRIGGER_MAX];
+    public static boolean isTriggerTypeValid(int triggerType){
+        return triggerType >= ARINC429_TRIGGER_WORD_BEGIN && triggerType<ARINC429_TRIGGER_MAX;
+    }
+    public ARINC429Bus(int busIdx) {
+        super(busIdx,ARINC429);
+    }
+
+    public int getSrcChIdx() {
+        return srcChIdx;
+    }
+
+    public void setSrcChIdx(int srcChIdx) {
+        this.srcChIdx = srcChIdx;
+        chChange();
+    }
+
+    public int getFormat() {
+        return format;
+    }
+
+    public void setFormat(int format) {
+        this.format = format;
+        busChange();
+    }
+
+    public int getDisplayFormat() {
+        return displayFormat;
+    }
+
+    public void setDisplayFormat(int displayFormat) {
+        this.displayFormat = displayFormat;
+    }
+
+    public int getBaudRate() {
+        return baudRate;
+    }
+
+    public void setBaudRate(int baudRate) {
+        this.baudRate = baudRate;
+        busChange();
+    }
+
+    public int getTriggerType() {
+        return triggerType;
+    }
+
+    public void setTriggerType(int triggerType) {
+        if(isTriggerTypeValid(triggerType)) {
+            this.triggerType = triggerType;
+            busChange();
+        }
+    }
+
+    public int getWord() {
+        return word;
+    }
+
+    public void setWord(int word) {
+        this.word = word;
+        busChange();
+    }
+
+    public int getLabel(int triggerType) {
+        if(isTriggerTypeValid(triggerType))
+            return label[triggerType];
+        return 0;
+    }
+
+    public void setLabel(int triggerType,int label) {
+        if(isTriggerTypeValid(triggerType)) {
+            this.label[triggerType] = label;
+            busChange();
+        }
+    }
+
+    public int getSdi(int triggerType) {
+        if(isTriggerTypeValid(triggerType))
+            return sdi[triggerType];
+        return 0;
+    }
+
+    public void setSdi(int triggerType,int sdi) {
+
+        if(isTriggerTypeValid(triggerType)) {
+            this.sdi[triggerType] = sdi;
+            busChange();
+        }
+    }
+
+    public int getData(int triggerType) {
+        if(isTriggerTypeValid(triggerType))
+            return data[triggerType];
+        return 0;
+    }
+
+    public void setData(int triggerType,int data) {
+        if(isTriggerTypeValid(triggerType)) {
+            this.data[triggerType] = data;
+            busChange();
+        }
+    }
+
+    public int getSSM(int triggerType) {
+        if(isTriggerTypeValid(triggerType))
+            return SSM[triggerType];
+        return 0;
+    }
+
+    public void setSSM(int triggerType,int SSM) {
+        if(isTriggerTypeValid(triggerType)) {
+            this.SSM[triggerType] = SSM;
+            busChange();
+        }
+    }
+
+    @Override
+    public int getChSampleCnt() {
+        return 1;
+    }
+
+    @Override
+    public boolean isChInSample(int chIdx) {
+        return srcChIdx == chIdx;
+    }
+}

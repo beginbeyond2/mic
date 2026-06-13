@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/i2cFrame1"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="10px">
+
+    <com.micsig.tbook.ui.top.view.TopViewEdit
+        android:id="@+id/i2cFrame1Addr"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_marginStart="10px"
+        app:editHint="00"
+        app:head="@string/topSerialsHeadAddr" />
+
+    <com.micsig.tbook.ui.top.view.TopViewEdit
+        android:id="@+id/i2cFrame1Data"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_toEndOf="@id/i2cFrame1Addr"
+        android:layout_marginStart="20px"
+        app:editHint="00"
+        app:head="@string/topSerialsHeadData" />
+</RelativeLayout>

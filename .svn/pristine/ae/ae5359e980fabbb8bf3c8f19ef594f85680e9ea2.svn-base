@@ -1,0 +1,82 @@
+package com.micsig.tbook.scope.surface;
+
+import android.content.Context;
+import android.database.sqlite.SQLiteCantOpenDatabaseException;
+import android.graphics.SurfaceTexture;
+import android.util.Log;
+import android.view.TextureView;
+
+import com.micsig.tbook.scope.Data.DataFactory;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.math.MathService;
+
+import java.nio.ByteBuffer;
+
+/**
+ * Created by zhuzh on 2018-3-29.
+ */
+
+public class PreviewTextureView implements TextureView.SurfaceTextureListener{
+    private static final String TAG = "PreviewTextureView";
+    private TextureView mTextureView;
+    private Context mContext;
+    private SurfaceDataRecv surfaceDataRecv = null;
+
+    public ByteBuffer getBuffer(){
+        if(surfaceDataRecv != null){
+            return surfaceDataRecv.getBuffer();
+        }
+        return null;
+    }
+    public int getStride(){
+        if(surfaceDataRecv != null){
+            return surfaceDataRecv.getStride();
+        }
+        return ScopeBase.getWidth();
+    }
+
+    public PreviewTextureView(Context context,TextureView textureView){
+        mTextureView = textureView;
+        mContext = context;
+        mTextureView.setSurfaceTextureListener(this);
+    }
+
+    public void setPreviewSizeChange(int height) {
+        surfaceDataRecv.setPreViewHeight(null, height);
+    }
+
+    @Override
+    public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+
+        Log.d(TAG, "onSurfaceTextureAvailable() called with: surface = [" + surface + "], width = [" + width + "], height = [" + height + "]");
+        surfaceDataRecv = new SurfaceDataRecv(mContext,surface, height);
+        surfaceDataRecv.setDataListener(DataFactory.getInstance());
+
+
+    }
+
+    @Override
+    public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
+        surfaceDataRecv.setPreViewHeight(surface, height);
+        ScopeBase.setConvertScale(height);
+        Log.d(TAG, "onSurfaceTextureSizeChanged() called with: surface = [" + surface + "], width = [" + width + "], height = [" + height + "]");
+        MathService.forceMathRefresh();
+    }
+
+    @Override
+    public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
+
+        Log.d(TAG,"onSurfaceTextureDestroyed begin");
+        if(surfaceDataRecv !=  null){
+            surfaceDataRecv.closeSurface();
+            surfaceDataRecv = null;
+        }
+        Log.d(TAG,"onSurfaceTextureDestroyed end");
+        return true;
+    }
+
+    @Override
+    public void onSurfaceTextureUpdated(SurfaceTexture surface) {
+
+    }
+}

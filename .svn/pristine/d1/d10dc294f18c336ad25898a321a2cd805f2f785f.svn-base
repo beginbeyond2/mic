@@ -1,0 +1,708 @@
+package com.micsig.tbook.scope.channel;
+
+import android.util.Log;
+
+import com.micsig.base.DoubleUtil;
+import com.micsig.base.FilterThread;
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.Action.UiMessage;
+import com.micsig.tbook.scope.Data.DataFactory;
+import com.micsig.tbook.scope.Data.IDataBuffer;
+import com.micsig.tbook.scope.Data.ImageParam;
+import com.micsig.tbook.scope.Data.WaveData;
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.ScopeMessage;
+import com.micsig.tbook.scope.horizontal.HorizontalAxis;
+import com.micsig.tbook.scope.horizontal.HorizontalAxisRef;
+import com.micsig.tbook.scope.surface.SurfaceDataRecv;
+import com.micsig.tbook.scope.surface.SurfaceNative;
+import com.micsig.tbook.scope.surface.SurfacePreview;
+import com.micsig.tbook.scope.vertical.VerticalAxis;
+import com.micsig.tbook.scope.vertical.VerticalAxisMathDual;
+import com.micsig.tbook.scope.vertical.VerticalAxisMathFft;
+
+import java.io.File;
+import java.nio.channels.FileChannel;
+import java.util.Observable;
+import java.util.Observer;
+
+/**
+ * Created by zhuzh on 2018/3/14.
+ */
+
+public class RefChannel extends BaseChannel implements Observer {
+    private static final String TAG = "RefChannel";
+    private FilterThread refThread;
+    private ImageParam refParam = new ImageParam();
+    private SurfaceNative surfaceNative = null;
+    private RefChannelAction refChannelAction;
+    private HorizontalAxisRef horizontalAxisRef;
+
+    private int refType;
+    private long refXPos = 0; //相对于原始触发时刻的位置移动了多少当前档位的像素
+    private long refXPos_original;//原始触发时刻
+    private long refDelayPos;
+    private int refXStart;
+    private int refXEnd;
+    private double refYPos;
+    private double refTimeScaleVal_original;//原始触发档位
+    private double refTimeScaleVal;//当前触发档位
+    private double refVScaleVal;
+    private double refFineVal = 1.0;
+    private int refProbeType;
+    private String refProbeStr;
+    private double refProbeRate;
+    private double refSampleRate;
+    private int refWaveLength;
+
+    public RefChannel(int chIdx) {
+        super(chIdx,"REF" + (chIdx - ChannelFactory.REF1 + 1));
+        refChannelAction = new RefChannelAction(this);
+        refThread = new FilterThread(TAG);
+        refThread.setRunnable(new Runnable() {
+            @Override
+            public void run() {
+                drawRef();
+            }
+        });
+        InitRefParam();
+        EventFactory.addEventObserver(EventFactory.EVENT_SURFACE_CREATED,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_SURFACE_DESTROYED,this);
+
+        horizontalAxisRef = new HorizontalAxisRef();
+        setBuffer(DataFactory.allocateBufferQueue(true));
+    }
+
+    private void InitRefParam(){
+
+        refParam.setPerPixelByte(4);
+        refParam.setBackgroundColor(0);
+        refParam.setForegroundColor(0xFFE17D7D);
+        refParam.setWidth(ScopeBase.getWidth());
+        refParam.setHeight(ScopeBase.getHeight());
+        refParam.setXOffset(0);
+        refParam.setYOffset((int) Math.round(this.getPos()));
+    }
+
+    public void setForegroundColor(int colorValue) {
+        colorValue = (colorValue & 0xFF000000)
+                | ((colorValue & 0xFF) << 16)
+                | ((colorValue & 0xFF00))
+                | ((colorValue & 0xFF0000) >> 16);
+        refParam.setForegroundColor(colorValue);
+        drawRef();
+    }
+    @Override
+    public void open() {
+        setOpen(true);
+        ScopeMessage.getInstance().sendUiMsg(UiMessage.UI_MESSAGE_DEPTH_SAMPFRE);
+        sendEvent(EventFactory.EVENT_CHANNEL_OPEN, true);
+    }
+
+    @Override
+    public void close() {
+        setOpen(false);
+        ScopeMessage.getInstance().sendUiMsg(UiMessage.UI_MESSAGE_DEPTH_SAMPFRE);
+        sendEvent(EventFactory.EVENT_CHANNEL_CLOSE);
+    }
+
+    @Override
+    public void activate() {
+        sendEvent(EventFactory.EVENT_CHANNEL_ACTIVE,true);
+        sendEvent(EventFactory.EVENT_CHANNEL_VSCALE,true);
+        if (isOpen()) {
+            ScopeMessage.getInstance().sendUiMsg(UiMessage.UI_MESSAGE_DEPTH_SAMPFRE);
+            ScopeMessage.getInstance().sendUiMsg(UiMessage.UI_MESSAGE_SIMPLE_WIN_DIS);
+        }
+    }
+
+    @Override
+    public double getVerticalPerPix() {
+        double val = refVScaleVal * refFineVal;
+        double h = ScopeBase.getVerticalPerGridPixels() * ScopeBase.getToUICoff();
+        if (Scope.getInstance().isZoom()) {
+            h = ScopeBase.getZoomVerticalPerGridPixels() * ScopeBase.getToUICoff();
+        }
+        return val / h;
+    }
+
+    @Override
+    public double getADVerticalPerPix() {
+        double val = refVScaleVal * refFineVal;
+        double h = ScopeBase.getVerticalPerGridPixels() * ScopeBase.getToUICoff();
+        return val / h;
+    }
+
+    @Override
+    public double getSampleRate() {
+        double fs = 1.0;
+        WaveData dataBuffer = (WaveData)obtain();
+        if(dataBuffer != null){
+            fs = dataBuffer.getSampRate();
+            recycle(dataBuffer);
+        }
+        return fs;
+    }
+
+    @Override
+    public double getSampleRate2display() {
+        double fs = 1.0;
+        WaveData dataBuffer = (WaveData) obtain();
+        if (dataBuffer != null) {
+            fs = dataBuffer.getSampRate2display();
+            recycle(dataBuffer);
+        }
+        return fs;
+    }
+
+    public int getRefType(){
+        return refType;
+    }
+    public double getRefProbeRate(){
+        return refProbeRate;
+    }
+    public int getVScaleId() {
+        int VScaleId = 0;
+        switch (refType) {
+            default:
+            case 0://dynamic ch
+            {
+                double val = refVScaleVal / refProbeRate;
+                VScaleId = ChannelFactory.getDynamicChannel(ChannelFactory.CH1).getVScaleId(val);
+                break;
+            }
+            case 1://Math ch:Dual
+                VScaleId = VerticalAxisMathDual.getScaleIdByValue(refVScaleVal);
+                break;
+            case 2://Math ch:FFT
+                VScaleId = refProbeType == VerticalAxis.PROBE_TYPE_DB ?
+                        VerticalAxisMathFft.getScaleIdInDb(refVScaleVal) :
+                        VerticalAxisMathFft.getScaleIdInRms(refVScaleVal);
+                break;
+        }
+        return VScaleId;
+    }
+
+    public int getVScaleIdMax() {
+        int VScaleIdMax = VerticalAxis.getMaxGear();
+        switch (refType) {
+            case 0:
+                VScaleIdMax = VerticalAxis.getMaxGear();
+                break;
+            case 1:
+                VScaleIdMax =VerticalAxisMathDual.DANG_DUAL_MAX;
+                break;
+            case 2:
+                VScaleIdMax = refProbeType == VerticalAxis.PROBE_TYPE_DB ?
+                        VerticalAxisMathFft.DANG_DBV_MAX :
+                        VerticalAxisMathFft.DANG_RMS_MAX;
+                break;
+        }
+        return VScaleIdMax;
+    }
+
+    public int getVScaleIdMin() {
+        int VScaleIdMin = VerticalAxis.getMinGear();
+        switch (refType) {
+            case 0:
+                VScaleIdMin = VerticalAxis.getMinGear();
+                break;
+            case 1:
+                VScaleIdMin =VerticalAxisMathDual.DANG_DUAL_MIN;
+                break;
+            case 2:
+                VScaleIdMin = refProbeType == VerticalAxis.PROBE_TYPE_DB ?
+                        VerticalAxisMathFft.DANG_DBV_MIN :
+                        VerticalAxisMathFft.DANG_RMS_MIN;
+                break;
+        }
+        return VScaleIdMin;
+    }
+
+    public void setVScaleId(int scaleId) {
+        switch (refType) {
+            case 0:
+                refFineVal = 1.0;
+                refVScaleVal = ChannelFactory.getDynamicChannel(ChannelFactory.CH1).getVScaleIdVal(scaleId);
+                refVScaleVal *= refProbeRate;
+                break;
+            case 1:
+                refFineVal = 1.0;
+                refVScaleVal = VerticalAxisMathDual.getScaleIdValById(scaleId);
+                break;
+            case 2:
+                refFineVal = 1.0;
+                refVScaleVal = refProbeType == VerticalAxis.PROBE_TYPE_DB ?
+                        VerticalAxisMathFft.dbvIdToValue(scaleId) :
+                        VerticalAxisMathFft.rmsIdToValue(scaleId);
+
+                break;
+        }
+        drawRef();
+        super.setVScaleId(scaleId);
+        sendEvent(EventFactory.EVENT_CHANNEL_VSCALE,true);
+    }
+    public int calcVScaleId(int val){
+        int scaleId = getVScaleId();
+        double fineVal = refFineVal;
+        if(val > 0){
+            if(fineVal >= 1.0){
+                scaleId += val;
+            }
+        }else if(val < 0){
+            if(fineVal <= 1.0){
+                scaleId += val;
+            }
+        }
+        return scaleId;
+    }
+    public void setVScaleVal(double vScaleVal){
+
+        vScaleVal /= refProbeRate;
+        int scaleId = -1;
+        switch (refType){
+            case 0: {
+                double v;
+                scaleId = VerticalAxis.getMinGear();
+                v = VerticalAxis.getScaleIdValById(scaleId);
+                for (int i = VerticalAxis.getMinGear(); i <= VerticalAxis.getMaxGear(); i++) {
+                    scaleId = i;
+                    v = VerticalAxis.getScaleIdValById(scaleId);
+                    if (vScaleVal <= v || DoubleUtil.FuzzyCompare(vScaleVal, v)) {
+                        break;
+                    }
+                }
+                refFineVal = vScaleVal / v;
+                refVScaleVal = v * refProbeRate;
+            }
+
+            break;
+            case 1: {
+                    double v;
+                    scaleId = VerticalAxisMathDual.DANG_DUAL_MIN;
+                    v = VerticalAxisMathDual.getScaleIdValById(scaleId);
+                    int i = scaleId;
+                    int m = VerticalAxisMathDual.DANG_DUAL_MAX;
+                    for (; i <= m; i++) {
+                        scaleId = i;
+                        v = VerticalAxisMathDual.getScaleIdValById(scaleId);
+                        if (vScaleVal <= v || DoubleUtil.FuzzyCompare(vScaleVal, v)) {
+                            break;
+                        }
+                    }
+                    refFineVal = vScaleVal / v;
+                    refVScaleVal = v * refProbeRate;
+            }
+                break;
+            case 2: {
+
+                double v;
+                int i,m;
+                if(refProbeType == VerticalAxis.PROBE_TYPE_DB){
+                    scaleId = VerticalAxisMathFft.DANG_DBV_MIN;
+                    m = VerticalAxisMathFft.DANG_DBV_MAX;
+                    v = VerticalAxisMathFft.dbvIdToValue(scaleId);
+                }else{
+                    scaleId = VerticalAxisMathFft.DANG_RMS_MIN;
+                    m = VerticalAxisMathFft.DANG_RMS_MAX;
+                    v = VerticalAxisMathFft.rmsIdToValue(scaleId);
+                }
+                i = scaleId;
+                for (; i <= m; i++) {
+                    scaleId = i;
+                    v = refProbeType == VerticalAxis.PROBE_TYPE_DB ?
+                            VerticalAxisMathFft.dbvIdToValue(scaleId) :
+                            VerticalAxisMathFft.rmsIdToValue(scaleId);
+                    if (vScaleVal <= v || DoubleUtil.FuzzyCompare(vScaleVal, v)) {
+                        break;
+                    }
+                }
+                refFineVal = vScaleVal / v;
+                refVScaleVal = v * refProbeRate;
+            }
+            break;
+        }
+        drawRef();
+        if(scaleId > 0) {
+            super.setVScaleId(scaleId);
+        }
+        sendEvent(EventFactory.EVENT_CHANNEL_VSCALE,true);
+    }
+
+    @Override
+    public boolean isVScaleIdValid(int vScaleId) {
+        return false;
+    }
+
+    public double getVScaleVal() {
+        return refVScaleVal * refFineVal;
+    }
+    public double getFineScale(){
+        return refFineVal * 1/ refProbeRate;
+    }
+    public double getVScaleIdVal() {
+        return getVScaleVal();
+    }
+    public int getProbeType() {
+        return refProbeType;
+    }
+    public String getProbeStr(){
+        return refProbeStr;
+    }
+    //采用绝对坐标的ID
+    public int getRefTimeScaleId() {
+        return horizontalAxisRef.timeScaleId(refTimeScaleVal,refType);
+    }
+    //采用相对坐标（界面index）的ID
+    public int getRefTimeScaleId_ui() {
+        return horizontalAxisRef.timeScaleId_ui(refTimeScaleVal_original,refTimeScaleVal,refType);
+    }
+    public double getRefTimeScaleVal() {//获取Ref时基
+        return refTimeScaleVal;
+    }
+    public double getRefTimePerPix(){
+        if (HorizontalAxis.getInstance().getScaleFollowingCh()) {
+            return HorizontalAxis.getInstance().getTimesPrePix();
+        } else {
+            return refTimeScaleVal/ScopeBase.getHorizonPerGridPixels();
+        }
+    }
+
+    @Override
+    public void setPos(double pos) {
+        pos = pos * ScopeBase.getToFPGACoff();
+        super.setPos(pos);
+        drawRef();
+        sendEvent(EventFactory.EVENT_REF_VPOS,true);
+    }
+
+//    @Override
+//    protected void setPos(double pos) {
+//        pos = pos * ScopeBase.getToFPGACoff();
+//        super.setPos(pos);
+//        drawRef();
+//
+//        sendEvent(EventFactory.EVENT_REF_VPOS,true);
+//    }
+    public void sendEvent(int eventId){
+        EventFactory.sendEvent(new EventBase(eventId, getChId()), false);
+    }
+    public void sendEvent(int eventId,boolean async){
+        EventFactory.sendEvent(new EventBase(eventId, getChId()), async);
+    }
+
+    public void setXPosOfViewPix(long pos){
+        long pos1 = HorizontalAxis.getInstance().getTimePoseOfGrid(refTimeScaleVal, refXPos_original);
+        refXPos = pos1-pos;
+        Logger.i("RefChannel= ", getName() + " ,ref now pix=" + pos + ", original pix=" + pos1 + ", mov pix=" + refXPos);
+        drawRef();
+        ScopeMessage.getInstance().sendUiMsg(UiMessage.UI_MESSAGE_SIMPLE_WIN_DIS);
+    }
+
+    public long getTimeDelayOfViewPix() {
+        return HorizontalAxis.getInstance().getTimePoseOfGrid(refTimeScaleVal, refDelayPos);
+    }
+
+    public long getTimePoseOfViewPix(long timePos) {//返回像素
+        return HorizontalAxis.getInstance().getTimePoseOfGrid(refTimeScaleVal, timePos);
+    }
+
+    public long getTimePoseOfViewPix(){//返回像素
+        return HorizontalAxis.getInstance().getTimePoseOfGrid(refTimeScaleVal, refXPos_original) - refXPos;
+    }
+
+    public long getTimePoseOfViewPix_original_originalScale(){
+        return HorizontalAxis.getInstance().getTimePoseOfGrid(refTimeScaleVal_original, refXPos_original);
+    }
+
+    public long getTimePoseOfViewPix_original_nowScale(){
+        return HorizontalAxis.getInstance().getTimePoseOfGrid(refTimeScaleVal, refXPos_original);
+    }
+
+    public long getTimePosOfView(){ //返回时间
+        return refXPos_original-HorizontalAxis.getInstance().getTimePose(refTimeScaleVal, refXPos);
+    }
+
+    public long getTimePosOfView(int posPix) {
+        return HorizontalAxis.getInstance().getTimePose(refTimeScaleVal, posPix);
+    }
+
+    public  long getRefMovPix(){
+        return refXPos;
+    }
+
+
+    public void correctTimePose(){
+        double radio=refTimeScaleVal_original/refTimeScaleVal;
+        if(refXPos < 0){
+            //左移
+            int leftMosPix=refXEnd-ScopeBase.getWidth()/2;
+            leftMosPix *= radio;
+            if(-refXPos > leftMosPix){
+                refXPos = -leftMosPix;
+            }
+        }
+        else{
+            //右移
+            int rightMosPix=ScopeBase.getWidth()/2-refXStart;
+            rightMosPix *= radio;
+            if(rightMosPix > 0) {
+                if (refXPos > rightMosPix) {
+                    refXPos = rightMosPix;
+                }
+            }
+        }
+    }
+
+    public long getXPos_pix_original(){
+        return HorizontalAxis.getInstance().getTimePoseOfGrid(refTimeScaleVal_original, refXPos_original);
+    }
+
+    public int getWaveLen(){
+        int len=0;
+        WaveData dataBuffer = (WaveData)obtain();
+        if(dataBuffer != null){
+            len = dataBuffer.getWaveLength();
+            recycle(dataBuffer);
+        }
+        return len;
+    }
+
+    public HorizontalAxisRef getHorizontalAxisRef() {
+        return horizontalAxisRef;
+    }
+
+
+    public double getScreenNum(){
+        return (double)(refTimeScaleVal_original/refTimeScaleVal);
+    }
+
+    public void setRefTimeScale(double timeScale) {
+        setRefTimeScale(timeScale,0);
+    }
+
+    public void setRefTimeScale(double timeScale, int pos) {
+        refXPos *= refTimeScaleVal / timeScale;
+        refXPos += pos;
+        double tempScaleVal = refTimeScaleVal;
+        refTimeScaleVal = timeScale;
+        long temp = getTimePoseOfViewPix_original_nowScale();
+        boolean needFix = Math.abs(temp) < 1000 && Math.abs(refXPos - temp) <= 1;
+        if (pos == 0 && temp != 0 && (Math.abs(refXPos - temp) * 1.0 / Math.abs(temp) <= 1E-3 || needFix) && tempScaleVal != timeScale) {
+            refXPos = temp;
+        }
+        drawRef();
+        ScopeMessage.getInstance().sendUiMsg(UiMessage.UI_MESSAGE_SIMPLE_WIN_DIS);
+    }
+
+    public boolean loadWave(FileChannel fileChannel){
+        boolean bret = false;
+        IDataBuffer dataBuffer = obtain();
+        if(dataBuffer != null){
+            bret = dataBuffer.load(fileChannel);
+            recycle(dataBuffer);
+        }
+        if(bret){
+            loadWave();
+        }
+        return bret;
+    }
+    public void loadWave(){
+        Log.d(TAG, "loadWave() called");
+        refChannelAction.loadWave();
+        LoadRefConfig();
+        drawRef();
+    }
+
+    public boolean loadWave(String pathName){
+        Log.d(TAG, "loadWave() called with: pathName = [" + pathName + "]");
+
+//        if(LoadCsv.onTest()){
+//            return true;
+//        }
+
+        boolean bret = false;
+        File file = new File(pathName);
+        if(!file.exists()) {
+            return bret;
+        }
+        IDataBuffer dataBuffer = obtain();
+        if(dataBuffer != null){
+            bret = dataBuffer.load(pathName);
+            recycle(dataBuffer);
+        }
+        if(bret){
+            loadWave();
+        }
+        return bret;
+    }
+
+    public void LoadRefConfig(){
+        WaveData dataBuffer = (WaveData)obtain();
+        if(dataBuffer != null){
+            refType = dataBuffer.getWaveType();
+            refXPos_original = dataBuffer.getXPos();
+            refXPos = 0;
+            refXStart = dataBuffer.getStartX();
+            refXEnd = dataBuffer.getEndX();
+            refYPos = dataBuffer.getYPosition();
+            Log.d("LoadRefConfig", "channel= " + getName() + " ,refXStart:" + refXStart + ",refXEnd:" + refXEnd + ",refXPos_original:" + refXPos_original + " ,refYPos= " + refYPos);
+            refVScaleVal = dataBuffer.getVScaleVal();
+            refProbeType = dataBuffer.getProbeType();
+            refProbeStr = dataBuffer.getProbeStr();
+            Logger.i("LoadRefConfig channel= " + getName() + " ,refProbeType= " + refProbeType + " ,refProbeStr= " + refProbeStr + " ,label= " + dataBuffer.getLabel());
+            refProbeRate = dataBuffer.getProbeRate();
+            refSampleRate = dataBuffer.getSampRate2display();
+            refWaveLength = dataBuffer.getWaveLength();
+            int memDepthSet = dataBuffer.getMemDepthSet();
+            int memDepthItemIdx = dataBuffer.getMemDepthItemIdx();
+            super.setLabel(dataBuffer.getLabel());
+            recycle(dataBuffer);
+            setPos(refYPos);//目的：将RefChannel中的位置 同步到 MathRefWave中
+            super.setPos(refYPos);
+            horizontalAxisRef.setRefType(refType);
+            horizontalAxisRef.setMemDepthSet(memDepthSet);
+            horizontalAxisRef.setMemDepthItemIdx(memDepthItemIdx);
+            horizontalAxisRef.setSampleRate(refSampleRate);
+            horizontalAxisRef.setWaveLength(refWaveLength);
+
+            refTimeScaleVal_original = dataBuffer.getTimeScaleVal();
+            horizontalAxisRef.generateHorizontalAxis(refTimeScaleVal_original);//生成Ref的时基列表
+            if(refType == 2) {//默认
+                refTimeScaleVal = horizontalAxisRef.getxAxis().get(0);
+            }
+            else
+                refTimeScaleVal = refTimeScaleVal_original;
+            refFineVal = 1.0;
+            if(refType > 0){
+                refProbeRate = 1.0;
+            }
+            Log.d(TAG, "LoadRefConfig() called refVScaleVal:" + refVScaleVal
+                    + ",refType:" + refType
+                    + ",refProbeRate:" + refProbeRate);
+            setVScaleVal(refVScaleVal);
+            setDelay(0);
+            refChannelAction.changeChTimeBase();
+        }
+    }
+
+    public void calcXOffset(WaveData waveData){
+
+        int w = ScopeBase.getWidth()/2;
+        int s = refXStart;
+        int e = refXEnd;
+        double r = refTimeScaleVal_original/refTimeScaleVal;
+
+        s = (int)Math.floor(w - (w - s) * r + refXPos);
+        e = (int)Math.floor(w + (e - w) * r + refXPos);
+
+        waveData.setStartX(s);
+        waveData.setEndX(e);
+    }
+
+
+    public void drawRef(){
+//        Logger.d("limh", "drawRef channel= " + getName() + " ,isOPen= " + isOpen());
+        if(!isOpen()) {
+            return;
+        }
+
+        //Logger.i(Log.getStackTraceString(new Throwable()));
+        if(refThread.isSelfThread()) {
+            WaveData dataBuffer = (WaveData)obtain();
+            if (dataBuffer != null) {
+                refChannelAction.loadWave();
+                refParam.setTimeScaleVal(refTimeScaleVal);
+                double v = refVScaleVal * refFineVal/(ScopeBase.getVerticalPerGridPixels());
+
+                if(refType == 2
+                        && refProbeType == VerticalAxis.PROBE_TYPE_DB) {
+                    v *= dataBuffer.getVScaleVal()*1e4;
+                }
+                refParam.setVerticalPerPix(v);
+
+
+                // horizontal
+                if (refType != WaveData.FFT_WAVE) {
+                    refParam.setXOffset((int) (refXPos + getTimeDelayOfViewPix()));
+                } else {
+                    refParam.setXOffset((int) refXPos);
+                }
+                Logger.i(TAG, "refXPos= " + refXPos + " ,delayPos= " + getTimeDelayOfViewPix() + " ,delay= " + delay);
+                //calcXOffset(dataBuffer);
+                // vertical
+                if(Scope.getInstance().isZoom()) {
+                    refParam.setYOffset((int) Math.round(this.getPos() * ScopeBase.getZoomHeight() / ScopeBase.getHeight()));
+                    refParam.setHeight(ScopeBase.getZoomHeight());
+                } else {
+                    refParam.setYOffset((int) Math.round(this.getPos()));
+                    refParam.setHeight(ScopeBase.getHeight());
+                }
+                //Logger.i("RefChannel---drawRef", super.getChId()+"xoffset="+refXPos+", yoffset="+this.getPos());
+                synchronized (surfaceLock) {
+                    if (surfaceNative != null) {
+                        refParam.setStartX(refXStart);
+                        refParam.setEndX(refXEnd);
+                        surfaceNative.drawSurface(dataBuffer.getByteBuffer(), refParam.getDirectBuffer());
+                    }
+                }
+                recycle(dataBuffer);
+            }
+        }else
+        {
+            refThread.run();
+        }
+    }
+
+    public final Object surfaceLock = new Object();
+    @Override
+    public void update(Observable observable, Object data) {
+        EventBase eventBase = (EventBase)data;
+        if(eventBase != null){
+            if(eventBase.getId() == EventFactory.EVENT_SURFACE_CREATED){
+                SurfaceDataRecv surface = (SurfaceDataRecv)eventBase.getData();
+                if(surface != null){
+                    synchronized (surfaceLock) {
+                        surfaceNative = surface.getSurfaceNative(SurfacePreview.LAYER_REF1 + getChId() - ChannelFactory.REF1);
+                        surfaceNative.acquireSurface(ScopeBase.getWidth(), ScopeBase.getHeight());
+                        surfaceNative.clearSurface();
+                    }
+                }
+            }else if(eventBase.getId() == EventFactory.EVENT_SURFACE_DESTROYED){
+                SurfaceDataRecv surface = (SurfaceDataRecv)eventBase.getData();
+                if(surface != null) {
+                    synchronized (surfaceLock) {
+                        if(surfaceNative != null) {
+                            surfaceNative.releaseSurface();
+                            surfaceNative = null;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public double getRefTimeScaleVal_original() {
+        return refTimeScaleVal_original;
+    }
+
+    public long getRefXPos_original() {
+        return refXPos_original;
+    }
+
+    private double delay = 0;
+
+    public void setDelay(double delay) {
+        this.delay = delay;
+        this.refDelayPos = (long) (delay / 1e-13);
+        drawRef();
+    }
+
+    public double getDelay() {
+        return this.delay;
+    }
+
+}

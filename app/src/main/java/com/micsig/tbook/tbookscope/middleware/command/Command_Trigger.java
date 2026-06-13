@@ -1,0 +1,179 @@
+package com.micsig.tbook.tbookscope.middleware.command;
+
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.tbookscope.main.dialog.DialogManage;
+import com.micsig.tbook.tbookscope.rxjava.RxBus;
+import com.micsig.tbook.tbookscope.rxjava.RxEnum;
+
+/**
+ * Created by liwb on 2018/1/12.
+ */
+
+public class Command_Trigger {
+//     new SCPICommandStruct(":TRIGger:TYPE","SCPI_Trigger","Type"),//选择触发类型
+//            new SCPICommandStruct(":TRIGger:TYPE?","SCPI_Trigger","TypeQ"),//查询返回当前使用的触发类型
+//            new SCPICommandStruct(":TRIGger:HOLDoff","SCPI_Trigger","HoldOff"),//设置触发释抑时间
+//            new SCPICommandStruct(":TRIGger:HOLDoff?","SCPI_Trigger","HoldOffQ"),//查询以科学计数形式返回触发释抑时间
+//            new SCPICommandStruct(":TRIGger:MODE","SCPI_Trigger","Mode"),//设置触发方式：自动或普通
+//            new SCPICommandStruct(":TRIGger:MODE?","SCPI_Trigger","ModeQ"),//查询触发方式
+//            new SCPICommandStruct(":TRIGger:STATus?","SCPI_Trigger","StatusQ"),//查询当前的触发状态
+
+    /**
+     * const char * trig_type[] = {
+     * "EDGE",
+     * "PULSe",
+     * "LOGic",
+     * "DWARt",
+     * "SLOPe",
+     * "TIMeout",
+     * "NEDGe",
+     * "VIDeo",
+     * NULL
+     * };
+     */
+    private int triggerType;
+    private double holdOff;
+    /**
+     * const char * trig_mode[] = {
+     * "AUTO",
+     * "NORMal",
+     * NULL
+     * };
+     */
+    private int mode;
+    /**
+     * const char * trig_stat[] = {
+     * "STOP",
+     * "RUN",
+     * "WAIT",
+     * "AUTO",
+     * NULL
+     * };
+     */
+    private int state;
+
+    public static int SerialBusType_IMG=0;
+    public static int SerialBusType_TXT=1;
+    /**
+     * const char * trig_serialbus_type={
+     *     "IMG",
+     *     "TXT"
+     * };
+     */
+    private int serialBus_type;
+
+    /**
+     * 设置触发类型
+     */
+    public void Type(int index, boolean isUpdateUI) {
+//        if (triggerType == index) return;
+        triggerType = index;
+        if (isUpdateUI) {
+            CommandMsgToUI msgToUI = Command.get().getMsgToUI();
+            msgToUI.setFlag(CommandMsgToUI.FLAG_TRIGGER_TYPE);
+            msgToUI.setParam(String.valueOf(index));
+            RxBus.getInstance().post(RxEnum.COMMAND_TO_UI, msgToUI);
+        }
+    }
+
+    /**
+     * 查询触发类型
+     */
+    public int TypeQ() {
+        return triggerType;
+    }
+
+    /**
+     * 设置触发抑制时间
+     *
+     * @param holdOff 200ns至10s,单位s
+     */
+    public void HoldOff(double holdOff, boolean isUpdateUI) {
+//        if (this.holdOff == holdOff) return;
+        this.holdOff = holdOff;
+        if (isUpdateUI) {
+            CommandMsgToUI msgToUI = Command.get().getMsgToUI();
+            msgToUI.setFlag(CommandMsgToUI.FLAG_TRIGGER_HOLDOFF);
+            msgToUI.setParam(String.valueOf(holdOff));
+            RxBus.getInstance().post(RxEnum.COMMAND_TO_UI, msgToUI);
+        }
+    }
+
+    /**
+     * 查询以科学计数形式返回触发抑制时间
+     */
+    public double HoldOffQ() {
+        return holdOff;
+    }
+
+    /**
+     * 设置触发方式：自动或普通
+     */
+    public void Mode(int index, boolean isUpdateUI) {
+        if (this.mode == index) return;
+        mode = index;
+        if (isUpdateUI) {
+            CommandMsgToUI msgToUI = Command.get().getMsgToUI();
+            msgToUI.setFlag(CommandMsgToUI.FLAG_TRIGGER_MODE);
+            msgToUI.setParam(String.valueOf(index));
+            RxBus.getInstance().post(RxEnum.COMMAND_TO_UI, msgToUI);
+        }
+    }
+
+    /**
+     * 查询触发方式
+     */
+    public int ModeQ() {
+        return mode;
+    }
+
+    public synchronized void Status(int state){
+        this.state=state;
+    }
+    /**
+     * 查询当前的触发状态
+     * "STOP","RUN","WAIT","AUTO"
+     */
+    public int StatusQ() {
+        Scope scope = Scope.getInstance();
+        //FPGA返回
+        if (scope.isSingle()){
+            //雅达客户要求这样
+            if(scope.isInSlowScaleMode()){
+                return state;
+            }
+            return 2;
+        }else if (scope.isAuto()){
+            return 3;
+        }else {
+            return state;
+        }
+    }
+
+    public void SerialBus_Type(int serialBus_type, boolean isUpdateUI){
+        if (this.serialBus_type==serialBus_type) return;
+        this.serialBus_type=serialBus_type;
+        if (isUpdateUI) {
+            CommandMsgToUI msgToUI = Command.get().getMsgToUI();
+            msgToUI.setFlag(CommandMsgToUI.FLAG_TRIGGER_SERIALBUS_TYPE);
+            msgToUI.setParam(String.valueOf(serialBus_type));
+            RxBus.getInstance().post(RxEnum.COMMAND_TO_UI, msgToUI);
+        }
+    }
+
+    public int SerialBus_TypeQ(){
+        return this.serialBus_type;
+    }
+
+    public boolean HasDataQ(){
+        return DialogManage.getIns().getDialogOkCancel().isShow();
+    }
+    public void SelectData(boolean IsYes,boolean isUpdateUI){
+        if (IsYes) {
+            DialogManage.getIns().getDialogOkCancel().pressOK();
+        }else{
+            DialogManage.getIns().getDialogOkCancel().PressCancel();
+        }
+    }
+
+}

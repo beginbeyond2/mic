@@ -1,0 +1,91 @@
+package com.micsig.tbook.scope.fpga;
+
+import com.micsig.tbook.scope.Bus.IBus;
+import com.micsig.tbook.scope.Bus.SpiBus;
+
+/**
+ * Created by zhuzh on 2018-5-30.
+ */
+
+public class FPGAReg_BUS_SPI extends FPGAReg_BUS {
+    public FPGAReg_BUS_SPI(int addr) {
+        super(addr, 20);
+    }
+    //CS源选择
+    public void setCS(int val){
+        setVal(0,2,val);
+    }
+    //SCK源选择
+    public void setSCK(int val){
+        setVal(2,2,val);
+    }
+    //数据口源选择
+    public void setDSrc(int val){
+        setVal(4,2,val);
+    }
+    //数据字长
+    public void setBW(int val){
+        setVal(16,3,val);
+    }
+    public void setClkIdle(int val){
+        setVal(20,1,val);
+    }
+    public void setEanbleCS(int val){
+        setVal(21,1,val);
+    }
+    public void setTriggerMode(int val){
+        setVal(1,0,3,val);
+    }
+    public void setTriggerMask(int val){
+        setVal(2,val);
+    }
+    public void setTriggerVal(int val){
+        setVal(3,val);
+    }
+
+    @Override
+    public void configBus(int fpgaIdx,IBus iBus) {
+        SpiBus bus = (SpiBus)iBus;
+        int triggerType = bus.getTriggerType();
+        int clk = bus.getClkChIdx();
+        int data = bus.getDataChIdx();
+        int cs = bus.getCsChIdx();
+        FPGAReg_BUS_LEVEL busLevel = (FPGAReg_BUS_LEVEL) FPGACommand.getReg(fpgaIdx,FPGA_BUS_LEVEL);
+        setCS(chIdx2BusSrc(cs));
+        setSCK(chIdx2BusSrc(clk));
+        setDSrc(chIdx2BusSrc(data));
+        busLevel.setBusSrcExt(getBusIdx(),((cs>>2)&0x1) | ((clk>>1)&0x2) | (data&0x4));
+        switch (bus.getBits()){
+            case 4:setBW(0); break;
+            case 8:setBW(1);break;
+            case 16:setBW(2);break;
+            case 24:setBW(3);break;
+            case 32:setBW(4);break;
+            default:setBW(1);break;
+        }
+        setClkIdle(IBus.IDLE_LEVEL_HIGH);
+
+        if(bus.isCsValid()) {
+            setLevel(busLevel,cs,bus.getCsIdleLevel() == IBus.IDLE_LEVEL_HIGH ? IBus.IDLE_LEVEL_LOW : IBus.IDLE_LEVEL_HIGH);
+            setEanbleCS(1);
+        }else {
+            setEanbleCS(0);
+        }
+        if(SpiBus.SPI_TRIGGER_FRAME_X_DATA == triggerType) {
+            triggerType = SpiBus.SPI_TRIGGER_FRAME_DATA;
+            setTriggerMask(0);
+            setTriggerVal(0);
+        }else {
+            setTriggerMask(bus.getTriggerMask());
+            setTriggerVal(bus.getTriggerData());
+        }
+        setTriggerMode(triggerType);
+
+        setLevel(busLevel,clk,bus.getClkSample() == SpiBus.SPI_CLK_FALL_EDGE ? IBus.IDLE_LEVEL_LOW:IBus.IDLE_LEVEL_HIGH);
+
+        setLevel(busLevel,data,bus.getDataIdleLevel());
+
+        FPGACommand.sendCmd(busLevel);
+    }
+
+}

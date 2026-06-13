@@ -1,0 +1,781 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="channelsNameEight">
+        <item>@string/mainCenterRadioButtonCh1</item>
+        <item>@string/mainCenterRadioButtonCh2</item>
+        <item>@string/mainCenterRadioButtonCh3</item>
+        <item>@string/mainCenterRadioButtonCh4</item>
+        <item>@string/mainCenterRadioButtonCh5</item>
+        <item>@string/mainCenterRadioButtonCh6</item>
+        <item>@string/mainCenterRadioButtonCh7</item>
+        <item>@string/mainCenterRadioButtonCh8</item>
+    </string-array>
+    <string-array name="channelsNameFour">
+        <item>@string/mainCenterRadioButtonCh1</item>
+        <item>@string/mainCenterRadioButtonCh2</item>
+        <item>@string/mainCenterRadioButtonCh3</item>
+        <item>@string/mainCenterRadioButtonCh4</item>
+    </string-array>
+    <string-array name="channelsNameDouble">
+        <item>@string/mainCenterRadioButtonCh1</item>
+        <item>@string/mainCenterRadioButtonCh2</item>
+    </string-array>
+
+    <string-array name="keyboard"><item>7</item>
+        <item>4</item>
+        <item>1</item>
+        <item>.</item>
+        <item>8</item>
+        <item>5</item>
+        <item>2</item>
+        <item>0</item>
+        <item>9</item>
+        <item>6</item>
+        <item>3</item>
+        <item>X</item>
+        <item>b/s</item>
+        <item>A</item>
+        <item>C</item>
+        <item>E</item>
+        <item>kb/s</item>
+        <item>B</item>
+        <item>D</item>
+        <item>F</item>
+        <item>Mb/s</item>
+        <item> </item>
+        <item>입력</item>
+    </string-array>
+
+    <string name="mathDoubleWave">더블 파형</string>
+    <string name="mathSource1">출처 1</string>
+    <string name="mathSource2">출처 2</string>
+    <string-array name="mathSymbol">
+        <item>+</item>
+        <item>-</item>
+        <item>x</item>
+        <item>÷</item>
+    </string-array>
+    <string name="mathFft">FFT</string>
+    <string name="mathSource">출처</string>
+    <string name="mathWindow">창</string>
+    <string-array name="mathWindow">
+        <item>직사각형 창</item>
+        <item>창 숨기기</item>
+        <item>블랙맨</item>
+        <item>해닝 창</item>
+    </string-array>
+    <string-array name="mathFftType">
+        <item>선</item>
+        <item>데시벨</item>
+    </string-array>
+    <string name="mathAdvance">고급 수학</string>
+    <string name="mathAdvanceExpr">표현</string>
+    <string name="mathAdvanceVar1">변하기 쉬운1</string>
+    <string name="mathAdvanceVar2">변하기 쉬운2</string>
+    <string name="mathVertical">수직 스케일 참조</string>
+    <string-array name="mathVertical">
+        <item>센터</item>
+        <item>제로</item>
+    </string-array>
+
+    <string name="refR1Title">R1</string>
+    <string name="refR2Title">R2</string>
+    <string name="refR3Title">R3</string>
+    <string name="refR4Title">R4</string>
+    <string name="refRecall">전화</string>
+
+    <string name="serialsType">버스 유형</string>
+
+    <string name="serialsUartRx">RX</string>
+    <string name="serialsUartIdle">유휴 수준</string>
+    <string-array name="serialsUartIdle">
+        <item>높음</item>
+        <item>낮음</item>
+    </string-array>
+    <string name="serialsUartCheck">확인</string>
+    <string-array name="serialsUartCheck">
+        <item>아니요</item>
+        <item>이상한</item>
+        <item>심지어</item>
+    </string-array>
+    <string name="serialsUartBits">#Bits</string>
+    <string-array name="serialsUartBits">
+        <item>5bit</item>
+        <item>6bit</item>
+        <item>7bit</item>
+        <item>8bit</item>
+        <item>9bit</item>
+    </string-array>
+    <string name="serialsUartDisplay">디스플레이</string>
+    <string-array name="serialsUartDisplay">
+        <item>16 진수</item>
+        <item>이진</item>
+        <item>ASCII 코드</item>
+    </string-array>
+    <string name="serialsUartBaudRate">통신 속도</string>
+
+    <string name="serialsLinSource">출처</string>
+    <string name="serialsLinIdle">유휴 수준</string>
+    <string-array name="serialsLinIdle">
+        <item>높음</item>
+        <item>낮음</item>
+    </string-array>
+    <string name="serialsLinBaudRate">통신 속도</string>
+
+    <string name="serialsCanSource">출처</string>
+    <string name="serialsCanSignal">유휴 수준</string>
+    <string-array name="serialsCanSignal">
+        <item>CAN_H</item>
+        <item>CAN_L</item>
+        <item>H_L</item>
+        <item>L_H</item>
+        <item>Rx</item>
+        <item>Tx</item>
+    </string-array>
+    <string name="serialsCanBaudRate">통신 속도</string>
+
+    <string name="serialsSpiSource">시계</string>
+    <string name="serialsSpiData">데이터</string>
+    <string name="serialsSpiCS">연사</string>
+    <string name="serialsSpiBits">#Bits</string>
+    <string-array name="serialsSpiBits">
+        <item>4bit</item>
+        <item>8bit</item>
+        <item>16bit</item>
+        <item>24bit</item>
+        <item>32bit</item>
+    </string-array>
+
+    <string name="serialsI2CSDA">데이터</string>
+    <string name="serialsI2CSCL">시계</string>
+
+    <string name="serialsM429Source">출처</string>
+    <string name="serialsM429Format">형식</string>
+    <string-array name="serialsM429Format">
+        <item>LABEL + DATA</item>
+        <item>L + D + SSM</item>
+        <item>L + SDI + D + SSM</item>
+    </string-array>
+    <string name="serialsM429Display">디스플레이</string>
+    <string-array name="serialsM429Display">
+        <item>이진</item>
+        <item>16 진수</item>
+    </string-array>
+    <string name="serialsM429BaudRate">통신 속도</string>
+    <string-array name="serialsM429BaudRate">
+        <item>12.5kb/s</item>
+        <item>100kb/s</item>
+    </string-array>
+
+    <string name="serialsM1553bSource">출처</string>
+    <string name="serialsM1553bDisplay">디스플레이</string>
+    <string-array name="serialsM1553bDisplay">
+        <item>이진</item>
+        <item>16 진수</item>
+    </string-array>
+
+    <string name="channelInvertHead">반전</string>
+    <string name="channelCouple">커플 링 방법</string>
+    <string-array name="channelCouple">
+        <item>DC</item>
+        <item>교환</item>
+        <item>그라운드</item>
+    </string-array>
+    <string name="channelProbeType">탐침</string>
+    <string-array name="channelProbeType">
+        <item>전압</item>
+        <item>현재</item>
+    </string-array>
+    <string name="probe_calibration">Calibration</string>
+    <string name="channelProbeMultiple">1mX</string>
+    <string name="channelBandWidth">대역폭</string>
+    <string-array name="channelBandWidth">
+        <item>전체</item>
+        <item>2,0000 만</item>
+        <item>2,000 만</item>
+        <item>Qualcomm</item>
+        <item>저역 통과</item>
+    </string-array>
+    <string name="channelSample">샘플링</string>
+    <string-array name="channelSample">
+        <item>정상</item>
+        <item>평균</item>
+        <item>봉투</item>
+        <item>피크</item>
+    </string-array>
+    <string-array name="channelSampleDetail">
+        <item>2</item>
+        <item>4</item>
+        <item>8</item>
+        <item>16</item>
+        <item>32</item>
+        <item>64</item>
+        <item>128</item>
+        <item>256</item>
+        <item>∞</item>
+    </string-array>
+    <string-array name="channelProbeTypeMultiple">
+        <item>1mX</item>
+        <item>2mX</item>
+        <item>5mX</item>
+        <item>10mX</item>
+        <item>20mX</item>
+        <item>50mX</item>
+        <item>100mX</item>
+        <item>200mX</item>
+        <item>500mX</item>
+        <item>1X</item>
+        <item>2X</item>
+        <item>5X</item>
+        <item>10X</item>
+        <item>20X</item>
+        <item>50X</item>
+        <item>100X</item>
+        <item>200X</item>
+        <item>500X</item>
+        <item>1kX</item>
+        <item>2kX</item>
+        <item>5kX</item>
+        <item>10kX</item>
+    </string-array>
+    <string name="dialogBandWidthMHz">MHz</string>
+    <string name="dialogBandWidthKHz">KHz</string>
+    <string-array name="channelProbeEvery">
+        <item>500u</item>
+        <item>1m</item>
+        <item>2m</item>
+        <item>5m</item>
+        <item>10m</item>
+        <item>20m</item>
+        <item>50m</item>
+        <item>100m</item>
+        <item>200m</item>
+        <item>500m</item>
+        <item>1</item>
+        <item>2</item>
+        <item>5</item>
+        <item>10</item>
+    </string-array>
+    <string-array name="channelProbeEveryDouble">
+        <item>0.0005</item>
+        <item>0.001</item>
+        <item>0.002</item>
+        <item>0.005</item>
+        <item>0.01</item>
+        <item>0.02</item>
+        <item>0.05</item>
+        <item>0.1</item>
+        <item>0.2</item>
+        <item>0.5</item>
+        <item>1</item>
+        <item>2</item>
+        <item>5</item>
+        <item>10</item>
+    </string-array>
+
+    <string-array name="popArrayTitle">
+        <item>측정</item>
+        <item>저장</item>
+        <item>Cursor</item>
+        <item>견본</item>
+        <item>디스플레이</item>
+        <item>방아쇠</item>
+        <item>자동</item>
+        <item>사용자 설정</item>
+        <item>주파수 측정기</item>
+    </string-array>
+    <string-array name="popArrayTitleCalibration">
+        <item>측정</item>
+        <item>저장</item>
+        <item>Cursor</item>
+        <item>견본</item>
+        <item>디스플레이</item>
+        <item>방아쇠</item>
+        <item>자동</item>
+        <item>사용자 설정</item>
+        <item>주파수 측정기</item>
+        <item>공장 교정</item>
+    </string-array>
+    <string-array name="popArrayChannel">
+        <item>@string/mainCenterRadioButtonCh1</item>
+        <item>@string/mainCenterRadioButtonCh2</item>
+        <item>@string/mainCenterRadioButtonCh3</item>
+        <item>@string/mainCenterRadioButtonCh4</item>
+        <item>@string/mainCenterRadioButtonMath1</item>
+        <item>@string/mainCenterRadioButtonR1</item>
+        <item>@string/mainCenterRadioButtonR2</item>
+        <item>@string/mainCenterRadioButtonR3</item>
+        <item>@string/mainCenterRadioButtonR4</item>
+    </string-array>
+    <array name="popArrayChannelColor">
+        <item>@color/colorCh1</item>
+        <item>@color/colorCh2</item>
+        <item>@color/colorCh3</item>
+        <item>@color/colorCh4</item>
+        <item>@color/colorCh5</item>
+        <item>@color/colorCh6</item>
+        <item>@color/colorCh7</item>
+        <item>@color/colorCh8</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorChCommon</item>
+    </array>
+    <string name="saveIn">저장 됨</string>
+    <string-array name="saveIn">
+        <item>지역</item>
+        <item>U 형 디스크</item>
+    </string-array>
+    <string name="saveType">종류</string>
+    <string-array name="saveType">
+        <item>WAV</item>
+        <item>CSV</item>
+        <item>BIN</item>
+        <item>Picture</item>
+        <item>Session</item>
+    </string-array>
+    <string-array name="display">
+        <item>재래식</item>
+        <item>파형</item>
+        <item>사각형 차트</item>
+        <item>저녁놀</item>
+        <item>FFT Info.</item>
+        <item>Txt Mix</item>
+    </string-array>
+    <string name="displayHorRef">시간 기준 참조</string>
+    <string-array name="displayHorRef">
+        <item>센터</item>
+        <item>트리거 위치</item>
+    </string-array>
+    <string name="displayTimebase">시간축</string>
+    <string-array name="displayTimebase">
+        <item>YT</item>
+        <item>XY</item>
+    </string-array>
+    <string name="dispalyRoll">스크롤</string>
+    <string name="displayCCT">색온도</string>
+    <string name="displayScale">Scale</string>
+    <string-array name="displayEnable">
+        <item>열기</item>
+        <item>닫기</item>
+    </string-array>
+    <string name="displayDrawType">그리기 방법</string>
+    <string-array name="displayDrawType">
+        <item>포인트</item>
+        <item>선</item>
+    </string-array>
+    <string name="displayMode">종류</string>
+    <string-array name="displayMode">
+        <item>전체</item>
+        <item>그리드</item>
+        <item>십자형</item>
+        <item>프레임</item>
+    </string-array>
+    <string name="displayPersist">저녁놀</string>
+    <string-array name="displayPersist">
+        <item>아니요</item>
+        <item>자동</item>
+        <item>공통</item>
+        <item>∞</item>
+    </string-array>
+    <string-array name="displayPersistAdjust">
+        <item>100ms</item>
+        <item>200ms</item>
+        <item>300ms</item>
+        <item>400ms</item>
+        <item>500ms</item>
+        <item>600ms</item>
+        <item>700ms</item>
+        <item>800ms</item>
+        <item>900ms</item>
+        <item>1 초</item>
+        <item>2 초</item>
+        <item>3 대</item>
+        <item>4 대</item>
+        <item>5 초</item>
+        <item>6s</item>
+        <item>7 대</item>
+        <item>8 초</item>
+        <item>9 초</item>
+        <item>10 대</item>
+    </string-array>
+    <string-array name="trigger">
+        <item>재래식</item>
+        <item>가장자리</item>
+        <item>펄스 폭</item>
+        <item>논리</item>
+        <item>N 가장자리</item>
+        <item>런트</item>
+        <item>경사</item>
+        <item>시간 초과</item>
+        <item>비디오</item>
+        <item>S1 UART</item>
+        <item>S2 UART</item>
+        <item>S3 UART</item>
+        <item>S4 UART</item>
+    </string-array>
+    <string name="triggerMode">모드</string>
+    <string-array name="triggerMode">
+        <item>자동</item>
+        <item>정상</item>
+    </string-array>
+    <string name="triggerSource">출처</string>
+    <string name="triggerEdge">가장자리</string>
+    <string-array name="triggerEdge">
+        <item>상승</item>
+        <item>거절</item>
+        <item>이중 가장자리</item>
+    </string-array>
+    <string name="triggerCouple">커플 링</string>
+    <string-array name="triggerCouple">
+        <item>DC</item>
+        <item>교환</item>
+        <item>고주파 억제</item>
+        <item>저주파 억제</item>
+        <item>소음 억제</item>
+    </string-array>
+    <string name="triggerPulsewidthPolar">극성</string>
+    <string-array name="triggerPulsewidthPolar">
+        <item>긍정적 인</item>
+        <item>네거티브</item>
+    </string-array>
+    <string name="triggerPulsewidthCondition">조건</string>
+    <string-array name="triggerPulsewidthCondition">
+        <item>&lt;</item>
+        <item>&gt;</item>
+        <item>=</item>
+        <item>&lt;&gt;</item>
+    </string-array>
+
+    <string name="triggerCh1">@string/mainCenterRadioButtonCh1</string>
+    <string name="triggerCh2">@string/mainCenterRadioButtonCh2</string>
+    <string name="triggerCh3">@string/mainCenterRadioButtonCh3</string>
+    <string name="triggerCh4">@string/mainCenterRadioButtonCh4</string>
+    <string name="triggerCh5">@string/mainCenterRadioButtonCh5</string>
+    <string name="triggerCh6">@string/mainCenterRadioButtonCh6</string>
+    <string name="triggerCh7">@string/mainCenterRadioButtonCh7</string>
+    <string name="triggerCh8">@string/mainCenterRadioButtonCh8</string>
+    <string-array name="triggerCh">
+        <item>높음</item>
+        <item>낮음</item>
+        <item>아니요</item>
+    </string-array>
+    <string name="triggerLogic">논리</string>
+    <string-array name="triggerLogic">
+        <item>AND</item>
+        <item>OR</item>
+        <item>NAND</item>
+        <item>NOR</item>
+    </string-array>
+    <string name="triggerLogicCondition">조건</string>
+    <string-array name="triggerLogicCondition">
+        <item>&lt;</item>
+        <item>&gt;</item>
+        <item>=</item>
+        <item>&lt;&gt;</item>
+        <item>사실</item>
+        <item>가짜</item>
+    </string-array>
+    <string name="triggerNEdgeSlope">가장자리</string>
+    <string-array name="triggerNEdgeSlope">
+        <item>상승</item>
+        <item>거절</item>
+    </string-array>
+
+    <string name="triggerRuntPolar">극성</string>
+    <string-array name="triggerRuntPolar">
+        <item>긍정적 인</item>
+        <item>네거티브</item>
+        <item>임의로</item>
+    </string-array>
+    <string name="triggerRuntCondition">조건</string>
+    <string-array name="triggerRuntCondition">
+        <item>&lt;</item>
+        <item>&gt;</item>
+        <item>&lt;&gt;</item>
+        <item>아니요</item>
+    </string-array>
+
+    <string name="triggerSlopeEdge">가장자리</string>
+    <string-array name="triggerSlopeEdge">
+        <item>상승</item>
+        <item>거절</item>
+        <item>임의로</item>
+    </string-array>
+    <string name="triggerSlopeCondition">조건</string>
+    <string-array name="triggerSlopeCondition">
+        <item>&lt;</item>
+        <item>&gt;</item>
+        <item>&lt;&gt;</item>
+    </string-array>
+
+    <string name="triggerTimeoutPolar">극성</string>
+    <string-array name="triggerTimeoutPolar">
+        <item>긍정적 인</item>
+        <item>네거티브</item>
+        <item>임의로</item>
+    </string-array>
+
+    <string name="triggerVideoPolar">극성</string>
+    <string-array name="triggerVideoPolar">
+        <item>긍정적 인</item>
+        <item>네거티브</item>
+    </string-array>
+    <string name="triggerVideoStandard">표준</string>
+    <string-array name="triggerVideoStandard">
+        <item>625 / PAL</item>
+        <item>SECAM</item>
+        <item>525 / NTSC</item>
+        <item>720P</item>
+        <item>1080I</item>
+        <item>1080P</item>
+    </string-array>
+    <string name="triggerVideotrigger">방아쇠</string>
+    <string-array name="triggerVideoTriggerMore">
+        <item>홀수 필드</item>
+        <item>짝수 필드</item>
+        <item>모든 입력란</item>
+        <item>모든 라인</item>
+        <item>선</item>
+    </string-array>
+    <string-array name="triggerVideoTriggerLess">
+        <item>모든 입력란</item>
+        <item>모든 라인</item>
+        <item>선</item>
+    </string-array>
+    <string name="triggerVideoFrequency">주파수</string>
+    <string-array name="triggerVideoFrequencyMore">
+        <item>60Hz</item>
+        <item>50Hz</item>
+        <item>30Hz</item>
+        <item>25Hz</item>
+        <item>24Hz</item>
+    </string-array>
+    <string-array name="triggerVideoFrequencyLess">
+        <item>60Hz</item>
+        <item>50Hz</item>
+    </string-array>
+
+    <string-array name="triggerSerialsUART">
+        <item>시작 비트</item>
+        <item>정지 비트</item>
+        <item>데이터</item>
+        <item>[0 : 데이터]</item>
+        <item>[1 : 데이터]</item>
+        <item>[x : 데이터]</item>
+        <item>패리티 오류</item>
+    </string-array>
+    <string-array name="triggerSerialsLIN">
+        <item>동기 상승 에지</item>
+        <item>프레임 ID</item>
+        <item>프레임 ID 및 데이터</item>
+        <item>Parity Error</item>
+        <item>Checksum Error</item>
+    </string-array>
+    <string-array name="triggerSerialsCAN">
+        <item>프레임 시작</item>
+        <item>원격 프레임 ID</item>
+        <item>데이터 프레임 ID</item>
+        <item>원격 프레임 / 데이터 프레임 ID</item>
+        <item>데이터 프레임 ID 및 데이터</item>
+        <item>오류 프레임</item>
+        <item>모든 오류</item>
+        <item>오류 확인</item>
+        <item>프레임 과부하</item>
+    </string-array>
+    <string-array name="triggerSerialsSPI">
+        <item>연사</item>
+        <item>데이터</item>
+        <item>X : 데이터</item>
+    </string-array>
+    <string-array name="triggerSerialsI2C">
+        <item>시작 조건</item>
+        <item>정지 조건</item>
+        <item>분실 확인</item>
+        <item>다시 시작</item>
+        <item>주소 입력란에 확인이 없습니다.</item>
+        <item>프레임 유형 1</item>
+        <item>프레임 유형 2</item>
+        <item>EEPROM 데이터 읽기 및 쓰기</item>
+        <item>10 비트 쓰기 프레임</item>
+    </string-array>
+    <string-array name="triggerSerialsARINC429">
+        <item>단어 시작</item>
+        <item>단어의 끝</item>
+        <item>LABEL</item>
+        <item>SDI</item>
+        <item>데이터</item>
+        <item>SSM</item>
+        <item>LABEL + SDI</item>
+        <item>라벨 + 데이터</item>
+        <item>라벨 + SSM</item>
+        <item>단어 오류</item>
+        <item>단어 간격 오류</item>
+        <item>패리티 오류</item>
+        <item>모든 오류</item>
+        <item>모두 0 자리</item>
+        <item>모두 1</item>
+    </string-array>
+    <string-array name="triggerSerials1553B">
+        <item>명령어 / 상태 워드 동기화 헤더</item>
+        <item>데이터 워드 동기 헤더</item>
+        <item>지시 / 상태 어</item>
+        <item>원격 터미널 주소</item>
+        <item>맨체스터 코드 오류</item>
+        <item>데이터 어</item>
+        <item>홀수 패리티 오류</item>
+        <item>모든 오류</item>
+    </string-array>
+    <string name="triggerSerialsUARTCondition">조건</string>
+    <string-array name="triggerSerialsUARTCondition">
+        <item>&lt;</item>
+        <item>&gt;</item>
+        <item>=</item>
+        <item>≠</item>
+    </string-array>
+
+    <string-array name="auto">
+        <item>자동 설정</item>
+        <item>자동 범위</item>
+    </string-array>
+    <string name="autoSettingOpenChannel">자동으로 채널 열기</string>
+    <string-array name="autoSettingOpenChannel">
+        <item>열기</item>
+        <item>닫기</item>
+    </string-array>
+    <string name="autoSettingTriggerSource">자동 트리거 소스</string>
+    <string-array name="autoSettingTriggerSource">
+        <item>전류 신호</item>
+        <item>최대 신호</item>
+    </string-array>
+    <string-array name="autoSettingLevelSelect">
+        <item>V</item>
+        <item>mV</item>
+    </string-array>
+
+    <string name="autoRangeRange">자동 범위</string>
+    <string name="autoRangeVertical">수직 기어</string>
+    <string name="autoRangeHorizontal">수평 시간축</string>
+    <string name="autoRangeLevel">수준</string>
+    <string-array name="autoRangeSelect">
+        <item>열기</item>
+        <item>닫기</item>
+    </string-array>
+
+    <string name="frequencymeter">주파수 측정기</string>
+    <string-array name="frequencymeter">
+        <item>닫기</item>
+    </string-array>
+
+    <string-array name="setting">
+        <item>출하설정</item>
+        <item>자체교정</item>
+        <item>무선 키보드</item>
+        <item>Aux In</item>
+        <item>Ref Base</item>
+    </string-array>
+
+    <string name="timestamp">타임 스탬프</string>
+    <string-array name="timestamp">
+        <item>열기</item>
+        <item>닫기</item>
+    </string-array>
+
+    <string name="screenInvert">거꾸로</string>
+    <string-array name="screenInvert">
+        <item>열기</item>
+        <item>닫기</item>
+    </string-array>
+
+    <string name="usersetDepth">레코드 길이</string>
+    <string-array name="usersetDepth">
+        <item>자동</item>
+        <item>28/14/7M</item>
+        <item>2.8/1.4/0.7M</item>
+        <item>280/140/70K</item>
+        <item>28/14/7K</item>
+    </string-array>
+
+    <string-array name="measures">
+        <item>주기</item>
+        <item>주파수</item>
+        <item>상승시간</item>
+        <item>하강시간</item>
+        <item>지연</item>
+        <item>+듀티</item>
+        <item>-듀티</item>
+        <item>+폭</item>
+        <item>-폭</item>
+        <item>버스트폭</item>
+        <item>+오버슈트</item>
+        <item>-오벼슈트</item>
+        <item>위상</item>
+        <item>피크-피크</item>
+        <item>진폭</item>
+        <item>높음</item>
+        <item>낮음</item>
+        <item>최대</item>
+        <item>최소</item>
+        <item>실효치</item>
+        <item>C실효치</item>
+        <item>평균</item>
+        <item>주기평균</item>
+        <item>AC RMS</item>
+        <item>+Rate</item>
+        <item>-Rate</item>
+        <item>TValue</item>
+    </string-array>
+
+    <string-array name="measureDelayPosition">
+        <item>첫상승</item>
+        <item>첫하강</item>
+        <item>마지막상승</item>
+        <item>마지막하강</item>
+    </string-array>
+    <string-array name="measureDelayToChannel">
+        <item>수학1</item>
+        <item>수학2</item>
+        <item>수학3</item>
+        <item>수학4</item>
+        <item>수학5</item>
+        <item>수학6</item>
+        <item>수학7</item>
+        <item>수학8</item>
+    </string-array>
+    <string-array name="measurePhaseToChannel">
+        <item>수학1</item>
+        <item>수학2</item>
+        <item>수학3</item>
+        <item>수학4</item>
+        <item>수학5</item>
+        <item>수학6</item>
+        <item>수학7</item>
+        <item>수학8</item>
+    </string-array>
+
+    <string-array name="serialsWordTitle">
+        <item>S1:Uart</item>
+        <item>S2</item>
+        <item>S1&amp;S2</item>
+    </string-array>
+
+    <string-array name="math_channel_type">
+        <item>더블 파형</item>
+        <item>FFT</item>
+        <item>AX+B</item>
+        <item>고급 수학</item>
+    </string-array>
+</resources>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/ref_timebase"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="45px"
+        app:itemWidth="@dimen/top_ref_time_base"
+        app:array="@array/userSetRefTimeBase"
+        app:head="@string/userSetRefTimeBase" />
+
+    <TextView
+        android:id="@+id/title_time_pos"
+        style="@style/textStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/ref_timebase"
+        android:layout_alignBottom="@id/ref_timebase"
+        android:layout_marginStart="140px"
+        android:layout_toEndOf="@+id/ref_timebase"
+        android:gravity="center"
+        android:text="@string/top_userset_time_base"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/edit_time_pos"
+        style="@style/editTextStyle"
+        android:layout_width="120px"
+        android:layout_height="60px"
+        android:layout_alignTop="@+id/ref_timebase"
+        android:layout_alignBottom="@id/ref_timebase"
+        android:layout_marginStart="15px"
+        android:layout_toEndOf="@+id/title_time_pos"
+        android:gravity="center"
+        android:visibility="gone" />
+
+</RelativeLayout>

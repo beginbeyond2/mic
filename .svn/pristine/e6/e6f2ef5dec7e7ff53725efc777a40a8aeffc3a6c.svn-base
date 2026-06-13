@@ -1,0 +1,46 @@
+package com.micsig.tbook.scope.Trigger;
+
+/**
+ * Created by zhuzh on 2018-6-1.
+ */
+
+public class TriggerTimeOut extends Trigger {
+    public static final int TIMEOUT_POLARITY_POSITIVE = 0;
+    public static final int TIMEOUT_POLARITY_NEGATIVE = 1;
+    public static final int TIMEOUT_POLARITY_EITHER = 2;
+    private int polarity = TIMEOUT_POLARITY_POSITIVE;
+    private long timeOutTime = 8;
+    public TriggerTimeOut() {
+        super(Trigger.TRIG_TYPE_TIMEOUT);
+    }
+
+    public int getPolarity() {
+        return polarity;
+    }
+
+    public void setPolarity(int polarity) {
+        this.polarity = polarity;
+        triggerParamChange();
+    }
+
+    public long getTimeOutTime() {
+        return timeOutTime;
+    }
+
+    public void setTimeOutTime(long timeOutTime) {
+        this.timeOutTime = timeOutTime;
+        triggerParamChange();
+    }
+
+    @Override
+    public int getTriggerSourceCnt() {
+        return 1;
+    }
+
+    @Override
+    protected boolean isMultitriggerSource() {
+        return false;
+    }
+
+
+}

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:ui="http://schemas.android.com/apk/res-auto"
+    android:layout_width="@dimen/leftBarWidth"
+    android:layout_height="652px">
+
+<!--    <CheckBox-->
+<!--        android:id="@+id/cursorH"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="50px"-->
+<!--        android:button="@null"-->
+<!--        android:background="@drawable/ic_cursor_heng_selector"-->
+<!--        android:visibility="gone"-->
+<!--        ui:layout_constraintLeft_toLeftOf="parent"-->
+<!--        ui:layout_constraintRight_toRightOf="parent"-->
+<!--        ui:layout_constraintTop_toTopOf="parent"-->
+<!--        ui:layout_constraintBottom_toTopOf="@+id/cursorV" />-->
+<!--    <CheckBox-->
+<!--        android:id="@+id/cursorV"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="50px"-->
+<!--        android:button="@null"-->
+<!--        android:background="@drawable/ic_cursor_shu_selector"-->
+<!--        android:visibility="gone"-->
+<!--        ui:layout_constraintLeft_toLeftOf="parent"-->
+<!--        ui:layout_constraintRight_toRightOf="parent"-->
+<!--        ui:layout_constraintTop_toBottomOf="@+id/cursorH"-->
+<!--        ui:layout_constraintBottom_toTopOf="@+id/quickSave" />-->
+<!--    <Button-->
+<!--        android:id="@+id/quickSave"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="50px"-->
+<!--        android:background="@drawable/ic_quick_save_selector"-->
+<!--        android:gravity="center"-->
+<!--        android:visibility="gone"-->
+<!--        ui:layout_constraintLeft_toLeftOf="parent"-->
+<!--        ui:layout_constraintRight_toRightOf="parent"-->
+<!--        ui:layout_constraintTop_toBottomOf="@+id/cursorV"-->
+<!--        ui:layout_constraintBottom_toTopOf="@+id/btnLeftMenuHalf"/>-->
+    <Button
+        android:id="@+id/btnLeftMenuHalf"
+        android:layout_width="match_parent"
+        android:layout_height="50px"
+        android:button="@null"
+        android:background="@drawable/ic_left_50_selector"
+        android:visibility="gone"
+        ui:layout_constraintLeft_toLeftOf="parent"
+        ui:layout_constraintRight_toRightOf="parent"
+        ui:layout_constraintTop_toTopOf="parent"
+        ui:layout_constraintBottom_toTopOf="@+id/btnLeftScreen" />
+    <Button
+        android:id="@+id/btnLeftScreen"
+        android:layout_width="match_parent"
+        android:layout_height="50px"
+        android:button="@null"
+        android:background="@drawable/ic_capture_selector"
+        android:visibility="gone"
+        ui:layout_constraintLeft_toLeftOf="parent"
+        ui:layout_constraintRight_toRightOf="parent"
+        ui:layout_constraintTop_toBottomOf="@id/btnLeftMenuHalf"
+        ui:layout_constraintBottom_toTopOf="@+id/btnLeftZoom" />
+    <CheckBox
+        android:id="@+id/btnLeftZoom"
+        android:layout_width="match_parent"
+        android:layout_height="50px"
+        android:button="@null"
+        android:background="@drawable/ic_zoom_selector"
+        android:visibility="gone"
+        ui:layout_constraintLeft_toLeftOf="parent"
+        ui:layout_constraintRight_toRightOf="parent"
+        ui:layout_constraintTop_toBottomOf="@id/btnLeftScreen"
+        ui:layout_constraintBottom_toBottomOf="parent" />
+
+    <com.micsig.tbook.ui.main.LeftPositionView
+        android:id="@+id/leftPositionView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/color_Backcolor_MainMenu3"
+        />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

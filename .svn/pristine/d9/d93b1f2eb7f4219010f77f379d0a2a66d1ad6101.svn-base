@@ -1,0 +1,77 @@
+package com.micsig.tbook.scope.Action;
+
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.ScopeMessage;
+
+/**
+ * Created by zhuzh on 2018/3/15.
+ */
+
+public class XAction {
+    private ScopeMessage scopeMessage;
+    private EventFactory eventFactory;
+    public XAction(){
+        scopeMessage = ScopeMessage.getInstance();
+        eventFactory = EventFactory.getInstance();
+    }
+    public void sendEvent(EventBase eventBase){
+        sendEvent(eventBase,false);
+    }
+    public void sendEvent(EventBase eventBase,boolean async){
+        EventFactory.sendEvent(eventBase,async);
+    }
+    public void sendEvent(EventBase eventBase,boolean async,long ms){
+        EventFactory.sendEvent(eventBase,async,ms);
+    }
+    public void sendEvent(int event){
+        sendEvent(new EventBase(event));
+    }
+    public void sendEvent(int event,boolean async){
+        sendEvent(new EventBase(event),async);
+    }
+
+    public void sendHwMsg(int arg){
+        sendHwMsg(arg,0);
+    }
+    public void sendHwMsg(int arg1,int arg2){
+        scopeMessage.sendHwMsg(arg1,arg2);
+    }
+    public void sendFpgaMsg(int arg){
+
+        sendFpgaMsg(arg,0);
+    }
+    public void sendFpgaMsg(int arg1,int arg2){
+        scopeMessage.sendFpgaMsg(arg1,arg2);
+    }
+    public void sendUiMsg(int arg1){
+        scopeMessage.sendUiMsg(arg1);
+    }
+    public void sendFpgaMsgDelayed(int arg,long delayMillis){
+        sendFpgaMsgDelayed(arg,0,delayMillis);
+    }
+
+    public void sendFpgaMsgDelayed(int arg1,int arg2,long delayMillis){
+         scopeMessage.sendFpgaMsgDelayed(arg1,arg2,delayMillis);
+    }
+    public void sendHwMsgDelayed(int arg,long delayMillis){
+        sendHwMsgDelayed(arg,0,delayMillis);
+    }
+    public void sendHwMsgDelayed(int arg1,int arg2,long delayMillis){
+         scopeMessage.sendHwMsgDelayed(arg1,arg2,delayMillis);
+    }
+    public void sendChSample(){
+        scopeMessage.sendChSample();
+        scopeMessage.sendUiMsg(UiMessage.UI_MESSAGE_DEPTH_SAMPFRE);
+    }
+
+    public void sendSegment(boolean bSegment){
+        if(bSegment) {
+            scopeMessage.segmentFrames();
+        }
+    }
+
+    public void cmdSegment(){
+        scopeMessage.cmdSegment();
+    }
+}

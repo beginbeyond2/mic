@@ -1,0 +1,16 @@
+package com.micsig.tbook.scope.fpga;
+
+public class FPGAReg_CH_CAPACITANCE extends FPGAReg{
+    private String TAG = "FPGAReg_CH_CAPACITANCE";
+    public FPGAReg_CH_CAPACITANCE(){
+        super(FPGA_CH_CAPACITANCE1,8);
+    }
+
+    public void setHigh(int chIdx,int val){
+        setVal( chIdx / 2,(chIdx % 2) *16,8,val);
+    }
+    public void setTotal(int chIdx,int val){
+
+        setVal( chIdx / 2,(chIdx % 2) * 16 + 8,8,val);
+    }
+}

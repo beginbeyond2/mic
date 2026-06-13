@@ -1,0 +1,89 @@
+package com.micsig.tbook.scope.Trigger;
+
+import android.util.Log;
+
+/**
+ * Created by zhuzh on 2018/3/20.
+ */
+
+public class TriggerCommon {
+    //触发模式
+    public static final int TM_AUTO = 0; /*自动触发*/
+    public static final int TM_NORMAL = 1; /*正常触发*/
+    private static final int TRIGGER_HOLDOFF_TIME_UNIT = 4;//4ns单位
+    private int triggerEnterAutoTime = 1000; //1ms单位
+    private long triggerHoldOffTime = 200*1000*1000/TRIGGER_HOLDOFF_TIME_UNIT;
+    private int triggerMode = TM_AUTO;
+    private int triggerType = Trigger.TRIG_TYPE_START_ID;
+    private TriggerCommonAction triggerCommonAction;
+    public static long trriggerHoldOffTime2FpgaUnit(long val){
+        return val/TRIGGER_HOLDOFF_TIME_UNIT;
+    }
+
+    public TriggerCommon() {
+        triggerCommonAction = new TriggerCommonAction(this);
+    }
+
+    public long getTriggerHoldOffTime() {
+        return triggerHoldOffTime;
+    }
+
+    //ns
+    public void setTriggerHoldOffTime(long triggerHoldOffTime) {
+        this.triggerHoldOffTime = triggerHoldOffTime;
+        triggerCommonAction.TriggerHoldOffTimeChange();
+    }
+
+    public int getTriggerMode() {
+        return triggerMode;
+    }
+
+    public void setTriggerMode(int triggerMode) {
+        if(triggerMode == TM_NORMAL){
+//            try{
+//                throw new IllegalArgumentException();
+//            }catch (Exception e){
+//                e.printStackTrace();
+//            }
+        }
+        this.triggerMode = triggerMode;
+        triggerCommonAction.TriggerModeChange();
+    }
+
+    public int getTriggerType() {
+        return triggerType;
+    }
+
+    public void setTriggerType(int triggerType) {
+        this.triggerType = triggerType;
+        triggerCommonAction.TriggerTypeChange();
+    }
+
+    public static final int EXT_TRIGGER_1M = 0;
+    public static final int EXT_TRIGGER_50 = 1;
+    private int extInputRes = EXT_TRIGGER_1M;
+    public synchronized void setExtTriggerInputRes(int inputRes){
+         this.extInputRes = inputRes;
+        triggerCommonAction.extTriggerRes();
+    }
+    public synchronized int getExtTriggerInputRes(){
+        return extInputRes;
+    }
+    private double extTriggerLevel = 2.5;
+    public synchronized void setExtTriggerLevle(double v){
+        extTriggerLevel = v;
+        triggerCommonAction.extTriggerLevel();
+    }
+    public synchronized double getExtTriggerLevel(){
+        return extTriggerLevel;
+    }
+
+    private double sensitivity = 0.5;
+    public synchronized void setTriggerSensitivity(double sensitivity){
+        this.sensitivity = sensitivity;
+        triggerCommonAction.triggersensitivity();
+    }
+    public synchronized double getTriggerSensitivity(){
+        return this.sensitivity;
+    }
+}

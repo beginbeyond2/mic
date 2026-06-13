@@ -1,0 +1,84 @@
+package com.micsig.tbook.tbookscope;
+
+import android.content.Context;
+import android.graphics.PixelFormat;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.WindowManager;
+
+import com.micsig.base.Logger;
+import com.micsig.tbook.tbookscope.first.SplashScreenSurfaceView;
+import com.micsig.tbook.tbookscope.util.App;
+
+/**
+ * Created by yangj on 2018/9/7.
+ */
+
+public class SplashDialog {
+
+    private static final String TAG = "SplashDialog";
+    //region instance
+    private static SplashDialog splashDialog;
+
+    public static SplashDialog get() {
+        if (splashDialog == null) {
+            splashDialog = new SplashDialog();
+        }
+        return splashDialog;
+    }
+
+    private SplashDialog() {
+
+    }
+    //endregion
+
+    private OnShowStartListener onShowStartListener;
+
+    public interface OnShowStartListener {
+        void onShowStart();
+    }
+
+    private WindowManager windowManager;
+    private View dialogView;
+    private SplashScreenSurfaceView splash;
+
+    public synchronized void showDialog(int paramsType, OnShowStartListener onShowStartListener) {
+        windowManager = (WindowManager) App.get().getSystemService(Context.WINDOW_SERVICE);
+        dialogView = LayoutInflater.from(App.get()).inflate(R.layout.dialog_splash, null);
+        splash=dialogView.findViewById(R.id.splash);
+
+        WindowManager.LayoutParams params = new WindowManager.LayoutParams();
+        params.height = WindowManager.LayoutParams.MATCH_PARENT;
+        params.width = WindowManager.LayoutParams.MATCH_PARENT;
+        params.format = PixelFormat.RGBA_8888;
+        params.systemUiVisibility = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE;
+        params.flags = WindowManager.LayoutParams.FLAG_FULLSCREEN | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN;
+        params.gravity = Gravity.CENTER;
+
+        params.type = paramsType;
+
+        windowManager.addView(dialogView, params);
+        isFirst = true;
+        onShowStartListener.onShowStart();
+    }
+
+    private boolean isFirst = false;
+
+    public boolean isVisible() {
+        return isFirst;
+    }
+
+    public synchronized void closeDialog() {
+        Logger.d(TAG, "closeDialog: isFirst = " + isFirst);
+        if (isFirst) {
+            isFirst = false;
+            if (windowManager != null) {
+                splash.stop();
+//                dialogView.setVisibility(View.GONE);
+//                windowManager.removeView(dialogView);
+                windowManager.removeViewImmediate(dialogView);
+            }
+        }
+    }
+}

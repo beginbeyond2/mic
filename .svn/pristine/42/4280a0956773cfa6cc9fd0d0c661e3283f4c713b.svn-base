@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <com.micsig.tbook.ui.MTextView
+        android:id="@+id/head"
+        style="@style/textStyle"
+        android:layout_width="100px"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:text="@string/saveIn"
+        android:textColor="@color/textColorNewTopViewEnable"
+        android:layout_marginRight="16px" />
+
+
+
+    <LinearLayout
+        android:id="@+id/topViewMultiRadioGroup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        />
+    <!--        android:padding="1px"-->
+    <!--        android:background="@drawable/bg_radiogroup_selectwithhead"-->
+</merge>

@@ -1,0 +1,74 @@
+package com.micsig.tbook.scope.Trigger;
+
+import com.micsig.tbook.scope.Bus.IBus;
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.channel.SerialChannel;
+
+import java.util.Observable;
+import java.util.Observer;
+
+/**
+ * Created by zhuzh on 2018-6-1.
+ */
+
+public class TriggerBus extends Trigger implements Observer{
+    public TriggerBus(int triggerType) {
+        super(triggerType);
+
+        Init();
+        EventFactory.addEventObserver(EventFactory.EVENT_BUS_TYPE_UPDATE,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_BUS_CH_CHANGE,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_TRIGGER_TYPE,this);
+    }
+
+    @Override
+    protected boolean isMultitriggerSource() {
+        return true;
+    }
+
+    @Override
+    public int getTriggerSourceCnt() {
+        return getBus().getChSampleCnt();
+    }
+
+    @Override
+    public void triggerSourceChange() {
+        super.triggerSourceChange();
+    }
+
+    private IBus getBus(){
+        SerialChannel serialChannel = ChannelFactory.getSerialChannel(
+                ChannelFactory.S1 + getTriggerType()-Trigger.TRIG_TYPE_SERIAL1);
+        return  serialChannel.getBus();
+    }
+
+    private void Init(){
+        IBus bus = getBus();
+        int idx = 0;
+        int cnt = bus.getChSampleCnt();
+        int maxIdx = ChannelFactory.getMaxChIdx();
+        for(int i=ChannelFactory.CH1;i<maxIdx;i++){
+            if(idx < cnt) {
+                if (bus.isChInSample(i)) {
+                    setTriggerSource(idx, i);
+                    idx++;
+                }
+            }
+        }
+    }
+
+
+    @Override
+    public void update(Observable observable, Object data) {
+        EventBase eventBase = (EventBase) data;
+        switch (eventBase.getId()){
+            case EventFactory.EVENT_BUS_TYPE_UPDATE:
+            case EventFactory.EVENT_BUS_CH_CHANGE:
+            case EventFactory.EVENT_TRIGGER_TYPE:
+                Init();
+                break;
+        }
+    }
+}

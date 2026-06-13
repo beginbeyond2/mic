@@ -1,0 +1,15 @@
+package com.micsig.tbook.scope.fpga;
+
+/**
+ * Created by zhuzh on 2018-4-8.
+ */
+
+public class FPGAReg_SERIAL_DEC_DEPTH extends FPGAReg {
+    public FPGAReg_SERIAL_DEC_DEPTH() {
+        super(FPGA_SERIAL_DEC_DEPTH, 4);
+    }
+
+    public void setDecDepth(int val){
+        setVal(0,26,val);
+    }
+}

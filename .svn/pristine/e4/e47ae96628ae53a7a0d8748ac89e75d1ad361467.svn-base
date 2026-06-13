@@ -1,0 +1,26 @@
+package com.micsig.tbook.scope.Trigger;
+
+import com.micsig.tbook.scope.Action.FPGAMessage;
+import com.micsig.tbook.scope.Action.XAction;
+import com.micsig.tbook.scope.Event.EventFactory;
+
+/**
+ * Created by zhuzh on 2018-6-27.
+ */
+
+public class TriggerAction extends XAction {
+    public Trigger trigger;
+    public TriggerAction(Trigger trigger){
+        this.trigger = trigger;
+    }
+    public void triggerParamChange(){
+        sendFpgaMsg(FPGAMessage.FPGA_CMD_TRIG);
+        sendEvent(EventFactory.EVENT_TRIGGER_PARAM);
+    }
+    public void triggerSourceChange(){
+        sendChSample();
+        sendFpgaMsg(FPGAMessage.FPGA_CMD_TRIG|FPGAMessage.FPGA_CMD_TRIG_OFFSET
+                | FPGAMessage.FPGA_CMD_TRIG_HUICHA|FPGAMessage.FPGA_CMD_TRIG_LEVEL);
+        sendEvent(EventFactory.EVENT_TRIGGER_PARAM);
+    }
+}

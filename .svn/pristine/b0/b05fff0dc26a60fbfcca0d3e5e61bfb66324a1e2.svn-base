@@ -1,0 +1,103 @@
+package com.micsig.tbook.scope.fpga;
+
+import com.micsig.tbook.scope.channel.ChannelFactory;
+
+/**
+ * Created by zhuzh on 2018-7-11.
+ */
+
+public class FPGA_Status {
+    private FpgaFreq freq;
+    private FpgaAuto [] auto = new FpgaAuto[ChannelFactory.CH_CNT];
+    public FPGA_Status(){
+        for(int i=0;i<auto.length;i++){
+            auto[i] = new FpgaAuto();
+        }
+        freq = new FpgaFreq();
+    }
+    public FpgaAuto getAuto(int chIdx) {
+        return auto[chIdx];
+    }
+
+    public void check(){
+        boolean bValid = true;
+        for(FpgaAuto a:auto){
+            bValid = a.isVaild();
+            if(!bValid){
+                break;
+            }
+        }
+        if(!bValid) {
+            for (FpgaAuto a : auto) {
+                a.setVaild(bValid);
+            }
+        }
+    }
+
+
+    public FpgaFreq getFreq(){
+        return freq;
+    }
+    public class FpgaFreq{
+        private boolean bVaild = false;
+        private int [] TNs = new int[2];
+
+        public boolean isVaild() {
+            return bVaild;
+        }
+
+        public void setVaild(boolean bVaild) {
+            this.bVaild = bVaild;
+        }
+
+        public int getN() {
+            return TNs[1];
+        }
+        public int getT(){
+            return TNs[0];
+        }
+
+        public void setTN(int idx ,int val) {
+            this.TNs[idx] = val;
+        }
+    }
+
+    public class FpgaAuto{
+        private boolean bVaild = false;
+        private int minVal ;
+        private int maxVal;
+        private long cycle;
+
+        public boolean isVaild() {
+            return bVaild;
+        }
+
+        public void setVaild(boolean bVaild) {
+            this.bVaild = bVaild;
+        }
+
+        public int getMinVal() {
+            return minVal;
+        }
+
+        public void setMinVal(int minVal) {
+            this.minVal = minVal;
+        }
+
+        public int getMaxVal() {
+            return maxVal;
+        }
+
+        public void setMaxVal(int maxVal) {
+            this.maxVal = maxVal;
+        }
+
+        public long getCycle() {
+            return cycle;
+        }
+
+        public void setCycle(long cycle) {
+            this.cycle = (cycle & 0xFFFFFFFFL);
+        }
+    }
+}

@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+<!--    <Button-->
+<!--        android:id="@+id/clear"-->
+<!--        style="@style/buttonStyle"-->
+<!--        android:layout_width="@dimen/formBtnClearWidth"-->
+<!--        android:layout_height="@dimen/formBtnClearHeight"-->
+<!--        android:layout_alignParentBottom="true"-->
+<!--        android:layout_alignParentEnd="true"-->
+<!--        android:layout_marginBottom="@dimen/formBtnClearMarginBottom"-->
+<!--        android:layout_marginEnd="@dimen/formBtnClearMarginEnd"-->
+<!--        android:text="@string/serialsWordClear"-->
+<!--        android:textAllCaps="false" />-->
+
+    <RelativeLayout
+        android:id="@+id/msgLayout"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/formMsgHeight"
+        android:layout_alignParentBottom="true"
+        android:background="@drawable/shape_frame_bg_black" >
+
+        <TextView
+            android:id="@+id/canTotalTitle"
+            style="@style/textStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:paddingStart="15px"
+            android:text="帧数:"/>
+
+        <TextView
+            android:id="@+id/canTotalDetail"
+            style="@style/textStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_toEndOf="@+id/canTotalTitle"
+            android:gravity="center"
+            android:text="0000000000"/>
+
+        <TextView
+            android:id="@+id/canSpaceTitle"
+            style="@style/textStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_marginStart="600px"
+            android:gravity="center"
+            android:text="SPEC:"/>
+
+        <TextView
+            android:id="@+id/canSpaceDetail"
+            style="@style/textStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_toEndOf="@+id/canSpaceTitle"
+            android:gravity="center"
+            android:text="0000000000"/>
+
+        <TextView
+            android:id="@+id/canErrorTitle"
+            style="@style/textStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_marginStart="1200px"
+            android:gravity="center"
+            android:text="Error:"/>
+
+        <TextView
+            android:id="@+id/canErrorDetail"
+            style="@style/textStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_toEndOf="@+id/canErrorTitle"
+            android:layout_marginEnd="15px"
+            android:gravity="center"
+            android:text="0000000000"/>
+
+        <Button
+            android:id="@+id/clear"
+            style="@style/buttonStyle"
+            android:layout_width="@dimen/formBtnClearWidth"
+            android:layout_height="@dimen/formBtnClearHeight"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentEnd="true"
+            android:layout_marginBottom="@dimen/formBtnClearMarginBottomNew"
+            android:layout_marginEnd="@dimen/formBtnClearMarginEnd"
+            android:text="@string/serialsWordClear"
+            android:textAllCaps="false" />
+
+    </RelativeLayout>
+
+    <View
+        android:id="@+id/dividerY"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/serials_word_divider_width"
+        android:layout_marginTop="@dimen/formHeightTitle"
+        android:background="@color/color_division_line_41464D" />
+
+    <View
+        android:id="@+id/dividerX1"
+        android:layout_width="@dimen/serials_word_divider_width"
+        android:layout_height="match_parent"
+        android:layout_above="@+id/msgLayout"
+        android:layout_marginStart="@dimen/can_ch_width"
+        android:background="@color/color_division_line_41464D" />
+
+    <View
+        android:id="@+id/dividerX2"
+        android:layout_width="@dimen/serials_word_divider_width"
+        android:layout_height="match_parent"
+        android:layout_above="@+id/msgLayout"
+        android:layout_toEndOf="@+id/dividerX1"
+        android:layout_marginStart="@dimen/can_time_width"
+        android:background="@color/color_division_line_41464D" />
+
+    <View
+        android:id="@+id/dividerX3"
+        android:layout_width="@dimen/serials_word_divider_width"
+        android:layout_height="match_parent"
+        android:layout_above="@+id/msgLayout"
+        android:layout_toEndOf="@+id/dividerX2"
+        android:layout_marginStart="@dimen/can_id_width"
+        android:background="@color/color_division_line_41464D" />
+
+    <View
+        android:id="@+id/dividerX4"
+        android:layout_width="@dimen/serials_word_divider_width"
+        android:layout_height="match_parent"
+        android:layout_above="@+id/msgLayout"
+        android:layout_toEndOf="@+id/dividerX3"
+        android:layout_marginStart="@dimen/can_type_width"
+        android:background="@color/color_division_line_41464D" />
+
+    <View
+        android:id="@+id/dividerX5"
+        android:layout_width="@dimen/serials_word_divider_width"
+        android:layout_height="match_parent"
+        android:layout_above="@+id/msgLayout"
+        android:layout_toEndOf="@+id/dividerX4"
+        android:layout_marginStart="@dimen/can_dlc_width"
+        android:background="@color/color_division_line_41464D" />
+
+
+    <View
+        android:id="@+id/dividerX6"
+        android:layout_width="@dimen/serials_word_divider_width"
+        android:layout_height="match_parent"
+        android:layout_above="@+id/msgLayout"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="@dimen/can_trigger_width"
+        android:background="@color/color_division_line_41464D" />
+
+    <View
+        android:id="@+id/dividerX7"
+        android:layout_width="@dimen/serials_word_divider_width"
+        android:layout_height="match_parent"
+        android:layout_above="@+id/msgLayout"
+        android:layout_toStartOf="@+id/dividerX6"
+        android:layout_marginEnd="@dimen/can_error_width"
+        android:background="@color/color_division_line_41464D" />
+
+    <View
+        android:id="@+id/dividerX8"
+        android:layout_width="@dimen/serials_word_divider_width"
+        android:layout_height="match_parent"
+        android:layout_above="@+id/msgLayout"
+        android:layout_toStartOf="@+id/dividerX7"
+        android:layout_marginEnd="@dimen/can_crc_width"
+        android:background="@color/color_division_line_41464D" />
+
+    <View
+        android:id="@+id/dividerY2"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/serials_word_divider_width"
+        android:layout_above="@+id/msgLayout"
+        android:background="@color/color_division_line_41464D" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/formHeightTitle"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/ch"
+            style="@style/textStyle"
+            android:layout_width="@dimen/can_ch_width"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="@string/serialsWordCanTitleCh" />
+
+        <TextView
+            android:id="@+id/time"
+            style="@style/textStyle"
+            android:layout_width="@dimen/can_time_width"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:layout_marginStart="@dimen/serials_word_divider_width"
+            android:text="@string/serialsWordCanTitleTime" />
+
+        <TextView
+            android:id="@+id/id"
+            style="@style/textStyle"
+            android:layout_width="@dimen/can_id_width"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:layout_marginStart="@dimen/serials_word_divider_width"
+            android:text="@string/serialsWordCanTitleId" />
+
+        <TextView
+            android:id="@+id/type"
+            style="@style/textStyle"
+            android:layout_width="@dimen/can_type_width"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:layout_marginStart="@dimen/serials_word_divider_width"
+            android:text="@string/serialsWordCanTitleType" />
+
+        <TextView
+            android:id="@+id/dlc"
+            style="@style/textStyle"
+            android:layout_width="@dimen/can_dlc_width"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:layout_marginStart="@dimen/serials_word_divider_width"
+            android:text="@string/serialsWordCanTitleDlc" />
+
+        <TextView
+            android:id="@+id/data"
+            style="@style/textStyle"
+            android:layout_width="0px"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:layout_marginEnd="@dimen/serials_word_divider_width"
+            android:layout_marginStart="@dimen/serials_word_divider_width"
+            android:text="@string/serialsWordCanTitleData" />
+
+        <TextView
+            android:id="@+id/crc"
+            style="@style/textStyle"
+            android:layout_width="@dimen/can_crc_width"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:layout_marginEnd="@dimen/serials_word_divider_width"
+            android:text="@string/serialsWordCanTitleCrc" />
+
+        <TextView
+            android:id="@+id/error"
+            style="@style/textStyle"
+            android:layout_width="@dimen/can_error_width"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:layout_marginEnd="@dimen/serials_word_divider_width"
+            android:text="@string/serialsWordCanTitleError" />
+
+        <TextView
+            android:id="@+id/trigger"
+            style="@style/textStyle"
+            android:layout_width="@dimen/can_trigger_width"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="@string/serialsWordCanTitleTrigger" />
+    </LinearLayout>
+
+    <com.micsig.tbook.tbookscope.main.maincenter.serialsword.UnFlingRecyclerView
+        android:id="@+id/recyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@+id/msgLayout"
+        android:layout_below="@+id/dividerY"
+        android:background="@android:color/transparent"
+        android:fadeScrollbars="false"
+        android:overScrollMode="never"
+        android:scrollbars="vertical"
+        android:scrollbarThumbVertical="@color/scaleDivider"
+        />
+
+    <com.micsig.tbook.tbookscope.main.maincenter.serialsword.SerialsWordCanSingleScreenTextView
+        android:id="@+id/singleScreenTextView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@+id/msgLayout"
+        android:layout_below="@+id/dividerY"
+        android:background="@android:color/transparent" />
+
+    <RelativeLayout
+        android:id="@+id/scrollBarLayout"
+        android:layout_width="50px"
+        android:layout_height="match_parent"
+        android:layout_above="@+id/msgLayout"
+        android:layout_alignParentEnd="true"
+        android:layout_below="@+id/dividerY"
+        android:clickable="true">
+
+        <View
+            android:id="@+id/scrollBarView"
+            android:layout_width="5px"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentEnd="true"
+            android:background="@color/scaleDivider" />
+    </RelativeLayout>
+</RelativeLayout>

@@ -1,0 +1,636 @@
+package com.micsig.tbook.tbookscope.wavezone.display;
+
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.DashPathEffect;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.PathEffect;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
+
+import com.chillingvan.canvasgl.ICanvasGL;
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.tbookscope.GlobalVar;
+import com.micsig.tbook.tbookscope.middleware.command.Command;
+import com.micsig.tbook.tbookscope.tools.Tools;
+import com.micsig.tbook.tbookscope.util.App;
+import com.micsig.tbook.tbookscope.util.CacheUtil;
+import com.micsig.tbook.tbookscope.wavezone.IWorkMode;
+import com.micsig.tbook.tbookscope.wavezone.WorkModeManage;
+import com.micsig.tbook.ui.util.TBookUtil;
+import com.micsig.tbook.ui.wavezone.IWave;
+import com.micsig.tbook.ui.wavezone.TChan;
+
+/**
+ * Created by liwb on 2017/5/5.
+ */
+
+public class Cursor_impIWave implements IWave, IWorkMode {
+    private static final String TAG = "Cursor_impIWave";
+
+    //region 类属性
+    private Context context= App.get().getApplicationContext();
+    private int cursorType;
+    private int cursorWorkMode;
+
+    /** 图标到边界的距离 */
+    private  int distance_l=100;
+    //右边图标距离=bmp.getwidth()+distance_l;
+    private  int distance_r=distance_l;
+
+    public int getCursorType() {
+        return cursorType;
+    }
+
+    //endregion
+
+    //字体显示的高度
+    private final int WordHeight = 21;
+    /**
+     * 标识宽度
+     */
+    private final int IdentifyWidth = WordHeight * 2;
+    /**
+     * 中心线位置
+     */
+    private final int centerLine = WordHeight / 2;
+
+    //region Iwave 接口属性
+    private int nameID;
+    private long x;
+    private double y = 350;//1000对应的值
+    private int color;
+    private boolean selected;
+    private OnSelectChangeEvent onSelectChangeEvent = null;
+    private OnMovingWaveEvent onMovingWaveEvent = null;
+    private boolean visible;
+    private Rect CursorRect;
+    private int currCh = 0;
+    //endregion
+
+    private Bitmap bmp,oldBmp;
+    private Canvas mCanvas;
+    private Path rowPathId;
+    private Path colPathId;
+    private boolean isChanageBitmap = true;
+
+    private ICanvasGL canvasGL;
+    public void onRefresh(){
+        if(canvasGL != null){
+            canvasGL.onRefreshTexture();
+        }
+    }
+    private Bitmap[][] resBmp;
+    private boolean isShowResBmp;
+
+    public Cursor_impIWave(Bitmap[][] resBmp, int iCursorType, int workMode,boolean isShowResBmp) {
+        distance_r=distance_l+resBmp[CursorManage.Row1][0].getWidth();
+        this.isShowResBmp=isShowResBmp;
+
+        this.resBmp = resBmp;
+        this.cursorType = iCursorType;
+        this.cursorWorkMode = workMode;
+        switch (iCursorType) {
+            case TChan.Cursor_row_1:
+            case TChan.Cursor_row_2:
+                bmp = Bitmap.createBitmap(GlobalVar.get().getWaveZoneWidth_Pix(workMode), WordHeight, Bitmap.Config.ARGB_8888);
+                break;
+            case TChan.Cursor_col_1:
+            case TChan.Cursor_col_2:
+                bmp = Bitmap.createBitmap(WordHeight, GlobalVar.get().getWaveZoneHeight_Pix(workMode), Bitmap.Config.ARGB_8888);
+                break;
+            default:
+                bmp = Bitmap.createBitmap(GlobalVar.get().getWaveZoneWidth_Pix(workMode), 1, Bitmap.Config.ARGB_8888);
+                break;
+        }
+
+        mCanvas = new Canvas(bmp);
+
+        CursorRect = new Rect();
+        CursorRect.left = 0;
+        CursorRect.top = 0;
+        CursorRect.right = GlobalVar.get().getWaveZoneWidth_Pix(workMode);
+        CursorRect.bottom = GlobalVar.get().getWaveZoneHeight_Pix(workMode);
+
+        rowPathId = new Path();
+        rowPathId.moveTo(0, centerLine);
+        rowPathId.lineTo(centerLine, 0);
+        rowPathId.lineTo(IdentifyWidth - centerLine - 1, 0);
+        rowPathId.lineTo(IdentifyWidth - 1, centerLine);
+        rowPathId.lineTo(IdentifyWidth - centerLine - 1, WordHeight - 1);
+        rowPathId.lineTo(centerLine, WordHeight - 1);
+        rowPathId.close();
+        rowPathId.setFillType(Path.FillType.WINDING);
+
+        colPathId = new Path();
+        colPathId.moveTo(centerLine, 0);
+        colPathId.lineTo(WordHeight - 1, centerLine);
+        colPathId.lineTo(WordHeight - 1, IdentifyWidth - centerLine - 1);
+        colPathId.lineTo(centerLine, IdentifyWidth - 1);
+        colPathId.lineTo(0, IdentifyWidth - centerLine - 1);
+        colPathId.lineTo(0, centerLine);
+        colPathId.close();
+        colPathId.setFillType(Path.FillType.WINDING);
+
+    }
+
+    //region IWorkMode接口
+
+    int preHeight = ScopeBase.getHeight();
+    @Override
+    public void switchWorkMode(@WorkMode int workMode) {
+
+        this.cursorWorkMode = workMode;
+        if (TChan.isCursorRow2(this.nameID)) {
+//            Logger.i(TAG, "switchWorkMode() ==>"+" [1]"
+//                    +" cursorId:0x"+Integer.toHexString(this.nameID)
+//                    +" workMode:"+workMode+" y:"+this.y);
+            switch (workMode) {
+                case IWorkMode.WorkMode_YT:
+                    this.y = this.getY() * GlobalVar.get().toYTCoef() * ScopeBase.getToFPGACoff();
+                    break;
+                case IWorkMode.WorkMode_YTZOOM:
+                    this.y = this.getY() * GlobalVar.get().toZoomCoef() * ScopeBase.getToFPGACoff();
+                    break;
+            }
+
+
+//            Logger.i(TAG, "switchWorkMode() ==>"+" [2]"
+//                    +" cursorId:0x"+Integer.toHexString(this.nameID)
+//                    +" workMode:"+workMode+" y:"+this.y);
+        }
+        double y = this.y;
+        if (workMode == IWorkMode.WorkMode_YTZOOM) {
+            y = this.y * GlobalVar.get().toYTCoef();
+        }
+        CacheUtil.get().putMap(CacheUtil.MAIN_WAVE_YT_CURSORH_POSITION + this.nameID, String.valueOf(y));
+        CursorRect.right = GlobalVar.get().getWaveZoneWidth_Pix(workMode);
+        CursorRect.bottom = GlobalVar.get().getWaveZoneHeight_Pix(workMode);
+        draw();
+    }
+
+    //endregion
+
+    //region
+    private Paint p = new Paint();
+    private PorterDuffXfermode clearMode = new PorterDuffXfermode(PorterDuff.Mode.CLEAR);
+    private PorterDuffXfermode srcMode = new PorterDuffXfermode(PorterDuff.Mode.SRC);
+    private PorterDuffXfermode dstMode = new PorterDuffXfermode(PorterDuff.Mode.DST);
+    private PorterDuffXfermode dstoutMode = new PorterDuffXfermode(PorterDuff.Mode.DST_OUT);
+    private PorterDuffXfermode srcOverMode = new PorterDuffXfermode(PorterDuff.Mode.SRC_OVER);
+    private PorterDuffXfermode srcIn = new PorterDuffXfermode(PorterDuff.Mode.SRC_IN);
+    private PorterDuffXfermode dstIn = new PorterDuffXfermode(PorterDuff.Mode.DST_IN);
+
+    private void draw() {
+        synchronized (bmp) {
+            p.setXfermode(clearMode);
+            mCanvas.drawPaint(p);
+            p.setXfermode(srcMode);
+            p.setStrokeWidth(1);
+            p.setColor(color);
+            p.setStyle(Paint.Style.STROKE);
+            if (!selected) {
+                PathEffect effects = new DashPathEffect(new float[]{5, 5, 5, 5}, 1);
+                p.setPathEffect(effects);
+            } else {
+                p.setPathEffect(null);
+            }
+            if (TChan.isCursorRow2(cursorType)) {
+                mCanvas.drawLine(0, centerLine, GlobalVar.get().getWaveZoneWidth_Pix(WorkModeManage.getInstance().getmWorkMode()), centerLine, p);
+            } else if (TChan.isCursorCol2(cursorType)) {
+                mCanvas.drawLine(centerLine, 0, centerLine, GlobalVar.get().getWaveZoneHeight_Pix(WorkModeManage.getInstance().getmWorkMode()), p);
+            }
+//            drawId(this.selected,this.cursorType);
+            drawId(cursorWorkMode, currCh, selected, cursorType);
+            isChanageBitmap = true;
+            onRefresh();
+        }
+    }
+
+    private void drawId(int currWorkMode, int currCh, boolean selected, int currsorType) {
+        int ch = 0;
+        if (currWorkMode == IWorkMode.WorkMode_XY) {
+            ch = 0;
+        } else {
+            ch = currCh;
+            if (TChan.isRef(currCh)) ch = TChan.R1;
+//            else if(currCh >=IWave.S1) ch = currCh - 2;
+        }
+        int selectIndex = 0;
+        if (selected) {
+            selectIndex = CursorManage.Select;
+        } else {
+            selectIndex = CursorManage.NoSelect;
+        }
+
+//        if (isShowResBmp==false) return;
+        if (!CacheUtil.get().getBoolean(CacheUtil.TOP_SLIP_CURSOR_SETTING_MODE)) return;
+
+        p.setXfermode(srcMode);
+        switch (cursorType) {
+            case TChan.Cursor_row_1: {
+                mCanvas.save();
+                mCanvas.translate(distance_l, 0);
+                mCanvas.drawBitmap(resBmp[CursorManage.Row1][selectIndex], 0, (mCanvas.getHeight() - resBmp[CursorManage.Row1][selectIndex].getHeight()) / 2, p);
+                mCanvas.restore();
+            }
+            break;
+            case TChan.Cursor_row_2: {
+                mCanvas.save();
+                mCanvas.translate(GlobalVar.get().getWaveZoneWidth_Pix(WorkModeManage.getInstance().getmWorkMode()) - distance_r, 0);
+                mCanvas.drawBitmap(resBmp[CursorManage.Row2][selectIndex], 0, (mCanvas.getHeight() - resBmp[CursorManage.Row2][selectIndex].getHeight()) / 2, p);
+                mCanvas.restore();
+            }
+            break;
+            case TChan.Cursor_col_1: {
+                mCanvas.save();
+                mCanvas.translate(0, distance_l);
+                mCanvas.drawBitmap(resBmp[CursorManage.Col1][selectIndex], (mCanvas.getWidth() - resBmp[CursorManage.Col1][selectIndex].getWidth()) / 2, 0, p);
+                mCanvas.restore();
+            }
+            break;
+            case TChan.Cursor_col_2: {
+                mCanvas.save();
+                mCanvas.translate(0, GlobalVar.get().getWaveZoneHeight_Pix(WorkModeManage.getInstance().getmWorkMode()) - distance_r);
+                mCanvas.drawBitmap(resBmp[CursorManage.Col2][selectIndex], (mCanvas.getWidth() - resBmp[CursorManage.Col2][selectIndex].getWidth()) / 2, 0, p);
+                mCanvas.restore();
+            }
+            break;
+        }
+
+
+    }
+
+    public void changeCursorH(int height) {
+        CursorRect.bottom = height;
+    }
+
+    private void drawId(boolean selected, int cursorType) {
+        p.setTextSize(10);
+        Rect rect = Tools.getTextRect("Y2", p);
+        if (selected) {
+            switch (cursorType) {
+                case TChan.Cursor_row_1: {
+                    mCanvas.save();
+                    mCanvas.translate(distance_l, 0);
+                    p.setStyle(Paint.Style.FILL);
+                    mCanvas.drawPath(rowPathId, p);
+                    p.setColor(Color.BLACK);
+                    mCanvas.drawText("Y1", (IdentifyWidth - rect.width()) / 2, (bmp.getHeight() - rect.height()) / 2 + rect.height(), p);
+                    mCanvas.restore();
+                }
+                break;
+                case TChan.Cursor_row_2: {
+                    mCanvas.save();
+                    mCanvas.translate(GlobalVar.get().getWaveZoneWidth_Pix(WorkModeManage.getInstance().getmWorkMode()) - distance_r, 0);
+                    p.setStyle(Paint.Style.FILL);
+                    mCanvas.drawPath(rowPathId, p);
+                    p.setColor(Color.BLACK);
+                    mCanvas.drawText("Y2", (IdentifyWidth - rect.width()) / 2, (bmp.getHeight() - rect.height()) / 2 + rect.height(), p);
+                    mCanvas.restore();
+                }
+                break;
+                case TChan.Cursor_col_1: {
+                    mCanvas.save();
+                    mCanvas.translate(0, distance_l);
+                    p.setStyle(Paint.Style.FILL);
+                    mCanvas.drawPath(colPathId, p);
+                    p.setColor(Color.BLACK);
+                    mCanvas.drawText("X1", (WordHeight - Tools.getTextRect("X1", p).width()) / 2, (IdentifyWidth - rect.height()) / 2 + rect.height(), p);
+                    mCanvas.restore();
+                }
+                break;
+                case TChan.Cursor_col_2: {
+                    mCanvas.save();
+                    mCanvas.translate(0, GlobalVar.get().getWaveZoneHeight_Pix(WorkModeManage.getInstance().getmWorkMode()) - distance_r);
+                    p.setStyle(Paint.Style.FILL);
+                    mCanvas.drawPath(colPathId, p);
+                    p.setColor(Color.BLACK);
+                    mCanvas.drawText("X2", (WordHeight - Tools.getTextRect("X2", p).width()) / 2, (IdentifyWidth - rect.height()) / 2 + rect.height(), p);
+                    mCanvas.restore();
+                }
+                break;
+            }
+        } else {
+            p.setXfermode(dstoutMode);
+            p.setPathEffect(null);
+            p.setStyle(Paint.Style.FILL);
+            p.setColor(Color.RED);
+            switch (cursorType) {
+                case TChan.Cursor_row_1: {
+                    int x = distance_l;
+                    mCanvas.drawRect(x, 0, x + IdentifyWidth, WordHeight - 1, p);
+                    p.setXfermode(srcMode);
+                    mCanvas.save();
+                    p.setPathEffect(null);
+                    mCanvas.translate(x, 0);
+                    p.setStyle(Paint.Style.STROKE);
+                    p.setColor(color);
+                    mCanvas.drawPath(rowPathId, p);
+                    p.setStyle(Paint.Style.FILL);
+                    mCanvas.drawText("Y1", (IdentifyWidth - rect.width()) / 2, rect.height() + (bmp.getHeight() - rect.height()) / 2, p);
+                    mCanvas.restore();
+                }
+                break;
+                case TChan.Cursor_row_2: {
+                    int x = GlobalVar.get().getWaveZoneWidth_Pix(WorkModeManage.getInstance().getmWorkMode()) - distance_r;
+                    mCanvas.drawRect(x, 0, x + IdentifyWidth, WordHeight - 1, p);
+                    p.setXfermode(srcMode);
+                    mCanvas.save();
+                    p.setPathEffect(null);
+                    mCanvas.translate(x, 0);
+                    p.setStyle(Paint.Style.STROKE);
+                    p.setColor(color);
+                    mCanvas.drawPath(rowPathId, p);
+                    p.setStyle(Paint.Style.FILL);
+                    mCanvas.drawText("Y2", (IdentifyWidth - rect.width()) / 2, rect.height() + (bmp.getHeight() - rect.height()) / 2, p);
+                    mCanvas.restore();
+                }
+                break;
+                case TChan.Cursor_col_1: {
+                    y = distance_l;
+                    mCanvas.drawRect(0, Math.round(y), WordHeight - 1, Math.round(y) + IdentifyWidth, p);
+                    p.setXfermode(srcMode);
+                    mCanvas.save();
+                    p.setPathEffect(null);
+                    mCanvas.translate(0, Math.round(y));
+                    p.setStyle(Paint.Style.STROKE);
+                    p.setColor(color);
+                    mCanvas.drawPath(colPathId, p);
+                    p.setStyle(Paint.Style.FILL);
+                    mCanvas.drawText("X1", (WordHeight - Tools.getTextRect("X1", p).width()) / 2, (IdentifyWidth - rect.height()) / 2 + rect.height(), p);
+                    mCanvas.restore();
+                }
+                break;
+                case TChan.Cursor_col_2: {
+                    y = GlobalVar.get().getWaveZoneHeight_Pix(WorkModeManage.getInstance().getmWorkMode()) - distance_r;
+                    mCanvas.drawRect(0, (int)Math.round(y), WordHeight - 1, (int)Math.round(y) + IdentifyWidth, p);
+                    p.setXfermode(srcMode);
+                    mCanvas.save();
+                    p.setPathEffect(null);
+                    mCanvas.translate(0, Math.round(y));
+                    p.setStyle(Paint.Style.STROKE);
+                    p.setColor(color);
+                    mCanvas.drawPath(colPathId, p);
+                    p.setStyle(Paint.Style.FILL);
+                    mCanvas.drawText("X2", (WordHeight - Tools.getTextRect("X2", p).width()) / 2, (IdentifyWidth - rect.height()) / 2 + rect.height(), p);
+                    mCanvas.restore();
+                }
+                break;
+            }
+        }
+    }
+
+    @Override
+    public void moveLine(int offsetX, int offsetY) {
+
+    }
+
+    @Override
+    public void draw(Canvas canvas) {
+//        synchronized (bmp) {
+//            if ((cursorType == IWave.Cursor_row_1 || cursorType == IWave.Cursor_row_2) && visible == true)
+//                canvas.drawBitmap(bmp, 0, y, null);
+//            if ((cursorType == IWave.Cursor_col_1 || cursorType == IWave.Cursor_col_2) && visible == true)
+//                canvas.drawBitmap(bmp, x, 0, null);
+//        }
+    }
+
+    @Override
+    public void draw(ICanvasGL canvas) {
+        synchronized (bmp) {
+
+            canvasGL = canvas;
+            if (TChan.isCursorRow2(cursorType) && visible
+                    && (getY() >= CursorRect.top && getY() < CursorRect.bottom)) {
+                if (isChanageBitmap){
+                    canvas.invalidateTextureContent(bmp,oldBmp);
+                    oldBmp = null;
+                }
+
+                canvas.drawBitmap(bmp, 0, (int) Math.round(getY()) - centerLine);
+            }
+            if (TChan.isCursorCol2(cursorType) && visible
+                    && (x >= CursorRect.left && x < CursorRect.right)) {
+                if (isChanageBitmap) {
+                    canvas.invalidateTextureContent(bmp,oldBmp);
+                    oldBmp = null;
+                }
+                canvas.drawBitmap(bmp, ((int) x - centerLine), 0);
+            }
+
+            isChanageBitmap = false;
+        }
+    }
+
+    @Override
+    public void resultIniRect() {
+
+    }
+
+    @Override
+    public void setLineNameId(int nameId) {
+        this.nameID = nameId;
+    }
+
+    @Override
+    public int getLineNameID() {
+        return this.nameID;
+    }
+
+    @Override
+    public long getX() {
+        return x;
+    }
+
+    @Override
+    public double getY() {
+        return ScopeBase.changeAccuracy(y * ScopeBase.getToUICoff());
+    }
+
+    @Override
+    public void setX(long x) {
+//        Logger.i(TAG,"CursorSetX() ==>"
+//                +" nameId:0x"+Integer.toHexString(this.nameID)+" Colx:"+x+" - "+this.x
+//                +" left:"+CursorRect.left+" right:"+CursorRect.right
+//                +" width:"+CursorRect.width()
+//                +" CacheIsLoadParamComplete:"+CacheUtil.get().isLoadParamComplete()
+//                +" CacheIsLoadComplete:"+CacheUtil.get().isLoadComplete());
+
+        if (x <= CursorRect.left) {
+            this.x = 0;
+        } else if (x >= CursorRect.width()) {
+            this.x = CursorRect.width() - 1;
+        } else {
+            this.x = x;
+        }
+        if (TChan.isCursorCol2(cursorType)) {
+            if (cursorWorkMode == IWorkMode.WorkMode_YT || cursorWorkMode == IWorkMode.WorkMode_YTZOOM) {
+                CacheUtil.get().putMap(CacheUtil.MAIN_WAVE_YT_CURSORV_POSITION + cursorType, String.valueOf(this.x));
+            } else if (cursorWorkMode == IWorkMode.WorkMode_XY) {
+                CacheUtil.get().putMap(CacheUtil.MAIN_WAVE_XY_CURSORV_POSITION + cursorType, String.valueOf(this.x));
+            }
+
+            if (cursorType == TChan.Cursor_col_1) {
+                Command.get().getCursor().Cx1((int) this.x, false);
+            } else {
+                Command.get().getCursor().Cx2((int) this.x, false);
+            }
+        }
+        if (this.onMovingWaveEvent != null) {
+            onMovingWaveEvent.OnMovingWave(this, this.x, getY(), false, false);
+        }
+
+        onRefresh();
+
+    }
+
+    @Override
+    public void setY(double y) {
+//        Logger.i(TAG,"CursorSetY() ==>"
+//                +" nameId:0x"+Integer.toHexString(this.nameID)+" Rowy:"+y+" - "+this.y
+//                +" cursorWorkMode:"+cursorWorkMode
+//                +" top:"+CursorRect.top+" bottom:"+CursorRect.bottom
+//                +" CacheIsLoadParamComplete:"+CacheUtil.get().isLoadParamComplete()
+//                +" CacheIsLoadComplete:"+CacheUtil.get().isLoadComplete());
+
+        if (y <= CursorRect.top) {
+            this.y = 0;
+        } else if (y >= CursorRect.height()) {
+            this.y = CursorRect.height() - 1;
+        } else {
+            this.y = y;
+        }
+        this.y = this.y * ScopeBase.getToFPGACoff();
+        if (TChan.isCursorRow2(cursorType)) {
+            if (cursorWorkMode == IWorkMode.WorkMode_YT) {
+                CacheUtil.get().putMap(CacheUtil.MAIN_WAVE_YT_CURSORH_POSITION + cursorType, String.valueOf(this.y));
+            } else if (cursorWorkMode == IWorkMode.WorkMode_XY) {
+                CacheUtil.get().putMap(CacheUtil.MAIN_WAVE_XY_CURSORH_POSITION + cursorType, String.valueOf(this.y));
+            } else if (cursorWorkMode == IWorkMode.WorkMode_YTZOOM) {
+                CacheUtil.get().putMap(CacheUtil.MAIN_WAVE_YT_CURSORH_POSITION + cursorType, String.valueOf(this.y * GlobalVar.get().toYTCoef()));
+
+            }
+
+            if (cursorType == TChan.Cursor_row_1) {
+                Command.get().getCursor().CY1(getY(), false);
+            } else {
+                Command.get().getCursor().CY2(getY(), false);
+            }
+        }
+        if (this.onMovingWaveEvent != null) {
+            onMovingWaveEvent.OnMovingWave(this, x, getY(), false, false);
+        }
+        onRefresh();
+    }
+
+
+    @Override
+    public void setColor(int color) {
+        this.color = color;
+        this.currCh = TChan.getColorToChannel(context,color);
+        draw();
+    }
+
+    @Override
+    public int getColor() {
+        return color;
+    }
+
+    @Override
+    public void setSelected(boolean selected) {
+        this.selected = selected;
+        draw();
+        if (onSelectChangeEvent != null) onSelectChangeEvent.OnSelectChange(this, selected);
+    }
+
+    @Override
+    public boolean isSelected() {
+        return this.selected;
+    }
+
+    @Override
+    public void setOnSelectChangeEvent(OnSelectChangeEvent onSelectChangeEvent) {
+        this.onSelectChangeEvent = onSelectChangeEvent;
+    }
+
+    @Override
+    public void setVisible(boolean visible) {
+        this.visible = visible;
+        onRefresh();
+    }
+
+    @Override
+    public boolean getVisible() {
+        return visible;
+    }
+
+    @Override
+    public void setOnMovingWaveEvent(OnMovingWaveEvent onMovingWaveEvent) {
+        this.onMovingWaveEvent = onMovingWaveEvent;
+    }
+
+    //移动px个像素
+    @Override
+    public void movePix(double px) {
+//        Logger.i(TAG, "movePix() ==>"
+//                +" x:"+this.x+" y:"+this.y+" px:"+px
+//                +" CursorType:0x"+Integer.toHexString(cursorType)
+//                +" nameId:0x"+Integer.toHexString(this.nameID));
+        if (px > 0) {
+            if (TChan.isCursorRow2(cursorType)) {
+//                px = ScopeBase.changeAccuracy(px * ScopeBase.getToUICoff());
+                if ((getY() + px) < GlobalVar.get().getWaveZoneHeight_Pix(WorkModeManage.getInstance().getmWorkMode())) {
+                    setY(getY() + px);
+                }
+            } else if (TChan.isCursorCol2(cursorType)) {
+                if ((x + px) < GlobalVar.get().getWaveZoneWidth_Pix(WorkModeManage.getInstance().getmWorkMode())) {
+                    setX(Math.round(x + px));
+                }
+            }
+        } else {
+            if (TChan.isCursorRow2(cursorType)) {
+//                px = ScopeBase.changeAccuracy(px * ScopeBase.getToUICoff());
+                if ((getY() + px) >= 0) {
+                    setY(getY() + px);
+                }
+            } else if (TChan.isCursorCol2(cursorType)) {
+                if ((x + px) >= 0) {
+                    setX(Math.round(x + px));
+                }
+            }
+        }
+    }
+
+    private void reInitBmp(){
+
+        oldBmp = bmp;
+        switch (this.cursorType) {
+            case TChan.Cursor_row_1:
+            case TChan.Cursor_row_2:
+                bmp = Bitmap.createBitmap(GlobalVar.get().getWaveZoneWidth_Pix(this.cursorWorkMode), WordHeight, Bitmap.Config.ARGB_8888);
+                break;
+            case TChan.Cursor_col_1:
+            case TChan.Cursor_col_2:
+                bmp = Bitmap.createBitmap(WordHeight, GlobalVar.get().getWaveZoneHeight_Pix(this.cursorWorkMode), Bitmap.Config.ARGB_8888);
+                break;
+            default:
+                bmp = Bitmap.createBitmap(GlobalVar.get().getWaveZoneWidth_Pix(this.cursorWorkMode), 1, Bitmap.Config.ARGB_8888);
+                break;
+        }
+        mCanvas = new Canvas(bmp);
+        CursorRect.bottom = GlobalVar.get().getWaveZoneHeight_Pix(this.cursorWorkMode);
+    }
+
+
+    //endregion
+    public void refresh() {
+        reInitBmp();
+        draw();
+    }
+}

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/color_backcolor_mainMenu_title" />
+    <item android:left="20px" android:right="20px"
+        android:drawable="@color/divider_topviewtitle_color" />
+    <item
+        android:bottom="1px"
+        android:drawable="@color/color_backcolor_mainMenu_title" />
+
+</layer-list>

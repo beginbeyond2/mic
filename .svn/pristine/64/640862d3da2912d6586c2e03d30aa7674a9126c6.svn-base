@@ -1,0 +1,47 @@
+package com.micsig.tbook.scope.Trigger;
+
+import com.micsig.tbook.scope.Action.FPGAMessage;
+import com.micsig.tbook.scope.Action.XAction;
+import com.micsig.tbook.scope.Event.EventFactory;
+
+/**
+ * Created by zhuzh on 2018/3/20.
+ */
+
+public class TriggerCommonAction extends XAction {
+    private TriggerCommon triggerCommon;
+    public TriggerCommonAction(TriggerCommon triggerCommon){
+        this.triggerCommon = triggerCommon;
+    }
+    public void TriggerHoldOffTimeChange(){
+        sendFpgaMsg(FPGAMessage.FPGA_CMD_TRIG_RETRAIN);
+        sendEvent(EventFactory.EVENT_TRIGGER_COMMON_HOLDOFFTIME);
+    }
+    public void TriggerModeChange(){
+        sendFpgaMsg(FPGAMessage.FPGA_CMD_TRIG);
+        sendEvent(EventFactory.EVENT_TRIGGER_COMMON_MODE);
+    }
+    public void TriggerEnterAutoTimeChange(){
+        sendFpgaMsg(FPGAMessage.FPGA_CMD_AUTO_TRIG_T);
+    }
+    public void TriggerTypeChange(){
+        sendChSample();
+        sendFpgaMsg(FPGAMessage.FPGA_CMD_SAMP_MODE|FPGAMessage.FPGA_CMD_COUY
+                |FPGAMessage.FPGA_CMD_TRIG_HUICHA|FPGAMessage.FPGA_CMD_TRIG_COUPLE
+                |FPGAMessage.FPGA_CMD_TRIG_LEVEL
+                |FPGAMessage.FPGA_CMD_TRIG
+                |FPGAMessage.FPGA_CMD_TRIG_OFFSET
+                |FPGAMessage.FPGA_CMD_AUTO_TRIG_T);
+        sendEvent(EventFactory.EVENT_TRIGGER_TYPE);
+    }
+
+    public void extTriggerRes(){
+        sendFpgaMsg(0,FPGAMessage.FPGA_CMD_EXT_RESISTANCE);
+    }
+    public void extTriggerLevel(){
+        sendFpgaMsg(0,FPGAMessage.FPGA_CMD_EXT_TRIGGER_LEVEL);
+    }
+    public void triggersensitivity(){
+        sendFpgaMsg(FPGAMessage.FPGA_CMD_TRIG_LEVEL,0);
+    }
+}

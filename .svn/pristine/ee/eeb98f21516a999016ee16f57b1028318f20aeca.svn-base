@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/mainRightChannelLayout"
+    android:orientation="vertical"
+    android:layout_width="120px"
+    android:layout_height="@dimen/mainCenterHeightMeasureRow0"
+    android:paddingTop="0px"
+    android:paddingBottom="48px"
+    android:background="@color/color_Backcolor_MainMenu3"
+    android:gravity="center_horizontal">
+
+    <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+        android:id="@+id/rightCh1Master"
+        android:layout_width="match_parent"
+        android:layout_height="266px"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:gravity="center"
+        app:text="1"
+        app:checked="true"
+        app:large="true" />
+
+    <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+        android:id="@+id/rightCh2Master"
+        android:layout_width="match_parent"
+        android:layout_height="266px"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/mark"
+        android:layout_marginBottom="20px"
+        android:gravity="center"
+        app:text="2"
+        app:checked="true"
+        app:large="true" />
+
+    <TextView
+        android:id="@+id/mark"
+        android:layout_width="match_parent"
+        android:layout_height="80px"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:gravity="center"
+        />
+
+    <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+        android:id="@+id/rightCh3Master"
+        android:layout_width="match_parent"
+        android:layout_height="266px"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/mark"
+        android:layout_marginTop="20px"
+        app:text="3"
+        app:checked="true"
+        app:large="true"
+        android:gravity="center"
+        />
+
+    <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+        android:id="@+id/rightCh4Master"
+        android:layout_width="match_parent"
+        android:layout_height="266px"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:text="4"
+        app:checked="true"
+        app:large="true"
+        android:gravity="center"
+        />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

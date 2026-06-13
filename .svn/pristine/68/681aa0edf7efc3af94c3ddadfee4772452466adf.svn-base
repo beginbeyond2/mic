@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <com.micsig.tbook.ui.MRadioGroup
+        android:id="@+id/chanGroup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="14px"
+        android:layout_marginRight="14px"
+        android:layout_marginTop="8px"
+        android:layout_marginBottom="8px"
+        app:arrays="@array/popArrayAllChannel"
+        app:showStyle="Common"
+        app:perLineShowTotalCount="8"
+        app:itemWidth="90px"
+        app:itemHeight="60px"
+        app:itemRightMargin="8px"
+        app:itemLeftMargin="8px"
+        app:itemBottomMargin="4px"
+        app:itemTopMargin="4px"
+        />
+
+    <RadioGroup
+        android:id="@+id/groupCenterChannel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingBottom="@dimen/mainTopCenterRadioGroupPadding"
+        android:paddingEnd="@dimen/mainTopCenterRadioGroupPadding"
+        android:paddingTop="@dimen/mainTopCenterRadioGroupPadding"
+        android:visibility="gone"
+        >
+        <!--        android:background="@drawable/bg_rightslipmenu_triggerlevel_frame"-->
+
+        <RadioButton
+            android:id="@+id/channelsCh1"
+            style="@style/textStyle"
+            android:layout_width="@dimen/mainTopCenterRadioButtonWidth"
+            android:layout_height="@dimen/mainTopCenterRadioButtonHeight"
+            android:layout_marginStart="@dimen/mainTopCenterRadioButtonPaddingLeft"
+            android:background="@drawable/selector_rightslip_button"
+            android:button="@null"
+            android:checked="true"
+            android:gravity="center"
+            android:text="@string/mainCenterRadioButtonCh1"
+            android:textColor="@color/color_Ch1"
+            android:textStyle="bold" />
+
+        <RadioButton
+            android:id="@+id/channelsCh2"
+            style="@style/textStyle"
+            android:layout_width="@dimen/mainTopCenterRadioButtonWidth"
+            android:layout_height="@dimen/mainTopCenterRadioButtonHeight"
+            android:layout_marginStart="@dimen/mainTopCenterRadioButtonPaddingLeft"
+            android:background="@drawable/selector_rightslip_button"
+            android:button="@null"
+            android:gravity="center"
+            android:text="@string/mainCenterRadioButtonCh2"
+            android:textColor="@color/color_Ch2"
+            android:textStyle="bold" />
+
+        <RadioButton
+            android:id="@+id/channelsCh3"
+            style="@style/textStyle"
+            android:layout_width="@dimen/mainTopCenterRadioButtonWidth"
+            android:layout_height="@dimen/mainTopCenterRadioButtonHeight"
+            android:layout_marginStart="@dimen/mainTopCenterRadioButtonPaddingLeft"
+            android:background="@drawable/selector_rightslip_button"
+            android:button="@null"
+            android:gravity="center"
+            android:text="@string/mainCenterRadioButtonCh3"
+            android:textColor="@color/color_Ch3"
+            android:textStyle="bold" />
+
+        <RadioButton
+            android:id="@+id/channelsCh4"
+            style="@style/textStyle"
+            android:layout_width="@dimen/mainTopCenterRadioButtonWidth"
+            android:layout_height="@dimen/mainTopCenterRadioButtonHeight"
+            android:layout_marginStart="@dimen/mainTopCenterRadioButtonPaddingLeft"
+            android:background="@drawable/selector_rightslip_button"
+            android:button="@null"
+            android:gravity="center"
+            android:text="@string/mainCenterRadioButtonCh4"
+            android:textColor="@color/color_Ch4"
+            android:textStyle="bold" />
+
+        <RadioButton
+            android:id="@+id/channelsMath"
+            style="@style/textStyle"
+            android:layout_width="@dimen/mainTopCenterRadioButtonWidth"
+            android:layout_height="@dimen/mainTopCenterRadioButtonHeight"
+            android:layout_marginStart="@dimen/mainTopCenterRadioButtonPaddingLeft"
+            android:background="@drawable/selector_rightslip_button"
+            android:button="@null"
+            android:gravity="center"
+            android:text="@string/mainCenterRadioButtonMath1"
+            android:textColor="@color/color_Math"
+            android:textStyle="bold" />
+
+        <RadioButton
+            android:id="@+id/channelsR1"
+            style="@style/textStyle"
+            android:layout_width="@dimen/mainTopCenterRadioButtonWidth"
+            android:layout_height="@dimen/mainTopCenterRadioButtonHeight"
+            android:layout_marginStart="@dimen/mainTopCenterRadioButtonPaddingLeft"
+            android:background="@drawable/selector_rightslip_button"
+            android:button="@null"
+            android:gravity="center"
+            android:text="@string/mainCenterRadioButtonR1"
+            android:textColor="@color/color_R1"
+            android:textStyle="bold" />
+
+        <RadioButton
+            android:id="@+id/channelsR2"
+            style="@style/textStyle"
+            android:layout_width="@dimen/mainTopCenterRadioButtonWidth"
+            android:layout_height="@dimen/mainTopCenterRadioButtonHeight"
+            android:layout_marginStart="@dimen/mainTopCenterRadioButtonPaddingLeft"
+            android:background="@drawable/selector_rightslip_button"
+            android:button="@null"
+            android:gravity="center"
+            android:text="@string/mainCenterRadioButtonR2"
+            android:textColor="@color/color_R2"
+            android:textStyle="bold" />
+
+        <RadioButton
+            android:id="@+id/channelsR3"
+            style="@style/textStyle"
+            android:layout_width="@dimen/mainTopCenterRadioButtonWidth"
+            android:layout_height="@dimen/mainTopCenterRadioButtonHeight"
+            android:layout_marginStart="@dimen/mainTopCenterRadioButtonPaddingLeft"
+            android:background="@drawable/selector_rightslip_button"
+            android:button="@null"
+            android:gravity="center"
+            android:text="@string/mainCenterRadioButtonR3"
+            android:textColor="@color/color_R3"
+            android:textStyle="bold" />
+
+        <RadioButton
+            android:id="@+id/channelsR4"
+            style="@style/textStyle"
+            android:layout_width="@dimen/mainTopCenterRadioButtonWidth"
+            android:layout_height="@dimen/mainTopCenterRadioButtonHeight"
+            android:layout_marginStart="@dimen/mainTopCenterRadioButtonPaddingLeft"
+            android:background="@drawable/selector_rightslip_button"
+            android:button="@null"
+            android:gravity="center"
+            android:text="@string/mainCenterRadioButtonR4"
+            android:textColor="@color/color_R4"
+            android:textStyle="bold" />
+
+        <RadioButton
+            android:id="@+id/channelsS1"
+            style="@style/textStyle"
+            android:layout_width="@dimen/mainTopCenterRadioButtonWidth"
+            android:layout_height="@dimen/mainTopCenterRadioButtonHeight"
+            android:layout_marginStart="@dimen/mainTopCenterRadioButtonPaddingLeft"
+            android:background="@drawable/selector_rightslip_button"
+            android:button="@null"
+            android:gravity="center"
+            android:text="@string/serialsWordTitleS1"
+            android:textColor="@color/color_S1"
+            android:textStyle="bold" />
+
+        <RadioButton
+            android:id="@+id/channelsS2"
+            style="@style/textStyle"
+            android:layout_width="@dimen/mainTopCenterRadioButtonWidth"
+            android:layout_height="@dimen/mainTopCenterRadioButtonHeight"
+            android:layout_marginStart="@dimen/mainTopCenterRadioButtonPaddingLeft"
+            android:background="@drawable/selector_rightslip_button"
+            android:button="@null"
+            android:gravity="center"
+            android:text="@string/serialsWordTitleS2"
+            android:textColor="@color/color_S2"
+            android:textStyle="bold" />
+    </RadioGroup>
+
+    <TextView
+        android:id="@+id/icon"
+        android:layout_width="@dimen/mainTopCenterRadioIconWidth"
+        android:layout_height="@dimen/mainTopCenterRadioIconWidth"
+        android:layout_margin="@dimen/dividerSize"
+        android:background="@drawable/current_dot" />
+</merge>

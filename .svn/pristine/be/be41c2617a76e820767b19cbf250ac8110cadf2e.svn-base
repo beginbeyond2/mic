@@ -1,0 +1,162 @@
+package com.micsig.tbook.scope.fpga;
+
+import android.util.Log;
+
+import com.micsig.tbook.hardware.HardwareProduct;
+import com.micsig.tbook.scope.Auto.FreqCounter;
+import com.micsig.tbook.scope.Calibrate.CabteRegister;
+import com.micsig.tbook.scope.Calibrate.HW;
+import com.micsig.tbook.scope.Calibrate.HwConfig;
+import com.micsig.tbook.scope.Sample.Sample;
+import com.micsig.tbook.scope.Sample.SegmentSample;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.channel.Channel;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+
+/**
+ * Created by zhuzh on 2018/3/13.
+ */
+
+public class FPGAReg_SAMPLE_MODE extends FPGAReg {
+    private static final String TAG = "FPGAReg_SAMPLE_MODE";
+    public FPGAReg_SAMPLE_MODE() {
+        super(FPGAReg.FPGA_SAMPLE_MODE,4);
+    }
+
+
+
+    public void setAutoMode(int val){
+        setVal(2,1,val);
+    }
+    public void setDispMode(int val){
+        setVal(3,1,val);
+    }
+    public void setSlowScale(int val){
+        setVal(4,1,val);
+    }
+    public void setHighRefresh(int val){
+        setVal(5,1,val);
+    }
+    public void setChPhase(int val){
+        setVal(6,4,val);
+    }
+    public void setSingleCh(int val){
+        setVal(10,3,val);
+    }
+    public void setSampMode(int val){
+        setVal(16,2,val);
+    }
+    public void setWaveType(int val){
+        setVal(18,1,val);
+    }
+    public void setNeedWave(int val){
+        setVal(19,1,val);
+    }
+    public void setSegment(boolean bEnable){
+        setVal(31,1,bEnable ? 1 : 0);
+    }
+    public void setHighHr(int val){
+        setVal(20,1,val);
+    }
+    public void setCoupCh(int val){
+        setVal(21,4,val);
+    }
+    public void setFreSourcCh(int val){
+        setVal(25,2,val);
+    }
+
+    @Override
+    public void onCommand() {
+        Scope scope = Scope.getInstance();
+        Channel channel = null;
+        int val = 0;
+        int startBit = 0;
+        int bitsWidth = 2;
+        int bitsVal = 0x03;
+        int cnt = scope.getChannelSampOnCnt(scope.isRun(true));
+
+        FreqCounter freqCounter = FreqCounter.getInstance();
+
+        int freVal = 0;
+        int freIdx = freqCounter.getChIdx();
+
+        freIdx = freIdx % 4;
+        int nums = HwConfig.getInstance().getAdcMaxChNums();
+
+
+        setVal(15,1, freqCounter.isFreqCounterEnable() ? 0 : 1);
+        setVal(25,2, freIdx );
+        setAutoMode(scope.isAuto() ? 1 : 0);
+        setDispMode(scope.isInScrollMode() ? 1 : 0);
+        setSlowScale(scope.isInSlowScaleMode() ? 1 : 0);
+        //setHighRefresh(scope.isInHighRefresh() ? 1 : 0);
+        setHighRefresh(0);
+
+        switch(cnt){
+            case 2:
+                cnt = 1;
+                bitsWidth = 4;
+                bitsVal = 0xF;
+                setSingleCh(2);
+                freVal = (freIdx / nums) * nums;
+                break;
+            case 4:
+                cnt = 2;
+                bitsWidth = 2;
+                bitsVal = 0x03;
+                setSingleCh(0);
+                break;
+            case 8:
+            default:
+                cnt = 4;
+                bitsWidth = 1;
+                bitsVal = 0x01;
+                setSingleCh(4);
+                break;
+        }
+        boolean [] en_array = new boolean[ChannelFactory.CH_CNT];
+        int beginIdx = FPGACommand.beginChIdx(getFpgaIdx());
+        int endIdx = FPGACommand.endChIdx(getFpgaIdx());
+        for(int i=beginIdx;i<endIdx;i++){
+            boolean b = scope.isChannelInSample(i,scope.isRun(true));
+            setVal(27 + i - beginIdx,1,b ? 1:0);
+        }
+        scope.getChannelSampOnCnt(scope.isRun(true),en_array);
+        for(int i=beginIdx;i<endIdx;i++){
+            if(en_array[i]){
+                channel = ChannelFactory.getDynamicChannel(i);
+                if(channel != null) {
+                    boolean bInvert = channel.isInvert();
+                    if(!(HardwareProduct.isMHO38V1()
+                            || HardwareProduct.isMHO28V1())){
+                        int dang = CabteRegister.getRatioIdx(Channel.RESISTANCE_1M,channel.getVScaleVal()/channel.getProbeRate());
+                        if (channel.getResistanceType() == Channel.RESISTANCE_1M
+                                && dang != HW.RATIO_DANG_1) {
+                            bInvert = !bInvert;
+                        }
+                    }
+                    val = bInvert ? bitsVal : 0;
+                    setVal(6 + startBit, bitsWidth, val);
+                    val = channel.getCoupleType() == Channel.COUPLE_TYPE_GND ? bitsVal : 0;
+                    setVal(21 + startBit, bitsWidth, val);
+                    startBit += bitsWidth;
+
+                    {
+                        if (freIdx == (i-beginIdx)) {
+                            setVal(25, 2, freVal);
+                        }
+                        freVal += bitsWidth;
+                    }
+                }
+                cnt--;
+            }
+            if(cnt <= 0)
+                break;
+        }
+
+        setSampMode(Sample.getInstance().getSampleType());
+        setWaveType(0);
+        setNeedWave(1);
+        setSegment(SegmentSample.getInstance().isSegmentEnable());
+    }
+}

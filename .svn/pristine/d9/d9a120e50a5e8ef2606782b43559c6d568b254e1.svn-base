@@ -1,0 +1,246 @@
+<resources>
+
+    <!--底部菜单-->
+    <string name="menu_bottom_adjust">İnce ayar</string>
+    <string name="menu_bottom_save">Hizlikay.</string>
+    <string name="menu_bottom_cursor">kürsör</string>
+    <string name="menu_bottom_time">10:13</string>
+    <string name="menu_bottom_qiuck_screen">Ekran yakalama</string>
+    <string name="menu_bottom_qiuck_zoom">ölçekleme</string>
+    <string name="menu_bottom_qiuck_all_measure">Tüm ölçümler</string>
+    <string name="menu_bottom_qiuck_serials_txt">Seri metin</string>
+    <string name="menu_bottom_qiuck_center_menu">Menü</string>
+    <string name="dialog_center_menu_half_timebase">Zaman tabanı</string>
+    <string name="dialog_center_menu_half_level">seviye</string>
+    <string name="dialog_center_menu_half_hor_cursor">yatay imleç</string>
+    <string name="dialog_center_menu_half_ver_cursor">dikey imleç</string>
+    <string name="dialog_center_menu_half_channels">kanallar</string>
+    <string name="internal_storage">Dahili depolama alanı</string>
+    <string name="new_folder"> Yeni klasör</string>
+    <string name="seleced_folder"> Seçilen klasör</string>
+    <string name="file_selection_not_supported"> Dosya seçimi desteklenmiyor</string>
+    <string name="label_folder">Klasör</string>
+    <string name="toast_create_success">Başarıyla oluşturuldu</string>
+    <string name="toast_create_failure">Oluşturulamadı</string>
+    <string name="error_already_exists">Zaten mevcut</string>
+    <string name="label_file">Dosya</string>
+    <!-- TopTriggerSerials -->
+    <string name="topSerialsHeadData">veri</string>
+    <string name="topSerialsHeadData1">Veri 1</string>
+    <string name="topSerialsHeadData2">Veri 2</string>
+    <string name="topSerialsHeadLabel">etiket</string>
+    <string name="topSerialsHeadSdi">SDI</string>
+    <string name="topSerialsHeadSsm">SSM</string>
+    <string name="topSerialsHeadId">kimlik</string>
+    <string name="topSerialsHeadDlc">DLC</string>
+    <string name="topSerialsHeadAddr">Adr</string>
+    <string name="topSerialsHeadCondition">durum</string>
+
+    <string name="m1553bCsWordCsWordHead">Öğretim / durum sözcüğü</string>
+    <string name="m1553bDataWordDataHead">Veri kelime</string>
+    <string name="m1553bRtAddrRtAddrHead">Uzak terminal adresi</string>
+    <string name="spiDataDataHead">Bitleri ayarla</string>
+
+    <string name="mainTopLeftStateRun">koşmak</string>
+    <string name="mainTopLeftStateStop">Dur</string>
+    <string name="mainTopLeftStateWait">bekleyin</string>
+    <string name="mainTopLeftStateAuto">otomatik</string>
+    <string name="mainTopLeftSD">SD</string>
+    <string name="mainTopLeftLength">87.5K</string>
+    <string name="mainTopLeftRate">3.13MSa/s</string>
+    <string name="mainTopCenterShow">0ps</string>
+    <string name="mainRightSample">256ortalama</string>
+
+    <string name="view_savewithhead_title">isim</string>
+    <string name="view_savewithhead_input">1704060001</string>
+    <string name="view_savewithhead_confirm">Kaydet</string>
+    <string name="view_seekbarwithhead_title">parlaklık</string>
+    <string name="view_seekbarwithhead_show">% 66</string>
+    <string name="view_display_brightness">parlaklık</string>
+    <string name="view_display_transparency">Transparency</string>
+    <string name="view_display_intensity">kuvvet</string>
+    <string name="view_afterglow_clearup">kaldırmak</string>
+    <string name="view_horizontallist_title">ayarlamak</string>
+    <string name="view_display_adjust">ayarlamak</string>
+    <string name="view_horizontallist_show">100 ms</string>
+    <string name="view_trigger_inhibitiontimetitle">İnhibisyon süresi</string>
+    <string name="view_trigger_inhibitiontimevalue">200ns</string>
+    <string name="view_trigger_pulsewidth">1us</string>
+    <string name="view_trigger_logic">1us</string>
+    <string name="trigger_pulsewidth">Darbe genişliği</string>
+    <string name="trigger_overTime">Zaman aşımı</string>
+    <string name="triggervideo_linehead">sıra</string>
+    <string name="triggervideo_linedetail">1</string>
+    <string name="triggeruart_datatitle">veri</string>
+    <string name="triggeruart_datadetail">56</string>
+    <string name="triggerslope_timehighhead">Maksimum zaman</string>
+    <string name="triggerslope_timelowhead">Minimum zaman</string>
+    <string name="triggerrunt_timehigh">Maksimum zaman</string>
+    <string name="triggerrunt_timelow">Minimum zaman</string>
+    <string name="triggerlogic_timehigh">Maksimum zaman</string>
+    <string name="triggerlogic_timelow">Minimum zaman</string>
+    <string name="triggerpulsewidth_timehigh">Maksimum zaman</string>
+    <string name="triggerpulsewidth_timelow">Minimum zaman</string>
+    <string name="triggernedge_time">zaman</string>
+    <string name="triggernedge_edge">kenar</string>
+    <string name="triggernedge_edgevalue">345</string>
+    <string name="settingoscillograph_saveas">Kaydet</string>
+    <string name="settingfactory_pleasesure">Lütfen fabrika ayarlarının geri yüklenip yüklenmediğini onaylayın!</string>
+    <string name="settingfactory_sure">öyle</string>
+    <string name="settingcalibration_pleasesure">Kalibrasyondan önce probu çıkardığınızdan emin olun!</string>
+    <string name="settingcalibration_sure">belirlemek</string>
+    <string name="autosetting_levelhead">Eşik seviye</string>
+    <string name="autosetting_leveldetail">10</string>
+    <string name="oscillograpg_storage">hafıza</string>
+    <string name="oscillograpg_recovery">kurtarma</string>
+    <string name="measure_clear">kaldırmak</string>
+    <string name="measure_relationto">Göre</string>
+    <string name="sure">belirlemek</string>
+    <string name="save_saveto">Kaydet</string>
+    <string name="save_r1">R1</string>
+    <string name="save_r2">R2</string>
+    <string name="save_r3">R3</string>
+    <string name="save_r4">R4</string>
+
+    <string name="dialogcount_title">N kenarı</string>
+    <string name="dialogcount_x1">1x</string>
+    <string name="dialogcount_x100">100x</string>
+    <string name="dialogcount_subtract">-</string>
+    <string name="dialogcount_add">+</string>
+    <string name="dialogmeasuredelay_head">Ch1</string>
+    <string name="dialogmeasurephase_head">Ch1</string>
+    <string name="dialogscale_head">mantık</string>
+    <string name="dialogscale_show">9.00ms</string>
+
+    <string name="serialsUserDefine">görenek</string>
+
+    <string name="mainBottomScreenRecorderStart">Video kaydetmeye başla:</string>
+    <string name="mainBottomScreenRecorderEnd">Videoyu kaydetmeyi sonlandırın.</string>
+    <string name="mainBottomScreenShot">Ekran yakalama başarısı:</string>
+
+    <string name="topSlipUsersetSaveRecoveryDefaultName">Standart</string>
+    <string name="topSlipUsersetSaveRecoveryStorage">Başarıyla kaydedildi</string>
+    <string name="topSlipUsersetSaveRecoveryRecovery">Başarılı kurtarma</string>
+    <string name="msgForGoHomeWhenLockScreen">Geçerli dokunmatik işlevi kapalıdır
+        \nMasaüstüne girmek istiyorsanız, dokunmatik işlevi açılacaktır
+        \nMasaüstüne girmeyi onaylayın. "Ana Sayfa" düğmesine tekrar basın
+        \nGeri dönmek için diğer tuşlara basın.</string>
+
+    <string name="topBtn">Üst yarı</string>
+    <string name="bottomBtn">Alt yarı</string>
+    <string name="topZeroTitle">Sıfır kalibrasyon</string>
+    <string name="topADGainTitle">AD kazanç kalibrasyonu</string>
+    <string name="topADZeroTitle">AD sıfır kalibrasyonu</string>
+    <string name="centerChGain">Kanal kazancı kalibrasyonu (kalibrasyon sinyali gerektirir)</string>
+    <string name="bottomZeroTitle">Sıfır kalibrasyon</string>
+    <string name="bottomOffsetTitle">Ofset katsayısı kalibrasyonu</string>
+    <string name="bottomChDiffTitle">Kanal farkı kalibrasyonu</string>
+    <string name="calibration">(Kalibre)</string>
+    <string name="unCalibration">(kalibre edilmedi)</string>
+
+    <string name="topSaveSaveInToast">U diski algılanmadı</string>
+
+    <string name="dialogMsgExitToHome">Ana sayfaya bıraktığınızdan emin misiniz?</string>
+    <string name="dialogMsgInSlowTimeBase">Kaydırma moduna geçildiğinde, FFT kapanacak!</string>
+    <string name="keyBoardMsgBeyond">Giriş sınırını aşıyor</string>
+    <string name="msgClickFFTInRoll">Kaydırma modunda, fft durumuna ayarlanamaz!</string>
+    <string name="msgBatteryLow">Batarya çok zayıf, lütfen adaptörü bağlayın!</string>
+    <string name="msgParameterLimited">Parametre limiti!</string>
+    <string name="msgOpenMathInModeXY">XY modunda, Matematik kanalı desteklenmiyor!</string>
+
+    <string name="msgSelfAdjustRun">Kendinden kalibrasyon devam ediyor ...</string>
+    <string name="msgSelfAdjustSuccess">Kendi kendine kalibrasyon başarılı!</string>
+    <string name="msgSelfAdjustFail">Kendi kendine kalibrasyon başarısız! Hata kodu:%1$s</string>
+
+    <string name="msgTopSaveNameExisted">%1$s dosya adı zaten var!</string>
+    <string name="msgTopSaveBinNoSupport">Kanalı bin veri olarak kaydetme desteklenmiyor!</string>
+    <string name="msgTopSaveBinSuccess">%1$s dalga biçimi başarıyla kaydedildi!</string>
+    <string name="msgTopSaveBinFailed">%1$s dalga biçimi başarısız oldu!</string>
+
+    <string name="serialsWordTitleS1">S1</string>
+    <string name="serialsWordTitleS2">S2</string>
+    <string name="serialsWordTitleS3">S3</string>
+    <string name="serialsWordTitleS4">S4</string>
+    <string name="serialsWordTitleS12">S1&amp;S2</string>
+    <string name="serialsWordClear">açık</string>
+    <string name="serialsWordTip">Lütfen önce kanalı aç!</string>
+    <string name="serialsWordUartTitleBin">ikili</string>
+    <string name="serialsWordUartTitleHex">büyü</string>
+    <string name="serialsWordUartTitleASCII">ASCII</string>
+    <string name="serialsWordUartTip">Lütfen önce s1 ve s2 ayarlarını aynı tutun.</string>
+    <string name="serialsWordLinTitleCh">Ch</string>
+    <string name="serialsWordLinTitleTime">zaman</string>
+    <string name="serialsWordLinTitleId">kimlik</string>
+    <string name="serialsWordLinTitleData">veri</string>
+    <string name="serialsWordLinTitleError">hata</string>
+    <string name="serialsWordLinTitleCheck">Kontrol</string>
+    <string name="serialsWordLinTitleTrigger">tetik</string>
+    <string name="serialsWordCanTitleCh">Ch</string>
+    <string name="serialsWordCanTitleTime">zaman</string>
+    <string name="serialsWordCanTitleId">kimlik</string>
+    <string name="serialsWordCanTitleType">tip</string>
+    <string name="serialsWordCanTitleDlc">DLC</string>
+    <string name="serialsWordCanTitleData">veri</string>
+    <string name="serialsWordCanTitleCrc">CRC</string>
+    <string name="serialsWordCanTitleError">hata</string>
+    <string name="serialsWordCanTitleTrigger">tetik</string>
+    <string name="serialsWordSpiTitleCh">Ch</string>
+    <string name="serialsWordSpiTitleTime">zaman</string>
+    <string name="serialsWordSpiTitleData">veri</string>
+    <string name="serialsWordSpiTitleTrigger">tetik</string>
+    <string name="serialsWordI2cTitleCh">Ch</string>
+    <string name="serialsWordI2cTitleTime">zaman</string>
+    <string name="serialsWordI2cTitleAddr">adres</string>
+    <string name="serialsWordI2cTitleData">veri</string>
+    <string name="serialsWordI2cTitleConfirm">onaylamak</string>
+    <string name="serialsWordI2cTitleTrigger">tetik</string>
+    <string name="serialsWordI2cTitleRestart">Yeniden</string>
+    <string name="serialsWordM429TitleCh">Ch</string>
+    <string name="serialsWordM429TitleTime">zaman</string>
+    <string name="serialsWordM429TitleLabel">ETİKET</string>
+    <string name="serialsWordM429TitleSdi">SDI</string>
+    <string name="serialsWordM429TitleData">veri</string>
+    <string name="serialsWordM429TitleSsm">SSM</string>
+    <string name="serialsWordM429TitleError">hata</string>
+    <string name="serialsWordM429TitleTrigger">tetik</string>
+    <string name="serialsWordM1553bTitleCh">Ch</string>
+    <string name="serialsWordM1553bTitleTime">zaman</string>
+    <string name="serialsWordM1553bTitleType">tip</string>
+    <string name="serialsWordM1553bTitleRAdr">RADR</string>
+    <string name="serialsWordM1553bTitleData">veri</string>
+    <string name="serialsWordM1553bTitleTrigger">tetik</string>
+    <string name="serialsWordM1553bTitleError">hata</string>
+    <string name="serialsWordUartMsg">TX FRAMES:%1$s\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tERt:%2$s (%3$s)</string>
+    <string name="serialsWordCanMsg">ÇERÇEVE:%1$s\t\t\t\t\t\t\t\t\t\t\t\tSPEC:%2$s\t\t\t\t\t\t\t\t\t\t\t\tERERR FR:%3$s (%4$s)</string>
+    <string name="serialsWordM429Msg">WORDS:%1$s\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tERRORS:%2$s (%3$s)</string>
+
+    <string name="rightMathMenuFftMeasure_DC">Direk akım</string>
+    <string name="rightMathMenuFftMeasure_Freq">frekans</string>
+    <string name="rightMathMenuFftMeasure_Amp">genlik</string>
+
+    <string name="screenShotSuccess">Ekran yakalama başarısı:</string>
+    <string name="saveRecoveryFileIsNotExist">Dosya mevcut değil! Varsayılan yapılandırma yükle!</string>
+    <string name="rightMathAxbUnitTitle">birim</string>
+
+    <string name="msgNumberFormatException">Giriş yasaktır</string>
+    <string name="mainCenterMenuAuto">otomatik</string>
+    <string name="mainCenterMenuRunStop">Koşmayı bırak</string>
+    <string name="mainCenterMenuSEQ">Tek sıra</string>
+    <string name="sysNoSupport">Sistem sürümü bu işlevi desteklemeyecek kadar düşük!</string>
+
+    <string name="msgMathAdvanceFormulaError">%1$s konumunda %2$s hatası</string>
+    <string name="msgMathAdvanceFormulaNull">İfade boş olamaz</string>
+    <string name="mainCenterMenuZero">sıfır</string>
+    <string name="mainCenterMenuAutoRange">otomatik\\nAralık</string>
+    <string name="dialog_ok">Elbette</string>
+    <string name="dialog_cancel">İptal</string>
+    <string name="menu_bottom_qiuck_home">Ev</string>
+    <string name="menu_bottom_qiuck_segment">parçalı gezinme</string>
+    <string name="mainTopLeftStateNormal">normal</string>
+    <string name="serials">diziler</string>
+    <string name="msgAutoZeroFailed">Otomatik sıfır kalibrasyonu başarısız oldu</string>
+    <string name="msgAutoZeroSuccess">Otomatik sıfır kalibrasyon tamamlandı</string>
+    <string name="msgAutoZeroRunning">Otomatik sıfır kalibrasyonu devam ediyor</string>
+
+    <string name="mathRefSerialsSlip_display">ekran</string>
+</resources>

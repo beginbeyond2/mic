@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/mainRightOtherLayout"
+    android:layout_width="120px"
+    android:layout_height="@dimen/mainCenterHeightMeasureRow0"
+    android:background="@color/color_Backcolor_MainMenu3"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:paddingTop="0px"
+    android:paddingBottom="48px">
+
+    <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+        android:id="@+id/rightMathMaster"
+        android:layout_width="108px"
+        android:layout_height="108px"
+        android:gravity="center"
+        app:checked="false"
+        app:large="true"
+        app:layout_constraintBottom_toTopOf="@+id/mark"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:text="Math" />
+
+
+    <TextView
+        android:id="@+id/mark"
+        android:layout_width="match_parent"
+        android:layout_height="80px"
+        android:gravity="center"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+        android:id="@+id/rightRefMaster"
+        android:layout_width="108px"
+        android:layout_height="108px"
+        android:layout_marginBottom="20px"
+        android:gravity="center"
+        app:checked="false"
+        app:large="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/mark"
+        app:text="Ref" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

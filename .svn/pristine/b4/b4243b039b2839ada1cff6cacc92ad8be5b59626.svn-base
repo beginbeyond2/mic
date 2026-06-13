@@ -1,0 +1,63 @@
+package com.micsig.tbook.scope.Trigger;
+
+/**
+ * Created by zhuzh on 2018/3/20.
+ */
+
+public class TriggerEdge extends Trigger{
+
+    public static final int TET_ASC = 0;
+    public static final int TET_DSC = 1;
+    public static final int TET_DUAL = 2;
+
+    public static final int COUPLING_DIRECT = 0;
+    public static final int COUPLING_AC = 1;//交流耦合
+    public static final int COUPLING_HFRS = 2;//高频抑制
+    public static final int COUPLING_LFRS = 3;//低频邋抑制
+    public static final int COUPLING_NOISERS = 4;//噪声抑制
+    private int triggerEdge = TET_ASC;
+    private int triggerCouple = COUPLING_DIRECT;
+
+    private TriggerEdgeAction triggerEdgeAction;
+    public TriggerEdge() {
+        super(Trigger.TRIG_TYPE_EDGE);
+        triggerEdgeAction = new TriggerEdgeAction(this);
+    }
+
+
+    public int getTriggerEdge() {
+        return triggerEdge;
+    }
+
+    public void setTriggerEdge(int triggerEdge) {
+        this.triggerEdge = triggerEdge;
+        triggerEdgeAction.TriggerEdgeChange();
+
+    }
+
+    public int getTriggerCouple() {
+        return triggerCouple;
+    }
+
+    public void setTriggerCouple(int triggerCouple) {
+        this.triggerCouple = triggerCouple;
+        triggerEdgeAction.TriggerCoupleChange();
+    }
+
+
+    @Override
+    public int getTriggerSourceCnt() {
+        return 1;
+    }
+
+    @Override
+    public void triggerSourceChange() {
+        super.triggerSourceChange();
+        triggerEdgeAction.TriggerSourceChange();
+    }
+
+    @Override
+    protected boolean isMultitriggerSource() {
+        return false;
+    }
+}

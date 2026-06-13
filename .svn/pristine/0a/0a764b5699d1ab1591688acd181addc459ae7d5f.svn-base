@@ -1,0 +1,18 @@
+package com.micsig.tbook.scope.fpga;
+
+/**
+ * Created by zhuzh on 2018-4-8.
+ */
+
+public class FPGAReg_SCROLL_ROW extends FPGAReg {
+    public FPGAReg_SCROLL_ROW() {
+        super(FPGA_SCROLL_ROW, 4);
+    }
+
+    public void setColsPerRefresh(int val){
+        setVal(0,16,val);
+    }
+    public void setLastInvalidCols(int val){
+        setVal(16,8,val);
+    }
+}

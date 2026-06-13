@@ -1,0 +1,83 @@
+package com.micsig.tbook.scope.Auto;
+
+import android.util.Log;
+
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+
+import java.util.Observable;
+import java.util.Observer;
+
+/**
+ * Created by zhuzh on 2018-12-6.
+ */
+
+public abstract class ExitAuto implements Observer {
+    public ExitAuto() {
+        EventFactory.addEventObserver(EventFactory.EVENT_DISPLAY_MODE,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_CHANNEL_BANDWIDTH,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_CHANNEL_COUPLE, this);
+        EventFactory.addEventObserver(EventFactory.EVENT_CHANNEL_OPEN, this);
+        EventFactory.addEventObserver(EventFactory.EVENT_CHANNEL_CLOSE, this);
+        EventFactory.addEventObserver(EventFactory.EVENT_CHANNEL_ACTIVE, this);
+        EventFactory.addEventObserver(EventFactory.EVENT_DISPLAY_ZOOM, this);
+        EventFactory.addEventObserver(EventFactory.EVENT_CHANNEL_VSCALE_USER, this);
+        EventFactory.addEventObserver(EventFactory.EVENT_CHANNEL_POS, this);
+        EventFactory.addEventObserver(EventFactory.EVENT_MEM_DEPTH, this);
+        EventFactory.addEventObserver(EventFactory.EVENT_TIME_POS, this);
+        EventFactory.addEventObserver(EventFactory.EVENT_TIME_SCALE, this);
+        EventFactory.addEventObserver(EventFactory.EVENT_TRIGGER_TYPE, this);
+        EventFactory.addEventObserver(EventFactory.EVENT_BUS_TYPE_UPDATE, this);
+        EventFactory.addEventObserver(EventFactory.EVENT_TRIGGER_LEVEL_USER, this);
+        EventFactory.addEventObserver(EventFactory.EVENT_TRIGGER_PARAM, this);
+        EventFactory.addEventObserver(EventFactory.EVENT_BUS_PARAM, this);
+        EventFactory.addEventObserver(EventFactory.EVENT_BUS_LEVEL, this);
+        EventFactory.addEventObserver(EventFactory.EVENT_SCOPE_STATE, this);
+        EventFactory.addEventObserver(EventFactory.EVENT_SCOPE_SINGLE, this);
+        EventFactory.addEventObserver(EventFactory.EVENT_BUS_CH_CHANGE, this);
+        EventFactory.addEventObserver(EventFactory.EVENT_SAMPLE_TYPE, this);
+        EventFactory.addEventObserver(EventFactory.EVENT_TRIGGER_COMMON_MODE, this);
+        EventFactory.addEventObserver(EventFactory.EVENT_TRIGGER_COMMON_HOLDOFFTIME, this);
+    }
+
+    @Override
+    public void update(Observable observable, Object data) {
+        EventBase eventBase = (EventBase) data;
+        try{
+            Log.d("zhuzh","event Id:" + eventBase.getId());
+            throw new IllegalArgumentException();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        switch (eventBase.getId()) {
+            case EventFactory.EVENT_CHANNEL_OPEN:
+            case EventFactory.EVENT_CHANNEL_CLOSE:
+            case EventFactory.EVENT_CHANNEL_ACTIVE:
+            case EventFactory.EVENT_DISPLAY_ZOOM:
+            case EventFactory.EVENT_CHANNEL_VSCALE_USER:
+            case EventFactory.EVENT_CHANNEL_POS:
+            case EventFactory.EVENT_MEM_DEPTH:
+            case EventFactory.EVENT_TIME_POS:
+            case EventFactory.EVENT_TIME_SCALE:
+            case EventFactory.EVENT_TRIGGER_TYPE:
+            case EventFactory.EVENT_BUS_TYPE_UPDATE:
+            case EventFactory.EVENT_TRIGGER_LEVEL_USER:
+            case EventFactory.EVENT_TRIGGER_PARAM:
+            case EventFactory.EVENT_BUS_PARAM:
+            case EventFactory.EVENT_BUS_LEVEL:
+            case EventFactory.EVENT_SCOPE_STATE:
+            case EventFactory.EVENT_SCOPE_SINGLE:
+            case EventFactory.EVENT_BUS_CH_CHANGE:
+            case EventFactory.EVENT_SAMPLE_TYPE:
+            case EventFactory.EVENT_TRIGGER_COMMON_MODE:
+            case EventFactory.EVENT_TRIGGER_COMMON_HOLDOFFTIME:
+            case EventFactory.EVENT_CHANNEL_COUPLE:
+            case EventFactory.EVENT_CHANNEL_BANDWIDTH:
+            case EventFactory.EVENT_DISPLAY_MODE:
+                OnExitAuto();
+                break;
+        }
+    }
+
+    protected abstract void OnExitAuto();
+}

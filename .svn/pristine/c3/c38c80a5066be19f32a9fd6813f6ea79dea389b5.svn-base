@@ -1,0 +1,36 @@
+package com.micsig.tbook.scope.fpga;
+
+/**
+ * Created by zhuzh on 2018-3-22.
+ */
+
+public class FPGAReg_AD_ZERO extends FPGAReg {
+    public FPGAReg_AD_ZERO(){
+        super(FPGA_AD_ZERO,4);
+    }
+
+    public void setD1A(int val){
+        setVal(0,4,val);
+    }
+    public void setD1B(int val){
+        setVal(4,4,val);
+    }
+    public void setD2A(int val){
+        setVal(8,4,val);
+    }
+    public void setD2B(int val){
+        setVal(12,4,val);
+    }
+    public void setD3A(int val){
+        setVal(16,4,val);
+    }
+    public void setD3B(int val){
+        setVal(20,4,val);
+    }
+    public void setD4A(int val){
+        setVal(24,4,val);
+    }
+    public void setD4B(int val){
+        setVal(28,4,val);
+    }
+}

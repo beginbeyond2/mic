@@ -1,0 +1,823 @@
+package com.micsig.tbook.scope;
+
+import android.util.Log;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.Data.SyncHeader;
+import com.micsig.tbook.scope.Display.Display;
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.Sample.MemDepthFactory;
+import com.micsig.tbook.scope.Sample.Sample;
+import com.micsig.tbook.scope.Sample.SegmentSample;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.channel.SegmentedSingleBean;
+import com.micsig.tbook.scope.horizontal.HorizontalAxis;
+import com.micsig.tbook.scope.vertical.VerticalAxis;
+
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Observable;
+import java.util.Observer;
+
+/**
+ * Created by zhuzh on 2018-7-18.
+ */
+
+public class ScopeFrozen implements Observer{
+
+    private static final String TAG = "ScopeFrozen";
+
+    private static class ScopeFrozenHolder {
+        public static final ScopeFrozen instance = new ScopeFrozen();
+    }
+
+    public static ScopeFrozen getInstance() {
+        return ScopeFrozen.ScopeFrozenHolder.instance;
+    }
+
+    public class ScopeFrozenBean{
+        private boolean []chSamped = new boolean[ChannelFactory.CH_CNT];
+        private double [] chPos = new double[ChannelFactory.CH_CNT];
+        private double [] chPosFix = new double[ChannelFactory.CH_CNT];
+        private VerticalAxis [] chVertical = new VerticalAxis[ChannelFactory.CH_CNT];
+        private boolean[] chOpen = new boolean[ChannelFactory.CH_CNT];
+
+        private double [] YFactor = new double[ChannelFactory.CH_CNT];
+
+        private int [] placeVal = new int[ChannelFactory.CH_CNT];
+
+        private int memDepth = 28000000;
+        private double sampFre = 1000*1000*1000;
+        private boolean rool = false; //滚屏
+        private boolean slowScale = false;
+        private int vaildAddr = 0;
+        private int timeScaleId = 0;
+        private long timePosOfView = 0;
+        private boolean valid = false;
+        private int memDepthItemIdx = 0;
+        private int syncHeader = 0;
+
+        private boolean bSegmentEnable =false;
+        private long segmentTimestamp = 0;
+        private int segmentFrameNo = 0;
+        private int segmentFrameNums = 0;
+
+        public ScopeFrozenBean(){
+            for(int i=0;i<ChannelFactory.CH_CNT;i++){
+                chVertical[i] = new VerticalAxis(VerticalAxis.DANG_1V,1.0,VerticalAxis.PROBE_TYPE_VOL,10);
+            }
+        }
+        public synchronized void setSyncHeader(int syncHeader){
+            this.syncHeader = syncHeader;
+        }
+        public synchronized int getSyncHeader(){
+            return syncHeader;
+        }
+        public synchronized void setSegmentEnable(boolean bEnable){
+            bSegmentEnable = bEnable;
+        }
+        public synchronized boolean isSegmentEnable(){
+
+            return bSegmentEnable;
+        }
+        public synchronized void setSegmentTimestamp(long segmentTimestamp) {
+            this.segmentTimestamp = segmentTimestamp;
+        }
+
+        public synchronized void setSegmentFrameNo(int segmentFrameNo) {
+            this.segmentFrameNo = segmentFrameNo;
+        }
+
+        public synchronized void setSegmentFrameNums(int segmentFrameNums) {
+            this.segmentFrameNums = segmentFrameNums;
+        }
+
+        public synchronized long getSegmentTimestamp(){
+            return segmentTimestamp;
+        }
+        public synchronized int getSegmentFrameNo(){
+            return segmentFrameNo;
+        }
+        public synchronized int getSegmentFrameNums(){
+            return segmentFrameNums;
+        }
+        public synchronized void setChSamped(int chIdx,boolean bSamp){
+            if(ChannelFactory.isDynamicCh(chIdx)){
+                chSamped[chIdx] = bSamp;
+            }
+        }
+
+        public synchronized boolean isChSamped(int chIdx){
+            boolean bRet = false;
+            if(ChannelFactory.isDynamicCh(chIdx)){
+                bRet = chSamped[chIdx];
+            }
+            return bRet;
+        }
+
+        public synchronized double getChPos(int chIdx) {
+            if(ChannelFactory.isDynamicCh(chIdx)){
+                return chPos[chIdx];
+            }
+            return 0;
+        }
+
+        public synchronized void setChPos(int chIdx,double pos) {
+            if(ChannelFactory.isDynamicCh(chIdx)){
+                chPos[chIdx] = pos;
+            }
+        }
+
+        public synchronized double getChPosFix(int chIdx) {
+            if(ChannelFactory.isDynamicCh(chIdx)){
+                return chPosFix[chIdx];
+            }
+            return 0;
+        }
+
+        public synchronized void setChPosFix(int chIdx,double posFix) {
+            if(ChannelFactory.isDynamicCh(chIdx)){
+                chPosFix[chIdx] = posFix;
+            }
+        }
+
+        public synchronized VerticalAxis getChVertical(int chIdx) {
+            if(ChannelFactory.isDynamicCh(chIdx)){
+                return chVertical[chIdx];
+            }
+            return null;
+        }
+
+        public synchronized void setChVertical(int chIdx,int scaleId,double fine,int probeType,double probeRate) {
+            if(ChannelFactory.isDynamicCh(chIdx)){
+                chVertical[chIdx].setFineScale(fine);
+                chVertical[chIdx].setProbeRate(probeRate);
+                chVertical[chIdx].setProbeType(probeType);
+                chVertical[chIdx].setScaleId(scaleId);
+            }
+        }
+
+        public synchronized boolean isChOpen(int chIdx) {
+            if(ChannelFactory.isDynamicCh(chIdx)){
+                return chOpen[chIdx];
+            }
+            return false;
+        }
+
+        public synchronized void setChOpen(int chIdx,boolean chOpen) {
+            if(ChannelFactory.isDynamicCh(chIdx)){
+                this.chOpen[chIdx] = chOpen;
+            }
+        }
+
+        public synchronized int getMemDepth() {
+            return memDepth;
+        }
+
+        public synchronized void setMemDepth(int memDepth) {
+            this.memDepth = memDepth;
+        }
+
+        public synchronized double getSampFre() {
+            return sampFre;
+        }
+
+        public synchronized void setSampFre(double sampFre) {
+            this.sampFre = sampFre;
+        }
+
+        public synchronized boolean isRool() {
+            return rool;
+        }
+
+        public synchronized void setRool(boolean rool) {
+            this.rool = rool;
+        }
+
+        public synchronized boolean isSlowScale() {
+            return slowScale;
+        }
+
+
+        public synchronized void setSlowScale(boolean slowScale) {
+            this.slowScale = slowScale;
+        }
+
+        public synchronized int getVaildAddr() {
+            return vaildAddr;
+        }
+
+        public synchronized void setVaildAddr(int vaildAddr) {
+
+            this.vaildAddr = vaildAddr & 0x7FF;
+        }
+
+        public synchronized int getTimeScaleId() {
+            return timeScaleId;
+        }
+
+        public synchronized void setTimeScaleId(int timeScaleId) {
+            this.timeScaleId = timeScaleId;
+        }
+
+        public synchronized long getTimePosOfView() {
+            return timePosOfView;
+        }
+
+        public synchronized void setTimePosOfView(long timePosOfView) {
+            this.timePosOfView = timePosOfView;
+        }
+
+        public synchronized boolean isValid() {
+            return valid;
+        }
+
+        public synchronized void setValid(boolean valid) {
+
+            this.valid = valid;
+        }
+
+
+        public synchronized int getMemDepthItemIdx() {
+            return memDepthItemIdx;
+        }
+
+        public synchronized void setMemDepthItemIdx(int memDepthItemIdx) {
+            this.memDepthItemIdx = memDepthItemIdx;
+        }
+
+        public synchronized void setYFactor(int chIdx,double yFactor){
+            this.YFactor[chIdx] = yFactor;
+        }
+        public synchronized double getYFactor(int chIdx){
+            return this.YFactor[chIdx];
+        }
+
+        public synchronized void setPlaceVal(int chIdx,int placeVal){
+            this.placeVal[chIdx] = placeVal;
+        }
+        public synchronized int getPlaceVal(int chIdx){
+            return this.placeVal[chIdx];
+        }
+        public synchronized void reset(){
+            for (int i = 0; i < ChannelFactory.CH_CNT; i++) {
+                chSamped[i] = false;
+                chPos[i] = 0;
+                chPosFix[i] = 0;
+                chOpen[i] = false;
+                YFactor[i] = 1;
+                placeVal[i] = 0;
+                setChVertical(i,VerticalAxis.DANG_1V,1.0,VerticalAxis.PROBE_TYPE_VOL,10);
+            }
+            memDepth = 28000000;
+            memDepthItemIdx = 0;
+            sampFre = 1000*1000*1000;
+            rool = false; //滚屏
+            slowScale = false;
+            vaildAddr = 0;
+            timeScaleId = 0;
+            timePosOfView = 0;
+            segmentTimestamp = 0;
+            segmentFrameNo = 0;
+            segmentFrameNums = 0;
+            bSegmentEnable = false;
+            valid = false;
+        }
+
+        public void toJson(Map<String,String> tmpmap){
+
+            for (int i = 0; i < ChannelFactory.CH_CNT; i++) {
+                tmpmap.put("chSamped_" + i, String.valueOf(chSamped[i]));
+                tmpmap.put("chPos_" + i, String.valueOf(chPos[i]));
+                tmpmap.put("chPosFix_" + i, String.valueOf(chPosFix[i]));
+                tmpmap.put("chOpen_" + i, String.valueOf(chOpen[i]));
+                tmpmap.put("YFactor_" + i, String.valueOf(YFactor[i]));
+                tmpmap.put("placeVal_" + i, String.valueOf(placeVal[i]));
+                tmpmap.put("Vertical_FineScale_" + i, String.valueOf(chVertical[i].getFineScale()));
+                tmpmap.put("Vertical_ProbeRate_" + i, String.valueOf(chVertical[i].getProbeRate()));
+                tmpmap.put("Vertical_ProbeType_" + i, String.valueOf(chVertical[i].getProbeType()));
+                tmpmap.put("Vertical_ScaleId_" + i, String.valueOf(chVertical[i].getScaleId()));
+            }
+            tmpmap.put("syncHeader",String.valueOf(syncHeader));
+            tmpmap.put("memDepth", String.valueOf(memDepth));
+            tmpmap.put("memDepthItemIdx", String.valueOf(memDepthItemIdx));
+            tmpmap.put("sampFre", String.valueOf(sampFre));
+            tmpmap.put("rool", String.valueOf(rool));
+            tmpmap.put("slowScale", String.valueOf(slowScale));
+            tmpmap.put("vaildAddr", String.valueOf(vaildAddr));
+            tmpmap.put("timeScaleId", String.valueOf(timeScaleId));
+            tmpmap.put("timePosOfView", String.valueOf(timePosOfView));
+            tmpmap.put("segmentTimestamp", String.valueOf(segmentTimestamp));
+            tmpmap.put("segmentFrameNo", String.valueOf(segmentFrameNo));
+            tmpmap.put("segmentFrameNums", String.valueOf(segmentFrameNums));
+            tmpmap.put("bSegmentEnable", String.valueOf(bSegmentEnable));
+            tmpmap.put("valid", String.valueOf(valid));
+        }
+
+        public void fromJson( HashMap<String,String> tmpmap){
+            for (int i = 0; i < ChannelFactory.CH_CNT; i++) {
+                chSamped[i] = getBoolean(tmpmap,"chSamped_" + i);
+                chPos[i] = getDouble(tmpmap,"chPos_" + i);
+                chPosFix[i] = getDouble(tmpmap,"chPosFix_" + i);
+                chOpen[i] = getBoolean(tmpmap,"chOpen_" + i);
+                YFactor[i] = getDouble(tmpmap,"YFactor_" + i);;
+                placeVal[i] = getInteger(tmpmap,"placeVal_" + i);
+                setChVertical(i,
+                        getInteger(tmpmap,"Vertical_ScaleId_" + i),
+                        getDouble(tmpmap,"Vertical_FineScale_" + i),
+                        getInteger(tmpmap,"Vertical_ProbeType_" + i),
+                        getDouble(tmpmap,"Vertical_ProbeRate_" + i));
+            }
+//            syncHeader = getInteger(tmpmap,"syncHeader");
+            memDepth = getInteger(tmpmap,"memDepth");
+            memDepthItemIdx = getInteger(tmpmap,"memDepthItemIdx");
+            sampFre = getDouble(tmpmap,"sampFre");
+            rool = getBoolean(tmpmap,"rool"); //滚屏
+            slowScale = getBoolean(tmpmap,"slowScale");
+            vaildAddr = getInteger(tmpmap,"vaildAddr");
+            timeScaleId = getInteger(tmpmap,"timeScaleId");
+            timePosOfView = getLong(tmpmap,"timePosOfView");
+            segmentTimestamp = getLong(tmpmap,"segmentTimestamp");
+            segmentFrameNo = getInteger(tmpmap,"segmentFrameNo");
+            segmentFrameNums = getInteger(tmpmap,"segmentFrameNums");
+            bSegmentEnable = getBoolean(tmpmap,"bSegmentEnable");
+            valid = getBoolean(tmpmap,"valid");
+        }
+
+
+
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("ScopeFrozenBean{");
+            for (int i = 0; i < ChannelFactory.CH_CNT; i++) {
+                sb.append("ch" + i + ":{");
+                sb.append("chSamped=" + isChSamped(i));
+                sb.append(",chOpen=" + isChOpen(i));
+                sb.append(",chPos=" + getChPos(i));
+                sb.append(",chPosFix=" + getChPosFix(i));
+                sb.append("}");
+            }
+            sb.append(", memDepth=" + getMemDepth());
+            sb.append(", sampFre=" + getSampFre());
+            sb.append(", rool=" + isRool());
+            sb.append(", slowScale=" + isSlowScale());
+            sb.append(", vaildAddr=" + getVaildAddr());
+            sb.append(", timeScaleId=" + getTimeScaleId());
+            sb.append(", timePosOfView=" + getTimePosOfView());
+            sb.append(", valid=" + isValid());
+            sb.append(", memDepthItemIdx=" + getMemDepthItemIdx());
+            sb.append(", syncHeader=" + getSyncHeader());
+            sb.append(", bSegmentEnable=" + isSegmentEnable());
+            sb.append(", segmentTimestamp=" + getSegmentTimestamp());
+            sb.append(", segmentFrameNo=" + getSegmentFrameNo());
+            sb.append(", segmentFrameNums=" + getSegmentFrameNums());
+            sb.append("}");
+            return sb.toString();
+        }
+    }
+
+
+    private boolean getBoolean(HashMap<String,String> map,String key){
+        return getBoolean(map,key,false);
+    }
+    private boolean getBoolean(HashMap<String,String> map,String key,boolean def){
+        String s = map.get(key);
+        if(s != null && s.length() > 0){
+            return Boolean.parseBoolean(s);
+        }
+        return def;
+    }
+    private double getDouble(HashMap<String,String> map,String key){
+        return getDouble(map,key,0);
+    }
+    private double getDouble(HashMap<String,String> map,String key,double def){
+        String s = map.get(key);
+        if(s != null && s.length() > 0){
+            try {
+                return Double.parseDouble(s);
+            }catch (NumberFormatException e){
+                e.printStackTrace();
+            }
+        }
+        return def;
+    }
+    private int getInteger(HashMap<String,String> map,String key){
+        return getInteger(map,key,0);
+    }
+    private int getInteger(HashMap<String,String> map,String key,int def){
+        String s = map.get(key);
+        if(s != null && s.length() > 0){
+            try {
+                return Integer.parseInt(s);
+            }catch (NumberFormatException e){
+                e.printStackTrace();
+            }
+        }
+        return def;
+    }
+    private long getLong(HashMap<String,String> map,String key){
+        return getLong(map,key,0);
+    }
+    private long getLong(HashMap<String,String> map,String key,long def){
+        String s = map.get(key);
+        if(s != null && s.length() > 0){
+            try {
+                return Long.parseLong(s);
+            }catch (NumberFormatException e){
+                e.printStackTrace();
+            }
+        }
+        return def;
+    }
+    private static final Gson gson = new Gson();
+    private static final Type mapType = new TypeToken<HashMap<String,String>>(){}.getType();
+    private static final Type listType = new TypeToken<List<Long>>(){}.getType();
+    public synchronized String toJson(){
+        Map<String,String> tmpmap = new HashMap<>();
+        tmpmap.put("bSegmentEnableFrameNo",String.valueOf(bSegmentEnableFrameNo));
+        getScopeBean().toJson(tmpmap);
+        Scope scope = Scope.getInstance();
+        List<SegmentedSingleBean> list = scope.getAllFrameTimestamp();
+        List<Long> lls = new ArrayList<>();
+        for (SegmentedSingleBean sbean:list) {
+            lls.add(sbean.getTimestamp());
+        }
+
+        tmpmap.put("frameTimestamp",gson.toJson(lls,listType));
+
+        return gson.toJson(tmpmap,mapType);
+    }
+
+    private int mssSyncHeader = -1;
+    public synchronized void fromJson(String json){
+//        map.clear();
+        HashMap<String,String> tmpmap = gson.fromJson(json,mapType);
+        int sh = getInteger(tmpmap,"syncHeader");
+//        mssSyncHeader = syncHeader;
+        mssSyncHeader = 0x20251015;
+        bSegmentEnableFrameNo = getBoolean(tmpmap,"bSegmentEnableFrameNo");
+        ScopeFrozenBean bean = allocBean(sh);
+        bean.fromJson(tmpmap);
+
+        map.forEach((key,value)->{
+            value.fromJson(tmpmap);
+        });
+
+        Scope scope = Scope.getInstance();
+        scope.clearSegmentTimestamp();
+        String str = tmpmap.get("frameTimestamp");
+        if(str != null
+                && str.length() > 0){
+            List<Long> list = gson.fromJson(str,listType);
+            for (Long t:list) {
+                scope.addSegmentTimestamp(t);
+            }
+        }
+    }
+
+    private Map<Integer,ScopeFrozenBean > map = new HashMap<>();
+
+    private volatile boolean bSegmentEnableFrameNo = false;
+    private synchronized boolean isSegmentEnableFrameNo(){
+        return bSegmentEnableFrameNo;
+    }
+    private synchronized void setSegmentEnableFrameNo(boolean bSegmentEnableFrameNo){
+        this.bSegmentEnableFrameNo = bSegmentEnableFrameNo;
+    }
+
+    private ScopeFrozen(){
+        ScopeFrozenBean bean = new ScopeFrozenBean();
+        bean.setSyncHeader(syncHeader);
+        map.put(syncHeader,bean);
+
+        EventFactory.addEventObserver(EventFactory.EVENT_SAMPLE_VALID,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_SYNCHEADER_CHANGE,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_SCOPE_STATE,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_FPGA_LOAD_OK,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_SYNCHEADER_ERROR,this);
+    }
+
+    private int syncHeader = 0;
+
+
+    private ScopeFrozenBean allocBean(int syncHeader){
+        this.syncHeader = syncHeader;
+        ScopeFrozenBean bean = new ScopeFrozenBean();
+        bean.setSyncHeader(syncHeader);
+        map.put(syncHeader,bean);
+
+        return bean;
+    }
+    public synchronized void setSyncHeader(int syncHeader){
+        ScopeFrozenBean bean = map.get(syncHeader);
+        if(bean == null){
+            bean = allocBean(syncHeader);
+        }
+        doFrozenEx(true,bean);
+        Log.d(TAG, "setSyncHeader: " + syncHeader);
+    }
+    private synchronized ScopeFrozenBean getScopeBean(){
+        return getScopeBean(syncHeader);
+    }
+    public synchronized ScopeFrozenBean getScopeBean(int syncHeader){
+        ScopeFrozenBean bean = map.get(syncHeader);
+        if(bean == null){
+            Log.e(TAG,"getScopeBean : " + syncHeader);
+            bean = allocBean(syncHeader);
+            doFrozenEx(true,bean);
+        }else{
+            this.syncHeader = syncHeader;
+        }
+        return bean;
+    }
+
+    public boolean isSegmentEnable(){
+        return getScopeBean().isSegmentEnable();
+    }
+
+
+    public void setSegmentFrameNums(int segmentFrameNums) {
+        getScopeBean().setSegmentFrameNums(segmentFrameNums);
+    }
+
+    public int getSyncHeader(){
+        return getScopeBean().getSyncHeader();
+    }
+    public long getSegmentTimestamp(){
+        return getScopeBean().getSegmentTimestamp();
+    }
+    public int getSegmentFrameNo(){
+        return getScopeBean().getSegmentFrameNo();
+    }
+    public int getSegmentFrameNums(){
+        return getScopeBean().getSegmentFrameNums();
+    }
+    public boolean isChSamped(int chIdx){
+        boolean bRet = false;
+        if(ChannelFactory.isDynamicCh(chIdx)){
+            bRet = getScopeBean().isChSamped(chIdx);
+        }
+        return bRet;
+    }
+
+    public double getChPos(int chIdx) {
+        if(ChannelFactory.isDynamicCh(chIdx)){
+            return getScopeBean().getChPos(chIdx);
+        }
+        return 0;
+    }
+
+
+    public double getChPosFix(int chIdx) {
+        if(ChannelFactory.isDynamicCh(chIdx)){
+            return getScopeBean().getChPosFix(chIdx);
+        }
+        return 0;
+    }
+
+
+
+    public VerticalAxis getChVertical(int chIdx) {
+        if(ChannelFactory.isDynamicCh(chIdx)){
+            return getScopeBean().getChVertical(chIdx);
+        }
+        return null;
+    }
+
+
+
+    public boolean isChOpen(int chIdx) {
+        if(ChannelFactory.isDynamicCh(chIdx)){
+            return getScopeBean().isChOpen(chIdx);
+        }
+        return false;
+    }
+
+    public int getMemDepth() {
+        return getScopeBean().getMemDepth();
+    }
+
+
+    public double getSampFre() {
+        return getScopeBean().getSampFre();
+    }
+
+
+    public boolean isRool() {
+        return getScopeBean().isRool();
+    }
+
+    public boolean isSlowScale() {
+        return getScopeBean().isSlowScale();
+    }
+
+
+    public int getVaildAddr() {
+        return getScopeBean().getVaildAddr();
+    }
+
+    public int getTimeScaleId() {
+        return getScopeBean().getTimeScaleId();
+    }
+
+
+
+    public long getTimePosOfView() {
+        return getScopeBean().getTimePosOfView();
+    }
+
+
+    public boolean isValid() {
+        return getScopeBean().isValid();
+    }
+
+
+    public int getMemDepthItemIdx() {
+        return getScopeBean().getMemDepthItemIdx();
+    }
+
+
+    public double getYFactor(int chIdx){
+        return getScopeBean().getYFactor(chIdx);
+    }
+
+    public void setPlaceVal(int chIdx,int placeVal){
+        getScopeBean().setPlaceVal(chIdx,placeVal);
+    }
+    public int getPlaceVal(int chIdx){
+        return getScopeBean().getPlaceVal(chIdx);
+    }
+
+
+    public void doFrozenEx(ScopeFrozenBean bean,int [] val){
+        bean.setValid(bean.getSyncHeader() == val[0]);
+        bean.setSegmentEnable(SegmentSample.getInstance().isSegmentEnable());
+        //补个补丁
+        if(mssSyncHeader == 0x20251015){
+            mssSyncHeader = val[0];
+        }
+        if(mssSyncHeader != val[0]) {
+            bean.setVaildAddr(val[1]);
+        }
+    }
+
+    private void doFrozenEx(boolean bRun,ScopeFrozenBean bean){
+
+        Scope scope = Scope.getInstance();
+        SyncHeader syncHeader = SyncHeader.getInstance(0);
+        if(bRun) {
+            mssSyncHeader = -1;
+            ChannelFactory.forEachCh(channel -> {
+                int i = channel.getChId();
+                bean.setChSamped(i, scope.isChannelInSample(i,bRun));
+                bean.setChOpen(i, ChannelFactory.isChOpen(i));
+                bean.setChPos(i, channel.getPos());
+                bean.setChPosFix(i, channel.getPosFix());
+                bean.setChVertical(i, channel.getVScaleId()
+                        , channel.getFineScale()
+                        , channel.getProbeType(), channel.getProbeRate());
+                bean.setYFactor(i,channel.getYFactor());
+                bean.setPlaceVal(i,channel.getPlaceVal());
+            });
+
+            scope.clearSegmentTimestamp();
+            bean.setSampFre(scope.getSampleRate(bRun));
+            bean.setMemDepthItemIdx(MemDepthFactory.getMemDepth().getMemDepthItem());
+            bean.setMemDepth(MemDepthFactory.getSampleMemDepth());
+            bean.setTimeScaleId(HorizontalAxis.getInstance().getTimeScaleIdOfView(HorizontalAxis.WPI_STANDARD));
+            bean.setTimePosOfView(HorizontalAxis.getInstance().getTimePosOfView(HorizontalAxis.WPI_STANDARD));
+            bean.setRool(scope.isInScrollMode());
+            bean.setSlowScale(scope.isInSlowScaleMode());
+            bean.setVaildAddr(0);
+            bean.setSegmentEnable(SegmentSample.getInstance().isSegmentEnable());
+            bean.setSegmentFrameNo(syncHeader.getSegmentFrameNums()-1);
+            setSegmentFrameNums(0);
+            bean.setSegmentTimestamp(0);
+            SegmentSample.getInstance().setSegmentFrames(0);
+            setSegmentEnableFrameNo(false);
+        }else{
+            bean.setSegmentEnable(SegmentSample.getInstance().isSegmentEnable());
+            bean.setSegmentTimestamp(syncHeader.getSegmentTimestamp());
+        }
+    }
+
+    private synchronized void doFrozen(SyncHeader header){
+
+        int val = header.getHeader();
+        ScopeFrozenBean bean = map.get(header.getHeader());
+
+        if(bean != null){
+            map.clear();
+            bean.setValid(bean.getSyncHeader() == val);
+            doFrozenEx(!bean.isValid(),bean);
+            map.put(val,bean);
+//            Log.d(TAG, "doFrozen: " + val);
+        }
+    }
+    public void calcFrameNo(int framenums){
+        ScopeFrozenBean bean = getScopeBean();
+        if(bean.isSegmentEnable()) {
+            SegmentSample segmentSample = SegmentSample.getInstance();
+            if (!isSegmentEnableFrameNo()) {
+                int frameNo = framenums - 1;
+                setSegmentEnableFrameNo(true);
+                bean.setSegmentFrameNo(frameNo);
+                Scope scope = Scope.getInstance();
+                segmentSample.setFrameNo(frameNo, scope.isZoom() && scope.isInSlowScaleMode() && scope.isSegmentEnable());
+            }
+        }
+    }
+    @Override
+    public void update(Observable observable, Object data) {
+        EventBase eventBase = (EventBase)data;
+        if(eventBase != null){
+
+
+            Scope scope = Scope.getInstance();
+
+            if(eventBase.getId() == EventFactory.EVENT_SAMPLE_VALID){
+                boolean [] bData = (boolean[])eventBase.getData();
+                int idx = 0;
+                if(bData != null){
+                    idx = bData[1] ? 0 : 1;
+                }
+                SyncHeader header = SyncHeader.getInstance(idx);
+
+                if(header.isValid()) {
+                    Sample sample = Sample.getInstance();
+                    boolean bGetSegmentTimestamp = false;
+
+//                    Log.d(TAG,"isSample:" +header.isSample() +
+//                            ",isRun:" + scope.isRun() +
+//                            ",isLastSample:" + header.isLastSample());
+
+
+                    if (header.isSample()) {
+                        doFrozen(header);
+                        if(header.isLastSample()){
+                            bGetSegmentTimestamp = true;
+                        }else{
+                            scope.sendSampleState(Sample.SAMPLE_TRANSIENT);
+                        }
+                    } else {
+                        if(sample.isTransient()){
+                            scope.sendSampleState(Sample.SAMPLE_TRANSIENT_DIAPLAY);
+                        }
+                        if (header.isLastSample()) {
+                            if (scope.isSingle()) {
+                                doFrozen(header);
+                                if (scope.isRun()) {
+                                    scope.setRun(false);
+                                }
+                            }
+                        }
+                        bGetSegmentTimestamp = true;
+                        if(getScopeBean().isSegmentEnable()){
+                            SegmentSample segmentSample = SegmentSample.getInstance();
+                            int frameNo = 0;
+                            if(isSegmentEnableFrameNo()) {
+                                frameNo = header.getFrameNo();
+                                frameNo -= 1;
+
+                                if (segmentSample.getSegmentDisplayType() == SegmentSample.SEGMENT_DISPLAY_FITTING) {
+                                    frameNo += segmentSample.getFittingBegingFrame();
+                                } else {
+                                    frameNo += segmentSample.getFrameNo();
+                                }
+                                getScopeBean().setSegmentFrameNo(frameNo);
+                            }
+                        }
+                    }
+                    if(bGetSegmentTimestamp){
+
+                        if (getScopeBean().isSegmentEnable() && getScopeBean().getSegmentFrameNums() == 0) {
+                            if (!header.isSegmentTimestamp()) {
+                                setSegmentEnableFrameNo(false);
+                                scope.segmentTimTimestamp();
+                            }
+                        }
+                    }
+
+                }else{
+                    Logger.d(TAG,"header no valid");
+                }
+
+            }else if(eventBase.getId() == EventFactory.EVENT_SYNCHEADER_ERROR){
+                Display display = Display.getInstance();
+                display.setDrawType(display.getDrawType());
+            }else if(eventBase.getId() == EventFactory.EVENT_SCOPE_STATE){
+
+            }else if(eventBase.getId() == EventFactory.EVENT_FPGA_LOAD_OK){
+
+            }
+        }
+    }
+
+}

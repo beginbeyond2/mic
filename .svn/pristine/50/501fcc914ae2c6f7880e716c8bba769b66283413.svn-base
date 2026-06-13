@@ -1,0 +1,17 @@
+package com.micsig.tbook.scope.fpga;
+
+/**
+ * Created by zhuzh on 2018-10-25.
+ */
+
+public class FPGAReg_GET_DATA extends FPGAReg {
+    public FPGAReg_GET_DATA() {
+        super(FPGAReg.FPGA_GET_DATA, 16);
+    }
+    public void setReg(int ch,int status,int num){
+        setVal(0,(status & 0x03) | ((1 << ch) << 4));
+        setVal(1,0);
+        setVal(2,0);
+        setVal(3,(num & 0xFFFFF));
+    }
+}

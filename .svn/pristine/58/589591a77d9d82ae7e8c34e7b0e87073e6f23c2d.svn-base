@@ -1,0 +1,43 @@
+package com.micsig.tbook.scope.fpga;
+
+/**
+ * Created by zhuzh on 2018-3-26.
+ */
+
+public class FPGAReg_COMMAND extends FPGAReg {
+
+    private FPGAReg recvReg;
+    public FPGAReg_COMMAND() {
+        super(FPGA_COMMAND, 4);
+        recvReg = new FPGAReg(FPGA_COMMAND,4*2);
+    }
+
+    public void setParam(int val){
+        setVal(0,8,val);
+    }
+    public void setCmd(int val){
+        setVal(8,8,val);
+    }
+    public void setCmdCnt(int val){
+        setVal(16,15,val);
+    }
+    public void setCmdCntValid(int val){
+        setVal(31,1,val);
+    }
+
+    public FPGAReg getRecvReg(){
+        return recvReg;
+    }
+
+    public int getSyncHeader(){
+        return recvReg.getVal(0) & 0xFFFF;
+    }
+
+    public int getColAddr(){
+        return (recvReg.getVal(0) >>> 16) & 0xFFFF;
+    }
+
+    public int getFrameNums(){
+        return recvReg.getVal(1);
+    }
+}

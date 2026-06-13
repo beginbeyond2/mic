@@ -1,0 +1,198 @@
+package com.micsig.tbook.scope.surface;
+
+import android.graphics.SurfaceTexture;
+import android.opengl.GLES11Ext;
+
+import com.chillingvan.canvasgl.ICanvasGL;
+import com.chillingvan.canvasgl.glcanvas.GLCanvas;
+import com.chillingvan.canvasgl.glcanvas.RawTexture;
+import com.chillingvan.canvasgl.textureFilter.BasicTextureFilter;
+
+
+/**
+ * Created by zhuzh on 2018-9-11.
+ */
+
+public class LayerTexture {
+    public interface OnFrameAvailableListener {
+        void onFrameAvailable(LayerTexture layerTexture);
+    }
+    private OnFrameAvailableListener frameAvailableListener;
+    protected int left = 0;
+    protected int top = 0;
+    protected int width = 0;
+    protected int height = 0;
+    private int layerType = 0;
+    private RawTexture texture = null;
+    private SurfaceTexture surfaceTexture = null;
+    protected BasicTextureFilter basicTextureFilter = new BasicTextureFilter();
+    protected volatile boolean bVisiable = false;
+
+    protected volatile boolean bVaild = false;
+
+    private volatile int zorder = 0;
+
+
+    protected volatile int drawNum = 0;
+
+    public void setFrameAvailableListener(OnFrameAvailableListener frameAvailableListener) {
+        this.frameAvailableListener = frameAvailableListener;
+    }
+
+    private SurfaceNative surfaceNative;
+    public synchronized boolean isVisiable() {
+        return bVisiable;
+    }
+
+    public synchronized void setVisiable(boolean bVisiable) {
+        this.bVisiable = bVisiable;
+    }
+
+    public SurfaceNative getSurfaceNative() {
+        return surfaceNative;
+    }
+
+    public int getLayerType() {
+        return layerType;
+    }
+
+    public int getZorder() {
+        return zorder;
+    }
+
+    public void setZorder(int zorder) {
+        this.zorder = zorder;
+    }
+
+    //动态通道
+    public LayerTexture(int layerType){
+        bVaild = true;
+        this.layerType = layerType;
+    }
+
+    private int offsetX = 0;
+    private int offsetY = 0;
+    public synchronized int getOffsetX(){
+        return offsetX;
+    }
+    public synchronized int getOffsetY(){
+        return offsetY;
+    }
+
+    public synchronized void setOffset(int x,int y){
+        this.offsetX = x;
+        this.offsetY = y;
+    }
+
+    public int getLeft() {
+        return left;
+    }
+
+    public void setLeft(int left) {
+        this.left = left;
+    }
+
+    public int getTop() {
+        return top;
+    }
+
+    public void setTop(int top) {
+        this.top = top;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public void setWidth(int width) {
+        this.width = width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
+    public void setHeight(int height) {
+        this.height = height;
+    }
+
+    public void setTexture(RawTexture texture){
+        this.texture = texture;
+    }
+
+    public RawTexture getTexture(){
+        return this.texture;
+    }
+    public SurfaceTexture getSurfaceTexture(){
+        return this.surfaceTexture;
+    }
+    public void setSurfaceTexture(SurfaceTexture surfaceTexture){
+        this.surfaceTexture = surfaceTexture;
+    }
+
+
+    public void setTextureFilter(BasicTextureFilter basicTextureFilter) {
+        this.basicTextureFilter = basicTextureFilter;
+    }
+
+    public LayerTexture(int width, int height,int layerType){
+        this.layerType = layerType;
+        this.width = width;
+        this.height = height;
+        texture = new RawTexture(width, height, false, GLES11Ext.GL_TEXTURE_EXTERNAL_OES);
+
+    }
+
+    public void changeRawTextureHeight(int height) {
+        //if (texture != null && texture.getHeight() != height) texture.setSize(width, S);
+    }
+
+    public void prepare(GLCanvas canvas){
+        if (!texture.isLoaded()) {
+            texture.prepare(canvas);
+        }
+        surfaceTexture = new SurfaceTexture(texture.getId());
+
+        surfaceNative = new SurfaceNative(surfaceTexture);
+        surfaceTexture.setOnFrameAvailableListener(new SurfaceTexture.OnFrameAvailableListener() {
+            @Override
+            public void onFrameAvailable(SurfaceTexture surfaceTexture) {
+                bVaild = true;
+                if(frameAvailableListener != null){
+                    setDrawNum();
+                    setOffset(0,0);
+                    frameAvailableListener.onFrameAvailable(LayerTexture.this);
+                }
+            }
+        });
+    }
+    private synchronized void setDrawNum(){
+        drawNum = (drawNum + 1) & Integer.MAX_VALUE;
+    }
+    public synchronized int getDrawNum(){
+        return drawNum;
+    }
+    public void end(){
+        if (texture != null) {
+            texture.recycle();
+            texture = null;
+        }
+    }
+
+    public void onDraw(ICanvasGL canvas){
+
+        if(bVaild && texture != null) {
+            canvas.drawSurfaceTexture(texture, surfaceTexture,left, top, left + width, top + height, basicTextureFilter);
+        }
+    }
+    public void updateTexImage(){
+        if(bVaild && surfaceTexture != null){
+            surfaceTexture.updateTexImage();
+        }
+    }
+    public void clear(){
+        updateTexImage();
+        bVaild = false;
+    }
+
+}

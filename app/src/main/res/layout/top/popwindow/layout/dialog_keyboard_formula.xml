@@ -1,0 +1,651 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <View
+        android:id="@+id/outView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <RelativeLayout
+        android:id="@+id/showKeyBoardLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_x="0px"
+        android:layout_y="@dimen/rightDialogFormulaKeyBoardRow0"
+        android:background="@drawable/shape_frame_bg_black"
+        android:clickable="true"
+        android:orientation="vertical">
+
+        <com.micsig.tbook.ui.MSelectionEditText
+            android:id="@+id/formulaEdit"
+            style="@style/editTextStyle"
+            android:layout_width="832px"
+            android:layout_height="54px"
+            android:layout_marginStart="15px"
+            android:layout_marginTop="15px"
+            android:layout_marginEnd="14px"
+            android:gravity="center_vertical|start"
+            android:inputType="textNoSuggestions"
+            android:maxLines="1"
+            android:text="123456789"
+            android:textCursorDrawable="@null"
+            android:textSize="@dimen/textSize20" />
+
+        <TextView
+            android:id="@+id/formulaSelectionLeft"
+            style="@style/numberKeyBoardKey"
+            android:layout_width="80px"
+            android:layout_height="54px"
+            android:layout_alignBottom="@id/formulaEdit"
+            android:layout_marginStart="0px"
+            android:layout_marginTop="15px"
+            android:layout_marginBottom="0px"
+            android:layout_toEndOf="@id/formulaEdit"
+            android:gravity="center"
+            android:text="←" />
+
+        <TextView
+            android:id="@+id/formulaSelectionRight"
+            style="@style/numberKeyBoardKey"
+            android:layout_alignBottom="@id/formulaEdit"
+            android:layout_marginTop="15px"
+            android:layout_marginBottom="0px"
+            android:layout_toEndOf="@id/formulaSelectionLeft"
+            android:gravity="center"
+            android:text="→" />
+
+        <TextView
+            android:id="@+id/formulaMsgError"
+            android:layout_width="wrap_content"
+            android:layout_height="35px"
+            android:layout_below="@id/formulaEdit"
+            android:layout_alignStart="@id/formulaEdit"
+            android:gravity="center_vertical"
+            android:text="语法错误"
+            android:textColor="@android:color/holo_red_dark"
+            android:textSize="14px" />
+
+        <RelativeLayout
+            android:id="@+id/formulaGridView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/formulaMsgError"
+            android:layout_marginStart="8px"
+            android:layout_marginEnd="8px"
+            android:layout_marginBottom="8px">
+
+            <Button
+                android:id="@+id/key_add"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignParentStart="true"
+                android:layout_alignParentTop="true"
+                android:tag="0"
+                android:text="@string/key_formula_add"
+                android:textSize="20px" />
+
+            <Button
+                android:id="@+id/key_sub"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignParentTop="true"
+                android:layout_toEndOf="@id/key_add"
+                android:tag="1"
+                android:text="@string/key_formula_sub"
+                android:textSize="20px" />
+
+            <Button
+                android:id="@+id/key_mul"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignParentTop="true"
+                android:layout_toEndOf="@id/key_sub"
+                android:tag="2"
+                android:text="@string/key_formula_mul"
+                android:textSize="20px" />
+
+            <Button
+                android:id="@+id/key_div"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignParentTop="true"
+                android:layout_toEndOf="@id/key_mul"
+                android:tag="3"
+                android:text="@string/key_formula_div"
+                android:textSize="20px" />
+
+            <Button
+                android:id="@+id/key_bracket_left"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignParentTop="true"
+                android:layout_toEndOf="@id/key_div"
+                android:tag="4"
+                android:text="@string/key_formula_bracket_left" />
+
+            <Button
+                android:id="@+id/key_less"
+                style="@style/numberKeyBoardKey"
+                android:layout_below="@id/key_add"
+                android:layout_alignParentStart="true"
+                android:tag="5"
+                android:text="@string/key_formula_less"
+                android:textSize="20px" />
+
+            <Button
+                android:id="@+id/key_greater"
+                style="@style/numberKeyBoardKey"
+                android:layout_below="@id/key_add"
+                android:layout_toEndOf="@id/key_add"
+                android:tag="6"
+                android:text="@string/key_formula_greater"
+                android:textSize="20px" />
+
+            <Button
+                android:id="@+id/key_less_equal"
+                style="@style/numberKeyBoardKey"
+                android:layout_below="@id/key_add"
+                android:layout_toEndOf="@id/key_sub"
+                android:tag="7"
+                android:text="@string/key_formula_less_equal"
+                android:textSize="20px" />
+
+            <Button
+                android:id="@+id/key_greater_equal"
+                style="@style/numberKeyBoardKey"
+                android:layout_below="@id/key_add"
+                android:layout_toEndOf="@id/key_mul"
+                android:tag="8"
+                android:text="@string/key_formula_greater_equal"
+                android:textSize="20px" />
+
+            <Button
+                android:id="@+id/key_bracket_right"
+                style="@style/numberKeyBoardKey"
+                android:layout_below="@id/key_add"
+                android:layout_toEndOf="@id/key_div"
+                android:tag="9"
+                android:text="@string/key_formula_bracket_right" />
+
+            <Button
+                android:id="@+id/key_Equal"
+                style="@style/numberKeyBoardKey"
+                android:layout_below="@id/key_less"
+                android:layout_alignParentStart="true"
+                android:tag="10"
+                android:text="@string/key_formula_equal" />
+
+            <Button
+                android:id="@+id/key_not_equal"
+                style="@style/numberKeyBoardKey"
+                android:layout_below="@id/key_less"
+                android:layout_toEndOf="@id/key_add"
+                android:tag="11"
+                android:text="@string/key_formula_not_equal" />
+
+            <Button
+                android:id="@+id/key_and"
+                style="@style/numberKeyBoardKey"
+                android:layout_below="@id/key_less"
+                android:layout_toEndOf="@id/key_sub"
+                android:tag="12"
+                android:text="@string/key_formula_and" />
+
+            <Button
+                android:id="@+id/key_or"
+                style="@style/numberKeyBoardKey"
+                android:layout_below="@id/key_less"
+                android:layout_toEndOf="@id/key_mul"
+                android:tag="13"
+                android:text="@string/key_formula_or" />
+
+            <Button
+                android:id="@+id/key_no"
+                style="@style/numberKeyBoardKey"
+                android:layout_below="@id/key_less"
+                android:layout_toEndOf="@id/key_div"
+                android:tag="14"
+                android:text="@string/key_formula_no" />
+
+            <Button
+                android:id="@+id/key_sqrt"
+                style="@style/numberKeyBoardKey"
+                android:layout_below="@id/key_Equal"
+                android:layout_alignParentStart="true"
+                android:tag="15"
+                android:text="@string/key_formula_sqrt" />
+
+            <Button
+                android:id="@+id/key_abs"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignBottom="@id/key_sqrt"
+                android:layout_marginBottom="0px"
+                android:layout_toEndOf="@id/key_add"
+                android:tag="16"
+                android:text="@string/key_formula_abs" />
+
+            <Button
+                android:id="@+id/key_deg"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignBottom="@id/key_sqrt"
+                android:layout_marginBottom="0px"
+                android:layout_toEndOf="@id/key_sub"
+                android:tag="17"
+                android:text="@string/key_formula_deg" />
+
+            <Button
+                android:id="@+id/key_rad"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignBottom="@id/key_sqrt"
+                android:layout_marginBottom="0px"
+                android:layout_toEndOf="@id/key_mul"
+                android:tag="18"
+                android:text="@string/key_formula_rad" />
+
+            <Button
+                android:id="@+id/key_Exp"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignBottom="@id/key_sqrt"
+                android:layout_marginBottom="0px"
+                android:layout_toEndOf="@id/key_div"
+                android:tag="19"
+                android:text="@string/key_formula_exp" />
+
+            <Button
+                android:id="@+id/key_diff"
+                style="@style/numberKeyBoardKey"
+                android:layout_below="@id/key_sqrt"
+                android:layout_alignParentStart="true"
+                android:tag="20"
+                android:text="@string/key_formula_diff" />
+
+            <Button
+                android:id="@+id/key_ln"
+                style="@style/numberKeyBoardKey"
+                android:layout_below="@id/key_sqrt"
+                android:layout_toEndOf="@id/key_add"
+                android:tag="21"
+                android:text="@string/key_formula_ln" />
+
+            <Button
+                android:id="@+id/key_sine"
+                style="@style/numberKeyBoardKey"
+                android:layout_below="@id/key_sqrt"
+                android:layout_toEndOf="@id/key_sub"
+                android:tag="22"
+                android:text="@string/key_formula_sin" />
+
+            <Button
+                android:id="@+id/key_cos"
+                style="@style/numberKeyBoardKey"
+                android:layout_below="@id/key_sqrt"
+                android:layout_toEndOf="@id/key_mul"
+                android:tag="23"
+                android:text="@string/key_formula_cos" />
+
+            <Button
+                android:id="@+id/key_tan"
+                style="@style/numberKeyBoardKey"
+                android:layout_below="@id/key_sqrt"
+                android:layout_toEndOf="@id/key_div"
+                android:tag="24"
+                android:text="@string/key_formula_tan" />
+
+            <Button
+                android:id="@+id/key_intg"
+                style="@style/numberKeyBoardKey"
+                android:layout_below="@id/key_diff"
+                android:layout_alignParentStart="true"
+                android:tag="25"
+                android:text="@string/key_formula_intg" />
+
+            <Button
+                android:id="@+id/key_lg"
+                style="@style/numberKeyBoardKey"
+                android:layout_below="@id/key_diff"
+                android:layout_toEndOf="@id/key_add"
+                android:tag="26"
+                android:text="@string/key_formula_lg" />
+
+            <Button
+                android:id="@+id/key_arcsin"
+                style="@style/numberKeyBoardKey"
+                android:layout_below="@id/key_diff"
+                android:layout_toEndOf="@id/key_sub"
+                android:tag="27"
+                android:text="@string/key_formula_arcsin" />
+
+            <Button
+                android:id="@+id/key_arccos"
+                style="@style/numberKeyBoardKey"
+                android:layout_below="@id/key_diff"
+                android:layout_toEndOf="@id/key_mul"
+                android:tag="28"
+                android:text="@string/key_formula_arccos" />
+
+            <Button
+                android:id="@+id/key_arctan"
+                style="@style/numberKeyBoardKey"
+                android:layout_below="@id/key_diff"
+                android:layout_toEndOf="@id/key_div"
+                android:tag="29"
+                android:text="@string/key_formula_arctan" />
+
+            <Button
+                android:id="@+id/key_ch1"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignParentTop="true"
+                android:layout_toEndOf="@id/key_bracket_left"
+                android:tag="30"
+                android:text="@string/key_formula_ch1" />
+
+            <Button
+                android:id="@+id/key_ch2"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignParentTop="true"
+                android:layout_toEndOf="@id/key_ch1"
+                android:tag="31"
+                android:text="@string/key_formula_ch2" />
+
+            <Button
+                android:id="@+id/key_ch3"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignParentTop="true"
+                android:layout_toEndOf="@id/key_ch2"
+                android:tag="32"
+                android:text="@string/key_formula_ch3" />
+
+            <Button
+                android:id="@+id/key_ch4"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignParentTop="true"
+                android:layout_toEndOf="@id/key_ch3"
+                android:tag="33"
+                android:text="@string/key_formula_ch4" />
+
+            <Button
+                android:id="@+id/key_null1"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignParentTop="true"
+                android:layout_toEndOf="@id/key_ch4"
+                android:background="@null"
+                android:tag="34"
+                android:text="" />
+
+            <Button
+                android:id="@+id/key_pi"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignParentTop="true"
+                android:layout_toEndOf="@id/key_null1"
+                android:tag="35"
+                android:text="@string/key_formula_pi" />
+
+
+            <Button
+                android:id="@+id/key_ch5"
+                style="@style/numberKeyBoardKey"
+                android:layout_below="@id/key_add"
+                android:layout_alignStart="@id/key_ch1"
+                android:layout_marginStart="0px"
+                android:tag="36"
+                android:text="@string/key_formula_ch5" />
+
+            <Button
+                android:id="@+id/key_ch6"
+                style="@style/numberKeyBoardKey"
+                android:layout_below="@id/key_add"
+                android:layout_toEndOf="@id/key_ch5"
+                android:tag="37"
+                android:text="@string/key_formula_ch6" />
+
+            <Button
+                android:id="@+id/key_ch7"
+                style="@style/numberKeyBoardKey"
+                android:layout_below="@id/key_add"
+                android:layout_toEndOf="@id/key_ch6"
+                android:tag="38"
+                android:text="@string/key_formula_ch7" />
+
+            <Button
+                android:id="@+id/key_ch8"
+                style="@style/numberKeyBoardKey"
+                android:layout_below="@id/key_add"
+                android:layout_toEndOf="@id/key_ch7"
+                android:tag="39"
+                android:text="@string/key_formula_ch8" />
+
+            <Button
+                android:id="@+id/key_timeBase"
+                style="@style/numberKeyBoardKey"
+                android:layout_below="@id/key_add"
+                android:layout_toEndOf="@id/key_ch8"
+                android:tag="40"
+                android:text="Time Base" />
+
+
+            <Button
+                android:id="@+id/key_e"
+                style="@style/numberKeyBoardKey"
+                android:layout_below="@id/key_add"
+                android:layout_toEndOf="@id/key_timeBase"
+                android:tag="41"
+                android:text="@string/key_formula_E" />
+
+            <Button
+                android:id="@+id/key_7"
+                style="@style/numberKeyBoardKey"
+                android:layout_below="@id/key_less"
+                android:layout_alignStart="@id/key_ch1"
+                android:layout_marginStart="0px"
+                android:tag="42"
+                android:text="@string/key_formula_7" />
+
+            <Button
+                android:id="@+id/key_8"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignBottom="@id/key_7"
+                android:layout_marginBottom="0px"
+                android:layout_toEndOf="@id/key_7"
+                android:tag="43"
+                android:text="@string/key_formula_8" />
+
+            <Button
+                android:id="@+id/key_9"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignBottom="@id/key_7"
+                android:layout_marginBottom="0px"
+                android:layout_toEndOf="@id/key_8"
+                android:tag="44"
+                android:text="@string/key_formula_9" />
+
+            <Button
+                android:id="@+id/key_m"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignBottom="@id/key_7"
+                android:layout_marginBottom="0px"
+                android:layout_toEndOf="@id/key_9"
+                android:tag="45"
+                android:text="@string/key_formula_m" />
+
+            <Button
+                android:id="@+id/key_T"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignBottom="@id/key_7"
+                android:layout_marginBottom="0px"
+                android:layout_toEndOf="@id/key_m"
+                android:tag="46"
+                android:text="@string/key_formula_T" />
+
+            <Button
+                android:id="@+id/key_var1"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignBottom="@id/key_7"
+                android:layout_marginBottom="0px"
+                android:layout_toEndOf="@id/key_T"
+                android:tag="47"
+                android:text="@string/key_formula_var1" />
+
+
+            <Button
+                android:id="@+id/key_4"
+                style="@style/numberKeyBoardKey"
+                android:layout_below="@id/key_7"
+                android:layout_alignStart="@id/key_ch1"
+                android:layout_marginStart="0px"
+                android:tag="48"
+                android:text="@string/key_formula_4" />
+
+            <Button
+                android:id="@+id/key_5"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignBottom="@id/key_4"
+                android:layout_marginBottom="0px"
+                android:layout_toEndOf="@id/key_4"
+                android:tag="49"
+                android:text="@string/key_formula_5" />
+
+            <Button
+                android:id="@+id/key_6"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignBottom="@id/key_4"
+                android:layout_marginBottom="0px"
+                android:layout_toEndOf="@id/key_5"
+                android:tag="50"
+                android:text="@string/key_formula_6" />
+
+            <Button
+                android:id="@+id/key_u"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignBottom="@id/key_4"
+                android:layout_marginBottom="0px"
+                android:layout_toEndOf="@id/key_6"
+                android:tag="51"
+                android:text="@string/key_formula_u" />
+
+            <Button
+                android:id="@+id/key_G"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignBottom="@id/key_4"
+                android:layout_marginBottom="0px"
+                android:layout_toEndOf="@id/key_u"
+                android:tag="52"
+                android:text="@string/key_formula_G" />
+
+
+            <Button
+                android:id="@+id/key_var2"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignBottom="@id/key_4"
+                android:layout_marginBottom="0px"
+                android:layout_toEndOf="@id/key_G"
+                android:tag="53"
+                android:text="@string/key_formula_var2" />
+
+            <Button
+                android:id="@+id/key_1"
+                style="@style/numberKeyBoardKey"
+                android:layout_below="@id/key_4"
+                android:layout_alignStart="@id/key_ch1"
+                android:layout_marginStart="0px"
+                android:tag="54"
+                android:text="@string/key_formula_1" />
+
+            <Button
+                android:id="@+id/key_2"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignBottom="@id/key_1"
+                android:layout_marginBottom="0px"
+                android:layout_toEndOf="@id/key_1"
+                android:tag="55"
+                android:text="@string/key_formula_2" />
+
+            <Button
+                android:id="@+id/key_3"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignBottom="@id/key_1"
+                android:layout_marginBottom="0px"
+                android:layout_toEndOf="@id/key_2"
+                android:tag="56"
+                android:text="@string/key_formula_3" />
+
+            <Button
+                android:id="@+id/key_n"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignBottom="@id/key_1"
+                android:layout_marginBottom="0px"
+                android:layout_toEndOf="@id/key_3"
+                android:tag="57"
+                android:text="@string/key_formula_n" />
+
+            <Button
+                android:id="@+id/key_M"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignBottom="@id/key_1"
+                android:layout_marginBottom="0px"
+                android:layout_toEndOf="@id/key_n"
+                android:tag="58"
+                android:text="@string/key_formula_M" />
+
+
+            <Button
+                android:id="@+id/key_Enter"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignBottom="@id/key_1"
+                android:layout_marginBottom="0px"
+                android:layout_toEndOf="@id/key_M"
+                android:tag="59"
+                android:text="@string/key_formula_enter" />
+
+
+            <Button
+                android:id="@+id/key_point"
+                style="@style/numberKeyBoardKey"
+                android:layout_below="@id/key_1"
+                android:layout_alignStart="@id/key_ch1"
+                android:layout_marginStart="0px"
+                android:tag="60"
+                android:text="@string/key_formula_point" />
+
+            <Button
+                android:id="@+id/key_0"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignBottom="@id/key_point"
+                android:layout_marginBottom="0px"
+                android:layout_toEndOf="@id/key_point"
+                android:tag="61"
+                android:text="@string/key_formula_0" />
+
+            <Button
+                android:id="@+id/key_f"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignBottom="@id/key_point"
+                android:layout_marginBottom="0px"
+                android:layout_toEndOf="@id/key_0"
+                android:tag="62"
+                android:text="@string/key_formula_f" />
+
+            <Button
+                android:id="@+id/key_p"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignBottom="@id/key_point"
+                android:layout_marginBottom="0px"
+                android:layout_toEndOf="@id/key_f"
+                android:tag="63"
+                android:text="@string/key_formula_p" />
+
+            <Button
+                android:id="@+id/key_k"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignBottom="@id/key_point"
+                android:layout_marginBottom="0px"
+                android:layout_toEndOf="@id/key_p"
+                android:tag="64"
+                android:text="@string/key_formula_k" />
+
+
+            <Button
+                android:id="@+id/key_del"
+                style="@style/numberKeyBoardKey"
+                android:layout_alignBottom="@id/key_point"
+                android:layout_marginBottom="0px"
+                android:layout_toEndOf="@id/key_k"
+                android:tag="65"
+                android:text="←" />
+        </RelativeLayout>
+    </RelativeLayout>
+</merge>

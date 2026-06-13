@@ -1,0 +1,257 @@
+package com.micsig.tbook.tbookscope.main.dialog;
+
+import android.annotation.SuppressLint;
+import android.content.Context;
+import android.graphics.Rect;
+import android.os.Handler;
+import android.os.Message;
+import android.util.AttributeSet;
+import android.util.Log;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AbsoluteLayout;
+import android.widget.Button;
+import android.widget.ImageView;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.constraintlayout.widget.ConstraintLayout;
+
+import com.micsig.base.Logger;
+import com.micsig.tbook.tbookscope.MainMsgSlip;
+import com.micsig.tbook.tbookscope.MainViewGroup;
+import com.micsig.tbook.tbookscope.R;
+import com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster;
+import com.micsig.tbook.tbookscope.middleware.command.CommandMsgToUI;
+import com.micsig.tbook.tbookscope.rxjava.RxBus;
+import com.micsig.tbook.tbookscope.rxjava.RxEnum;
+import com.micsig.tbook.tbookscope.util.Screen;
+import com.micsig.tbook.ui.wavezone.TChan;
+
+import io.reactivex.rxjava3.functions.Consumer;
+
+/**
+ * @Description: 各个通道垂直挡位调节通用类
+ * @Author: limh
+ * @CreateDate: 2024/5/14 11:04
+ */
+public class MainChannelVerticalScale extends ConstraintLayout {
+
+    private static final String TAG = "MainChannelVerticalScale";
+    private Context context;
+    private Button btnTop, btnBottom;
+    private ImageView imgBackSrc;
+    private int channelNumber;//当前操作的通道号
+    private MainRightLayoutItemChannelMaster masterView;//当前对应的masterView
+    private int leftLimit = 1098;//屏幕上左侧限制显示位置
+    private int rightLimit = 1704;//屏幕上右侧限制显示位置
+
+    private boolean isShow = false;
+
+    private View rootView;
+
+    public MainChannelVerticalScale(@NonNull Context context) {
+        this(context, null);
+    }
+
+    public MainChannelVerticalScale(@NonNull Context context, @Nullable AttributeSet attrs) {
+        this(context, attrs, 0);
+    }
+
+    public MainChannelVerticalScale(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
+        this.context = context;
+        initView();
+        initControl();
+    }
+
+
+
+    private void initControl() {
+        RxBus.getInstance().getObservable(RxEnum.MQ_MSG_SHOW_VERTICAL_SCALE).subscribe(consumerShowVscale);//显示垂直挡位View
+        RxBus.getInstance().getObservable(RxEnum.MQ_MSG_FORCE_HIDE_VERTICAL_SCALE).subscribe(consumerHideVscale);//关闭垂直挡位调节View
+        RxBus.getInstance().getObservable(RxEnum.MAIN_SLIP_TO_OTHER).subscribe(consumerMainSlipToOther);//接收slip滑出消息
+        RxBus.getInstance().getObservable(RxEnum.MQ_MSG_VERTICAL_SCALE_MOVE).subscribe(consumerMovePosition);//移动位置
+    }
+
+    private void initView() {
+        rootView = (ViewGroup) View.inflate(context, R.layout.view_channel_vertical_adjust, this);
+        btnTop = rootView.findViewById(R.id.btnTop);
+        btnBottom = rootView.findViewById(R.id.btnBottom);
+        imgBackSrc = rootView.findViewById(R.id.img_back_src);
+        btnTop.setOnClickListener(onClicklistener);
+        btnBottom.setOnClickListener(onClicklistener);
+    }
+
+    private View.OnClickListener onClicklistener = new View.OnClickListener() {
+        @SuppressLint("NonConstantResourceId")
+        @Override
+        public void onClick(View v) {
+            isShow = true;
+            switch (v.getId()) {
+                case R.id.btnTop:
+                    Logger.d(TAG, "调整档位-----btnTop------postChange" );
+                    postChange(true);
+                    break;
+                case R.id.btnBottom:
+                    Logger.d(TAG, "调整档位-----btnBottom------postChange" );
+                    postChange(false);
+                    break;
+                case R.id.outView:
+                    isShow = false;
+                    hideVerticalScale();
+                    break;
+            }
+        }
+    };
+
+    private void postChange(boolean isClickTop) {
+        if (isClickTop) {
+            imgBackSrc.setImageResource(R.drawable.svg_right_chx_button_u_88x174);
+        } else {
+            imgBackSrc.setImageResource(R.drawable.svg_right_chx_button_d_88x174);
+        }
+        if (myHandler.hasMessages(MSG_HIDE)) {
+            myHandler.removeMessages(MSG_HIDE);
+        }
+        myHandler.sendEmptyMessage(MSG_HIDE);
+
+        if (myHandler.hasMessages(HANDLE_MSG)) {
+            myHandler.removeMessages(HANDLE_MSG);
+        }
+        Logger.d(TAG, "调整档位-----1------postChange isClickTop= " + isClickTop);
+        myHandler.sendEmptyMessageDelayed(HANDLE_MSG, 200);
+        RxBus.getInstance().post(RxEnum.MQ_MSG_CHANNEL_VERTICAL_SCALE, isClickTop + CommandMsgToUI.PARAM_SPLIT + channelNumber);
+    }
+
+    private Consumer<Boolean> consumerHideVscale = new Consumer<Boolean>() {//由于正常只会显示一个垂直挡位调节按钮，多以不用管时按个通道的显示，直接关闭即可。
+        @Override
+        public void accept(Boolean forceHide) throws Throwable {
+            if (forceHide) {
+                hideVerticalScale();
+            }
+        }
+    };
+
+    private Consumer<MainRightLayoutItemChannelMaster> consumerShowVscale = new Consumer<MainRightLayoutItemChannelMaster>() {
+        @Override
+        public void accept(MainRightLayoutItemChannelMaster masterView) throws Throwable {
+            if (masterView.getVisibility() != View.VISIBLE) return;
+            channelNumber = TChan.toUiChNo(masterView.getChIndex());
+            MainChannelVerticalScale.this.masterView = masterView;
+            updateViewLayout(masterView);//显示并调整位置
+            if (myHandler.hasMessages(MSG_HIDE)) {
+                myHandler.removeMessages(MSG_HIDE);
+            }
+            myHandler.sendEmptyMessageDelayed(MSG_HIDE, 3000);
+        }
+    };
+
+    private void updateViewLayout(MainRightLayoutItemChannelMaster masterView) {
+        Rect rect = Screen.getViewLocation(masterView);
+        Logger.d(TAG, "channelNumber= " + channelNumber + " rect= " + rect);//获取masterView相对屏幕位置
+        AbsoluteLayout.LayoutParams layoutParams = (AbsoluteLayout.LayoutParams) rootView.getLayoutParams();
+        // 88 174为垂直按钮的宽和高 6 9为偏移量
+        if (TChan.isChan(channelNumber)) {
+            layoutParams.x = rect.left - 88 - 6;
+            if (channelNumber == TChan.Ch1) { //Ch1 顶部对齐
+                layoutParams.y = rect.top;
+            } else if (channelNumber == TChan.Ch8) { //Ch8 底部对齐
+                layoutParams.y = rect.bottom - 174;
+            } else { //Ch2-Ch7 水平中线对齐
+                layoutParams.y = (rect.top + rect.bottom) / 2 - 174 / 2;
+            }
+        } else if (TChan.isMath(channelNumber) || TChan.isRef(channelNumber)) {//垂直中线对齐
+            layoutParams.x = (rect.left + rect.right) / 2 - 88 / 2;
+            layoutParams.y = rect.top - 174 - 9;
+        }
+        Logger.d(TAG, "layoutParams= " + layoutParams.x + "  " + layoutParams.y);
+        rootView.setLayoutParams(layoutParams);
+        //Math/Ref对应的垂直挡位与显示区域限制
+        if (!TChan.isChan(channelNumber) && (layoutParams.x < leftLimit || layoutParams.x > rightLimit)) {
+            hideVerticalScale();
+        } else {
+            setVisibility(VISIBLE);
+        }
+    }
+
+    private Consumer<Object> consumerMovePosition = new Consumer<Object>() {
+        @Override
+        public void accept(Object o) throws Throwable {
+            if (getVisibility() == View.VISIBLE && masterView != null) {
+                updateViewLayout(masterView);
+            }
+        }
+    };
+
+
+    private Consumer<MainMsgSlip> consumerMainSlipToOther = new Consumer<MainMsgSlip>() {
+        @Override
+        public void accept(MainMsgSlip mainMsgSlip) throws Exception {
+            if (mainMsgSlip.isOpen()) {
+                switch (mainMsgSlip.getSlip()) {
+                    case MainViewGroup.RIGHTSLIP_CH1:
+                    case MainViewGroup.RIGHTSLIP_CH2:
+                    case MainViewGroup.RIGHTSLIP_CH3:
+                    case MainViewGroup.RIGHTSLIP_CH4:
+                    case MainViewGroup.RIGHTSLIP_CH5:
+                    case MainViewGroup.RIGHTSLIP_CH6:
+                    case MainViewGroup.RIGHTSLIP_CH7:
+                    case MainViewGroup.RIGHTSLIP_CH8:
+//                        if (TChan.isChan(channelNumber)) {
+                            hideVerticalScale();
+//                        }
+                        break;
+                }
+            }
+        }
+    };
+
+
+    private static final int HANDLE_MSG = 1;//点击后还原背景
+    private static final int MSG_HIDE = 2; //隐藏垂直挡位调节按钮
+
+    private final Handler myHandler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            switch (msg.what) {
+                case HANDLE_MSG:
+                    imgBackSrc.setImageResource(R.drawable.svg_right_chx_button_88x174);
+                    break;
+                case MSG_HIDE:
+                    if (isShow) {
+                        if (myHandler.hasMessages(MSG_HIDE)) {
+                            myHandler.removeMessages(MSG_HIDE);
+                        }
+                        isShow = false;
+                        myHandler.sendEmptyMessageDelayed(MSG_HIDE, 3000);//3秒后隐藏
+                    } else {
+                        setVisibility(GONE);
+                    }
+                    break;
+            }
+        }
+    };
+
+    public void hideVerticalScale() {
+        setVisibility(GONE);
+        myHandler.removeCallbacksAndMessages(null);
+    }
+
+    private final Rect r = new Rect();
+
+    public boolean containsPoint(int x, int y) {
+        r.set((int) getX(), (int) getY(), (int) getX() + getWidth(), (int) getY() + getHeight());
+        return x > r.left && x < r.right && y > r.top && y < r.bottom && getVisibility() == View.VISIBLE;
+    }
+
+    public boolean containsDownPoint(MotionEvent event) {
+        int x = (int) event.getX();
+        int y = (int) event.getY();
+        r.set((int) getX(), (int) getY(), (int) getX() + getWidth(), (int) getY() + getHeight());
+        boolean b = x > r.left && x < r.right && y > r.top && y < r.bottom && getVisibility() == View.VISIBLE && event.getAction() == MotionEvent.ACTION_DOWN;
+        return b;
+    }
+}

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/channel_ref"
+    android:layout_width="76px"
+    android:layout_height="68px"
+    android:layout_marginStart="4px"
+    android:background="@drawable/svg_right_ch1234_close">
+
+
+    <TextView
+        android:id="@+id/serialsType"
+        style="@style/textStyleMiddlebarRightMain"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="15px"
+        android:includeFontPadding="false"
+        android:text="Ref"
+        android:textColor="@color/color_btn_ref"
+        android:textSize="18px"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/text"
+        android:layout_width="71px"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="15px"
+        android:gravity="center"
+        android:hint="2V"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:textColor="@color/color_btn_ref"
+        android:textColorHint="@color/color_btn_ref"
+        android:textSize="16px"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

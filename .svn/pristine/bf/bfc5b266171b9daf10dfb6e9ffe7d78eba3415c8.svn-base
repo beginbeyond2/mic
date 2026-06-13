@@ -1,0 +1,454 @@
+package com.micsig.tbook.tbookscope.rxjava;
+
+/**
+ * @auother Liwb
+ * @description:
+ *             为了区分新旧消息:<br/>
+ *              1)旧消息还按以前的<br/>
+ *              2)新消息前缀使用MQ进行取分
+ * @data:2024-2-29 10:32
+ *
+ */
+public enum RxEnum {
+    DEFAULT("DEFAULT"),
+    /**
+     * 主activity触发onActivityResult()方法时的信号
+     */
+    ACTIVITY_ACTIVITYRESULT("ACTIVITY_ACTIVITYRESULT"),
+    /**
+     * 主activity触发onStop()方法时的信号
+     */
+    ACTIVITY_ACTIVITYONSTOP("ACTIVITY_ACTIVITYONSTOP"),
+    /**
+     * 主页面右侧4个channel是否选中
+     */
+    MAINRIGHT_CHANNELS("MAINRIGHT_CHANNELS"),
+    /**
+     * 主页面右侧math、ref、s1、s2是否选中
+     */
+    MAINRIGHT_OTHERS("MAINRIGHT_OTHERS"),
+    MAINRIGHT_OTHERS_PREV("MAINRIGHT_OTHERS_PREV"),
+    /**
+     * 主页面下侧timeBase修改发送的消息
+     */
+    MAINBOTTOM_TIMEBASE("MAINBOTTOM_TIMEBASE"),
+    /**
+     * 主页面下侧的快速保存之后，发给topSlipSave页面修改name的消息
+     */
+    MAINBOTTOM_QUICKSAVE("BOTTOM_QUICKSAVE"),
+    /**
+     * 主页面下侧菜单中的可点击性
+     */
+    MAINBOTTOM_QUICKENABLE("MAINBOTTOM_QUICKENABLE"),
+    /**
+     * 主界面波形区TriggerTimeBase移动时的信号
+     */
+
+    MAINWAVE_TRIGGERTIMEBASE("MAINWAVE_TRIGGERTIMEBASE"),
+    /**
+     * 主页面中间Channel选择发生变化时的信号
+     */
+    MAINCENTER_CHANNEL_SELECT("MAINCENTER_CHANNEL_SELECT"),
+    /**
+     * 主页面中间Channel位置发生变化时的信号
+     */
+    MAINCENTER_CHANNEL_MOVE("MAINCENTER_CHANNEL_MOVE"),
+    /**
+     * 主页面中间Segmented位置发生变化时的信号
+     */
+    MAINCENTER_SEGMENTED_MOVE("MAINCENTER_SEGMENTED_MOVE"),
+    /**
+     * 主页面中间centerMenu位置发生变化时的信号
+     */
+    MAINCENTER_MENU_MOVE("MAINCENTER_MENU_MOVE"),
+    /**
+     * 主页面中间的channel条显现性变化，则需通知底部btn一起变化
+     */
+    MAINCENTER_CHANNEL_VISIBLE_LAYOUTTOBTN("MAINCENTER_CHANNEL_VISIBLE_LAYOUTTOBTN"),
+    /**
+     * 主页面右侧SerialsDetail点击信号
+     */
+    MAINRIGHT_SERIALSDETAIL("MAINRIGHT_SERIALSDETAIL"),
+    /**
+     * 主页面右侧TriggerLevel的值发生变化时的信号
+     */
+    MAIN_TRIGGERLEVEL_TRIGGERCHANNEL("MAIN_TRIGGERLEVEL_TRIGGERCHANNEL"),
+    /**
+     * 下侧滑高刷新的点击
+     */
+    BOTTOMLAYOUT_HIGHREFRESH("BOTTOMLAYOUT_HIGHREFRESH"),
+    /**
+     * 下侧滑所有通道显示点击
+     */
+    BOTTOMLAYOUT_ALLMEASURE("BOTTOMLAYOUT_ALLMEASURE"),
+    /**
+     * 右侧滑math页面里的所有按键的信号
+     */
+    RIGHTLAYOUT_MATH("RIGHTLAYOUT_MATH"),
+    /**
+     * 右侧滑ref页面里的所有按键的信号
+     */
+    RIGHTLAYOUT_REF("RIGHTLAYOUT_REF"),
+    /**
+     * 右侧滑channel页面里的所有按键的信号
+     */
+    RIGHTLAYOUT_CHANNEL("RIGHTLAYOUT_CHANNEL"),
+    RIGHTLAYOUT_CHANNEL_BANDWIDTH("RIGHTLAYOUT_CHANNEL_BANDWIDTH"),
+    /**
+     * 右侧滑serials页面里的所有按键的信号
+     */
+    RIGHTLAYOUT_SERIALS("RIGHTLAYOUT_SERIALS"),
+    /**
+     * 关闭serilse通道，一般由右滑发出
+     */
+    RIGHTLAYOUT_SERIALS_CLOSE("RIGHTLAYOUT_SERIALS_CLOSE"),
+    /**
+     * 右侧滑serials页面里的所有按键的信号的后续信号
+     */
+    RIGHTLAYOUT_SERIALS_FOLLOW("RIGHTLAYOUT_SERIALS_FOLLOW"),
+
+    /**
+     * 主菜单 一级标题
+     */
+    TOPSLIP_TITLE("TOPSLIP_TITLE"),
+    /**
+     * 与外部按键相关联的按钮的隐藏显示发生变化时，发送的消息
+     */
+    CONTROLS_VISIBLE_CHANGED("CONTROLS_VISIBLE_CHANGED"),
+
+    /**
+     * 上滑save，保存页面里的点击保存到r1/r2/r3/r4这4个按钮时，发送的消息
+     */
+    TOPSLIP_SAVE_REF("TOPSLIP_SAVE_REF"),
+    /**
+     * 上侧滑Measure页面里的所有按键的信号
+     */
+    TOPLAYOUT_MEASURE("TOPLAYOUT_MEASURE"),
+    TOPLAYOUT_MEASURE_SETTING("TOPLAYOUT_MEASURE_SETTING"),
+    TOPLAYOUT_MEASURE_STATICS("TOPLAYOUT_MEASURE_STATICS"),
+    /**
+     * 上侧滑Save页面里的所有按键的信号
+     */
+    TOPLAYOUT_SAVE("TOPLAYOUT_SAVE"),
+    TOPLAYOUT_INVOKE("TOPLAYOUT_INVOKE"),
+    TOPLAYOUT_CURSOR("TOPLAYOUT_CURSOR"),
+    /**
+     * sample页面里的所有按键的信号
+     */
+    TOPLAYOUT_SAMPLE("TOPLAYOUT_SAMPLE"),
+    /**
+     * sampleMode页面里的所有按键的信号
+     */
+    TOPLAYOUT_SAMPLEMODE("TOPLAYOUT_SAMPLEMODE"),
+    /**
+     * sampleDepth页面里的所有按键的信号
+     */
+    TOPLAYOUT_SAMPLEDEPTH("TOPLAYOUT_SAMPLEDEPTH"),
+    /**
+     * 分段存储, 上滑save，保存页面里的segment相关按键的显现性，发送的消息
+     */
+    TOPSLIP_SAVE_SEGMENT("TOPSLIP_SAVE_SEGMENT"),
+    /**
+     * 分段存储页面里的所有按键信号
+     */
+    TOPLAYOUT_SAMPLESEGMENTED("TOPLAYOUT_SAMPLESEGMENTED"),
+    /**
+     * 分段存储页面里的开启关闭的可点击性信号的接收
+     */
+    TOPLAYOUT_SAMPLESEGMENTED_STATE("TOPLAYOUT_SAMPLESEGMENTED_STATE"),
+    /**
+     * 分段存储导航条页面里的按键信号
+     */
+    MAINCENTER_SEGMENTED("MAINCENTER_SEGMENTED"),
+    /**
+     * 分段存储导航条页面的显现性
+     */
+    MAINCENTER_SEGMENTED_VISIBLE("MAINCENTER_SEGMENTED_VISIBLE"),
+    /**
+     * 分段存储导航条页面的下拉菜单按键的可点击性
+     */
+    MAINCENTER_SEGMENTED_BTNSEGMENT_ENABLE("MAINCENTER_SEGMENTED_DIALOG_SHOWING"),
+    /**
+     * 上侧滑display页面里的所有按键的信号
+     */
+    TOPLAYOUT_DISPLAY("TOPLAYOUT_DISPLAY"),
+    /**
+     * 上侧滑trigger页面里的所有按键的信号
+     */
+    TOPLAYOUT_TRIGGER("TOPLAYOUT_TRIGGER"),
+    /**
+     * 右侧滑level页面里的所有按键的信号
+     */
+    RIGHTLAYOUT_LEVEL("RIGHTLAYOUT_LEVEL"),
+    /**
+     * 上侧滑trigger页面里的channel选项之间互通
+     */
+    TOPTRIGGER_CHANNEL("TOPTRIGGER_CHANNEL"),
+    /**
+     * 上侧滑auto页面里的所有按键的信号
+     */
+    TOPLAYOUT_AUTO("TOPLAYOUT_AUTO"),
+    /**
+     * 上滑auto页面，auto Range按键状态改变
+     */
+    TOPLAYOUT_AUTO_CHANGED("TOPLAYOUT_AUTO_CHANGED"),
+    /**
+     * 上侧滑userset页面里的所有按键的信号
+     */
+    TOPLAYOUT_USERSET("TOPLAYOUT_USERSET"),
+    /**
+     * 页面上的点击对mcu发出的信息
+     */
+    EXTERNALKEY_TOMCU("EXTERNALKEY_TOMCU"),
+    /**
+     * mcu对页面发出的信息
+     */
+    MCUTOARM("MCUTOARM"),
+
+    /**
+     * 切换mainRight俩页面
+     */
+    SLIPRIGHTMENU("SLIPRIGHTMENU"),
+
+    /**
+     * 左划菜单RunStop按键的点击
+     */
+    MAINLEFT_MENU_RUNSTOP("MAINLEFT_MENU_RUNSTOP"),
+
+    /**
+     * 左划菜单Auto按键的点击
+     */
+    MAINLEFT_MENU_AUTO("MAINLEFT_MENU_AUTO"),
+
+    /**
+     * 发送消息到auto，使auto打开或关闭
+     */
+    MAINLEFT_TO_MENU_AUTO("MAINLEFT_TO_MENU_AUTO"),
+
+    /**
+     * 给MainLayoutCenterMenu界面发送指令
+     */
+    MainLeft_To_Menu_Command("MainLeft_To_Menu_Command"),
+    /**
+     * 初始化加载缓存
+     */
+    MAIN_LOAD_CACHE("MAIN_LOAD_CACHE"),
+    MAIN_LOAD_CACHE_EX("MAIN_LOAD_CACHE_EX"),
+    /**
+     * 上面中间右边和右边中间三个地方控件的消失控制，即滚屏、慢时基时的消失
+     */
+    MAIN_TOPRIGHT_GONE("MAIN_TOPRIGHT_GONE"),
+    /**
+     * 上面触发时刻文本框的消失控制
+     */
+    MAIN_TOPCENTER_TEXT_GONE("MAIN_TOPCENTER_TEXT_GONE"),
+
+    /**
+     * 主页面slip滑出后发送的消息
+     */
+    MAIN_SLIP_TO_OTHER("mainSlipToOther"),
+
+    /**
+     * 在不方便直接调用mainViewGroup的地方,为使主页面slip滑出而发送的消息
+     */
+    MAIN_SLIP_FROM_OTHER("mainSlipFromOther"),
+    /**
+     * 菜单是否允许滑出
+     */
+    MAIN_MENU_ENABLESLIP("mainMenuEnableSlip"),
+
+    /**
+     * 外部按键中，发送触发电平、阈值电平改变的消息
+     */
+    EXTERNALKEYS_LEVEL("EXTERNALKEYS_LEVEL"),
+
+
+    EXTERNALKEYS_EDGE("EXTERNALKEYS_EDGE"),
+
+    EXTERNALKEYS_MODE("EXTERNALKEYS_MODE"),
+
+    EXTERNALKEYS_FORCE("EXTERNALKEYS_FORCE"),
+
+    //region 对话框信号
+    /**
+     * 对话框的打开信号
+     */
+    DIALOG_OPEN("DIALOG_OPEN"),
+    /**
+     * 对话框的关闭 信号
+     */
+    DIALOG_CLOSE("DIALOG_CLOSE"),
+    /**
+     * 时间改变
+     */
+    DIALOG_SCALE_CHANGED("DIALOG_SCALE_CHANGED"),
+    /**
+     * 对话框 参考的改变
+     */
+    DIALOG_REFRECALL_CHANGED("DIALOG_REFRECALL_CHANGED"),
+    /**
+     * textKeyBoard预选框选中项的改变
+     */
+    DIALOG_CANDIDATE_CHANGED("DIALOG_CANDIDATE_CHANGED"),
+    //endregion
+
+    //region 波形区
+    /**
+     * 波形区滑动方向识别
+     */
+    WAVEZONE_SLIDEDIRECTION("WAVEZONE_SLIDEDIRECTION"),
+    /**
+     * 波形区滑动的最后一个操作对像
+     */
+    WAVEZONE_SLIDEDIRECTION_LASTOBJECT("WAVEZONE_SLIDEDIRECTION_LASTOBJECT"),
+    /**
+     * YTZoom页面的显示
+     */
+    WAVEZONE_DISPLAY_YTZOOM("WAVEZONE_DISPLAY_YTZOOM"),
+    /**
+     * 工作模式切换（yt模式、xy模式）
+     */
+    WAVEZONE_WORKMODE_CHANGE("WAVEZONE_WORKMODE_CHANGE"),
+    //endregion
+
+    /**
+     * command方法发送消息修改UI
+     */
+    COMMAND_TO_UI("COMMAND_TO_UI"),
+    /**
+     * command measure open 方法发送消息修改UI
+     */
+    COMMANDMEASUREOPEN_TO_UI("COMMANDMEASUREOPEN_TO_UI"),
+    /**
+     * command measure close 方法发送消息修改
+     */
+    COMMANDMEASURECLOSE_TO_UI("COMMANDMEASURECLOSE_TO_UI"),
+    /**
+     * UDisk 响应
+     */
+    UDISK_RESPONSE("UDISK_RESPONSE"),
+    /**
+     * 外部按键中，channel,math,ref,s1,s2开关改变的时候，发送到界面的消息
+     */
+    EXTERNALKEYS_CHANNEL("EXTERNALKEYS_CHANNEL"),
+
+    EXTERNALKEYS_VERNIER("EXTERNALKEYS_VERNIER"),
+
+    EXTERNALKEYS_HORIZONTAL_VERNIER("EXTERNALKEYS_HORIZONTAL_VERNIER"),
+
+    /**
+     * 外部按键中，选择timeBase的值时，发送到界面的消息
+     */
+    EXTERNALKEYS_TIMEBASE("EXTERNALKEYS_TIMEBASE"),
+    /**
+     * 外部按键中，点击打开关闭垂直水平光标时发送的消息
+     */
+    EXTERNALKEYS_CURSOR("EXTERNALKEYS_CURSOR"),
+    /**
+     * 外部按键中，调整当前通道的垂直档位
+     */
+    EXTERNALKEYS_VSCALE("EXTERNALKEYS_VSCALE"),
+    /**
+     * 外部按键中，调整文本模式下的下旋钮时发送的消息
+     */
+    EXTERNALKEYS_SERIALSWORD("EXTERNALKEYS_SERIALSWORD"),
+    /**
+     * 外部按键中，right serials can 页面中percent外部按键调整时发送的消息
+     */
+    EXTERNALKEYS_RIGHTCAN_PERCENT("EXTERNALKEYS_RIGHTCAN_PERCENT"),
+    EXTERNALKEYS_CHANNEL_LIST_CLICK("EXTERNALKEYS_CHANNEL_LIST_CLICK"),
+    /**
+     * 自校准开始时，发送的信号
+     */
+    TOP_USER_SELFADJUST("TOP_USER_SELFADJUST"),
+
+    /**
+     * 页面中间的Serials word页面显示的时候发送的信号
+     */
+    CENTER_SERIALSWORD_VISIBLE("CENTER_SERIALSWORD_VISIBLE"),
+
+    /**
+     * 滚屏、运行状态下，操作zoom的状态
+     */
+    ROLL_RUN_ZOOM("ROLL_RUN_ZOOM"),
+
+    /**
+     * 通道滑动时，发送到电平界面的消息
+     */
+    WAVE_TO_LEVEL("WAVE_TO_LEVEL"),
+
+    /**
+     * 发送消息，使app截屏，并附带截屏成功时，需要添加显示的文字
+     */
+    SCREENSHOT_MSG("SCREENSHOT_MSG"),
+
+    /**
+     * 表达式键盘上的按键显现性
+     */
+    KEYBOARD_FORMULA_ENABLE("KEYBOARD_FORMULA_ENABLE"),
+
+    /**
+     *  光标显示熄灭发送的消息
+     */
+    CURSOR_CHANGE_VISIBLE("CURSOR_CHANGE_VISIBLE"),
+
+    WIRELESS_KEYBOARD_STAT("WIRELESS_KEYBOARD_STAT"),
+
+
+    MQ_CHANNEL_ACTIVE_CHANGE("MQ_CHANNEL_ACTIVE_CHANGE"),
+
+    COMPLETE("COMPLETE"),
+
+    MQ_MSG_CHANNEL_CHX("MQ_MSG_CHANNEL_CHX"), //RightLayoutChannel里垂直精度调整
+    MQ_MSG_CHANNEL_MATHX("MQ_MSG_CHANNEL_MATHX"), //RightLayoutMath里垂直精度调整
+    MQ_MSG_CHANNEL_REFX("MQ_MSG_CHANNEL_REFX"), //RightLayoutRef里垂直精度调整
+    MQ_MSG_UPDATE_MASTER_LOCATION("MQ_MSG_UPDATE_MASTER_LOCATION"),//添加通道的时候将对应的master view移动到末尾
+    MQ_MSG_SHOW_NORMAL_STATE("MQ_MSG_SHOW_NORMAL_STATE"),//Math/Ref/Serials是否显示常规布局
+    MQ_MSG_SHOW_OTHER_CHANNEL("MQ_MSG_SHOW_OTHER_CHANNEL"),//显示其他通道
+    MQ_MSG_OTHER_CHANNEL_CAN_ADD_MATH("MQ_MSG_OTHER_CHANNEL_CAN_ADD_MATH"),//是否可以添加通道,不能的时候相关按钮置灰
+    MQ_MSG_OTHER_CHANNEL_CAN_ADD_REF("MQ_MSG_OTHER_CHANNEL_CAN_ADD_REF"),//是否可以添加通道,不能的时候相关按钮置灰
+    MQ_MSG_OTHER_CHANNEL_CAN_ADD_SERIALS("MQ_MSG_OTHER_CHANNEL_CAN_ADD_SERIALS"),//是否可以添加通道,不能的时候相关按钮置灰
+    MQ_MSG_SHOW_VERTICAL_SCALE("MQ_MSG_SHOW_VERTICAL_SCALE"), //显示垂直挡位调节按钮
+    MQ_MSG_FORCE_HIDE_VERTICAL_SCALE("MQ_MSG_FORCE_HIDE_VERTICAL_SCALE"),//强制关闭垂直挡位调节按钮
+    MQ_MSG_VERTICAL_SCALE_MOVE("MQ_MSG_VERTICAL_SCALE_MOVE"),//垂直挡位按钮移动位置
+    MQ_MSG_CHANNEL_VERTICAL_SCALE("MQ_MSG_CHANNEL_VERTICAL_SCALE"), //通道垂直挡位调节按钮的点击操作
+    MQ_MSG_UPDATE_REF_DATA_LIST("MQ_MSG_UPDATE_REF_DATA_LIST"),//参考设置页面打开之后，通知刷新参考数据列表
+    MQ_MSG_SHOW_BOTTOM_OTHER_CHANNEL_EDGE_IMG("MQ_MSG_SHOW_BOTTOM_OTHER_CHANNEL_EDGE_IMG"),//是否显示底部其他通道的两边的滚动图片按钮
+    MQ_MSG_RECOVERY_SELECT("MQ_MSG_RECOVERY_SELECT"),//存储设置 恢复时设置活动通道号
+    MQ_MSG_OPEN_ADD_CHANNEL_MENU("MQ_MSG_OPEN_ADD_CHANNEL_MENU"),//打开Math/Ref/Serials菜单 并定位到对应tab页面
+    MQ_MSG_DELETE_OTHER_CHANNEL("MQ_MSG_DELETE_OTHER_CHANNEL"),//删除Math、Ref、Serials通道
+    MQ_MSG_SYNC_EXTERNAL_TRIGGER_STATE("MQ_MSG_SYNC_EXTERNAL_TRIGGER_STATE"),//同步外部触发状态
+    MQ_MSG_SYNC_EXTERNAL_AUTOSAVE_STATE("MQ_MSG_SYNC_EXTERNAM_AUTOSAVE_STATE"),
+	MQ_MSG_UPDATE_SERIALS_DETAIL_VISIBLE("MQ_MSG_UPDATE_SERIALS_DETAIL_VISIBLE"),//更新文本页面焦点框
+    MQ_MSG_MEASURE_ITEM_COUNT("MQ_MSG_MEASURE_ITEM_COUNT"),//测量项的多少，涉及到波形区域大小的改变。
+    MQ_MSG_MEASURE_ROW_COUNT("MQ_MSG_MEASURE_ROW_COUNT"),//测量项显示的行数
+    MQ_MSG_UPDATE_SELECT_RECTANGLE("MQ_MSG_UPDATE_SELECT_RECTANGLE"),//通知Math/Ref/Bus设置页面select旋钮框位置更新
+ 	MQ_MSG_UPDATE_REF_STATE("MQ_MSG_UPDATE_REF_STATE"),//csv增加后更新Ref按钮状态
+    MQ_MSG_UPDATE_CSV_ITEM_POS("MQ_MSG_UPDATE_CSV_ITEM_POS"),//更新CSV item位置
+    MQ_MSG_UPDATE_MEASURE_ITEM_POS("MQ_MSG_UPDATE_MEASURE_ITEM_POS"),//发送消息使得测量项移动
+    MQ_MSG_DELETE_MEASURE_ITEM_POS("MQ_MSG_DELETE_MEASURE_ITEM_POS"),//发送消息使得测量项移除
+    MQ_MSG_SAVE_CAPTURE_SUCCESS("MQ_MSG_SAVE_CAPTURE_SUCCESS"),//图片保存成功之后发送的消息
+    MQ_MSG_SAVE_OR_INVOKE_SUFFIX_NUM_UPDATE("MQ_MSG_SAVE_OR_INVOKE_SUFFIX_NUM_UPDATE"),//保存菜单中 文件名后缀序号选中状态
+    MQ_MSG_CHANNEL_SELECT_COLOR("MQ_MSG_CHANNEL_SELECT_COLOR"),//通道颜色选择
+    MQ_MSG_UPDATE_TIMEBASE("MQ_MSG_UPDATE_TIMEBASE"),//更新触发时间值到设置页面中
+    MQ_MSG_USER_SET_TIMEBASE("MQ_MSG_USER_SET_TIMEBASE"),//用户设置 参考通道时基
+    MQ_MSG_MOUSE_CLICK_POSITION("MQ_MSG_MOUSE_CLICK_POSITION"),//鼠标点击位置
+    MSG_HIDE_FILESELECTOR("MSG_HIDE_FILESELECTOR"),
+    MSG_HIDE_KEYBOARD("MSG_HIDE_KEYBOARD"),
+    MSG_CHANNEL_SLIP_POSITION("MSG_CHANNEL_SLIP_POSITION"),
+
+    MSG_UPDATE_AUTO_SAVE_BUTTON_STATE("MSG_UPDATE_AUTO_SAVE_BUTTON_STATE"),
+
+    MSG_AUTO_SAVE_INVOKE_SCREENSHOT("MSG_AUTO_SAVE_INVOKE_SCREENSHOT"),
+    MSG_UPDATE_AUTO_SAVE_STOP_BUTTON_STATE("MSG_UPDATE_AUTO_SAVE_STOP_BUTTON_STATE"),
+
+    MSG_HIDE_INPUT_BACKGROUND("MSG_HIDE_INPUT_BACKGROUND"),
+    MSG_TVALUE_ENABLE("MSG_TVALUE_ENABLE");
+
+
+    private String value;
+
+    private RxEnum(String value) {
+        this.value= value;
+    }
+}

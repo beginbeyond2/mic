@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <RelativeLayout
+        android:id="@+id/serialsWordTitleLayout"
+        android:layout_width="match_parent"
+        android:layout_height="70px" >
+
+        <RadioGroup
+            android:id="@+id/serialsWordTitleGroup"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal">
+
+            <RadioButton
+                android:id="@+id/serialsWordTitleS1"
+                android:layout_width="0px"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@drawable/bg_radiobutton_serialswordtitle"
+                android:button="@null"
+                android:checked="true"
+                android:gravity="center"
+                android:text="@string/serialsWordTitleS1"
+                android:textColor="@color/textcolor_radiobutton_serialswordtitle" />
+
+            <RadioButton
+                android:id="@+id/serialsWordTitleS2"
+                android:layout_width="0px"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@drawable/bg_radiobutton_serialswordtitle"
+                android:button="@null"
+                android:gravity="center"
+                android:text="@string/serialsWordTitleS2"
+                android:textColor="@color/textcolor_radiobutton_serialswordtitle" />
+
+            <RadioButton
+                android:id="@+id/serialsWordTitleS3"
+                android:layout_width="0px"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@drawable/bg_radiobutton_serialswordtitle"
+                android:button="@null"
+                android:gravity="center"
+                android:text="@string/serialsWordTitleS3"
+                android:textColor="@color/textcolor_radiobutton_serialswordtitle" />
+
+            <RadioButton
+                android:id="@+id/serialsWordTitleS4"
+                android:layout_width="0px"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@drawable/bg_radiobutton_serialswordtitle"
+                android:button="@null"
+                android:gravity="center"
+                android:text="@string/serialsWordTitleS4"
+                android:textColor="@color/textcolor_radiobutton_serialswordtitle" />
+
+            <RadioButton
+                android:id="@+id/serialsWordTitleS12"
+                android:layout_width="0px"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@drawable/bg_radiobutton_serialswordtitle"
+                android:button="@null"
+                android:gravity="center"
+                android:text="@string/serialsWordTitleS12"
+                android:textColor="@color/textcolor_radiobutton_serialswordtitle" />
+        </RadioGroup>
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/serialsWordDetailLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/serialsWordTitleLayout">
+
+    </RelativeLayout>
+</RelativeLayout>

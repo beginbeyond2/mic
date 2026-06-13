@@ -1,0 +1,2438 @@
+package com.micsig.tbook.tbookscope.main.mainright;
+
+import android.annotation.SuppressLint;
+import android.content.Context;
+import android.os.Handler;
+import android.os.Message;
+import android.util.Log;
+import android.view.View;
+import android.widget.TextView;
+
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.Display.Display;
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.Event.EventUIObserver;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.channel.Channel;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.channel.MathChannel;
+import com.micsig.tbook.scope.math.MathWave;
+import com.micsig.tbook.tbookscope.GlobalVar;
+import com.micsig.tbook.tbookscope.MainMsgSlip;
+import com.micsig.tbook.tbookscope.MainViewGroup;
+import com.micsig.tbook.tbookscope.R;
+import com.micsig.tbook.tbookscope.main.ExternalKeysMsgChannel;
+import com.micsig.tbook.tbookscope.main.ExternalKeysMsgVScale;
+import com.micsig.tbook.tbookscope.main.maincenter.MainLayoutCenterChannel;
+import com.micsig.tbook.tbookscope.menu.MainMsgSliderZone;
+import com.micsig.tbook.tbookscope.middleware.MiddleMain;
+import com.micsig.tbook.tbookscope.middleware.mq.MQBase;
+import com.micsig.tbook.tbookscope.wavezone.wave.WaveManage;
+import com.micsig.tbook.ui.bean.RxBooleanWithSelect;
+import com.micsig.tbook.ui.wavezone.IChan;
+import com.micsig.tbook.tbookscope.middleware.Tag;
+import com.micsig.tbook.tbookscope.middleware.command.Command;
+import com.micsig.tbook.tbookscope.middleware.command.CommandMsgToUI;
+import com.micsig.tbook.tbookscope.middleware.mq.MQEnum;
+import com.micsig.tbook.tbookscope.middleware.mq.msg.MsgChActiveChange;
+import com.micsig.tbook.tbookscope.middleware.mq.msg.MsgChOpenClose;
+import com.micsig.tbook.tbookscope.rightslipmenu.RightLayoutChannel;
+import com.micsig.tbook.tbookscope.rightslipmenu.RightMsgChannel;
+import com.micsig.tbook.tbookscope.rxjava.RxBus;
+import com.micsig.tbook.tbookscope.rxjava.RxBusRegister;
+import com.micsig.tbook.tbookscope.rxjava.RxEnum;
+import com.micsig.tbook.tbookscope.struct.ExternalKeysMsg_ToMCU;
+import com.micsig.tbook.tbookscope.tools.PlaySound;
+import com.micsig.tbook.tbookscope.tools.Tools;
+import com.micsig.tbook.tbookscope.top.layout.sample.TopMsgSampleMode;
+import com.micsig.tbook.tbookscope.util.CacheUtil;
+import com.micsig.tbook.tbookscope.util.DToast;
+import com.micsig.tbook.tbookscope.wavezone.IWorkMode;
+import com.micsig.tbook.tbookscope.wavezone.WaveZoneDisplay_YT;
+import com.micsig.tbook.tbookscope.wavezone.WorkModeBean;
+import com.micsig.tbook.tbookscope.wavezone.WorkModeManage;
+import com.micsig.tbook.tbookscope.wavezone.display.CursorManage;
+import com.micsig.tbook.ui.main.LeftPositionView;
+import com.micsig.tbook.ui.util.StrUtil;
+import com.micsig.tbook.ui.util.TBookUtil;
+import com.micsig.tbook.ui.wavezone.TChan;
+
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import io.reactivex.rxjava3.annotations.NonNull;
+import io.reactivex.rxjava3.functions.Consumer;
+
+
+/**
+ * Created by yangj on 2017/5/12.
+ */
+
+public class MainHolderRightChannels extends RecyclerView.ViewHolder {
+    private static final String TAG = "MainHolderRightChannels";
+
+    private Context context;
+    private MainRightLayoutItemChannelMaster ch1Master, ch2Master, ch3Master, ch4Master, ch5Master, ch6Master, ch7Master, ch8Master;
+    private ArrayList<MainRightLayoutItemChannelMaster> chxMasters = new ArrayList<>();
+    private LeftPositionView leftPositionView;
+    private TextView briefDisplayCh1, briefDisplayCh2, briefDisplayCh3, briefDisplayCh4, briefDisplayCh5, briefDisplayCh6, briefDisplayCh7, briefDisplayCh8;
+    private ArrayList<TextView> briefDisplayChx = new ArrayList<>();
+    //    private TextView sample;
+    private MainLayoutCenterChannel channelLayout;
+
+    private MainRightMsgChannels msgChannels;
+    private String preCh1Scale, preCh2Scale, preCh3Scale, preCh4Scale, preCh5Scale, preCh6Scale, preCh7Scale, preCh8Scale;
+
+    private final List<String> preChxScales = Arrays.asList(
+            preCh1Scale, preCh2Scale, preCh3Scale, preCh4Scale,
+            preCh5Scale, preCh6Scale, preCh7Scale, preCh8Scale
+    );
+
+    private final List<Integer> menuSlips = Arrays.asList(
+            MainMsgSliderZone.MENUSLIP_CH1, MainMsgSliderZone.MENUSLIP_CH2,
+            MainMsgSliderZone.MENUSLIP_CH3, MainMsgSliderZone.MENUSLIP_CH4,
+            MainMsgSliderZone.MENUSLIP_CH5, MainMsgSliderZone.MENUSLIP_CH6,
+            MainMsgSliderZone.MENUSLIP_CH7, MainMsgSliderZone.MENUSLIP_CH8
+    );
+
+    private final int channelCount = GlobalVar.get().getChannelsCount();
+
+    public MainHolderRightChannels(View itemView) {
+        super(itemView);
+        this.context = itemView.getContext();
+        initView(itemView);
+        initControl();
+    }
+
+    private void initControl() {
+        RxBus.getInstance().getObservable(RxEnum.EXTERNALKEYS_CHANNEL).subscribe(consumerExternalkeysChannel);
+        RxBus.getInstance().getObservable(RxEnum.RIGHTLAYOUT_CHANNEL).subscribe(consumerRightChannel);
+        RxBus.getInstance().getObservable(RxEnum.MQ_MSG_CHANNEL_CHX).subscribe(consumerRightChannelMsg);//RightLayoutChannel 按钮点击事件
+        RxBus.getInstance().getObservable(RxEnum.TOPLAYOUT_SAMPLEMODE).subscribe(consumerTopSampleMode);
+        RxBus.getInstance().getObservable(RxEnum.MAIN_LOAD_CACHE).subscribe(consumerLoadCache);
+        RxBus.getInstance().getObservable(RxEnum.MAIN_LOAD_CACHE_EX).subscribe(consumerLoadCacheEx);
+        RxBus.getInstance().getObservable(RxEnum.COMMAND_TO_UI).subscribe(consumerCommandToUI);
+        RxBus.getInstance().getObservable(RxEnum.WAVEZONE_WORKMODE_CHANGE).subscribe(consumerWorkModeChange);
+        RxBus.getInstance().getObservable(RxEnum.EXTERNALKEYS_VSCALE).subscribe(consumerExternalkeysVScale);
+        RxBus.getInstance().getObservable(RxEnum.CENTER_SERIALSWORD_VISIBLE).subscribe(consumerSerialswordVisible);
+        RxBus.getInstance().getObservable(RxEnum.MAINRIGHT_CHANNELS).subscribe(consumerMainRightChannels);
+        RxBus.getInstance().getObservable(RxEnum.MAIN_SLIP_TO_OTHER).subscribe(consumerMainSlipToOther);
+        RxBus.getInstance().getObservable(RxEnum.MQ_MSG_RECOVERY_SELECT).subscribe(consumerRecoverySelect);
+//        EventFactory.addEventObserver(EventFactory.EVENT_CHANNEL_OPEN, eventUIObserver);
+//        EventFactory.addEventObserver(EventFactory.EVENT_CHANNEL_CLOSE, eventUIObserver);
+//        EventFactory.addEventObserver(EventFactory.EVENT_CHANNEL_ACTIVE, eventUIObserver);
+        EventFactory.addEventObserver(EventFactory.EVENT_CHANNEL_VSCALE, eventUIObserver);
+        EventFactory.addEventObserver(EventFactory.EVENT_CHANNEL_VSCALE_USER,eventUIObserver);
+        EventFactory.addEventObserver(EventFactory.EVENT_DISPLAY_MODE,eventObserver);
+
+        RxBus.getInstance().dealObservable(RxEnum.MQ_CHANNEL_ACTIVE_CHANGE,this::OnChanActiveChange);
+    }
+
+
+    String txtFull, txt200M, txt20M, txtHigh, txtLow;
+
+    private void initView(View itemView) {
+        txtFull = context.getResources().getString(R.string.chBandWidthFull);
+        txt200M = context.getResources().getString(R.string.chBandWidth200M);
+        txt20M = context.getResources().getString(R.string.chBandWidth20M);
+        txtHigh = context.getResources().getString(R.string.chBandWidthHigh);
+        txtLow = context.getResources().getString(R.string.chBandWidthLow);
+
+        if (channelCount == GlobalVar.CHANNEL_COUNT_2) {
+            ch1Master = (MainRightLayoutItemChannelMaster) itemView.findViewById(R.id.rightCh1MasterDouble);
+            ch2Master = (MainRightLayoutItemChannelMaster) itemView.findViewById(R.id.rightCh2MasterDouble);
+        } else if (channelCount == GlobalVar.CHANNEL_COUNT_4) {
+            ch1Master = (MainRightLayoutItemChannelMaster) itemView.findViewById(R.id.rightCh1Master);
+            ch2Master = (MainRightLayoutItemChannelMaster) itemView.findViewById(R.id.rightCh2Master);
+            ch3Master = (MainRightLayoutItemChannelMaster) itemView.findViewById(R.id.rightCh3Master);
+            ch4Master = (MainRightLayoutItemChannelMaster) itemView.findViewById(R.id.rightCh4Master);
+        } else if (channelCount == GlobalVar.CHANNEL_COUNT_8) {
+            ch1Master = (MainRightLayoutItemChannelMaster) itemView.findViewById(R.id.rightCh1MasterEight);
+            ch2Master = (MainRightLayoutItemChannelMaster) itemView.findViewById(R.id.rightCh2MasterEight);
+            ch3Master = (MainRightLayoutItemChannelMaster) itemView.findViewById(R.id.rightCh3MasterEight);
+            ch4Master = (MainRightLayoutItemChannelMaster) itemView.findViewById(R.id.rightCh4MasterEight);
+            ch5Master = (MainRightLayoutItemChannelMaster) itemView.findViewById(R.id.rightCh5MasterEight);
+            ch6Master = (MainRightLayoutItemChannelMaster) itemView.findViewById(R.id.rightCh6MasterEight);
+            ch7Master = (MainRightLayoutItemChannelMaster) itemView.findViewById(R.id.rightCh7MasterEight);
+            ch8Master = (MainRightLayoutItemChannelMaster) itemView.findViewById(R.id.rightCh8MasterEight);
+        }
+        chxMasters.add(ch1Master);
+        chxMasters.add(ch2Master);
+        chxMasters.add(ch3Master);
+        chxMasters.add(ch4Master);
+        chxMasters.add(ch5Master);
+        chxMasters.add(ch6Master);
+        chxMasters.add(ch7Master);
+        chxMasters.add(ch8Master);
+
+        leftPositionView = (LeftPositionView) itemView.findViewById(R.id.leftPositionView);
+
+        setRightListener();
+
+        if (channelCount == GlobalVar.CHANNEL_COUNT_2) {
+            briefDisplayCh1 = (TextView) itemView.findViewById(R.id.briefDisplayTextDoubleCh1);
+            briefDisplayCh2 = (TextView) itemView.findViewById(R.id.briefDisplayTextDoubleCh2);
+        } else if (channelCount == GlobalVar.CHANNEL_COUNT_4) {
+            briefDisplayCh1 = (TextView) itemView.findViewById(R.id.briefDisplayTextFourCh1);
+            briefDisplayCh2 = (TextView) itemView.findViewById(R.id.briefDisplayTextFourCh2);
+            briefDisplayCh3 = (TextView) itemView.findViewById(R.id.briefDisplayTextFourCh3);
+            briefDisplayCh4 = (TextView) itemView.findViewById(R.id.briefDisplayTextFourCh4);
+        } else {
+            briefDisplayCh1 = (TextView) itemView.findViewById(R.id.briefDisplayTextEightCh1);
+            briefDisplayCh2 = (TextView) itemView.findViewById(R.id.briefDisplayTextEightCh2);
+            briefDisplayCh3 = (TextView) itemView.findViewById(R.id.briefDisplayTextEightCh3);
+            briefDisplayCh4 = (TextView) itemView.findViewById(R.id.briefDisplayTextEightCh4);
+            briefDisplayCh5 = (TextView) itemView.findViewById(R.id.briefDisplayTextEightCh5);
+            briefDisplayCh6 = (TextView) itemView.findViewById(R.id.briefDisplayTextEightCh6);
+            briefDisplayCh7 = (TextView) itemView.findViewById(R.id.briefDisplayTextEightCh7);
+            briefDisplayCh8 = (TextView) itemView.findViewById(R.id.briefDisplayTextEightCh8);
+        }
+        briefDisplayChx.add(briefDisplayCh1);
+        briefDisplayChx.add(briefDisplayCh2);
+        briefDisplayChx.add(briefDisplayCh3);
+        briefDisplayChx.add(briefDisplayCh4);
+        briefDisplayChx.add(briefDisplayCh5);
+        briefDisplayChx.add(briefDisplayCh6);
+        briefDisplayChx.add(briefDisplayCh7);
+        briefDisplayChx.add(briefDisplayCh8);
+
+        channelLayout = (MainLayoutCenterChannel) itemView.findViewById(R.id.mainLayoutCenterChannels);
+        initData();
+    }
+
+    private void setRightListener() {
+        for (int i = 0; i < channelCount; i++) {
+            chxMasters.get(i).setOnRightMasterListener(onRightMasterListener);
+            chxMasters.get(i).setOnRightSmallListener(onRightSmallListener);
+        }
+    }
+
+    private void initData() {
+        msgChannels = new MainRightMsgChannels();
+        msgChannels.setCh1(false);
+        msgChannels.setCh2(false);
+        msgChannels.setCh3(false);
+        msgChannels.setCh4(false);
+        msgChannels.setCh5(false);
+        msgChannels.setCh6(false);
+        msgChannels.setCh7(false);
+        msgChannels.setCh8(false);
+    }
+
+    private void setCache() {
+        List<Boolean> chxB = Arrays.asList(false, false, false, false, false, false, false, false);
+        for (int i = 0; i < channelCount; i++) {
+            chxB.set(i, CacheUtil.get().getBoolean(CacheUtil.MAIN_CHANNEL_OPEN_STATE + TChan.toUiChNo(i)));
+        }
+        TChan.foreachChan(chan ->
+                chxB.set(TChan.toFpgaChNo(chan), CacheUtil.get().getBoolean(CacheUtil.MAIN_CHANNEL_OPEN_STATE + chan))
+        );
+
+
+        boolean xy = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_DISPLAY_COMMON_TIMEBASE) == 1;
+        for (int i = 0; i < GlobalVar.CHANNEL_COUNT_8; i++) {// 0/1 true , 2/3/4/5/6/7/8 !xy
+            RxBus.getInstance().post(RxEnum.MAIN_MENU_ENABLESLIP, new MainMsgSliderZone(menuSlips.get(i), i <= GlobalVar.CHANNEL_COUNT_2 || !xy));
+        }
+
+        int channelsSelect = CacheUtil.get().getInt(CacheUtil.MAIN_CENTER_CHANNELS_SELECT);
+
+        for (int i = 0; i < channelCount; i++) {
+            chxMasters.get(i).setChecked(chxB.get(i));
+            Command.get().getChannel().Display(i, chxB.get(i), false);
+        }
+
+        msgChannels.setCh1(chxB.get(0));
+        msgChannels.setCh2(chxB.get(1));
+        msgChannels.setCh3(chxB.get(2));
+        msgChannels.setCh4(chxB.get(3));
+        msgChannels.setCh5(chxB.get(4));
+        msgChannels.setCh6(chxB.get(5));
+        msgChannels.setCh7(chxB.get(6));
+        msgChannels.setCh8(chxB.get(7));
+
+        for (int i = 0; i < GlobalVar.CHANNEL_COUNT_8; i++) {
+            RxBus.getInstance().post(RxEnum.EXTERNALKEY_TOMCU,
+                    new ExternalKeysMsg_ToMCU(ExternalKeysMsg_ToMCU.TYPE_CH + TChan.toUiChNo(i),
+                            chxB.get(i) ? ExternalKeysMsg_ToMCU.STATE_LED_ON : ExternalKeysMsg_ToMCU.STATE_LED_OFF));
+            ChannelFactory.chEnable(i, chxB.get(i));
+        }
+
+        for (int i = 0; i < channelCount; i++) {
+            Channel chan= ChannelFactory.getDynamicChannel(i);
+            if (chan==null) continue;
+            chan.setVScaleId(CacheUtil.get().getInt(CacheUtil.MAIN_CHAN_V_SCALE_ID + TChan.toUiChNo(i)));
+            double chxVal = chan.getVScaleVal();
+            Command.get().getChannel().Extent(i, chxVal, false);
+            chxMasters.get(i).setProbeTypeNum(TBookUtil.getMFromDouble(chxVal));
+            preChxScales.set(i, chxMasters.get(i).getProbeType());
+
+        }
+        refreshValue();
+        ChannelFactory.chActivate(channelsSelect);
+
+        setEnableSlip();
+    }
+
+    private void refreshValue(){
+        String fineExtent1 = CacheUtil.get().getString(CacheUtil.RIGHT_SLIP_CH_FINE_EXTENT + TChan.Ch1);
+        String fineExtent2 = CacheUtil.get().getString(CacheUtil.RIGHT_SLIP_CH_FINE_EXTENT + TChan.Ch2);
+        String fineExtent3 = CacheUtil.get().getString(CacheUtil.RIGHT_SLIP_CH_FINE_EXTENT + TChan.Ch3);
+        String fineExtent4 = CacheUtil.get().getString(CacheUtil.RIGHT_SLIP_CH_FINE_EXTENT + TChan.Ch4);
+        String fineExtent5 = CacheUtil.get().getString(CacheUtil.RIGHT_SLIP_CH_FINE_EXTENT + TChan.Ch5);
+        String fineExtent6 = CacheUtil.get().getString(CacheUtil.RIGHT_SLIP_CH_FINE_EXTENT + TChan.Ch6);
+        String fineExtent7 = CacheUtil.get().getString(CacheUtil.RIGHT_SLIP_CH_FINE_EXTENT + TChan.Ch7);
+        String fineExtent8 = CacheUtil.get().getString(CacheUtil.RIGHT_SLIP_CH_FINE_EXTENT + TChan.Ch8);
+        String[] fineExtents = {fineExtent1, fineExtent2, fineExtent3, fineExtent4, fineExtent5, fineExtent6, fineExtent7, fineExtent8};
+
+        for (int i = 0; i < channelCount; i++) {
+            chxMasters.get(i).setProbeTypeNum(fineExtents[i]);
+            int probeTypeX = Tools.getChanProbeTypeUnit(ChannelFactory.getDynamicChannel(i));
+            chxMasters.get(i).setProbeTypeUnit(probeTypeX == 0 ? "V" : "A");
+        }
+    }
+    private void refreshProbe(int chIdx){
+        Channel chan= ChannelFactory.getDynamicChannel(chIdx);
+        if(chan == null) return;
+        MainRightLayoutItemChannelMaster layoutMaster = chxMasters.get(chIdx);
+        if (layoutMaster == null) return;
+        int probeType= RightLayoutChannel.getProbeType(chIdx);
+        switch (probeType){
+            case RightLayoutChannel.ProbeType_NONE:{
+                String s = TBookUtil.getXFromDouble(chan.getProbeRate());
+                layoutMaster.setProbeMultiple(s);
+            }break;
+            case RightLayoutChannel.ProbeType_MSP:{
+                layoutMaster.setProbeMultiple("10X");
+            }break;
+            case RightLayoutChannel.ProbeType_MRCP:
+            case RightLayoutChannel.probeType_MDP:{
+                String s= TBookUtil.getXFromDouble(chan.getProbe().getProbeRate());
+                layoutMaster.setProbeMultiple(s);
+            }break;
+
+        }
+
+    }
+
+    private void setEnableSlip() {
+        boolean isFour = channelCount == GlobalVar.CHANNEL_COUNT_4;
+        boolean isEight = channelCount == GlobalVar.CHANNEL_COUNT_8;
+        boolean isXy = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_DISPLAY_COMMON_TIMEBASE) == 1;
+        boolean isSerialTxt = CacheUtil.get().getBoolean(CacheUtil.MAIN_BOTTOM_SLIP_SERIALBUSTXT);
+        boolean ch1Enable = /*!isXy &&*/ !isSerialTxt /*&& isCh1*/;
+        boolean ch2Enable = /*!isXy &&*/ !isSerialTxt /*&& isCh2*/;
+        boolean ch3Enable = (isFour || isEight) && !isXy && !isSerialTxt/* && isCh3*/;
+        boolean ch4Enable = (isFour || isEight) && !isXy && !isSerialTxt /*&& isCh4*/;
+        boolean ch5Enable = isEight && !isXy && !isSerialTxt /*&& isCh5*/;
+        boolean ch6Enable = isEight && !isXy && !isSerialTxt /*&& isCh6*/;
+        boolean ch7Enable = isEight && !isXy && !isSerialTxt /*&& isCh7*/;
+        boolean ch8Enable = isEight && !isXy && !isSerialTxt /*&& isCh8*/;
+        MainViewGroup viewGroup = (MainViewGroup) itemView;
+        if (viewGroup.isSlipEnable(MainViewGroup.RIGHTSLIP_CH1) != ch1Enable) {
+            RxBus.getInstance().post(RxEnum.MAIN_MENU_ENABLESLIP, new MainMsgSliderZone(MainMsgSliderZone.MENUSLIP_CH1, ch1Enable));
+        }
+        if (viewGroup.isSlipEnable(MainViewGroup.RIGHTSLIP_CH2) != ch2Enable) {
+            RxBus.getInstance().post(RxEnum.MAIN_MENU_ENABLESLIP, new MainMsgSliderZone(MainMsgSliderZone.MENUSLIP_CH2, ch2Enable));
+        }
+        if (viewGroup.isSlipEnable(MainViewGroup.RIGHTSLIP_CH3) != ch3Enable) {
+            RxBus.getInstance().post(RxEnum.MAIN_MENU_ENABLESLIP, new MainMsgSliderZone(MainMsgSliderZone.MENUSLIP_CH3, ch3Enable));
+        }
+        if (viewGroup.isSlipEnable(MainViewGroup.RIGHTSLIP_CH4) != ch4Enable) {
+            RxBus.getInstance().post(RxEnum.MAIN_MENU_ENABLESLIP, new MainMsgSliderZone(MainMsgSliderZone.MENUSLIP_CH4, ch4Enable));
+        }
+        if (viewGroup.isSlipEnable(MainViewGroup.RIGHTSLIP_CH5) != ch5Enable) {
+            RxBus.getInstance().post(RxEnum.MAIN_MENU_ENABLESLIP, new MainMsgSliderZone(MainMsgSliderZone.MENUSLIP_CH5, ch5Enable));
+        }
+        if (viewGroup.isSlipEnable(MainViewGroup.RIGHTSLIP_CH6) != ch6Enable) {
+            RxBus.getInstance().post(RxEnum.MAIN_MENU_ENABLESLIP, new MainMsgSliderZone(MainMsgSliderZone.MENUSLIP_CH6, ch6Enable));
+        }
+        if (viewGroup.isSlipEnable(MainViewGroup.RIGHTSLIP_CH7) != ch7Enable) {
+            RxBus.getInstance().post(RxEnum.MAIN_MENU_ENABLESLIP, new MainMsgSliderZone(MainMsgSliderZone.MENUSLIP_CH7, ch7Enable));
+        }
+        if (viewGroup.isSlipEnable(MainViewGroup.RIGHTSLIP_CH8) != ch8Enable) {
+            RxBus.getInstance().post(RxEnum.MAIN_MENU_ENABLESLIP, new MainMsgSliderZone(MainMsgSliderZone.MENUSLIP_CH8, ch8Enable));
+        }
+    }
+
+    private void sendMsg(boolean isFromEventBus) {
+        msgChannels.setFromEventBus(isFromEventBus);
+        RxBus.getInstance().post(RxEnum.MAINRIGHT_CHANNELS, msgChannels);
+    }
+
+    /**
+     * 切换按键的三种状态：关闭状态、仅打开按钮状态、打开按钮与slip页面状态
+     */
+    private boolean changeChecked3State(boolean checked, @MainViewGroup.Slip int slip) {
+        MainViewGroup viewGroup = (MainViewGroup) itemView;
+        if (!checked && !viewGroup.isSlipShow(slip)) {
+            checked = true;
+            viewGroup.hideAllDialogSlip();
+            Logger.i(TAG, "open noMenu!");
+        } else if (checked && viewGroup.isSlipShow(slip)) {
+            checked = false;
+            viewGroup.hideSlip(slip);
+            Logger.i(TAG, "close!");
+        } else {
+            checked = true;
+            viewGroup.openSlip(slip);
+            Logger.i(TAG, "open Menu!");
+        }
+        return checked;
+    }
+
+    private Consumer consumerLoadCache = new Consumer() {
+        @Override
+        public void accept(@NonNull Object o) throws Exception {
+            setCache();
+            CacheUtil.get().setLoadMenuState(CacheUtil.LOAD_MainHolderRightChannels, true);
+        }
+    };
+    private Consumer consumerLoadCacheEx = new Consumer() {
+        @Override
+        public void accept(Object o) throws Exception {
+            for (int i = 0; i < channelCount; i++) {
+                Channel chan=ChannelFactory.getDynamicChannel(i);
+                if (chan==null) continue;
+                chxMasters.get(i).setProbeTypeUnit(Tools.getChanProbeTypeUnit(chan) == 0 ? "V" : "A");
+                setChScale(chxMasters.get(i), ChannelFactory.CH1 + i, chan.getVScaleVal(), false, true);
+            }
+        }
+    };
+
+
+
+
+
+    private Consumer<ExternalKeysMsgChannel> consumerExternalkeysChannel = new Consumer<ExternalKeysMsgChannel>() {
+        @Override
+        public void accept(ExternalKeysMsgChannel msgChannel) throws Exception {
+            PlaySound.getInstance().playButton();
+            if (channelCount == GlobalVar.CHANNEL_COUNT_2) {
+                if (msgChannel.getChIndex() == ExternalKeysMsgChannel.CH3
+                        || msgChannel.getChIndex() == ExternalKeysMsgChannel.CH4
+                        || msgChannel.getChIndex() == ExternalKeysMsgChannel.CH5
+                        || msgChannel.getChIndex() == ExternalKeysMsgChannel.CH6
+                        || msgChannel.getChIndex() == ExternalKeysMsgChannel.CH7
+                        || msgChannel.getChIndex() == ExternalKeysMsgChannel.CH8) {
+                    return;
+                }
+            } else if (channelCount == GlobalVar.CHANNEL_COUNT_4) {
+                if (msgChannel.getChIndex() == ExternalKeysMsgChannel.CH5
+                        || msgChannel.getChIndex() == ExternalKeysMsgChannel.CH6
+                        || msgChannel.getChIndex() == ExternalKeysMsgChannel.CH7
+                        || msgChannel.getChIndex() == ExternalKeysMsgChannel.CH8) {
+                    return;
+                }
+            }
+            int channelSelect = CacheUtil.get().getInt(CacheUtil.MAIN_CENTER_CHANNELS_SELECT) + 1;
+            MainViewGroup mainViewGroup = (MainViewGroup) MainHolderRightChannels.this.itemView;
+
+            List<Integer> rightSlipChx = Arrays.asList(
+                    MainViewGroup.RIGHTSLIP_CH1, MainViewGroup.RIGHTSLIP_CH2,
+                    MainViewGroup.RIGHTSLIP_CH3, MainViewGroup.RIGHTSLIP_CH4,
+                    MainViewGroup.RIGHTSLIP_CH5, MainViewGroup.RIGHTSLIP_CH6,
+                    MainViewGroup.RIGHTSLIP_CH7, MainViewGroup.RIGHTSLIP_CH8
+            );
+            List<Integer> centerChannelChx = Arrays.asList(
+                    TChan.Ch1, TChan.Ch2,
+                    TChan.Ch3, TChan.Ch4,
+                    TChan.Ch5, TChan.Ch6,
+                    TChan.Ch7, TChan.Ch8
+            );
+            MainRightLayoutItemChannelMaster channelMaster = null;
+            switch (msgChannel.getChIndex()) {
+                case ExternalKeysMsgChannel.CH1:
+                    channelMaster = ch1Master;
+                    break;
+                case ExternalKeysMsgChannel.CH2:
+                    channelMaster = ch2Master;
+                    break;
+                case ExternalKeysMsgChannel.CH3:
+                    channelMaster = ch3Master;
+                    break;
+                case ExternalKeysMsgChannel.CH4:
+                    channelMaster = ch4Master;
+                    break;
+                case ExternalKeysMsgChannel.CH5:
+                    channelMaster = ch5Master;
+                    break;
+                case ExternalKeysMsgChannel.CH6:
+                    channelMaster = ch6Master;
+                    break;
+                case ExternalKeysMsgChannel.CH7:
+                    channelMaster = ch7Master;
+                    break;
+                case ExternalKeysMsgChannel.CH8:
+                    channelMaster = ch8Master;
+                    break;
+            }
+            if(channelMaster == null) return;
+            if (Scope.getInstance().isInXYMode()) {
+                mainViewGroup.hideAllDialogSlip();
+                if (!mainViewGroup.isSlipShow(rightSlipChx.get(msgChannel.getChIndex() - 1))) {
+                    mainViewGroup.isSlipShow(rightSlipChx.get(msgChannel.getChIndex() - 1));
+                }
+            } else {
+                if (channelSelect != centerChannelChx.get(msgChannel.getChIndex()-1) && channelMaster.isChecked()) {
+
+                } else {
+                    channelMaster.setChecked(!channelMaster.isChecked());
+                    setChScope(TChan.toFpgaChNo(msgChannel.getChIndex()), channelMaster.isChecked(), false);
+                }
+            }
+            Log.d(TAG, "accept msg idx: "+msgChannel.getChIndex()+",check:"+channelSelect+",isCheck:"+channelMaster.isChecked());
+            msgChannels.setCh(channelMaster.getChIndex(), channelMaster.isChecked());
+            sendMsg(false);
+        }
+    };
+
+    private Consumer<RightMsgChannel> consumerRightChannel = new Consumer<RightMsgChannel>() {
+        @Override
+        public void accept(RightMsgChannel rightMsgChannel) throws Exception {//右侧滑动窗口发过来的信息
+            //Log.d(Tag.Debug, String.format("MainHolderRightChannels.accept: %s",rightMsgChannel ));
+            setItemChannel(rightMsgChannel);
+            switch (rightMsgChannel.getChannelNumber()) {
+                case TChan.Ch1:
+                    if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) {
+                        rightMsgChannel.getChCheck().setValue(true);
+                    }
+                    ch1Master.setChecked(rightMsgChannel.getChCheck().isValue());
+                    setChScope(ChannelFactory.CH1, ch1Master.isChecked(), rightMsgChannel.isFromEventBus());
+                    msgChannels.setCh1(rightMsgChannel.getChCheck().isValue());
+                    break;
+                case TChan.Ch2:
+                    if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) {
+                        rightMsgChannel.getChCheck().setValue(true);
+                    }
+                    ch2Master.setChecked(rightMsgChannel.getChCheck().isValue());
+                    setChScope(ChannelFactory.CH2, ch2Master.isChecked(), rightMsgChannel.isFromEventBus());
+                    msgChannels.setCh2(rightMsgChannel.getChCheck().isValue());
+                    break;
+                case TChan.Ch3:
+                    ch3Master.setChecked(rightMsgChannel.getChCheck().isValue());
+                    setChScope(ChannelFactory.CH3, ch3Master.isChecked(), rightMsgChannel.isFromEventBus());
+                    msgChannels.setCh3(rightMsgChannel.getChCheck().isValue());
+                    break;
+                case TChan.Ch4:
+                    ch4Master.setChecked(rightMsgChannel.getChCheck().isValue());
+                    setChScope(ChannelFactory.CH4, ch4Master.isChecked(), rightMsgChannel.isFromEventBus());
+                    msgChannels.setCh4(rightMsgChannel.getChCheck().isValue());
+                    break;
+                case TChan.Ch5:
+                    ch5Master.setChecked(rightMsgChannel.getChCheck().isValue());
+                    setChScope(ChannelFactory.CH5, ch5Master.isChecked(), rightMsgChannel.isFromEventBus());
+                    msgChannels.setCh5(rightMsgChannel.getChCheck().isValue());
+                    break;
+                case TChan.Ch6:
+                    ch6Master.setChecked(rightMsgChannel.getChCheck().isValue());
+                    setChScope(ChannelFactory.CH6, ch6Master.isChecked(), rightMsgChannel.isFromEventBus());
+                    msgChannels.setCh6(rightMsgChannel.getChCheck().isValue());
+                    break;
+                case TChan.Ch7:
+                    ch7Master.setChecked(rightMsgChannel.getChCheck().isValue());
+                    setChScope(ChannelFactory.CH7, ch7Master.isChecked(), rightMsgChannel.isFromEventBus());
+                    msgChannels.setCh7(rightMsgChannel.getChCheck().isValue());
+                    break;
+                case TChan.Ch8:
+                    ch8Master.setChecked(rightMsgChannel.getChCheck().isValue());
+                    setChScope(ChannelFactory.CH8, ch8Master.isChecked(), rightMsgChannel.isFromEventBus());
+                    msgChannels.setCh8(rightMsgChannel.getChCheck().isValue());
+                    break;
+
+            }
+            if(!rightMsgChannel.isFromEventBus()) {
+                ChannelFactory.chActivate(rightMsgChannel.getChannelNumber() - 1);
+            }
+            refreshValue();
+            sendMsg(rightMsgChannel.isFromEventBus());
+        }
+    };
+
+    private Consumer<RightMsgChannel> consumerRightChannelMsg = new Consumer<RightMsgChannel>() {
+        @Override
+        public void accept(RightMsgChannel rightMsgChannel) throws Exception {//右侧滑动窗口发过来的信息
+            PlaySound.getInstance().playButton();
+            MainRightLayoutItemChannelMaster selected = chxMasters.get(rightMsgChannel.getChannelNumber() - 1);
+            if (selected == null) return;
+            Log.d("setChScale", "调整·····A0··setChScale: ");
+            if (rightMsgChannel.isUpClick()) {
+                subExtent(selected, TChan.toFpgaChNo(rightMsgChannel.getChannelNumber()), 1);
+            } else {
+                addExtent(selected, TChan.toFpgaChNo(rightMsgChannel.getChannelNumber()), 1);
+            }
+        }
+    };
+
+    private Consumer<TopMsgSampleMode> consumerTopSampleMode = new Consumer<TopMsgSampleMode>() {
+        @Override
+        public void accept(TopMsgSampleMode topMsgSampleMode) throws Exception {
+            switch (topMsgSampleMode.getSample().getIndex()) {
+                case 0:
+                case 3:
+//                    sample.setText(topMsgSample.getSample().getText());
+                    break;
+                case 1:
+                case 2:
+                    if (!StrUtil.isEmpty(topMsgSampleMode.getSample().getSimpleText())) {
+//                        sample.setText(topMsgSample.getDetail() + topMsgSample.getSample().getSimpleText());
+                    } else {
+//                        sample.setText(topMsgSample.getDetail() + topMsgSample.getSample().getText());
+                    }
+                    break;
+            }
+        }
+    };
+
+    private void setItemChannel(RightMsgChannel rightMsgChannel) {
+        MainRightLayoutItemChannelMaster chMaster = chxMasters.get(rightMsgChannel.getChannelNumber() - 1);
+        if (chMaster == null) return;
+        chMaster.setInvert(rightMsgChannel.getInvert().isValue());
+        setCouple(chMaster, rightMsgChannel.getChannelNumber(), rightMsgChannel.getCouple().getIndex());
+        chMaster.setProbeMultiple(rightMsgChannel.getProbeMultiple().getValue());
+        chMaster.setProbeTypeUnit(rightMsgChannel.getProbeType().getIndex() == 0 ? "V" : "A");
+        switch (rightMsgChannel.getBandWidth().getIndex()) {
+            case 0: chMaster.setBandWidth(txtFull);break;
+            case 1: chMaster.setBandWidth(txt200M);break;
+            case 2: chMaster.setBandWidth(txt20M);break;
+            case 3: chMaster.setBandWidth(txtHigh);break;
+            case 4: chMaster.setBandWidth(txtLow);break;
+        }
+//        switch (rightMsgChannel.getImped().getIndex()) {
+//            case 0:
+//            case 1:
+//                chMaster.setTvImpedance("1M");
+//                break;
+//            case 2:
+//                chMaster.setTvImpedance("50Ω");
+//                break;
+//        }
+        switch (rightMsgChannel.getImped().getIndex()) {
+            case 0:
+                chMaster.setTvImpedance("1M");
+                break;
+            case 1:
+                chMaster.setTvImpedance("50Ω");
+                break;
+        }
+
+        Channel channel = ChannelFactory.getDynamicChannel(rightMsgChannel.getChannelNumber() - 1);
+        String s=TBookUtil.getMFromDouble(channel.getVScaleVal());
+        chMaster.setProbeTypeNum(s);
+        CacheUtil.get().putMap(CacheUtil.RIGHT_SLIP_CH_FINE_EXTENT + rightMsgChannel.getChannelNumber(), s);
+
+        if (rightMsgChannel.getProbeMultiple().isRxMsgSelect()) {
+            msgChannels.setCh1Scale(0);
+            msgChannels.setCh2Scale(0);
+            msgChannels.setCh3Scale(0);
+            msgChannels.setCh4Scale(0);
+            msgChannels.setCh5Scale(0);
+            msgChannels.setCh6Scale(0);
+            msgChannels.setCh7Scale(0);
+            msgChannels.setCh8Scale(0);
+            msgChannels.setChScale(TChan.toFpgaChNo(rightMsgChannel.getChannelNumber()), 1);
+            preChxScales.set(
+                    TChan.toFpgaChNo(rightMsgChannel.getChannelNumber()),
+                    chxMasters.get(TChan.toFpgaChNo(rightMsgChannel.getChannelNumber())).getProbeType()
+            );
+            sendMsg(rightMsgChannel.isFromEventBus());
+        }
+        setOffset(rightMsgChannel.getChannelNumber());
+        refreshProbe(TChan.toFpgaChNo(rightMsgChannel.getChannelNumber()));
+    }
+
+    private void setCouple(MainRightLayoutItemChannelMaster layoutMaster, int chNumber, int coupleIndex) {
+        if (TChan.isChan(chNumber)) {
+//            if (coupleIndex == 1) {
+//                layoutMaster.setCoupleResId(R.drawable.coupling_ac);
+//            } else {
+//                layoutMaster.setCoupleResId(R.drawable.coupling_dc);
+//            }
+            if (coupleIndex == 0) {
+                layoutMaster.setCoupleResId(R.drawable.coupling_dc);
+            } else if (coupleIndex == 1) {
+                layoutMaster.setCoupleResId(R.drawable.coupling_ac);
+            } else {
+                layoutMaster.setCoupleResId(R.drawable.coupling_gnd);
+            }
+        }
+    }
+
+    private void setOffset(int chIndex) {
+        Channel channel = ChannelFactory.getDynamicChannel(chIndex - 1);
+        double leftPos = Tools.getChannelPositionUI(chIndex);
+        int h = (Tools.isZoom() ? ScopeBase.getNewZoomHeight() : ScopeBase.getNewHeight()) / 2;
+        double pos = h - leftPos;
+
+        int chRange = Tools.getChRange(chIndex);
+
+
+        if (pos < (-chRange * ScopeBase.getToUICoff())) {
+            pos = -chRange * ScopeBase.getToUICoff();
+        }
+        if (pos > (chRange * ScopeBase.getToUICoff())) {
+            pos = chRange * ScopeBase.getToUICoff();
+        }
+
+        String unit = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_CH_PROBE_TYPE + chIndex) == 0 ? "V" : "A";
+//        layoutBranch.setOffset(TBookUtil.getFourFromD_Trim0(pos * channel.getVerticalPerPix()) + unit);
+        int startPos = ScopeBase.getNewHeight() - ScopeBase.getNewZoomHeight();
+        leftPos = Tools.isZoom() ? (leftPos + startPos) : leftPos;
+        startPos = Tools.isZoom() ? startPos : 0;
+        String number = TBookUtil.getFourFromD_Trim0(pos * channel.getVerticalPerPix());
+        leftPositionView.setData(chIndex - 1, leftPos
+                , number
+                , unit, startPos);
+        chxMasters.get(chIndex - 1).setLeftPosition(number + unit);
+    }
+
+    private String getSimple(String completeBandWidth) {
+        if (StrUtil.isEmpty(completeBandWidth)) {
+            return completeBandWidth;
+        }
+        if (completeBandWidth.contains(".")) {
+            String simple = null;
+            String simple1 = (completeBandWidth.split("\\."))[0];
+            String simple2 = "";
+            if (completeBandWidth.contains("M")) {
+                simple2 = "M";
+            } else if (completeBandWidth.contains("K")) {
+                simple2 = "K";
+            }
+            simple = simple1 + simple2;
+            return simple;
+        } else {
+            return completeBandWidth.replace("Hz", "");
+        }
+    }
+
+    private static final int MSG_BRIEF_DISPLAY_CH1 = 11;
+    private static final int MSG_BRIEF_DISPLAY_CH1_GONE = 12;
+    private static final int MSG_BRIEF_DISPLAY_CH2 = 13;
+    private static final int MSG_BRIEF_DISPLAY_CH2_GONE = 14;
+    private static final int MSG_BRIEF_DISPLAY_CH3 = 15;
+    private static final int MSG_BRIEF_DISPLAY_CH3_GONE = 16;
+    private static final int MSG_BRIEF_DISPLAY_CH4 = 17;
+    private static final int MSG_BRIEF_DISPLAY_CH4_GONE = 18;
+    private static final int MSG_BRIEF_DISPLAY_CH5 = 19;
+    private static final int MSG_BRIEF_DISPLAY_CH5_GONE = 20;
+    private static final int MSG_BRIEF_DISPLAY_CH6 = 21;
+    private static final int MSG_BRIEF_DISPLAY_CH6_GONE = 22;
+    private static final int MSG_BRIEF_DISPLAY_CH7 = 23;
+    private static final int MSG_BRIEF_DISPLAY_CH7_GONE = 24;
+    private static final int MSG_BRIEF_DISPLAY_CH8 = 25;
+    private static final int MSG_BRIEF_DISPLAY_CH8_GONE = 26;
+
+    private Handler handler = new Handler() {
+
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            switch (msg.what) {
+                case MSG_BRIEF_DISPLAY_CH1:
+                    briefDisplayCh1.setVisibility(View.GONE);
+                    briefDisplayCh1.setText(ch1Master.getProbeType());
+                    if (handler.hasMessages(MSG_BRIEF_DISPLAY_CH1_GONE)) {
+                        handler.removeMessages(MSG_BRIEF_DISPLAY_CH1_GONE);
+                    }
+                    handler.sendEmptyMessageDelayed(MSG_BRIEF_DISPLAY_CH1_GONE, 2000);
+                    break;
+                case MSG_BRIEF_DISPLAY_CH1_GONE:
+                    briefDisplayCh1.setVisibility(View.GONE);
+                    break;
+                case MSG_BRIEF_DISPLAY_CH2:
+                    briefDisplayCh2.setVisibility(View.GONE);
+                    briefDisplayCh2.setText(ch2Master.getProbeType());
+                    if (handler.hasMessages(MSG_BRIEF_DISPLAY_CH2_GONE)) {
+                        handler.removeMessages(MSG_BRIEF_DISPLAY_CH2_GONE);
+                    }
+                    handler.sendEmptyMessageDelayed(MSG_BRIEF_DISPLAY_CH2_GONE, 2000);
+                    break;
+                case MSG_BRIEF_DISPLAY_CH2_GONE:
+                    briefDisplayCh2.setVisibility(View.GONE);
+                    break;
+                case MSG_BRIEF_DISPLAY_CH3:
+                    briefDisplayCh3.setVisibility(View.GONE);
+                    briefDisplayCh3.setText(ch3Master.getProbeType());
+                    if (handler.hasMessages(MSG_BRIEF_DISPLAY_CH3_GONE)) {
+                        handler.removeMessages(MSG_BRIEF_DISPLAY_CH3_GONE);
+                    }
+                    handler.sendEmptyMessageDelayed(MSG_BRIEF_DISPLAY_CH3_GONE, 2000);
+                    break;
+                case MSG_BRIEF_DISPLAY_CH3_GONE:
+                    briefDisplayCh3.setVisibility(View.GONE);
+                    break;
+                case MSG_BRIEF_DISPLAY_CH4:
+                    briefDisplayCh4.setVisibility(View.GONE);
+                    briefDisplayCh4.setText(ch4Master.getProbeType());
+                    if (handler.hasMessages(MSG_BRIEF_DISPLAY_CH4_GONE)) {
+                        handler.removeMessages(MSG_BRIEF_DISPLAY_CH4_GONE);
+                    }
+                    handler.sendEmptyMessageDelayed(MSG_BRIEF_DISPLAY_CH4_GONE, 2000);
+                    break;
+                case MSG_BRIEF_DISPLAY_CH4_GONE:
+                    briefDisplayCh4.setVisibility(View.GONE);
+                    break;
+                case MSG_BRIEF_DISPLAY_CH5:
+                    briefDisplayCh5.setVisibility(View.GONE);
+                    briefDisplayCh5.setText(ch5Master.getProbeType());
+                    if (handler.hasMessages(MSG_BRIEF_DISPLAY_CH5_GONE)) {
+                        handler.removeMessages(MSG_BRIEF_DISPLAY_CH5_GONE);
+                    }
+                    handler.sendEmptyMessageDelayed(MSG_BRIEF_DISPLAY_CH5_GONE, 2000);
+                    break;
+                case MSG_BRIEF_DISPLAY_CH5_GONE:
+                    briefDisplayCh5.setVisibility(View.GONE);
+                    break;
+                case MSG_BRIEF_DISPLAY_CH6:
+                    briefDisplayCh6.setVisibility(View.GONE);
+                    briefDisplayCh6.setText(ch6Master.getProbeType());
+                    if (handler.hasMessages(MSG_BRIEF_DISPLAY_CH6_GONE)) {
+                        handler.removeMessages(MSG_BRIEF_DISPLAY_CH6_GONE);
+                    }
+                    handler.sendEmptyMessageDelayed(MSG_BRIEF_DISPLAY_CH6_GONE, 2000);
+                    break;
+                case MSG_BRIEF_DISPLAY_CH6_GONE:
+                    briefDisplayCh6.setVisibility(View.GONE);
+                    break;
+                case MSG_BRIEF_DISPLAY_CH7:
+                    briefDisplayCh7.setVisibility(View.GONE);
+                    briefDisplayCh7.setText(ch7Master.getProbeType());
+                    if (handler.hasMessages(MSG_BRIEF_DISPLAY_CH7_GONE)) {
+                        handler.removeMessages(MSG_BRIEF_DISPLAY_CH7_GONE);
+                    }
+                    handler.sendEmptyMessageDelayed(MSG_BRIEF_DISPLAY_CH7_GONE, 2000);
+                    break;
+                case MSG_BRIEF_DISPLAY_CH7_GONE:
+                    briefDisplayCh7.setVisibility(View.GONE);
+                    break;
+                case MSG_BRIEF_DISPLAY_CH8:
+                    briefDisplayCh8.setVisibility(View.GONE);
+                    briefDisplayCh8.setText(ch8Master.getProbeType());
+                    if (handler.hasMessages(MSG_BRIEF_DISPLAY_CH8_GONE)) {
+                        handler.removeMessages(MSG_BRIEF_DISPLAY_CH8_GONE);
+                    }
+                    handler.sendEmptyMessageDelayed(MSG_BRIEF_DISPLAY_CH8_GONE, 2000);
+                    break;
+                case MSG_BRIEF_DISPLAY_CH8_GONE:
+                    briefDisplayCh8.setVisibility(View.GONE);
+                    break;
+            }
+        }
+    };
+
+    private Consumer<MainMsgSlip> consumerMainSlipToOther = new Consumer<MainMsgSlip>() {
+        @Override
+        public void accept(MainMsgSlip mainMsgSlip) throws Exception {
+            if (mainMsgSlip.isOpen()) {
+                int chSelect =TChan.toUiChNo( CacheUtil.get().getInt(CacheUtil.MAIN_CENTER_CHANNELS_SELECT));
+                switch (mainMsgSlip.getSlip()) {
+                    case MainViewGroup.RIGHTSLIP_CH1: {
+                        setRightMasterSmall(TChan.Ch1);
+                        String key = CacheUtil.MAIN_CHANNEL_OPEN_STATE + TChan.Ch1;
+                        CacheUtil.get().putMap(key, String.valueOf(true));
+                        if (chSelect != TChan.Ch1 && CacheUtil.get().getBoolean(key)) {
+                            ch1Master.setChecked(true);
+                            setChScope(ChannelFactory.CH1, true, false);
+                            msgChannels.setCh1(true);
+                            sendMsg(false);
+                        }
+                    }break;
+                    case MainViewGroup.RIGHTSLIP_CH2: {
+                        setRightMasterSmall(TChan.Ch2);
+                        String key = CacheUtil.MAIN_CHANNEL_OPEN_STATE + TChan.Ch2;
+                        CacheUtil.get().putMap(key, String.valueOf(true));
+                        if (chSelect != TChan.Ch2 && CacheUtil.get().getBoolean(key)) {
+                            ch2Master.setChecked(true);
+                            setChScope(ChannelFactory.CH2, true, false);
+                            msgChannels.setCh2(true);
+                            sendMsg(false);
+                        }
+                    }break;
+                    case MainViewGroup.RIGHTSLIP_CH3: {
+                        setRightMasterSmall(TChan.Ch3);
+                        String key = CacheUtil.MAIN_CHANNEL_OPEN_STATE + TChan.Ch3;
+                        CacheUtil.get().putMap(key, String.valueOf(true));
+                        if (chSelect != TChan.Ch3 && CacheUtil.get().getBoolean(key)) {
+                            ch3Master.setChecked(true);
+                            setChScope(ChannelFactory.CH3, true, false);
+                            msgChannels.setCh3(true);
+                            sendMsg(false);
+                        }
+                    }break;
+                    case MainViewGroup.RIGHTSLIP_CH4: {
+                        setRightMasterSmall(TChan.Ch4);
+                        String key=CacheUtil.MAIN_CHANNEL_OPEN_STATE+TChan.Ch4;
+                        CacheUtil.get().putMap(key, String.valueOf(true));
+                        if (chSelect != TChan.Ch4 && CacheUtil.get().getBoolean(key)) {
+                            ch4Master.setChecked(true);
+                            setChScope(ChannelFactory.CH4, true, false);
+                            msgChannels.setCh4(true);
+                            sendMsg(false);
+                        }
+                    }break;
+                    case MainViewGroup.RIGHTSLIP_CH5: {
+                        setRightMasterSmall(TChan.Ch5);
+                        String key=CacheUtil.MAIN_CHANNEL_OPEN_STATE+TChan.Ch5;
+                        CacheUtil.get().putMap(key, String.valueOf(true));
+                        if (chSelect != TChan.Ch5 && CacheUtil.get().getBoolean(key)) {
+                            ch5Master.setChecked(true);
+                            setChScope(ChannelFactory.CH5, true, false);
+                            msgChannels.setCh5(true);
+                            sendMsg(false);
+                        }
+                    }break;
+                    case MainViewGroup.RIGHTSLIP_CH6: {
+                        setRightMasterSmall(TChan.Ch6);
+                        String key=CacheUtil.MAIN_CHANNEL_OPEN_STATE+TChan.Ch6;
+                        CacheUtil.get().putMap(key, String.valueOf(true));
+                        if (chSelect != TChan.Ch6 && CacheUtil.get().getBoolean(key)) {
+                            ch6Master.setChecked(true);
+                            setChScope(ChannelFactory.CH6, true, false);
+                            msgChannels.setCh6(true);
+                            sendMsg(false);
+                        }
+                    }break;
+                    case MainViewGroup.RIGHTSLIP_CH7: {
+                        setRightMasterSmall(TChan.Ch7);
+                        String key = CacheUtil.MAIN_CHANNEL_OPEN_STATE + TChan.Ch7;
+                        CacheUtil.get().putMap(key, String.valueOf(true));
+                        if (chSelect != TChan.Ch7 && CacheUtil.get().getBoolean(key)) {
+                            ch7Master.setChecked(true);
+                            setChScope(ChannelFactory.CH7, true, false);
+                            msgChannels.setCh7(true);
+                            sendMsg(false);
+                        }
+                    }break;
+                    case MainViewGroup.RIGHTSLIP_CH8: {
+                        setRightMasterSmall(TChan.Ch8);
+                        String key=CacheUtil.MAIN_CHANNEL_OPEN_STATE+TChan.Ch8;
+                        CacheUtil.get().putMap(key, String.valueOf(true));
+                        if (chSelect != TChan.Ch8 && CacheUtil.get().getBoolean(key)) {
+                            ch8Master.setChecked(true);
+                            setChScope(ChannelFactory.CH8, true, false);
+                            msgChannels.setCh8(true);
+                            sendMsg(false);
+                        }
+                    }break;
+                }
+            }
+        }
+    };
+
+    private Consumer<MainRightMsgChannels> consumerMainRightChannels = new Consumer<MainRightMsgChannels>() {
+        @Override
+        public void accept(MainRightMsgChannels msgChannels) throws Exception {
+            boolean[] isValues = {
+                    msgChannels.getCh1().isValue(), msgChannels.getCh2().isValue(),
+                    msgChannels.getCh3().isValue(), msgChannels.getCh4().isValue(),
+                    msgChannels.getCh5().isValue(), msgChannels.getCh6().isValue(),
+                    msgChannels.getCh7().isValue(), msgChannels.getCh8().isValue()
+            };
+            if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) {
+                isValues[0] = true;
+                isValues[1] = true;
+            }
+            for (int i = 0; i < channelCount; i++) {
+                leftPositionView.setItemVisible(i, false);
+            }
+            for (int i = 0; i < channelCount; i++) {
+                leftPositionView.setItemVisible(i, isValues[i]);
+                chxMasters.get(i).setLeftPositionVisible(isValues[i]);
+            }
+        }
+    };
+
+    private Consumer<CommandMsgToUI> consumerCommandToUI = new Consumer<CommandMsgToUI>() {
+        @Override
+        public void accept(CommandMsgToUI commandMsgToUI) throws Exception {
+            switch (commandMsgToUI.getFlag()) {
+//                case CommandMsgToUI.FLAG_CHANNEL_DISPLAY: {
+//                    String[] strings = commandMsgToUI.getParam().split(CommandMsgToUI.PARAM_SPLIT);
+//                    int chIndex = Integer.parseInt(strings[0]);
+//                    boolean isOpen = Boolean.parseBoolean(strings[1]);
+//
+//                    switch (chIndex) {
+//                        case 0:
+//                            ch1Master.setChecked(isOpen);
+//                            ch1Branch.setChecked(isOpen);
+//                            onClickListener.onClick(ch1Branch);
+//
+////                            onButtonClickListener.onNameClick(ch1Layout, isOpen, false, true);
+//                            break;
+//                        case 1:
+//                            ch2Master.setChecked(isOpen);
+//                            ch2Branch.setChecked(isOpen);
+//                            onClickListener.onClick(ch2Branch);
+////                            onButtonClickListener.onNameClick(ch2Layout, isOpen, false, true);
+//                            break;
+//                        case 2:
+//                            if (channelCount == GlobalVar.CHANNEL_COUNT_4
+//                                    && WorkModeManage.getInstance().getmWorkMode() != IWorkMode.WorkMode_XY) {
+//                                ch3Master.setChecked(isOpen);
+//                                ch3Branch.setChecked(isOpen);
+//                                onClickListener.onClick(ch3Branch);
+////                                onButtonClickListener.onNameClick(ch3Layout, isOpen, false, true);
+//                            }
+//                            break;
+//                        case 3:
+//                            if (channelCount == GlobalVar.CHANNEL_COUNT_4
+//                                    && WorkModeManage.getInstance().getmWorkMode() != IWorkMode.WorkMode_XY) {
+//                                ch4Master.setChecked(isOpen);
+//                                ch4Branch.setChecked(isOpen);
+//                                onClickListener.onClick(ch4Branch);
+////                                onButtonClickListener.onNameClick(ch4Layout, isOpen, false, true);
+//                            }
+//                            break;
+//                    }
+//                    break;
+//                }
+                case CommandMsgToUI.FLAG_CHANNEL_BANDWIDTH: {
+                    String[] params = commandMsgToUI.getParam().split(CommandMsgToUI.PARAM_SPLIT);
+                    int chIndex =TChan.toUiChNo(Integer.parseInt(params[0]));
+                    int bandIndex = Integer.parseInt(params[1]);
+                    double bandDetail = Double.parseDouble(params[2]);
+
+                    MainRightLayoutItemChannelMaster layoutMaster = null;
+
+                    switch (chIndex){
+                        case TChan.Ch1: layoutMaster=ch1Master; break;
+                        case TChan.Ch2: layoutMaster=ch2Master;break;
+                        case TChan.Ch3:   layoutMaster=ch3Master;break;
+                        case TChan.Ch4:layoutMaster=ch4Master;break;
+                        case TChan.Ch5: layoutMaster=ch5Master; break;
+                        case TChan.Ch6: layoutMaster=ch6Master;break;
+                        case TChan.Ch7:   layoutMaster=ch7Master;break;
+                        case TChan.Ch8:layoutMaster=ch8Master;break;
+                    }
+                    if (layoutMaster == null) return;
+                    switch (bandIndex){
+                        case 0:layoutMaster.setBandWidth(txtFull);break;
+                        case 1:layoutMaster.setBandWidth(txt200M);break;
+                        case 2:layoutMaster.setBandWidth(txt20M);break;
+                        case 3:layoutMaster.setBandWidth(txtHigh);break;
+                        case 4:layoutMaster.setBandWidth(txtLow);break;
+                    }
+                    break;
+                }
+                case CommandMsgToUI.FLAG_CHANNEL_EXTENT: {
+                    String[] strings = commandMsgToUI.getParam().split(CommandMsgToUI.PARAM_SPLIT);
+                    int chIndex =TChan.toUiChNo( Integer.parseInt(strings[0]));
+                    double extent = Double.valueOf(strings[1]);
+                    MainRightLayoutItemChannelMaster layout = null;
+                    switch (chIndex) {
+                        case TChan.Ch1:
+                            layout = ch1Master;
+                            break;
+                        case TChan.Ch2:
+                            layout = ch2Master;
+                            break;
+                        case TChan.Ch3:
+                            if (channelCount == GlobalVar.CHANNEL_COUNT_8
+                                    && WorkModeManage.getInstance().getmWorkMode() != IWorkMode.WorkMode_XY) {
+                                layout = ch3Master;
+                            }
+                            break;
+                        case TChan.Ch4:
+                            if (channelCount == GlobalVar.CHANNEL_COUNT_8
+                                    && WorkModeManage.getInstance().getmWorkMode() != IWorkMode.WorkMode_XY) {
+                                layout = ch4Master;
+                            }
+                            break;
+                        case TChan.Ch5:
+                            if (channelCount == GlobalVar.CHANNEL_COUNT_8
+                                    && WorkModeManage.getInstance().getmWorkMode() != IWorkMode.WorkMode_XY) {
+                                layout = ch5Master;
+                            }
+                            break;
+                        case TChan.Ch6:
+                            if (channelCount == GlobalVar.CHANNEL_COUNT_8
+                                    && WorkModeManage.getInstance().getmWorkMode() != IWorkMode.WorkMode_XY) {
+                                layout = ch6Master;
+                            }
+                            break;
+                        case TChan.Ch7:
+                            if (channelCount == GlobalVar.CHANNEL_COUNT_8
+                                    && WorkModeManage.getInstance().getmWorkMode() != IWorkMode.WorkMode_XY) {
+                                layout = ch7Master;
+                            }
+                            break;
+                        case TChan.Ch8:
+                            if (channelCount == GlobalVar.CHANNEL_COUNT_8
+                                    && WorkModeManage.getInstance().getmWorkMode() != IWorkMode.WorkMode_XY) {
+                                layout = ch8Master;
+                            }
+                            break;
+                    }
+                    Channel channel = ChannelFactory.getDynamicChannel(TChan.toFpgaChNo(chIndex));
+                    if (layout != null && channel != null) {
+                        int chIdx = channel.getChId();
+                        channel.setVScaleVal(extent);
+                        setChScale(layout, chIdx, channel.getVScaleVal(), true, false);
+                        if (ChannelFactory.isChActivate(chIdx))
+                            CursorManage.getInstance().curChannelMove();
+                    }
+                    break;
+                }
+            }
+        }
+    };
+
+    private Consumer<WorkModeBean> consumerWorkModeChange = new Consumer<WorkModeBean>() {
+        @Override
+        public void accept(WorkModeBean workModeBean) throws Exception {
+            boolean b = workModeBean.getNextWorkMode() != IWorkMode.WorkMode_XY;
+            leftPositionView.setAllVisible(b);
+            for (int i = 0; i < channelCount; i++) {
+                chxMasters.get(i).setLeftPositionVisible(b);
+            }
+            switch (workModeBean.getNextWorkMode()) {
+                case IWorkMode.WorkMode_YT:
+                case IWorkMode.WorkMode_YTZOOM:
+                    if (workModeBean.getPreWorkMode() != IWorkMode.WorkMode_XY) {
+                        return;
+                    }
+                    for (int i = 0; i < channelCount; i++) {
+                        if (i > 1) {
+                            chxMasters.get(i).setDisable(false);
+                        }
+                        chxMasters.get(i).setChecked(CacheUtil.get().getBoolean(CacheUtil.MAIN_CHANNEL_OPEN_STATE + TChan.toUiChNo(i)));
+                        if (!workModeBean.isFromEventBus()) {
+                            ChannelFactory.chEnable(i, chxMasters.get(i).isChecked());
+                        }
+                        Command.get().getChannel().Display(i, chxMasters.get(i).isChecked(), false);
+                        msgChannels.setCh(i, chxMasters.get(i).isChecked());
+                        RxBus.getInstance().post(RxEnum.EXTERNALKEY_TOMCU,
+                                new ExternalKeysMsg_ToMCU(ExternalKeysMsg_ToMCU.TYPE_CH + TChan.toUiChNo(i),
+                                        chxMasters.get(i).isChecked() ? ExternalKeysMsg_ToMCU.STATE_LED_ON : ExternalKeysMsg_ToMCU.STATE_LED_OFF));
+                        RxBus.getInstance().post(RxEnum.MAIN_MENU_ENABLESLIP, new MainMsgSliderZone(menuSlips.get(i), true));
+                    }
+                    sendMsg(false);
+                    break;
+                case IWorkMode.WorkMode_XY:
+                    for (int i = 0; i < channelCount; i++) {
+                        if (i > 1) {
+                            chxMasters.get(i).setChecked(false);
+                            msgChannels.setCh(i, false);
+                            if (!workModeBean.isFromEventBus()) {
+                                ChannelFactory.chEnable(i, false);
+                            }
+                            Command.get().getChannel().Display(i, false, false);
+                            RxBus.getInstance().post(RxEnum.EXTERNALKEY_TOMCU,
+                                    new ExternalKeysMsg_ToMCU(ExternalKeysMsg_ToMCU.TYPE_CH + TChan.toUiChNo(i), ExternalKeysMsg_ToMCU.STATE_LED_OFF));
+                            chxMasters.get(i).setDisable(true);
+                        } else {// 0,1
+                            chxMasters.get(i).setChecked(true);
+                            chxMasters.get(i).setLeftPositionVisible(true);
+                            msgChannels.setCh(i, true);
+                            if (!workModeBean.isFromEventBus()) {
+                                ChannelFactory.chEnable(i, true);
+                            }
+                            Command.get().getChannel().Display(i, true, false);
+                            RxBus.getInstance().post(RxEnum.EXTERNALKEY_TOMCU,
+                                    new ExternalKeysMsg_ToMCU(ExternalKeysMsg_ToMCU.TYPE_CH + TChan.toUiChNo(i), ExternalKeysMsg_ToMCU.STATE_LED_ON));
+                        }
+                    }
+                    if (channelCount == GlobalVar.CHANNEL_COUNT_2) {
+                        setRightMasterSmall(CacheUtil.get().getInt(CacheUtil.MAIN_CENTER_CHANNELS_SELECT_UNXY) + TChan.Ch1);
+                        sendMsg(false);
+                    }
+                    break;
+            }
+            setEnableSlip();
+        }
+    };
+
+    private Consumer<ExternalKeysMsgVScale> consumerExternalkeysVScale = new Consumer<ExternalKeysMsgVScale>() {
+        @Override
+        public void accept(ExternalKeysMsgVScale msgVScale) throws Exception {
+//            if (msgVScale.getChIndex() >= 0 && msgVScale.getChIndex() <= 3) {
+//                Channel channel = ChannelFactory.getDynamicChannel(msgVScale.getChIndex());
+//                if (msgVScale.isAdd()) {
+//                    if (!channel.isVScaleIdValid(channel.getVScaleId() + 1)) {
+//                        DToast.get().show(R.string.msgParameterLimited);
+//                        return;
+//                    }
+//                    channel.setVScaleId(channel.getVScaleId() + 1, true);
+//                } else {
+//                    if (!channel.isVScaleIdValid(channel.getVScaleId() - 1)) {
+//                        DToast.get().show(R.string.msgParameterLimited);
+//                        return;
+//                    }
+//                    channel.setVScaleId(channel.getVScaleId() - 1, true);
+//                }
+//                switch (msgVScale.getChIndex()) {
+//                    case 0:
+//                        setChScale(ch1Master, msgVScale.getChIndex(), channel.getVScaleVal(), true, false);
+//                        break;
+//                    case 1:
+//                        setChScale(ch2Master, msgVScale.getChIndex(), channel.getVScaleVal(), true, false);
+//                        break;
+//                    case 2:
+//                        setChScale(ch3Master, msgVScale.getChIndex(), channel.getVScaleVal(), true, false);
+//                        break;
+//                    case 3:
+//                        setChScale(ch4Master, msgVScale.getChIndex(), channel.getVScaleVal(), true, false);
+//                        break;
+//                }
+//            }
+
+            //Log.d(Tag.Debug, String.format("MainHolderRightChannels.accept: %d",msgVScale.getChIndex() ));
+            if (TChan.isChan(TChan.toUiChNo(msgVScale.getChIndex()))) {
+                Log.d("TAG", "调整-----------------------MainHolderRightChannels.accept: " + msgVScale.getChIndex());
+                if (msgVScale.isAdd()) {
+
+                    chxMasters.get(msgVScale.getChIndex()).onBtnBottomClick();
+                } else {
+                    chxMasters.get(msgVScale.getChIndex()).onBtnTopClick();
+                }
+            }
+
+//            switch (msgVScale.getChIndex()) {
+//                case 0:
+//                    if (msgVScale.isAdd()) {
+//                        ch1Master.onBtnBottomClick();
+//                        //addExtent(ch1Master,msgVScale.getChIndex(),msgVScale.getCount());
+//                    } else {
+//                        ch1Master.onBtnTopClick();
+////                        subExtent(ch1Master,msgVScale.getChIndex(),msgVScale.getCount());
+//                    }
+//                    break;
+//                case 1:
+//                    if (msgVScale.isAdd()) {
+//                        ch2Master.onBtnBottomClick();
+////                        addExtent(ch2Master,msgVScale.getChIndex(),msgVScale.getCount());
+//                    } else {
+//                        ch2Master.onBtnTopClick();
+////                        subExtent(ch2Master,msgVScale.getChIndex(),msgVScale.getCount());
+//                    }
+//                    break;
+//                case 2:
+//                    if (msgVScale.isAdd()) {
+//                        ch3Master.onBtnBottomClick();
+////                        addExtent(ch3Master,msgVScale.getChIndex(),msgVScale.getCount());
+//                    } else {
+//                        ch3Master.onBtnTopClick();
+////                        subExtent(ch3Master,msgVScale.getChIndex(),msgVScale.getCount());
+//                    }
+//                    break;
+//                case 3:
+//                    if (msgVScale.isAdd()) {
+//                        ch4Master.onBtnBottomClick();
+////                        addExtent(ch4Master,msgVScale.getChIndex(),msgVScale.getCount());
+//                    } else {
+//                        ch4Master.onBtnTopClick();
+////                        subExtent(ch4Master,msgVScale.getChIndex(),msgVScale.getCount());
+//                    }
+//                    break;
+//                case 4:
+//                    if (msgVScale.isAdd()) {
+//                        ch5Master.onBtnBottomClick();
+////                        addExtent(ch5Master,msgVScale.getChIndex(),msgVScale.getCount());
+//                    } else {
+//                        ch5Master.onBtnTopClick();
+////                        subExtent(ch5Master,msgVScale.getChIndex(),msgVScale.getCount());
+//                    }
+//                    break;
+//                case 5:
+//                    if (msgVScale.isAdd()) {
+//                        ch6Master.onBtnBottomClick();
+////                        addExtent(ch6Master,msgVScale.getChIndex(),msgVScale.getCount());
+//                    } else {
+//                        ch5Master.onBtnTopClick();
+////                        subExtent(ch6Master,msgVScale.getChIndex(),msgVScale.getCount());
+//                    }
+//                    break;
+//                case 6:
+//                    if (msgVScale.isAdd()) {
+//                        ch7Master.onBtnBottomClick();
+////                        addExtent(ch7Master,msgVScale.getChIndex(),msgVScale.getCount());
+//                    } else {
+//                        ch7Master.onBtnTopClick();
+////                        subExtent(ch7Master,msgVScale.getChIndex(),msgVScale.getCount());
+//                    }
+//                    break;
+//                case 7:
+//                    if (msgVScale.isAdd()) {
+//                        ch8Master.onBtnBottomClick();
+////                        addExtent(ch8Master,msgVScale.getChIndex(),msgVScale.getCount());
+//                    } else {
+//                        ch8Master.onBtnTopClick();
+////                        subExtent(ch8Master,msgVScale.getChIndex(),msgVScale.getCount());
+//                    }
+//                    break;
+//            }
+        }
+    };
+
+    private Consumer<Boolean> consumerSerialswordVisible = new Consumer<Boolean>() {
+        @Override
+        public void accept(Boolean aBoolean) throws Exception {
+            leftPositionView.setAllVisible(!aBoolean);
+
+            for (int i = 0; i < channelCount; i++) {
+                chxMasters.get(i).setLeftPositionVisible(!aBoolean);
+                chxMasters.get(i).setDisable(aBoolean);
+            }
+            setEnableSlip();
+
+//            if (ch1Layout.isChecked() && aBoolean) {
+//                ch1Layout.setChecked(false);
+//                onButtonClickListener.onNameClick(ch1Layout, false, false);
+//            }
+//            if (ch2Layout.isChecked() && aBoolean) {
+//                ch2Layout.setChecked(false);
+//                onButtonClickListener.onNameClick(ch2Layout, false, false);
+//            }
+//            if (ch3Layout.isChecked() && aBoolean) {
+//                ch3Layout.setChecked(false);
+//                onButtonClickListener.onNameClick(ch3Layout, false, false);
+//            }
+//            if (ch4Layout.isChecked() && aBoolean) {
+//                ch4Layout.setChecked(false);
+//                onButtonClickListener.onNameClick(ch4Layout, false, false);
+//            }
+//
+//            ch1Layout.setEnabled(!aBoolean);
+//            ch2Layout.setEnabled(!aBoolean);
+//            ch3Layout.setEnabled(!aBoolean);
+//            ch4Layout.setEnabled(!aBoolean);
+        }
+    };
+
+    private void setRightMasterSmall(int indexLarge) {
+        setRightMasterSmall(indexLarge, true);
+    }
+
+
+    public void setLarges(boolean large, MainRightLayoutItemChannelMaster... chMasters) {
+        for (MainRightLayoutItemChannelMaster chxMaster : chMasters) {
+            chxMaster.setLarge(large);
+        }
+    }
+
+    private void setRightMasterSmall(int indexLarge, boolean check) {
+        switch (indexLarge) {
+            case TChan.Ch1:
+                if (!check) {
+                    ch1Master.setChecked(false);
+                } else {
+                    ch1Master.setState(true, true);
+                    if (channelCount == GlobalVar.CHANNEL_COUNT_2) {
+                        setLarges(false, ch2Master);
+                    } else if (channelCount == GlobalVar.CHANNEL_COUNT_4) {
+                        setLarges(false, ch2Master, ch3Master, ch4Master);
+                    } else if (channelCount == GlobalVar.CHANNEL_COUNT_8) {
+                        setLarges(false, ch2Master, ch3Master, ch4Master, ch5Master, ch6Master, ch7Master, ch8Master);
+                    }
+                }
+                msgChannels.setCh1(check);
+                break;
+            case TChan.Ch2:
+                if (!check) {
+                    ch2Master.setChecked(false);
+                } else {
+                    ch2Master.setState(true, true);
+                    if (channelCount == GlobalVar.CHANNEL_COUNT_2) {
+                        setLarges(false, ch1Master);
+                    } else if (channelCount == GlobalVar.CHANNEL_COUNT_4) {
+                        setLarges(false, ch1Master, ch3Master, ch4Master);
+                    } else if (channelCount == GlobalVar.CHANNEL_COUNT_8) {
+                        setLarges(false, ch1Master, ch3Master, ch4Master, ch5Master, ch6Master, ch7Master, ch8Master);
+                    }
+                }
+                msgChannels.setCh2(check);
+                break;
+            case TChan.Ch3:
+                if (!check) {
+                    ch3Master.setChecked(false);
+                } else {
+                    ch1Master.setLarge(false);
+                    ch2Master.setLarge(false);
+                    ch3Master.setState(true, true);
+                    if (channelCount == GlobalVar.CHANNEL_COUNT_4) {
+                        setLarges(false, ch4Master);
+                    } else if (channelCount == GlobalVar.CHANNEL_COUNT_8) {
+                        setLarges(false, ch4Master, ch5Master, ch6Master, ch7Master, ch8Master);
+                    }
+                }
+                msgChannels.setCh3(check);
+                break;
+            case TChan.Ch4:
+                if (!check) {
+                    ch4Master.setChecked(false);
+                } else {
+                    ch1Master.setLarge(false);
+                    ch2Master.setLarge(false);
+                    ch4Master.setState(true, true);
+                    if (channelCount == GlobalVar.CHANNEL_COUNT_4) {
+                        setLarges(false, ch3Master);
+                    } else if (channelCount == GlobalVar.CHANNEL_COUNT_8) {
+                        setLarges(false, ch3Master, ch5Master, ch6Master, ch7Master, ch8Master);
+                    }
+                }
+                msgChannels.setCh4(check);
+                break;
+            case TChan.Ch5:
+                if (!check) {
+                    ch5Master.setChecked(false);
+                } else {
+                    ch5Master.setState(true, true);
+                    setLarges(false, ch1Master, ch2Master, ch3Master, ch4Master, ch6Master, ch7Master, ch8Master);
+                }
+                msgChannels.setCh5(check);
+                break;
+            case TChan.Ch6:
+                if (!check) {
+                    ch6Master.setChecked(false);
+                } else {
+                    ch6Master.setState(true, true);
+                    setLarges(false, ch1Master, ch2Master, ch3Master, ch4Master, ch5Master, ch7Master, ch8Master);
+                }
+                msgChannels.setCh6(check);
+                break;
+            case TChan.Ch7:
+                if (!check) {
+                    ch7Master.setChecked(false);
+                } else {
+                    ch7Master.setState(true, true);
+                    setLarges(false, ch1Master, ch2Master, ch3Master, ch4Master, ch5Master, ch6Master, ch8Master);
+                }
+                msgChannels.setCh7(check);
+                break;
+            case TChan.Ch8:
+                if (!check) {
+                    ch8Master.setChecked(false);
+                } else {
+                    ch8Master.setState(true, true);
+                    setLarges(false, ch1Master, ch2Master, ch3Master, ch4Master, ch5Master, ch6Master, ch7Master);
+                }
+                msgChannels.setCh8(check);
+                break;
+            default:
+                setLarges(false, ch1Master, ch2Master);
+                if (channelCount == GlobalVar.CHANNEL_COUNT_4) {
+                    setLarges(false, ch3Master, ch4Master);
+                } else {
+                    setLarges(false, ch3Master, ch4Master, ch5Master, ch6Master, ch7Master, ch8Master);
+                }
+                break;
+        }
+    }
+
+    public void updateSelectChan(int chanNumber) {
+        IChan chan = MiddleMain.getIns().getChanSelectorManage().getActivityChannel();
+        if (chan != IChan.toIChan(TChan.toFpgaChNo(chanNumber))) {
+            WaveManage.get().setSelectCursor(chanNumber);
+            MiddleMain.getIns().getChanSelectorManage().setActivityChannel(IChan.toIChan(TChan.toFpgaChNo(chanNumber)));
+            RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, chanNumber);
+        }
+    }
+
+
+    private MainRightLayoutItemChannelMaster.OnRightSmallListener onRightSmallListener = new MainRightLayoutItemChannelMaster.OnRightSmallListener() {
+        @SuppressLint("NonConstantResourceId")
+        @Override
+        public void onSmallClick(MainRightLayoutItemChannelMaster v) {
+            CursorManage.getInstance().setCursorTrace(true);
+
+            PlaySound.getInstance().playButton();
+            int index = 0;
+            switch (v.getId()) {
+                case R.id.rightCh1Master:
+                case R.id.rightCh1MasterDouble:
+                case R.id.rightCh1MasterEight:
+                    index = TChan.Ch1;
+                    break;
+                case R.id.rightCh2Master:
+                case R.id.rightCh2MasterDouble:
+                case R.id.rightCh2MasterEight:
+                    index = TChan.Ch2;
+                    break;
+                case R.id.rightCh3Master:
+                case R.id.rightCh3MasterEight:
+                    index = TChan.Ch3;
+                    break;
+                case R.id.rightCh4Master:
+                case R.id.rightCh4MasterEight:
+                    index = TChan.Ch4;
+                    break;
+                case R.id.rightCh5MasterEight:
+                    index = TChan.Ch5;
+                    break;
+                case R.id.rightCh6MasterEight:
+                    index = TChan.Ch6;
+                    break;
+                case R.id.rightCh7MasterEight:
+                    index = TChan.Ch7;
+                    break;
+                case R.id.rightCh8MasterEight:
+                    index = TChan.Ch8;
+                    break;
+            }
+            if (index == 0) {
+                return;
+            }
+
+
+            if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) {
+                if (index == TChan.Ch3 || index == TChan.Ch4
+                        || index == TChan.Ch5 || index == TChan.Ch6
+                        || index == TChan.Ch7 || index == TChan.Ch8
+                ) {
+                    return;
+                }
+                if (index == TChan.Ch1) {
+                    ch1Master.setState(true, true);
+                    ch2Master.setState(true, false);
+                    msgChannels.setCh1(true);
+                } else {
+                    ch1Master.setState(true, false);
+                    ch2Master.setState(true, true);
+                    msgChannels.setCh2(true);
+                }
+                sendMsg(false);
+                MiddleMain.getIns().getChanSelectorManage().setActivityChannel(IChan.toIChan(TChan.toFpgaChNo(index)));
+                //显示垂直调节按钮
+                MainViewGroup mainViewGroup = (MainViewGroup) MainHolderRightChannels.this.itemView;
+                if (!mainViewGroup.isRightSlipChannelShow()) {
+                    RxBus.getInstance().post(RxEnum.MQ_MSG_SHOW_VERTICAL_SCALE, v);
+                }
+                return;
+            }
+            setRightMasterSmall(index);
+            setChScope(TChan.toFpgaChNo(index), v.isChecked(), false);
+            updateSelectChan(index);
+            if (index != 0) {
+//                RxBus.getInstance().post(RxEnum.MAINCENTER_CHANNEL_SELECT, new MainCenterMsgChannels(index));
+                RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, WaveZoneDisplay_YT.MOVE_UPDOWN);
+                RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, index);
+                sendMsg(false);
+            }
+
+            //显示垂直调节按钮
+            MainViewGroup mainViewGroup = (MainViewGroup) MainHolderRightChannels.this.itemView;
+            if (!mainViewGroup.isRightSlipChannelShow()) {
+                RxBus.getInstance().post(RxEnum.MQ_MSG_SHOW_VERTICAL_SCALE, v);
+            }
+
+
+            CursorManage.getInstance().setCursorTrace(false);
+
+        }
+
+        @Override
+        public void onSmallDoubleClick(MainRightLayoutItemChannelMaster v) {
+            switch (v.getId()) {
+                case R.id.rightCh1MasterEight:
+                    RxBus.getInstance().post(RxEnum.MAIN_SLIP_FROM_OTHER, new MainMsgSlip(MainViewGroup.RIGHTSLIP_CH1, true));
+                    break;
+                case R.id.rightCh2MasterEight:
+                    RxBus.getInstance().post(RxEnum.MAIN_SLIP_FROM_OTHER, new MainMsgSlip(MainViewGroup.RIGHTSLIP_CH2, true));
+                    break;
+                case R.id.rightCh3MasterEight:
+                    RxBus.getInstance().post(RxEnum.MAIN_SLIP_FROM_OTHER, new MainMsgSlip(MainViewGroup.RIGHTSLIP_CH3, true));
+                    break;
+                case R.id.rightCh4MasterEight:
+                    RxBus.getInstance().post(RxEnum.MAIN_SLIP_FROM_OTHER, new MainMsgSlip(MainViewGroup.RIGHTSLIP_CH4, true));
+                    break;
+                case R.id.rightCh5MasterEight:
+                    RxBus.getInstance().post(RxEnum.MAIN_SLIP_FROM_OTHER, new MainMsgSlip(MainViewGroup.RIGHTSLIP_CH5, true));
+                    break;
+                case R.id.rightCh6MasterEight:
+                    RxBus.getInstance().post(RxEnum.MAIN_SLIP_FROM_OTHER, new MainMsgSlip(MainViewGroup.RIGHTSLIP_CH6, true));
+                    break;
+                case R.id.rightCh7MasterEight:
+                    RxBus.getInstance().post(RxEnum.MAIN_SLIP_FROM_OTHER, new MainMsgSlip(MainViewGroup.RIGHTSLIP_CH7, true));
+                    break;
+                case R.id.rightCh8MasterEight:
+                    RxBus.getInstance().post(RxEnum.MAIN_SLIP_FROM_OTHER, new MainMsgSlip(MainViewGroup.RIGHTSLIP_CH8, true));
+                    break;
+            }
+        }
+    };
+
+    private void setChScope(int chIndex, boolean check, boolean isFromEventBus) {
+        Command.get().getChannel().Display(chIndex, check, false);
+        if (WorkModeManage.getInstance().getmWorkMode() != IWorkMode.WorkMode_XY) {
+            CacheUtil.get().putMap(CacheUtil.MAIN_CHANNEL_OPEN_STATE + TChan.toUiChNo(chIndex), String.valueOf(check));
+        }
+        if (!isFromEventBus) {
+            ChannelFactory.chEnable(chIndex, check);
+        }
+        setEnableSlip();
+        RxBus.getInstance().post(RxEnum.EXTERNALKEY_TOMCU,
+                new ExternalKeysMsg_ToMCU(ExternalKeysMsg_ToMCU.TYPE_CH + (chIndex + 1), check
+                        ? ExternalKeysMsg_ToMCU.STATE_LED_ON : ExternalKeysMsg_ToMCU.STATE_LED_OFF));
+    }
+
+    private MainRightLayoutItemChannelMaster.OnRightMasterListener onRightMasterListener = new MainRightLayoutItemChannelMaster.OnRightMasterListener() {
+        @SuppressLint("NonConstantResourceId")
+        @Override
+        public void onTopClick(MainRightLayoutItemChannelMaster layout) {
+            PlaySound.getInstance().playButton();
+            int chIndex = 0;
+            switch (layout.getId()) {
+                case R.id.rightCh1Master:
+                case R.id.rightCh1MasterDouble:
+                case R.id.rightCh1MasterEight:
+                    chIndex = 0;
+                    break;
+                case R.id.rightCh2Master:
+                case R.id.rightCh2MasterDouble:
+                case R.id.rightCh2MasterEight:
+                    chIndex = 1;
+                    break;
+                case R.id.rightCh3Master:
+                case R.id.rightCh3MasterEight:
+                    if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) {
+                        //xy模式下，通道3点击无反应
+                        return;
+                    }
+                    chIndex = 2;
+                    break;
+                case R.id.rightCh4Master:
+                case R.id.rightCh4MasterEight:
+                    if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) {
+                        //xy模式下，通道4点击无反应
+                        return;
+                    }
+                    chIndex = 3;
+                    break;
+                case R.id.rightCh5MasterEight:
+                    if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) {
+                        //xy模式下，通道5点击无反应
+                        return;
+                    }
+                    chIndex = 4;
+                    break;
+                case R.id.rightCh6MasterEight:
+                    if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) {
+                        //xy模式下，通道6点击无反应
+                        return;
+                    }
+                    chIndex = 5;
+                    break;
+                case R.id.rightCh7MasterEight:
+                    if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) {
+                        //xy模式下，通道7点击无反应
+                        return;
+                    }
+                    chIndex = 6;
+                    break;
+                case R.id.rightCh8MasterEight:
+                    if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) {
+                        //xy模式下，通道8点击无反应
+                        return;
+                    }
+                    chIndex = 7;
+                    break;
+            }
+            Log.d("setChScale", "调整·····0··setChScale: ");
+            subExtent(layout,chIndex,1);
+//            Channel channel = ChannelFactory.getDynamicChannel(chIndex);
+
+//            int scaleId = channel.calcVScaleId(-1);
+//            if (!channel.isVScaleIdValid(scaleId)) {
+//                DToast.get().show(R.string.msgParameterLimited);
+//            } else {
+//                channel.setVScaleId(scaleId, true);
+//                setChScale(layout, chIndex, channel.getVScaleVal(), true, false);
+//                if (ChannelFactory.isChActivate(chIndex))
+//                    CursorManage.getInstance().curChannelMove();
+//            }
+        }
+
+        @SuppressLint("NonConstantResourceId")
+        @Override
+        public void onBottomClick(MainRightLayoutItemChannelMaster layout) {
+            PlaySound.getInstance().playButton();
+            int chIndex = 0;
+            switch (layout.getId()) {
+                case R.id.rightCh1Master:
+                case R.id.rightCh1MasterDouble:
+                case R.id.rightCh1MasterEight:
+                    chIndex = 0;
+                    break;
+                case R.id.rightCh2Master:
+                case R.id.rightCh2MasterDouble:
+                case R.id.rightCh2MasterEight:
+                    chIndex = 1;
+                    break;
+                case R.id.rightCh3Master:
+                case R.id.rightCh3MasterEight:
+                    if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) {
+                        //xy模式下，通道3点击无反应
+                        return;
+                    }
+                    chIndex = 2;
+                    break;
+                case R.id.rightCh4Master:
+                case R.id.rightCh4MasterEight:
+                    if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) {
+                        //xy模式下，通道4点击无反应
+                        return;
+                    }
+                    chIndex = 3;
+                    break;
+                case R.id.rightCh5MasterEight:
+                    if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) {
+                        //xy模式下，通道5点击无反应
+                        return;
+                    }
+                    chIndex = 4;
+                    break;
+                case R.id.rightCh6MasterEight:
+                    if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) {
+                        //xy模式下，通道6点击无反应
+                        return;
+                    }
+                    chIndex = 5;
+                    break;
+                case R.id.rightCh7MasterEight:
+                    if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) {
+                        //xy模式下，通道7点击无反应
+                        return;
+                    }
+                    chIndex = 6;
+                    break;
+                case R.id.rightCh8MasterEight:
+                    if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) {
+                        //xy模式下，通道8点击无反应
+                        return;
+                    }
+                    chIndex = 7;
+                    break;
+            }
+            addExtent(layout,chIndex,1);
+//            Channel channel = ChannelFactory.getDynamicChannel(chIndex);
+//            int scaleId = channel.calcVScaleId(1);
+//            if (!channel.isVScaleIdValid(scaleId)) {
+//                DToast.get().show(R.string.msgParameterLimited);
+//            } else {
+//                channel.setVScaleId(scaleId, true);
+//                setChScale(layout, chIndex, channel.getVScaleVal(), true, false);
+//                if (ChannelFactory.isChActivate(chIndex))
+//                    CursorManage.getInstance().curChannelMove();
+//            }
+        }
+    };
+
+    private void addExtent(MainRightLayoutItemChannelMaster layout,int chIndex,int count){
+        CursorManage.getInstance().setCursorTrace(true);
+
+        Channel channel = ChannelFactory.getDynamicChannel(chIndex);
+        if(channel == null) return;
+        if (isFineExtent(TChan.toUiChNo(chIndex))){
+            count = (int)(Math.ceil((double) count * count / 2) + 0.1);
+            double d= channel.getVScaleVal();
+            String s= TBookUtil.getMFromDouble(d);
+            double minUnit=TBookUtil.getMinD3Unit(s);
+            d+=(minUnit*count)+7e-12;
+            if (d>100) d+=1e-3;
+            channel.setVScaleVal(d);
+            setChScale(layout, chIndex, channel.getVScaleVal(), true, false);
+            if (ChannelFactory.isChActivate(chIndex))
+                CursorManage.getInstance().curChannelMove();
+        }else {
+            int scaleId = channel.calcVScaleId(1);
+            if (!channel.isVScaleIdValid(scaleId)) {
+                DToast.get().show(R.string.msgParameterLimited);
+            } else {
+                Log.d("setChScale", "调整···A····setChScale: " + channel.getVScaleVal());
+                channel.setVScaleId(scaleId, true);
+
+                setZero(channel);
+                setChScale(layout, chIndex, channel.getVScaleVal(), true, false);
+                if (ChannelFactory.isChActivate(chIndex))
+                    CursorManage.getInstance().curChannelMove();
+            }
+        }
+        CursorManage.setCursorByScaleTrace();
+        CursorManage.getInstance().setCursorTrace(false);
+    }
+    private void subExtent(MainRightLayoutItemChannelMaster layout,int chIndex,int count){
+        CursorManage.getInstance().setCursorTrace(true);
+
+        Channel channel = ChannelFactory.getDynamicChannel(chIndex);
+        if(channel == null) return;
+        if (isFineExtent(TChan.toUiChNo(chIndex))){
+            count = (int)(Math.ceil((double) count * count / 2) + 0.1);
+            double d= channel.getVScaleVal();
+            String s= TBookUtil.getMFromDouble(d);
+            double minUnit=TBookUtil.getMinD3Unit(s);
+
+            d-=(minUnit*count)+7e-12;
+            if (d>100) d+=1e-3;
+            channel.setVScaleVal(d);
+
+            setChScale(layout, chIndex, channel.getVScaleVal(), true, false);
+
+            if (ChannelFactory.isChActivate(chIndex))
+                CursorManage.getInstance().curChannelMove();
+        }else {
+            int scaleId = channel.calcVScaleId(-1);
+            if (!channel.isVScaleIdValid(scaleId)) {
+                DToast.get().show(R.string.msgParameterLimited);
+            } else {
+                Log.d("setChScale", "调整·····1··setChScale: " + channel.getVScaleVal());
+                channel.setVScaleId(scaleId, true);
+
+                setZero(channel);
+                setChScale(layout, chIndex, channel.getVScaleVal(), true, false);
+                if (ChannelFactory.isChActivate(chIndex))
+                    CursorManage.getInstance().curChannelMove();
+            }
+        }
+
+        CursorManage.setCursorByScaleTrace();
+        CursorManage.getInstance().setCursorTrace(false);
+    }
+
+    private int setZero(Channel channel){
+        int zeroPos= CacheUtil.get().getInt(CacheUtil.MAIN_WAVE_CH_Y_ZERO_POSITION + (channel.getChId() + 1) + channel.getVScaleId());
+        return zeroPos;
+    }
+
+    private boolean isFineExtent(int iwaveCh){
+        return CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_CH_FINE_ENABLE+iwaveCh);
+    }
+
+//    private View.OnClickListener onClickListener = new View.OnClickListener() {
+//        @Override
+//        public void onClick(View v) {
+//            PlaySound.getInstance().playButton();
+//            MainViewGroup mainViewGroup = (MainViewGroup) MainHolderRightChannels.this.itemView;
+//            int slip;
+//            int ch;
+//            MainRightLayoutItemChannelBranch layoutBranch = ((MainRightLayoutItemChannelBranch) v);
+//            MainRightLayoutItemChannelMaster layoutMaster;
+//            if ("1".equals(layoutBranch.getText())) {
+//                layoutMaster = ch1Master;
+//                slip = MainViewGroup.RIGHTSLIP_CH1;
+//                ch = ChannelFactory.CH1;
+//            } else if ("2".equals(layoutBranch.getText())) {
+//                layoutMaster = ch2Master;
+//                slip = MainViewGroup.RIGHTSLIP_CH2;
+//                ch = ChannelFactory.CH2;
+//            } else if ("3".equals(layoutBranch.getText())) {
+//                layoutMaster = ch3Master;
+//                slip = MainViewGroup.RIGHTSLIP_CH3;
+//                ch = ChannelFactory.CH3;
+//            } else {
+//                layoutMaster = ch4Master;
+//                slip = MainViewGroup.RIGHTSLIP_CH4;
+//                ch = ChannelFactory.CH4;
+//            }
+//
+//            if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) {
+//                if (ch == ChannelFactory.CH3 || ch == ChannelFactory.CH4) {
+//                    return;//xy模式下，通道3,4点击无反应
+//                }
+//                if (!layoutMaster.isChecked()) {
+//                    layoutMaster.setChecked(true);
+//                    layoutBranch.setChecked(true);
+//                } else {
+//                    layoutMaster.setChecked(false);
+//                    layoutBranch.setChecked(false);
+//                }
+//                if (layoutBranch.isFromExternalKey()) {
+//                    layoutBranch.setFromExternalKey(false);
+//                    if (channelLayout.getChannelSelectIndex() != ch) {
+//                        channelLayout.setChannelSelectIndex(ch);
+//                        channelLayout.updateSelect(false);
+//                    }
+//                    if (layoutMaster.isChecked() && !mainViewGroup.isRightChannelSlipShow()) {
+//                        mainViewGroup.openSlip(slip);
+//                    } else {
+//                        mainViewGroup.hideAllDialogSlip();
+//                    }
+//                    return;
+//                }
+//                if (mainViewGroup.isSlipShow(slip)) {
+//                    mainViewGroup.hideAllSlip();
+//                } else {
+//                    mainViewGroup.openSlip(slip);
+//
+//                    if ("1".equals(layoutBranch.getText())) {
+//                        msgChannels.setCh1(layoutMaster.isChecked());
+//                    } else if ("2".equals(layoutBranch.getText())) {
+//                        msgChannels.setCh2(layoutMaster.isChecked());
+//                    } else if ("3".equals(layoutBranch.getText())) {
+//                        msgChannels.setCh3(layoutMaster.isChecked());
+//                    } else {
+//                        msgChannels.setCh4(layoutMaster.isChecked());
+//                    }
+//                    sendMsg(false);
+//                }
+//                return;
+//            }
+//
+//            boolean change = false;
+//            if (layoutBranch.isFromExternalKey()) {//外部按键的切换，不包含slip的打开关闭，但包含切换为当前通道
+//                layoutBranch.setFromExternalKey(false);
+//                if (!layoutMaster.isChecked()) {
+//                    change = true;
+//                    layoutMaster.setChecked(true);
+//                    layoutBranch.setChecked(true);
+//                } else {
+//                    change = true;
+//                    layoutMaster.setChecked(false);
+//                    layoutBranch.setChecked(false);
+//                    mainViewGroup.hideAllDialogSlip();
+//                }
+//            } else {
+//                if (!layoutMaster.isChecked()) {
+//                    change = true;
+//                    layoutMaster.setChecked(true);
+//                    layoutBranch.setChecked(true);
+//                } else if (layoutMaster.isChecked() && mainViewGroup.isSlipShow(slip)) {
+//                    change = true;
+//                    layoutMaster.setChecked(false);
+//                    layoutBranch.setChecked(false);
+//                    mainViewGroup.hideAllSlip();
+//                } else {
+//                    mainViewGroup.openSlip(slip);
+//                }
+//            }
+//
+//            if (change) {
+//                Command.get().getChannel().Display(ch, layoutMaster.isChecked(), false);
+//                String key;
+//                int ledType;
+//                if ("1".equals(layoutBranch.getText())) {
+//                    key = CacheUtil.MAIN_RIGHT_CH1;
+//                    ledType = ExternalKeysMsg_ToMCU.TYPE_CH1;
+//                } else if ("2".equals(layoutBranch.getText())) {
+//                    key = CacheUtil.MAIN_RIGHT_CH2;
+//                    ledType = ExternalKeysMsg_ToMCU.TYPE_CH2;
+//                } else if ("3".equals(layoutBranch.getText())) {
+//                    key = CacheUtil.MAIN_RIGHT_CH3;
+//                    ledType = ExternalKeysMsg_ToMCU.TYPE_CH3;
+//                } else {
+//                    key = CacheUtil.MAIN_RIGHT_CH4;
+//                    ledType = ExternalKeysMsg_ToMCU.TYPE_CH4;
+//                }
+//                CacheUtil.get().putMap(key, String.valueOf(layoutMaster.isChecked()));
+//                ChannelFactory.chEnable(ch, layoutMaster.isChecked());
+//
+//
+//                RxBus.getInstance().post(RxEnum.EXTERNALKEY_TOMCU,
+//                        new ExternalKeysMsg_ToMCU(ledType, layoutMaster.isChecked()
+//                                ? ExternalKeysMsg_ToMCU.STATE_LED_ON : ExternalKeysMsg_ToMCU.STATE_LED_OFF));
+//            }
+//
+//            int menuIndex;
+//            if ("1".equals(layoutBranch.getText())) {
+//                msgChannels.setCh1(layoutMaster.isChecked());
+//                menuIndex = MainMsgSliderZone.MENUSLIP_CH1;
+//            } else if ("2".equals(layoutBranch.getText())) {
+//                msgChannels.setCh2(layoutMaster.isChecked());
+//                menuIndex = MainMsgSliderZone.MENUSLIP_CH2;
+//            } else if ("3".equals(layoutBranch.getText())) {
+//                msgChannels.setCh3(layoutMaster.isChecked());
+//                menuIndex = MainMsgSliderZone.MENUSLIP_CH3;
+//            } else {
+//                msgChannels.setCh4(layoutMaster.isChecked());
+//                menuIndex = MainMsgSliderZone.MENUSLIP_CH4;
+//            }
+//            sendMsg(false);
+////            RxBus.getInstance().post(RxEnum.MAIN_MENU_ENABLESLIP
+////                    , new MainMsgSliderZone(menuIndex, layoutMaster.isChecked()));
+//        }
+//    };
+
+//    private MainRightLayoutItemChannel.OnButtonClickListener onButtonClickListener = new MainRightLayoutItemChannel.OnButtonClickListener() {
+//        @Override
+//        public boolean onNameClick(MainRightLayoutItemChannel layout, boolean checked, boolean before, boolean sound) {
+//            if (sound) {
+//                PlaySound.getInstance().playButton();
+//            }
+//            MainViewGroup mainViewGroup = (MainViewGroup) MainHolderRightChannels.this.itemView;
+//            switch (layout.getId()) {
+//                case R.id.ch1Layout:
+//                case R.id.ch1Layout_doubleChannel:
+//                    if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) {
+//                        if (layout.isFromExternalKey()) {
+//                            layout.setFromExternalKey(false);
+//                            if (channelLayout.getChannelSelectIndex() != 0) {
+//                                channelLayout.setChannelSelectIndex(0);
+//                                channelLayout.updateSelect(false);
+//                            }
+//                            if (mainViewGroup.isRightChannelSlipShow()) {
+//                                mainViewGroup.openSlip(MainViewGroup.RIGHTSLIP_CH1);
+//                            }
+//                            return true;
+//                        }
+//                        if (mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_CH1)) {
+//                            mainViewGroup.hideAllSlip();
+//                        } else {
+//                            mainViewGroup.openSlip(MainViewGroup.RIGHTSLIP_CH1);
+//                            msgChannels.setCh1(checked);
+//                            sendMsg(false);
+//                        }
+//                        return true;
+//                    }
+//
+//                    if (layout.isFromExternalKey()) {//外部按键的切换，不包含slip的打开关闭，但包含切换为当前通道
+//                        layout.setFromExternalKey(false);
+//                        if (checked) {
+//                            if (channelLayout.getChannelSelectIndex() == 0) {
+//                                checked = false;//外部按键情况下，当变为false状态时，有slip时需要关闭
+//                            }
+//                        } else {
+//                            checked = true;
+//                        }
+//                        if (checked && mainViewGroup.isRightChannelSlipShow()) {
+//                            mainViewGroup.openSlip(MainViewGroup.RIGHTSLIP_CH1);
+//                        } else {
+//                            mainViewGroup.hideAllDialogSlip();
+//                        }
+//                    } else if (before) {//由于before为true，check需要更改状态
+//                        checked = changeChecked3State(checked, MainViewGroup.RIGHTSLIP_CH1);
+//                    } else {
+//                        if (mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_CH1)) {
+//                            mainViewGroup.hideSlip(MainViewGroup.RIGHTSLIP_CH1);
+//                        }
+//                    }
+//
+//                    if (ch1Layout.isChecked() != checked || !before) {
+//                        Command.get().getChannel().Display(0, checked, false);
+//                        CacheUtil.get().putMap(CacheUtil.MAIN_RIGHT_CH1, String.valueOf(checked));
+//                        ChannelFactory.chEnable(ChannelFactory.CH1, checked);
+//
+//                        RxBus.getInstance().post(RxEnum.EXTERNALKEY_TOMCU,
+//                                new ExternalKeysMsg_ToMCU(ExternalKeysMsg_ToMCU.TYPE_CH1,
+//                                        checked ? ExternalKeysMsg_ToMCU.STATE_LED_ON : ExternalKeysMsg_ToMCU.STATE_LED_OFF));
+//                    }
+//                    msgChannels.setCh1(checked);
+//                    sendMsg(false);
+//                    RxBus.getInstance().post(RxEnum.MAIN_MENU_ENABLESLIP
+//                            , new MainMsgSliderZone(MainMsgSliderZone.MENUSLIP_CH1, checked));
+//                    break;
+//                case R.id.ch2Layout:
+//                case R.id.ch2Layout_doubleChannel:
+//                    if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) {
+//                        if (layout.isFromExternalKey()) {
+//                            layout.setFromExternalKey(false);
+//                            if (channelLayout.getChannelSelectIndex() != 1) {
+//                                channelLayout.setChannelSelectIndex(1);
+//                                channelLayout.updateSelect(false);
+//                            }
+//                            if (mainViewGroup.isRightChannelSlipShow()) {
+//                                mainViewGroup.openSlip(MainViewGroup.RIGHTSLIP_CH2);
+//                            }
+//                            return true;
+//                        }
+//                        if (mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_CH2)) {
+//                            mainViewGroup.hideAllSlip();
+//                        } else {
+//                            mainViewGroup.openSlip(MainViewGroup.RIGHTSLIP_CH2);
+//                            msgChannels.setCh2(checked);
+//                            sendMsg(false);
+//                        }
+//                        return true;
+//                    }
+//
+//                    if (layout.isFromExternalKey()) {
+//                        layout.setFromExternalKey(false);
+//                        if (checked) {
+//                            if (channelLayout.getChannelSelectIndex() == 1) {
+//                                checked = false;
+//                            }
+//                        } else {
+//                            checked = true;
+//                        }
+//                        if (checked && mainViewGroup.isRightChannelSlipShow()) {
+//                            mainViewGroup.openSlip(MainViewGroup.RIGHTSLIP_CH2);
+//                        } else {
+//                            mainViewGroup.hideAllDialogSlip();
+//                        }
+//                    } else if (before) {
+//                        checked = changeChecked3State(checked, MainViewGroup.RIGHTSLIP_CH2);
+//                    } else {
+//                        if (mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_CH2)) {
+//                            mainViewGroup.hideSlip(MainViewGroup.RIGHTSLIP_CH2);
+//                        }
+//                    }
+//
+//                    if (ch2Layout.isChecked() != checked || !before) {
+//                        Command.get().getChannel().Display(1, checked, false);
+//                        CacheUtil.get().putMap(CacheUtil.MAIN_RIGHT_CH2, String.valueOf(checked));
+//                        ChannelFactory.chEnable(ChannelFactory.CH2, checked);
+//
+//                        RxBus.getInstance().post(RxEnum.EXTERNALKEY_TOMCU,
+//                                new ExternalKeysMsg_ToMCU(ExternalKeysMsg_ToMCU.TYPE_CH2,
+//                                        checked ? ExternalKeysMsg_ToMCU.STATE_LED_ON : ExternalKeysMsg_ToMCU.STATE_LED_OFF));
+//                    }
+//                    msgChannels.setCh2(checked);
+//                    sendMsg(false);
+//                    RxBus.getInstance().post(RxEnum.MAIN_MENU_ENABLESLIP
+//                            , new MainMsgSliderZone(MainMsgSliderZone.MENUSLIP_CH2, checked));
+//                    break;
+//                case R.id.ch3Layout:
+//                    if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) {
+//                        //xy模式下，通道3点击无反应
+//                        return true;
+//                    }
+//
+//                    if (layout.isFromExternalKey()) {
+//                        layout.setFromExternalKey(false);
+//                        if (checked) {
+//                            if (channelLayout.getChannelSelectIndex() == 2) {
+//                                checked = false;
+//                            }
+//                        } else {
+//                            checked = true;
+//                        }
+//                        if (checked && mainViewGroup.isRightChannelSlipShow()) {
+//                            mainViewGroup.openSlip(MainViewGroup.RIGHTSLIP_CH3);
+//                        } else {
+//                            mainViewGroup.hideAllDialogSlip();
+//                        }
+//                    } else if (before) {
+//                        checked = changeChecked3State(checked, MainViewGroup.RIGHTSLIP_CH3);
+//                    } else {  //在一些切换时，要关闭菜单，如切换ZOOM YT时
+//                        if (mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_CH3)) {
+//                            mainViewGroup.hideSlip(MainViewGroup.RIGHTSLIP_CH3);
+//                        }
+//                    }
+//
+//                    if (ch3Layout.isChecked() != checked || !before) {
+//                        Command.get().getChannel().Display(2, checked, false);
+//                        CacheUtil.get().putMap(CacheUtil.MAIN_RIGHT_CH3, String.valueOf(checked));
+//                        ChannelFactory.chEnable(ChannelFactory.CH3, checked);
+//
+//                        RxBus.getInstance().post(RxEnum.EXTERNALKEY_TOMCU,
+//                                new ExternalKeysMsg_ToMCU(ExternalKeysMsg_ToMCU.TYPE_CH3,
+//                                        checked ? ExternalKeysMsg_ToMCU.STATE_LED_ON : ExternalKeysMsg_ToMCU.STATE_LED_OFF));
+//                    }
+//                    msgChannels.setCh3(checked);
+//                    sendMsg(false);
+//                    RxBus.getInstance().post(RxEnum.MAIN_MENU_ENABLESLIP
+//                            , new MainMsgSliderZone(MainMsgSliderZone.MENUSLIP_CH3, checked));
+//                    break;
+//                case R.id.ch4Layout:
+//                    if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) {
+//                        //xy模式下，通道4点击无反应
+//                        return true;
+//                    }
+//
+//                    if (layout.isFromExternalKey()) {
+//                        layout.setFromExternalKey(false);
+//                        if (checked) {
+//                            if (channelLayout.getChannelSelectIndex() == 3) {
+//                                checked = false;
+//                            }
+//                        } else {
+//                            checked = true;
+//                        }
+//                        if (checked && mainViewGroup.isRightChannelSlipShow()) {
+//                            mainViewGroup.openSlip(MainViewGroup.RIGHTSLIP_CH4);
+//                        } else {
+//                            mainViewGroup.hideAllDialogSlip();
+//                        }
+//                    } else if (before) {
+//                        checked = changeChecked3State(checked, MainViewGroup.RIGHTSLIP_CH4);
+//                    } else {
+//                        if (mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_CH4)) {
+//                            mainViewGroup.hideSlip(MainViewGroup.RIGHTSLIP_CH4);
+//                        }
+//                    }
+//
+//                    if (ch4Layout.isChecked() != checked || !before) {
+//                        Command.get().getChannel().Display(3, checked, false);
+//                        CacheUtil.get().putMap(CacheUtil.MAIN_RIGHT_CH4, String.valueOf(checked));
+//                        ChannelFactory.chEnable(ChannelFactory.CH4, checked);
+//
+//                        RxBus.getInstance().post(RxEnum.EXTERNALKEY_TOMCU,
+//                                new ExternalKeysMsg_ToMCU(ExternalKeysMsg_ToMCU.TYPE_CH4,
+//                                        checked ? ExternalKeysMsg_ToMCU.STATE_LED_ON : ExternalKeysMsg_ToMCU.STATE_LED_OFF));
+//                    }
+//                    msgChannels.setCh4(checked);
+//                    sendMsg(false);
+//                    RxBus.getInstance().post(RxEnum.MAIN_MENU_ENABLESLIP
+//                            , new MainMsgSliderZone(MainMsgSliderZone.MENUSLIP_CH4, checked));
+//                    break;
+//                default:
+//                    return !checked;
+//            }
+//            return checked;
+//        }
+//
+//        @Override
+//        public void onMVClick(MainRightLayoutItemChannel layout) {
+//
+//        }
+//
+//        @Override
+//        public void onVClick(MainRightLayoutItemChannel layout) {
+//
+//        }
+//    };
+
+    private double getScaleChange(String preScale, String nextScale) {
+        if(preScale == null ||  nextScale == null){
+            return 1;
+        }
+        preScale = preScale.replace("V", "").replace("A", "");
+        nextScale = nextScale.replace("V", "").replace("A", "");
+        return TBookUtil.getDoubleFromM(preScale) / TBookUtil.getDoubleFromM(nextScale);
+    }
+
+    private void setChScale(MainRightLayoutItemChannelMaster chMaster, int chIndex, double extent, boolean isShowTip, boolean isFromEventBus) {
+        Command.get().getChannel().Extent(chIndex, extent, false);
+        int vScaleId = ChannelFactory.getDynamicChannel(chIndex).getVScaleId();
+        msgChannels.setAllChScale(0);//先都归零
+        chMaster.setProbeTypeNum(TBookUtil.getMFromDouble(extent));//更新显示 探针 类型
+        double chxScale = getScaleChange(preChxScales.get(chIndex), chMaster.getProbeType());//保证先layout.setProbeTypeNum，再layout.getProbeType()
+        List<Integer> msgDisplay = Arrays.asList(
+                MSG_BRIEF_DISPLAY_CH1, MSG_BRIEF_DISPLAY_CH2,
+                MSG_BRIEF_DISPLAY_CH3, MSG_BRIEF_DISPLAY_CH4,
+                MSG_BRIEF_DISPLAY_CH5, MSG_BRIEF_DISPLAY_CH6,
+                MSG_BRIEF_DISPLAY_CH7, MSG_BRIEF_DISPLAY_CH8
+        );
+        CacheUtil.get().putMap(CacheUtil.MAIN_CHAN_V_SCALE_ID + (chIndex + 1), String.valueOf(vScaleId));//设置通道 触发电平
+        if (isShowTip) handler.sendEmptyMessage(msgDisplay.get(chIndex)); //显示 通道垂直灵敏度 值，2秒后消失
+        msgChannels.setChScale(chIndex, chxScale);
+        preChxScales.set(chIndex, chMaster.getProbeType());//更新之前的值 方便计算新的比率
+        sendMsg(isFromEventBus);//右侧4通道选中状态
+        setOffset(chIndex + 1);
+    }
+
+    private EventUIObserver eventObserver = new EventUIObserver() {
+        @Override
+        public void update(Object data) {
+            EventBase eventBase = (EventBase) data;
+            if (eventBase.getId()==EventFactory.EVENT_DISPLAY_MODE){
+                if (Display.getInstance().isXYMode()) {
+                    boolean isCh1 = ChannelFactory.getDynamicChannel(ChannelFactory.CH1).isOpen();
+                    boolean isCh2 = ChannelFactory.getDynamicChannel(ChannelFactory.CH2).isOpen();
+                    msgChannels.setCh1(isCh1);
+                    msgChannels.setCh2(isCh2);
+                    sendMsg(true);
+                }
+            }
+        }
+    };
+
+    private void OnChanActiveChange(Object obj) {
+
+        MQEnum mqEnum= RxBusRegister.parseMqEnum(obj);
+        IChan chan=((MQBase)obj).getChan();
+        if (mqEnum==MQEnum.CH_OPEN || mqEnum==MQEnum.CH_CLOSE){
+            int chIdx = chan.getValue();
+            refreshProbe(chIdx);
+            TChan.foreachChan(chanIndex -> {
+                boolean isOPen = ChannelFactory.isChOpen(TChan.toFpgaChNo(chanIndex));
+//                if (WorkModeManage.getInstance().getmWorkMode() != IWorkMode.WorkMode_XY && CacheUtil.get().getBoolean(CacheUtil.MAIN_CHANNEL_OPEN_STATE + chanIndex) != isOPen) {
+                if (WorkModeManage.getInstance().getmWorkMode() != IWorkMode.WorkMode_XY) {
+                    chxMasters.get(chanIndex - 1).setChecked(isOPen);
+                    Command.get().getChannel().Display(TChan.toFpgaChNo(chanIndex), isOPen, false);
+                    CacheUtil.get().putMap(CacheUtil.MAIN_CHANNEL_OPEN_STATE + chanIndex, String.valueOf(isOPen));
+                    RxBooleanWithSelect select = (RxBooleanWithSelect) msgChannels.getCh(TChan.toFpgaChNo(chanIndex));
+                    if (select == null) return;
+                    if (select.isValue() != isOPen) {
+                        msgChannels.setCh(TChan.toFpgaChNo(chanIndex), isOPen);
+                        sendMsg(true);
+                    }
+                    //if (chIdx==chanIndex)
+                    {
+                        RxBus.getInstance().post(RxEnum.EXTERNALKEY_TOMCU,
+                                new ExternalKeysMsg_ToMCU(ExternalKeysMsg_ToMCU.TYPE_CH + chanIndex,
+                                        isOPen ? ExternalKeysMsg_ToMCU.STATE_LED_ON : ExternalKeysMsg_ToMCU.STATE_LED_OFF));
+                    }
+                }
+            });
+            setEnableSlip();
+        }else if (mqEnum==MQEnum.CH_ACTIVE){
+            int chActivate = chan.getValue();
+            if (channelCount == GlobalVar.CHANNEL_COUNT_4) {
+                if (IChan.isCh1ToCh8(chan)
+                        && channelLayout.getChannelSelectIndex() != chActivate) {
+                    channelLayout.setChannelSelectIndex(chActivate,true);
+                    channelLayout.updateSelect(true);
+                }
+            } else {
+                if (IChan.isCh1ToCh8(chan)
+                        && channelLayout.getChannelSelectIndex() != chActivate) {
+                    channelLayout.setChannelSelectIndex(chActivate,true);
+                    channelLayout.updateSelect(true);
+                }
+            }
+            setRightMasterSmall(chActivate + 1);
+            updateSelectBackground(chan.getValue());
+        }
+
+    }
+
+    private void updateSelectBackground(int chActivate) {
+        for (int i = 0; i < chxMasters.size(); i++) {
+            chxMasters.get(i).updateBackground(i == chActivate);
+        }
+    }
+
+    private EventUIObserver eventUIObserver = new EventUIObserver() {
+
+        @Override
+        public void update(Object data) {
+            EventBase eventBase = (EventBase) data;
+            if (eventBase.getId() == EventFactory.EVENT_CHANNEL_OPEN
+                    || eventBase.getId() == EventFactory.EVENT_CHANNEL_CLOSE) {
+
+//                int chIdx= (int) eventBase.getData();
+//                refreshProbe(chIdx);
+//                boolean ch1Open = ChannelFactory.isChOpen(ChannelFactory.CH1);
+//                Logger.d(TAG, "ch1Open:" + ch1Open + ",id:" + eventBase.getId());
+//
+//                if (WorkModeManage.getInstance().getmWorkMode() != IWorkMode.WorkMode_XY &&
+//                        CacheUtil.get().getBoolean(CacheUtil.MAIN_RIGHT_CH1) != ch1Open) {
+//                    ch1Master.setChecked(ch1Open);
+////                    ch1Branch.setChecked(ch1Open);
+//
+//                    Command.get().getChannel().Display(0, ch1Open, false);
+//                    CacheUtil.get().putMap(CacheUtil.MAIN_RIGHT_CH1, String.valueOf(ch1Open));
+//                    if (msgChannels.getCh1().isValue() != ch1Open) {
+//                        msgChannels.setCh1(ch1Open);
+//                        sendMsg(true);
+//                    }
+//                    RxBus.getInstance().post(RxEnum.EXTERNALKEY_TOMCU,
+//                            new ExternalKeysMsg_ToMCU(ExternalKeysMsg_ToMCU.TYPE_CH1,
+//                                    ch1Open ? ExternalKeysMsg_ToMCU.STATE_LED_ON : ExternalKeysMsg_ToMCU.STATE_LED_OFF));
+////                    RxBus.getInstance().post(RxEnum.MAIN_MENU_ENABLESLIP
+////                            , new MainMsgSliderZone(MainMsgSliderZone.MENUSLIP_CH1, ch1Open));
+//                }
+//                boolean ch2Open = ChannelFactory.isChOpen(ChannelFactory.CH2);
+//                if (WorkModeManage.getInstance().getmWorkMode() != IWorkMode.WorkMode_XY &&
+//                        CacheUtil.get().getBoolean(CacheUtil.MAIN_RIGHT_CH2) != ch2Open) {
+//                    ch2Master.setChecked(ch2Open);
+////                    ch2Branch.setChecked(ch2Open);
+//
+//                    Command.get().getChannel().Display(1, ch2Open, false);
+//                    CacheUtil.get().putMap(CacheUtil.MAIN_RIGHT_CH2, String.valueOf(ch2Open));
+//                    if (msgChannels.getCh2().isValue() != ch2Open) {
+//                        msgChannels.setCh2(ch2Open);
+//                        sendMsg(true);
+//                    }
+//                    RxBus.getInstance().post(RxEnum.EXTERNALKEY_TOMCU,
+//                            new ExternalKeysMsg_ToMCU(ExternalKeysMsg_ToMCU.TYPE_CH2,
+//                                    ch2Open ? ExternalKeysMsg_ToMCU.STATE_LED_ON : ExternalKeysMsg_ToMCU.STATE_LED_OFF));
+////                    RxBus.getInstance().post(RxEnum.MAIN_MENU_ENABLESLIP
+////                            , new MainMsgSliderZone(MainMsgSliderZone.MENUSLIP_CH2, ch2Open));
+//                }
+//                if (channelCount == GlobalVar.CHANNEL_COUNT_4) {
+//                    boolean ch3Open = ChannelFactory.isChOpen(ChannelFactory.CH3);
+//                    if (WorkModeManage.getInstance().getmWorkMode() != IWorkMode.WorkMode_XY &&
+//                            CacheUtil.get().getBoolean(CacheUtil.MAIN_RIGHT_CH3) != ch3Open) {
+//                        ch3Master.setChecked(ch3Open);
+////                        ch3Branch.setChecked(ch3Open);
+//
+//                        Command.get().getChannel().Display(2, ch3Open, false);
+//                        CacheUtil.get().putMap(CacheUtil.MAIN_RIGHT_CH3, String.valueOf(ch3Open));
+//                        if (msgChannels.getCh3().isValue() != ch3Open) {
+//                            msgChannels.setCh3(ch3Open);
+//                            sendMsg(true);
+//                        }
+//                        RxBus.getInstance().post(RxEnum.EXTERNALKEY_TOMCU,
+//                                new ExternalKeysMsg_ToMCU(ExternalKeysMsg_ToMCU.TYPE_CH3,
+//                                        ch3Open ? ExternalKeysMsg_ToMCU.STATE_LED_ON : ExternalKeysMsg_ToMCU.STATE_LED_OFF));
+////                        RxBus.getInstance().post(RxEnum.MAIN_MENU_ENABLESLIP
+////                                , new MainMsgSliderZone(MainMsgSliderZone.MENUSLIP_CH3, ch3Open));
+//                    }
+//                    boolean ch4Open = ChannelFactory.isChOpen(ChannelFactory.CH4);
+//                    if (WorkModeManage.getInstance().getmWorkMode() != IWorkMode.WorkMode_XY &&
+//                            CacheUtil.get().getBoolean(CacheUtil.MAIN_RIGHT_CH4) != ch4Open) {
+//                        ch4Master.setChecked(ch4Open);
+////                        ch4Branch.setChecked(ch4Open);
+//
+//                        Command.get().getChannel().Display(3, ch4Open, false);
+//                        CacheUtil.get().putMap(CacheUtil.MAIN_RIGHT_CH4, String.valueOf(ch4Open));
+//                        if (msgChannels.getCh4().isValue() != ch4Open) {
+//                            msgChannels.setCh4(ch4Open);
+//                            sendMsg(true);
+//                        }
+//                        RxBus.getInstance().post(RxEnum.EXTERNALKEY_TOMCU,
+//                                new ExternalKeysMsg_ToMCU(ExternalKeysMsg_ToMCU.TYPE_CH4,
+//                                        ch4Open ? ExternalKeysMsg_ToMCU.STATE_LED_ON : ExternalKeysMsg_ToMCU.STATE_LED_OFF));
+////                        RxBus.getInstance().post(RxEnum.MAIN_MENU_ENABLESLIP
+////                                , new MainMsgSliderZone(MainMsgSliderZone.MENUSLIP_CH4, ch4Open));
+//                    }
+//                }
+//                setEnableSlip();
+            } else if (eventBase.getId() == EventFactory.EVENT_CHANNEL_ACTIVE) {
+//                int chActivate = ChannelFactory.getChActivate();
+//                if (channelCount == GlobalVar.CHANNEL_COUNT_4) {
+//                    if ((chActivate == ChannelFactory.CH1 || chActivate == ChannelFactory.CH2
+//                            || chActivate == ChannelFactory.CH3 || chActivate == ChannelFactory.CH4)
+//                            && channelLayout.getChannelSelectIndex() != chActivate) {
+//                        channelLayout.setChannelSelectIndex(chActivate);
+//                        channelLayout.updateSelect(true);
+//                    }
+//                } else {
+//                    if ((chActivate == ChannelFactory.CH1 || chActivate == ChannelFactory.CH2)
+//                            && channelLayout.getChannelSelectIndex() != chActivate) {
+//                        channelLayout.setChannelSelectIndex(chActivate);
+//                        channelLayout.updateSelect(true);
+//                    }
+//                }
+            } else if (eventBase.getId() == EventFactory.EVENT_CHANNEL_VSCALE
+                || eventBase.getId()==EventFactory.EVENT_CHANNEL_VSCALE_USER) {
+                if (eventBase.getData() == null) return;
+                int chIdx = (int) eventBase.getData();
+                if (!ChannelFactory.isDynamicCh(chIdx)) return;
+
+                Channel channel = ChannelFactory.getDynamicChannel(chIdx);
+                if(channel == null) return;
+                ch1Master.postDelayed(()->{
+                    CursorManage.getInstance().setCursorTrace(true);
+                    setChScale(chxMasters.get(chIdx), chIdx, channel.getVScaleVal(), false, true);
+                    ChannelFactory.forEachMath(mathChannel -> {
+                        if (mathChannel.isOpen()
+                                && mathChannel.getMathType() == MathWave.MATH_FFTWAVE
+                                && mathChannel.getMathFFTWave().getSource() == chIdx
+                                && mathChannel.isFFTDb()==false
+                        ) {
+                            mathChannel.setVScaleId(mathChannel.getVScaleId(channel.getVScaleIdVal()));
+                        }
+                    });
+                    CursorManage.setCursorByScaleTrace();
+                    CursorManage.getInstance().setCursorTrace(false);
+                },100);
+
+
+            }
+
+//            if (eventBase.getId() == EventFactory.EVENT_CHANNEL_OPEN) {
+//                if (eventBase.getData() == null) return;
+//                int chIdx = (int) eventBase.getData();
+//                if (!ChannelFactory.isMathCh(chIdx)) return;
+//                MathChannel mathChannel = ChannelFactory.getMathChannel(chIdx);
+//                if (mathChannel.getMathType() != MathWave.MATH_FFTWAVE) return;
+//                if (CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_MATH_FFT_TYPE_ID + TChan.toUiChNo(chIdx)) == 1) {
+//                    int dbVScale = CacheUtil.get().getInt(CacheUtil.MAIN_RIGHT_MATH_FFT_DB_VSCALE_ID + TChan.toUiChNo(chIdx));
+//                    if (mathChannel.getVScaleId() == dbVScale) return;
+//                    mathChannel.setVScaleId(dbVScale);
+//                } else {
+//                    int rmsVScale = CacheUtil.get().getInt(CacheUtil.MAIN_RIGHT_MATH_FFT_RMS_VSCALE_ID + TChan.toUiChNo(chIdx));
+//                    if (mathChannel.getVScaleId() == rmsVScale) return;
+//                    mathChannel.setVScaleId(rmsVScale);
+//                }
+//            }
+        }
+    };
+
+
+    private Consumer<Integer> consumerRecoverySelect = new Consumer<Integer>() {
+        @Override
+        public void accept(Integer recoverySelect) throws Throwable {
+            if(recoverySelect == null) return;
+            CacheUtil.get().putMap(CacheUtil.MAIN_CENTER_CHANNELS_SELECT, String.valueOf(recoverySelect));
+            MiddleMain.getIns().getChanSelectorManage().setActivityChannel(IChan.toIChan(recoverySelect));
+        }
+    };
+}

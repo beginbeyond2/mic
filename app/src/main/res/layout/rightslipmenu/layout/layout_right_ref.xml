@@ -1,0 +1,341 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="70px">
+
+        <TextView
+            android:id="@+id/refCheckHead"
+            style="@style/textStylePrompt"
+            android:layout_width="wrap_content"
+            android:layout_height="70px"
+            android:layout_marginStart="41px"
+            android:gravity="center"
+            android:text="Ref" />
+
+        <com.micsig.tbook.ui.MSwitchBox
+            android:id="@+id/refCheckDetail"
+            android:layout_width="72px"
+            android:layout_height="36px"
+            android:layout_alignTop="@+id/refCheckHead"
+            android:layout_alignBottom="@+id/refCheckHead"
+            android:layout_alignParentEnd="true"
+            android:layout_marginEnd="25px" />
+    </RelativeLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2px"
+        android:layout_marginStart="21px"
+        android:layout_marginEnd="21px"
+        android:background="@drawable/bg_right_layout_divider"
+        />
+
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        >
+
+        <TextView
+            android:id="@+id/r1Title"
+            style="@style/textStylePrompt"
+            android:layout_width="wrap_content"
+            android:layout_height="40px"
+            android:layout_marginStart="41px"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="@id/r1Switch"
+            app:layout_constraintBottom_toBottomOf="@+id/r1Switch"
+            android:gravity="center"
+            android:layout_marginTop="5px"
+            android:text="@string/refR1Title" />
+
+        <com.micsig.tbook.ui.MSwitchBox
+            android:id="@+id/r1Switch"
+            android:layout_width="72px"
+            android:layout_height="36px"
+            android:layout_marginTop="20px"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintLeft_toLeftOf="@+id/r1EditLayout"
+            app:layout_constraintRight_toRightOf="@+id/r1EditLayout"
+
+             />
+
+        <TextView
+            android:id="@+id/r1RecallHead"
+            style="@style/textStylePrompt"
+            android:layout_width="104px"
+            android:layout_height="120px"
+            app:layout_constraintTop_toBottomOf="@+id/r1Title"
+            app:layout_constraintLeft_toLeftOf="parent"
+            android:layout_marginBottom="10px"
+            android:gravity="center"
+            android:text="@string/refRecall" />
+
+        <LinearLayout
+            android:id="@+id/r1EditLayout"
+            android:layout_width="320px"
+            android:layout_height="120px"
+            app:layout_constraintLeft_toRightOf="@id/r1RecallHead"
+            app:layout_constraintTop_toBottomOf="@+id/r1Title"
+            android:background="@drawable/bg_rightslipmenu_ref_edit"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/r1EditTop"
+                style="@style/textStylePrompt"
+                android:layout_width="match_parent"
+                android:layout_height="50px"
+                android:layout_marginTop="20px"
+                android:gravity="center"
+                android:maxLines="1" />
+
+            <TextView
+                android:id="@+id/r1EditBottom"
+                style="@style/textStylePrompt"
+                android:layout_width="match_parent"
+                android:layout_height="30px"
+                android:gravity="center"
+                android:maxLines="1"
+                android:textSize="16px" />
+        </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2px"
+        android:layout_marginStart="21px"
+        android:layout_marginEnd="21px"
+        android:background="@drawable/bg_right_layout_divider"
+        />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        >
+
+        <TextView
+            android:id="@+id/r2Title"
+            style="@style/textStylePrompt"
+            android:layout_width="wrap_content"
+            android:layout_height="40px"
+            android:layout_marginStart="41px"
+            android:text="@string/refR2Title"
+            app:layout_constraintTop_toTopOf="@id/r2Switch"
+            app:layout_constraintBottom_toBottomOf="@+id/r2Switch"
+            app:layout_constraintLeft_toLeftOf="parent"
+            android:layout_marginTop="5px"
+            android:gravity="center"
+            />
+
+        <com.micsig.tbook.ui.MSwitchBox
+            android:id="@+id/r2Switch"
+            android:layout_width="72px"
+            android:layout_height="36px"
+            android:layout_marginTop="20px"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintLeft_toLeftOf="@+id/r2EditLayout"
+            app:layout_constraintRight_toRightOf="@+id/r2EditLayout"
+             />
+
+        <TextView
+            android:id="@+id/r2RecallHead"
+            style="@style/textStylePrompt"
+            android:layout_width="104px"
+            android:layout_height="120px"
+            android:layout_marginBottom="10px"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/r2Title"
+            android:gravity="center"
+            android:text="@string/refRecall" />
+
+        <LinearLayout
+            android:id="@+id/r2EditLayout"
+            android:layout_width="320px"
+            android:layout_height="120px"
+            android:background="@drawable/bg_rightslipmenu_ref_edit"
+            android:orientation="vertical"
+            app:layout_constraintLeft_toRightOf="@id/r2RecallHead"
+            app:layout_constraintTop_toBottomOf="@id/r2Title"
+            >
+
+            <TextView
+                android:id="@+id/r2EditTop"
+                style="@style/textStylePrompt"
+                android:layout_width="match_parent"
+                android:layout_height="50px"
+                android:layout_marginTop="20px"
+                android:gravity="center"
+                android:maxLines="1" />
+
+            <TextView
+                android:id="@+id/r2EditBottom"
+                style="@style/textStylePrompt"
+                android:layout_width="match_parent"
+                android:layout_height="30px"
+                android:gravity="center"
+                android:maxLines="1"
+                android:textSize="16px" />
+        </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2px"
+        android:layout_marginStart="21px"
+        android:layout_marginEnd="21px"
+        android:background="@drawable/bg_right_layout_divider"
+        />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        >
+
+        <TextView
+            android:id="@+id/r3Title"
+            style="@style/textStylePrompt"
+            android:layout_width="wrap_content"
+            android:layout_height="40px"
+            android:layout_marginStart="41px"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/r3Switch"
+            app:layout_constraintBottom_toBottomOf="@+id/r3Switch"
+            android:layout_marginTop="5px"
+            android:gravity="center"
+            android:text="@string/refR3Title" />
+
+        <com.micsig.tbook.ui.MSwitchBox
+            android:id="@+id/r3Switch"
+            android:layout_width="72px"
+            android:layout_height="36px"
+            android:layout_marginTop="20px"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintLeft_toLeftOf="@+id/r3EditLayout"
+            app:layout_constraintRight_toRightOf="@+id/r3EditLayout"
+            />
+
+        <TextView
+            android:id="@+id/r3RecallHead"
+            style="@style/textStylePrompt"
+            android:layout_width="104px"
+            android:layout_height="120px"
+            android:layout_marginBottom="10px"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/r3Title"
+            android:gravity="center"
+            android:text="@string/refRecall" />
+
+        <LinearLayout
+            android:id="@+id/r3EditLayout"
+            android:layout_width="320px"
+            android:layout_height="120px"
+            android:background="@drawable/bg_rightslipmenu_ref_edit"
+            android:orientation="vertical"
+            app:layout_constraintLeft_toRightOf="@id/r3RecallHead"
+            app:layout_constraintTop_toBottomOf="@id/r3Title"
+            >
+
+            <TextView
+                android:id="@+id/r3EditTop"
+                style="@style/textStylePrompt"
+                android:layout_width="match_parent"
+                android:layout_height="50px"
+                android:layout_marginTop="20px"
+                android:gravity="center"
+                android:maxLines="1" />
+
+            <TextView
+                android:id="@+id/r3EditBottom"
+                style="@style/textStylePrompt"
+                android:layout_width="match_parent"
+                android:layout_height="30px"
+                android:gravity="center"
+                android:maxLines="1"
+                android:textSize="16px" />
+        </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2px"
+        android:layout_marginStart="21px"
+        android:layout_marginEnd="21px"
+        android:background="@drawable/bg_right_layout_divider"
+        />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        >
+
+        <TextView
+            android:id="@+id/r4Title"
+            style="@style/textStylePrompt"
+            android:layout_width="wrap_content"
+            android:layout_height="40px"
+            android:layout_marginStart="41px"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="@id/r4Switch"
+            app:layout_constraintBottom_toBottomOf="@id/r4Switch"
+            android:layout_marginTop="5px"
+            android:gravity="center"
+            android:text="@string/refR4Title" />
+
+        <com.micsig.tbook.ui.MSwitchBox
+            android:id="@+id/r4Switch"
+            android:layout_width="72px"
+            android:layout_height="36px"
+            android:layout_marginTop="20px"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintLeft_toLeftOf="@+id/r4EditLayout"
+            app:layout_constraintRight_toRightOf="@+id/r4EditLayout"
+            />
+
+        <TextView
+            android:id="@+id/r4RecallHead"
+            style="@style/textStylePrompt"
+            android:layout_width="104px"
+            android:layout_height="120px"
+            android:layout_marginBottom="10px"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/r4Title"
+            android:gravity="center"
+            android:text="@string/refRecall" />
+
+        <LinearLayout
+            android:id="@+id/r4EditLayout"
+            android:layout_width="320px"
+            android:layout_height="120px"
+            android:background="@drawable/bg_rightslipmenu_ref_edit"
+            android:orientation="vertical"
+            app:layout_constraintLeft_toRightOf="@+id/r4RecallHead"
+            app:layout_constraintTop_toBottomOf="@id/r4Title"
+            >
+
+            <TextView
+                android:id="@+id/r4EditTop"
+                style="@style/textStylePrompt"
+                android:layout_width="match_parent"
+                android:layout_height="50px"
+                android:layout_marginTop="20px"
+                android:gravity="center"
+                android:maxLines="1" />
+
+            <TextView
+                android:id="@+id/r4EditBottom"
+                style="@style/textStylePrompt"
+                android:layout_width="match_parent"
+                android:layout_height="30px"
+                android:gravity="center"
+                android:maxLines="1"
+                android:textSize="16px" />
+        </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</merge>

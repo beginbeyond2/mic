@@ -1,0 +1,781 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="channelsNameEight">
+        <item>@string/mainCenterRadioButtonCh1</item>
+        <item>@string/mainCenterRadioButtonCh2</item>
+        <item>@string/mainCenterRadioButtonCh3</item>
+        <item>@string/mainCenterRadioButtonCh4</item>
+        <item>@string/mainCenterRadioButtonCh5</item>
+        <item>@string/mainCenterRadioButtonCh6</item>
+        <item>@string/mainCenterRadioButtonCh7</item>
+        <item>@string/mainCenterRadioButtonCh8</item>
+    </string-array>
+    <string-array name="channelsNameFour">
+        <item>@string/mainCenterRadioButtonCh1</item>
+        <item>@string/mainCenterRadioButtonCh2</item>
+        <item>@string/mainCenterRadioButtonCh3</item>
+        <item>@string/mainCenterRadioButtonCh4</item>
+    </string-array>
+    <string-array name="channelsNameDouble">
+        <item>@string/mainCenterRadioButtonCh1</item>
+        <item>@string/mainCenterRadioButtonCh2</item>
+    </string-array>
+
+    <string-array name="keyboard"><item>7</item>
+        <item>4</item>
+        <item>1</item>
+        <item>.</item>
+        <item>8</item>
+        <item>5</item>
+        <item>2</item>
+        <item>0</item>
+        <item>9</item>
+        <item>6</item>
+        <item>3</item>
+        <item>X</item>
+        <item>b/s</item>
+        <item>A</item>
+        <item>C</item>
+        <item>E</item>
+        <item>kb/s</item>
+        <item>B</item>
+        <item>D</item>
+        <item>F</item>
+        <item>Mb/s</item>
+        <item> </item>
+        <item>Entrer</item>
+    </string-array>
+
+    <string name="mathDoubleWave">double vague</string>
+    <string name="mathSource1">Source1</string>
+    <string name="mathSource2">Source2</string>
+    <string-array name="mathSymbol">
+        <item>+</item>
+        <item>-</item>
+        <item>x</item>
+        <item>÷</item>
+    </string-array>
+    <string name="mathFft">FFT</string>
+    <string name="mathSource">Source</string>
+    <string name="mathWindow">Fenêtre</string>
+    <string-array name="mathWindow">
+        <item>Fenêtre rectangulaire</item>
+        <item>Fenêtre Haming</item>
+        <item>Blackman</item>
+        <item>Fenêtre de Hanning</item>
+    </string-array>
+    <string-array name="mathFftType">
+        <item>Ligne</item>
+        <item>Décibels</item>
+    </string-array>
+    <string name="mathAdvance">Mathématiques avancées</string>
+    <string name="mathAdvanceExpr">Expression</string>
+    <string name="mathAdvanceVar1">Variable1</string>
+    <string name="mathAdvanceVar2">Variable2</string>
+    <string name="mathVertical">Référence d échelle verticale</string>
+    <string-array name="mathVertical">
+        <item>Centre</item>
+        <item>Zéro</item>
+    </string-array>
+
+    <string name="refR1Title">R1</string>
+    <string name="refR2Title">R2</string>
+    <string name="refR3Title">R3</string>
+    <string name="refR4Title">R4</string>
+    <string name="refRecall">Appel</string>
+
+    <string name="serialsType">Type de bus</string>
+
+    <string name="serialsUartRx">RX</string>
+    <string name="serialsUartIdle">Niveau de ralenti</string>
+    <string-array name="serialsUartIdle">
+        <item>Haute</item>
+        <item>Faible</item>
+    </string-array>
+    <string name="serialsUartCheck">Chèque</string>
+    <string-array name="serialsUartCheck">
+        <item>Non</item>
+        <item>Étrange</item>
+        <item>Même</item>
+    </string-array>
+    <string name="serialsUartBits">#Peu</string>
+    <string-array name="serialsUartBits">
+        <item>5bit</item>
+        <item>6bit</item>
+        <item>7bit</item>
+        <item>8bit</item>
+        <item>9bit</item>
+    </string-array>
+    <string name="serialsUartDisplay">Affichage</string>
+    <string-array name="serialsUartDisplay">
+        <item>Hexadécimal</item>
+        <item>Binaire</item>
+        <item>ASCII</item>
+    </string-array>
+    <string name="serialsUartBaudRate">Débit en bauds</string>
+
+    <string name="serialsLinSource">Source</string>
+    <string name="serialsLinIdle">Niveau de ralenti</string>
+    <string-array name="serialsLinIdle">
+        <item>Haute</item>
+        <item>Faible</item>
+    </string-array>
+    <string name="serialsLinBaudRate">Débit en bauds</string>
+
+    <string name="serialsCanSource">Source</string>
+    <string name="serialsCanSignal">Niveau de ralenti</string>
+    <string-array name="serialsCanSignal">
+        <item>CAN_H</item>
+        <item>CAN_L</item>
+        <item>H_L</item>
+        <item>L_H</item>
+        <item>Rx</item>
+        <item>Tx</item>
+    </string-array>
+    <string name="serialsCanBaudRate">Débit en bauds</string>
+
+    <string name="serialsSpiSource">Une horloge</string>
+    <string name="serialsSpiData">Les données</string>
+    <string name="serialsSpiCS">CS</string>
+    <string name="serialsSpiBits">#Peu</string>
+    <string-array name="serialsSpiBits">
+        <item>4bit</item>
+        <item>8bit</item>
+        <item>16bit</item>
+        <item>24bit</item>
+        <item>32bit</item>
+    </string-array>
+
+    <string name="serialsI2CSDA">Les données</string>
+    <string name="serialsI2CSCL">Une horloge</string>
+
+    <string name="serialsM429Source">Source</string>
+    <string name="serialsM429Format">Le format</string>
+    <string-array name="serialsM429Format">
+        <item>ETIQUETTE+DONNEES</item>
+        <item>L+D+SSM</item>
+        <item>L+SDI+D+SSM</item>
+    </string-array>
+    <string name="serialsM429Display">Affichage</string>
+    <string-array name="serialsM429Display">
+        <item>Binaire</item>
+        <item>Hexadécimal</item>
+    </string-array>
+    <string name="serialsM429BaudRate">Débit en bauds</string>
+    <string-array name="serialsM429BaudRate">
+        <item>12.5kb/s</item>
+        <item>100kb/s</item>
+    </string-array>
+
+    <string name="serialsM1553bSource">Source</string>
+    <string name="serialsM1553bDisplay">Affichage</string>
+    <string-array name="serialsM1553bDisplay">
+        <item>Binaire</item>
+        <item>Hexadécimal</item>
+    </string-array>
+
+    <string name="channelInvertHead">Inversion</string>
+    <string name="channelCouple">Méthode de couplage</string>
+    <string-array name="channelCouple">
+        <item>DC</item>
+        <item>Échange</item>
+        <item>Au sol</item>
+    </string-array>
+    <string name="channelProbeType">Sonde</string>
+    <string-array name="channelProbeType">
+        <item>Tension</item>
+        <item>Courant</item>
+    </string-array>
+    <string name="probe_calibration">Calibration</string>
+    <string name="channelProbeMultiple">1mX</string>
+    <string name="channelBandWidth">Bande passante</string>
+    <string-array name="channelBandWidth">
+        <item>Plein</item>
+        <item>200M</item>
+        <item>20M</item>
+        <item>Qualcomm</item>
+        <item>Passe bas</item>
+    </string-array>
+    <string name="channelSample">Échantillonnage</string>
+    <string-array name="channelSample">
+        <item>Normal</item>
+        <item>Moyenne</item>
+        <item>Enveloppe</item>
+        <item>Peak</item>
+    </string-array>
+    <string-array name="channelSampleDetail">
+        <item>2</item>
+        <item>4</item>
+        <item>8</item>
+        <item>16</item>
+        <item>32</item>
+        <item>64</item>
+        <item>128</item>
+        <item>256</item>
+        <item>∞</item>
+    </string-array>
+    <string-array name="channelProbeTypeMultiple">
+        <item>1mX</item>
+        <item>2mX</item>
+        <item>5mX</item>
+        <item>10mX</item>
+        <item>20mX</item>
+        <item>50mX</item>
+        <item>100mX</item>
+        <item>200mX</item>
+        <item>500mX</item>
+        <item>1X</item>
+        <item>2X</item>
+        <item>5X</item>
+        <item>10X</item>
+        <item>20X</item>
+        <item>50X</item>
+        <item>100X</item>
+        <item>200X</item>
+        <item>500X</item>
+        <item>1kX</item>
+        <item>2kX</item>
+        <item>5kX</item>
+        <item>10kX</item>
+    </string-array>
+    <string name="dialogBandWidthMHz">MHz</string>
+    <string name="dialogBandWidthKHz">KHz</string>
+    <string-array name="channelProbeEvery">
+        <item>500u</item>
+        <item>1m</item>
+        <item>2m</item>
+        <item>5m</item>
+        <item>10m</item>
+        <item>20m</item>
+        <item>50m</item>
+        <item>100m</item>
+        <item>200m</item>
+        <item>500m</item>
+        <item>1</item>
+        <item>2</item>
+        <item>5</item>
+        <item>10</item>
+    </string-array>
+    <string-array name="channelProbeEveryDouble">
+        <item>0.0005</item>
+        <item>0.001</item>
+        <item>0.002</item>
+        <item>0.005</item>
+        <item>0.01</item>
+        <item>0.02</item>
+        <item>0.05</item>
+        <item>0.1</item>
+        <item>0.2</item>
+        <item>0.5</item>
+        <item>1</item>
+        <item>2</item>
+        <item>5</item>
+        <item>10</item>
+    </string-array>
+
+    <string-array name="popArrayTitle">
+        <item>Mesure</item>
+        <item>Enregistrer</item>
+        <item>Cursor</item>
+        <item>Échantillon</item>
+        <item>Affichage</item>
+        <item>Déclencheur</item>
+        <item>Automatique</item>
+        <item>Paramètres utilisateur</item>
+        <item>Fréquencemètre</item>
+    </string-array>
+    <string-array name="popArrayTitleCalibration">
+        <item>Mesure</item>
+        <item>Enregistrer</item>
+        <item>Cursor</item>
+        <item>Échantillon</item>
+        <item>Affichage</item>
+        <item>Déclencheur</item>
+        <item>Automatique</item>
+        <item>Paramètres utilisateur</item>
+        <item>Fréquencemètre</item>
+        <item>Étalonnage en usine</item>
+    </string-array>
+    <string-array name="popArrayChannel">
+        <item>@string/mainCenterRadioButtonCh1</item>
+        <item>@string/mainCenterRadioButtonCh2</item>
+        <item>@string/mainCenterRadioButtonCh3</item>
+        <item>@string/mainCenterRadioButtonCh4</item>
+        <item>@string/mainCenterRadioButtonMath1</item>
+        <item>@string/mainCenterRadioButtonR1</item>
+        <item>@string/mainCenterRadioButtonR2</item>
+        <item>@string/mainCenterRadioButtonR3</item>
+        <item>@string/mainCenterRadioButtonR4</item>
+    </string-array>
+    <array name="popArrayChannelColor">
+        <item>@color/colorCh1</item>
+        <item>@color/colorCh2</item>
+        <item>@color/colorCh3</item>
+        <item>@color/colorCh4</item>
+        <item>@color/colorCh5</item>
+        <item>@color/colorCh6</item>
+        <item>@color/colorCh7</item>
+        <item>@color/colorCh8</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorChCommon</item>
+    </array>
+    <string name="saveIn">Enregistré dans</string>
+    <string-array name="saveIn">
+        <item>Local</item>
+        <item>Disque U</item>
+    </string-array>
+    <string name="saveType">Type</string>
+    <string-array name="saveType">
+        <item>WAV</item>
+        <item>CSV</item>
+        <item>BIN</item>
+        <item>Picture</item>
+        <item>Session</item>
+    </string-array>
+    <string-array name="display">
+        <item>Conventionnel</item>
+        <item>Forme donde</item>
+        <item>Graphique carré</item>
+        <item>Rémanence</item>
+        <item>FFT Info.</item>
+        <item>Txt Mix</item>
+    </string-array>
+    <string name="displayHorRef">Base de temps référence</string>
+    <string-array name="displayHorRef">
+        <item>Centre</item>
+        <item>Position de déclenchement</item>
+    </string-array>
+    <string name="displayTimebase">Base de temps</string>
+    <string-array name="displayTimebase">
+        <item>Yn</item>
+        <item>XY</item>
+    </string-array>
+    <string name="dispalyRoll">Faire défiler</string>
+    <string name="displayCCT">Température de couleur</string>
+    <string name="displayScale">Scale</string>
+    <string-array name="displayEnable">
+        <item>Ouvert</item>
+        <item>Fermer</item>
+    </string-array>
+    <string name="displayDrawType">Méthode de dessin</string>
+    <string-array name="displayDrawType">
+        <item>Point</item>
+        <item>Ligne</item>
+    </string-array>
+    <string name="displayMode">Type</string>
+    <string-array name="displayMode">
+        <item>Plein</item>
+        <item>Grille</item>
+        <item>Réticule</item>
+        <item>Cadre</item>
+    </string-array>
+    <string name="displayPersist">Rémanence</string>
+    <string-array name="displayPersist">
+        <item>Non</item>
+        <item>Automatique</item>
+        <item>Commune</item>
+        <item>∞</item>
+    </string-array>
+    <string-array name="displayPersistAdjust">
+        <item>100ms</item>
+        <item>200ms</item>
+        <item>300ms</item>
+        <item>400ms</item>
+        <item>500ms</item>
+        <item>600ms</item>
+        <item>700ms</item>
+        <item>800ms</item>
+        <item>900ms</item>
+        <item>1s</item>
+        <item>2s</item>
+        <item>3s</item>
+        <item>4s</item>
+        <item>5s</item>
+        <item>6s</item>
+        <item>7s</item>
+        <item>8s</item>
+        <item>9s</item>
+        <item>10s</item>
+    </string-array>
+    <string-array name="trigger">
+        <item>Conventionnel</item>
+        <item>Bord</item>
+        <item>Largeur dimpulsion</item>
+        <item>La logique</item>
+        <item>Bord N</item>
+        <item>Runt</item>
+        <item>Pente</item>
+        <item>Timeout</item>
+        <item>Vidéo</item>
+        <item>S1 UART</item>
+        <item>S2 UART</item>
+        <item>S3 UART</item>
+        <item>S4 UART</item>
+    </string-array>
+    <string name="triggerMode">Mode</string>
+    <string-array name="triggerMode">
+        <item>Automatique</item>
+        <item>Normal</item>
+    </string-array>
+    <string name="triggerSource">Source</string>
+    <string name="triggerEdge">Bord</string>
+    <string-array name="triggerEdge">
+        <item>Montée</item>
+        <item>Décliner</item>
+        <item>Double bord</item>
+    </string-array>
+    <string name="triggerCouple">Couplage</string>
+    <string-array name="triggerCouple">
+        <item>DC</item>
+        <item>Échange</item>
+        <item>Suppression haute fréquence</item>
+        <item>Suppression basse fréquence</item>
+        <item>Suppression du bruit</item>
+    </string-array>
+    <string name="triggerPulsewidthPolar">Polarité</string>
+    <string-array name="triggerPulsewidthPolar">
+        <item>Positif</item>
+        <item>Négatif</item>
+    </string-array>
+    <string name="triggerPulsewidthCondition">Condition</string>
+    <string-array name="triggerPulsewidthCondition">
+        <item>&lt;</item>
+        <item>&gt;</item>
+        <item>=</item>
+        <item>&lt;&gt;</item>
+    </string-array>
+
+    <string name="triggerCh1">@string/mainCenterRadioButtonCh1</string>
+    <string name="triggerCh2">@string/mainCenterRadioButtonCh2</string>
+    <string name="triggerCh3">@string/mainCenterRadioButtonCh3</string>
+    <string name="triggerCh4">@string/mainCenterRadioButtonCh4</string>
+    <string name="triggerCh5">@string/mainCenterRadioButtonCh5</string>
+    <string name="triggerCh6">@string/mainCenterRadioButtonCh6</string>
+    <string name="triggerCh7">@string/mainCenterRadioButtonCh7</string>
+    <string name="triggerCh8">@string/mainCenterRadioButtonCh8</string>
+    <string-array name="triggerCh">
+        <item>Haute</item>
+        <item>Faible</item>
+        <item>Non</item>
+    </string-array>
+    <string name="triggerLogic">La logique</string>
+    <string-array name="triggerLogic">
+        <item>AND</item>
+        <item>OR</item>
+        <item>NAND</item>
+        <item>NOR</item>
+    </string-array>
+    <string name="triggerLogicCondition">Condition</string>
+    <string-array name="triggerLogicCondition">
+        <item>&lt;</item>
+        <item>&gt;</item>
+        <item>=</item>
+        <item>&lt;&gt;</item>
+        <item>Vrai</item>
+        <item>Faux</item>
+    </string-array>
+    <string name="triggerNEdgeSlope">Bord</string>
+    <string-array name="triggerNEdgeSlope">
+        <item>Montée</item>
+        <item>Décliner</item>
+    </string-array>
+
+    <string name="triggerRuntPolar">Polarité</string>
+    <string-array name="triggerRuntPolar">
+        <item>Positif</item>
+        <item>Négatif</item>
+        <item>Arbitrairement</item>
+    </string-array>
+    <string name="triggerRuntCondition">Condition</string>
+    <string-array name="triggerRuntCondition">
+        <item>&lt;</item>
+        <item>&gt;</item>
+        <item>&lt;&gt;</item>
+        <item>Non</item>
+    </string-array>
+
+    <string name="triggerSlopeEdge">Bord</string>
+    <string-array name="triggerSlopeEdge">
+        <item>Montée</item>
+        <item>Décliner</item>
+        <item>Arbitrairement</item>
+    </string-array>
+    <string name="triggerSlopeCondition">Condition</string>
+    <string-array name="triggerSlopeCondition">
+        <item>&lt;</item>
+        <item>&gt;</item>
+        <item>&lt;&gt;</item>
+    </string-array>
+
+    <string name="triggerTimeoutPolar">Polarité</string>
+    <string-array name="triggerTimeoutPolar">
+        <item>Positif</item>
+        <item>Négatif</item>
+        <item>Arbitrairement</item>
+    </string-array>
+
+    <string name="triggerVideoPolar">Polarité</string>
+    <string-array name="triggerVideoPolar">
+        <item>Positif</item>
+        <item>Négatif</item>
+    </string-array>
+    <string name="triggerVideoStandard">Standard</string>
+    <string-array name="triggerVideoStandard">
+        <item>625/PAL</item>
+        <item>SECAM</item>
+        <item>525/NTSC</item>
+        <item>720P</item>
+        <item>1080I</item>
+        <item>1080P</item>
+    </string-array>
+    <string name="triggerVideotrigger">Déclencheur</string>
+    <string-array name="triggerVideoTriggerMore">
+        <item>Champ impair</item>
+        <item>Même champ</item>
+        <item>Tous les champs</item>
+        <item>Toutes les lignes</item>
+        <item>Ligne</item>
+    </string-array>
+    <string-array name="triggerVideoTriggerLess">
+        <item>Tous les champs</item>
+        <item>Toutes les lignes</item>
+        <item>Ligne</item>
+    </string-array>
+    <string name="triggerVideoFrequency">Fréquence</string>
+    <string-array name="triggerVideoFrequencyMore">
+        <item>60Hz</item>
+        <item>50Hz</item>
+        <item>30Hz</item>
+        <item>25Hz</item>
+        <item>24Hz</item>
+    </string-array>
+    <string-array name="triggerVideoFrequencyLess">
+        <item>60Hz</item>
+        <item>50Hz</item>
+    </string-array>
+
+    <string-array name="triggerSerialsUART">
+        <item>Bit de départ</item>
+        <item>Bit darrêt</item>
+        <item>Les données</item>
+        <item>[0: données]</item>
+        <item>[1: données]</item>
+        <item>[x: données]</item>
+        <item>Erreur de parité</item>
+    </string-array>
+    <string-array name="triggerSerialsLIN">
+        <item>Front montant synchrone</item>
+        <item>ID de cadre</item>
+        <item>ID de cadre et données</item>
+        <item>Parity Error</item>
+        <item>Checksum Error</item>
+    </string-array>
+    <string-array name="triggerSerialsCAN">
+        <item>Début du cadre</item>
+        <item>ID de cadre distant</item>
+        <item>ID de trame de données</item>
+        <item>Identifiant de trame / donnée</item>
+        <item>ID de trame de données et données</item>
+        <item>Cadre derreur</item>
+        <item>Toutes les erreurs</item>
+        <item>Confirmer lerreur</item>
+        <item>Cadre de surcharge</item>
+    </string-array>
+    <string-array name="triggerSerialsSPI">
+        <item>CS</item>
+        <item>Les données</item>
+        <item>X: données</item>
+    </string-array>
+    <string-array name="triggerSerialsI2C">
+        <item>Condition de départ</item>
+        <item>Condition darrêt</item>
+        <item>Confirmer perdu</item>
+        <item>Redémarrer</item>
+        <item>Le champ dadresse na pas de confirmation</item>
+        <item>Type de cadre 1</item>
+        <item>Type de cadre 2</item>
+        <item>Lecture et écriture de données EEPROM</item>
+        <item>Cadre décriture 10 bits</item>
+    </string-array>
+    <string-array name="triggerSerialsARINC429">
+        <item>Début de mot</item>
+        <item>Fin de mot</item>
+        <item>ETIQUETTE</item>
+        <item>SDI</item>
+        <item>DONNÉES</item>
+        <item>SSM</item>
+        <item>ETIQUETTE + SDI</item>
+        <item>Label + Données</item>
+        <item>Label + SSM</item>
+        <item>Erreur de mot</item>
+        <item>Erreur décart de mot</item>
+        <item>Erreur de parité</item>
+        <item>Toutes les erreurs</item>
+        <item>Tous les 0 chiffres</item>
+        <item>Tous 1</item>
+    </string-array>
+    <string-array name="triggerSerials1553B">
+        <item>En-tête de synchronisation du mot instruction / statut</item>
+        <item>En-tête de synchronisation de mot de données</item>
+        <item>Mot dinstruction / détat</item>
+        <item>Adresse du terminal distant</item>
+        <item>Erreur de code Manchester</item>
+        <item>Mot de données</item>
+        <item>Erreur de parité impaire</item>
+        <item>Toutes les erreurs</item>
+    </string-array>
+    <string name="triggerSerialsUARTCondition">Condition</string>
+    <string-array name="triggerSerialsUARTCondition">
+        <item>&lt;</item>
+        <item>&gt;</item>
+        <item>=</item>
+        <item>≠</item>
+    </string-array>
+
+    <string-array name="auto">
+        <item>Réglage automatique</item>
+        <item>Gamme automatique</item>
+    </string-array>
+    <string name="autoSettingOpenChannel">Ouvrir le canal automatiquement</string>
+    <string-array name="autoSettingOpenChannel">
+        <item>Ouvert</item>
+        <item>Fermer</item>
+    </string-array>
+    <string name="autoSettingTriggerSource">Source de déclenchement automatique</string>
+    <string-array name="autoSettingTriggerSource">
+        <item>Signal actuel</item>
+        <item>Signal maximum</item>
+    </string-array>
+    <string-array name="autoSettingLevelSelect">
+        <item>V</item>
+        <item>mV</item>
+    </string-array>
+
+    <string name="autoRangeRange">Gamme automatique</string>
+    <string name="autoRangeVertical">Engrenage vertical</string>
+    <string name="autoRangeHorizontal">Base de temps horizontale</string>
+    <string name="autoRangeLevel">Niveau</string>
+    <string-array name="autoRangeSelect">
+        <item>Ouvert</item>
+        <item>Fermer</item>
+    </string-array>
+
+    <string name="frequencymeter">Fréquencemètre</string>
+    <string-array name="frequencymeter">
+        <item>Fermer</item>
+    </string-array>
+
+    <string-array name="setting">
+        <item>Config.Usine</item>
+        <item>Auto_étalonnage</item>
+        <item>Clavier sans fil</item>
+        <item>Aux In</item>
+        <item>Ref Base</item>
+    </string-array>
+
+    <string name="timestamp">Horodatage</string>
+    <string-array name="timestamp">
+        <item>Ouvert</item>
+        <item>Fermer</item>
+    </string-array>
+
+    <string name="screenInvert">Inversé</string>
+    <string-array name="screenInvert">
+        <item>Ouvert</item>
+        <item>Fermer</item>
+    </string-array>
+
+    <string name="usersetDepth">Longueur denregistrement</string>
+    <string-array name="usersetDepth">
+        <item>Automatique</item>
+        <item>28/14/7M</item>
+        <item>2.8/1.4/0.7M</item>
+        <item>280/140/70K</item>
+        <item>28/14/7K</item>
+    </string-array>
+
+    <string-array name="measures">
+        <item>Période</item>
+        <item>Fréq</item>
+        <item>T.Montée</item>
+        <item>T.Desc</item>
+        <item>Retard</item>
+        <item>RapCycl+</item>
+        <item>RapCycl-</item>
+        <item>Larg+</item>
+        <item>Larg-</item>
+        <item>L.Burst</item>
+        <item>SurOsc+</item>
+        <item>SurOsc-</item>
+        <item>Phase</item>
+        <item>U-PkPk</item>
+        <item>Amplit</item>
+        <item>Ampl+</item>
+        <item>Ampl-</item>
+        <item>Vmax</item>
+        <item>Vmin</item>
+        <item>U.eff</item>
+        <item>U.eff_T</item>
+        <item>U.Moy</item>
+        <item>U.Moy_T</item>
+        <item>AC RMS</item>
+        <item>+Rate</item>
+        <item>-Rate</item>
+        <item>TValue</item>
+    </string-array>
+
+    <string-array name="measureDelayPosition">
+        <item>PreFrMont.</item>
+        <item>PreFrDesc.</item>
+        <item>DerFrMont.</item>
+        <item>DerFrDesc.</item>
+    </string-array>
+    <string-array name="measureDelayToChannel">
+        <item>M1</item>
+        <item>M2</item>
+        <item>M3</item>
+        <item>M4</item>
+        <item>M5</item>
+        <item>M6</item>
+        <item>M7</item>
+        <item>M8</item>
+    </string-array>
+    <string-array name="measurePhaseToChannel">
+        <item>M1</item>
+        <item>M2</item>
+        <item>M3</item>
+        <item>M4</item>
+        <item>M5</item>
+        <item>M6</item>
+        <item>M7</item>
+        <item>M8</item>
+    </string-array>
+
+    <string-array name="serialsWordTitle">
+        <item>S1:Uart</item>
+        <item>S2</item>
+        <item>S1&amp;S2</item>
+    </string-array>
+
+    <string-array name="math_channel_type">
+        <item>double vague</item>
+        <item>FFT</item>
+        <item>AX+B</item>
+        <item>Mathématiques avancées</item>
+    </string-array>
+</resources>

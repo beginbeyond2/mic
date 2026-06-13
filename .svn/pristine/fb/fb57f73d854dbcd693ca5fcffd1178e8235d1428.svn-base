@@ -1,0 +1,14 @@
+package com.micsig.tbook.scope.fpga;
+
+/**
+ * Created by zhuzh on 2018-4-8.
+ */
+
+public class FPGAReg_TRIG_RESTRAIN_TIME extends FPGAReg {
+    public FPGAReg_TRIG_RESTRAIN_TIME() {
+        super(FPGA_TRIG_RESTRAIN_TIME, 4);
+    }
+    public void setRestrainTime(int val){
+        setVal(0,val);
+    }
+}

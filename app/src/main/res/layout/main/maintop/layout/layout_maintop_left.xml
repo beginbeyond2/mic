@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AbsoluteLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:visibility="visible"
+    xmlns:ui="http://schemas.android.com/apk/res-auto">
+
+    <ImageView
+    android:id="@+id/logo"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_x="4px"
+    android:layout_y="8px"
+    android:src="@drawable/logo_new" />
+
+    <CheckBox
+        android:id="@+id/mainTopMeasureMenu"
+        android:layout_width="95px"
+        android:layout_height="68px"
+        android:layout_x="230px"
+        android:layout_y="4px"
+        android:gravity="center|bottom"
+        android:textAllCaps="false"
+        android:includeFontPadding="false"
+        android:button="@null"
+        android:textSize="20px"
+        android:textColor="@drawable/selector_text_color"
+        android:text="@string/main_measure"
+        android:background="@drawable/selector_main_measure"
+        />
+
+
+
+    <TextView
+        android:id="@+id/state"
+        android:layout_width="45px"
+        android:layout_height="@dimen/mainTopLeftStateHeight"
+        android:layout_x="@dimen/mainTopLeftStateX"
+        android:layout_y="@dimen/mainTopLeftStateY"
+        android:gravity="center"
+        android:text="@string/mainTopLeftStateRun"
+        android:textColor="@color/color_maintopleft_state_run"
+        android:textSize="12px"
+        android:visibility="invisible"
+        />
+<!--        android:background="@drawable/ic_rectangle_state"-->
+
+    <TextView
+        android:id="@+id/high"
+        android:layout_width="20px"
+        android:layout_height="30px"
+        android:layout_x="135px"
+        android:layout_y="2px"
+        android:gravity="center"
+        android:text="H"
+        android:textColor="@color/red"
+        android:textSize="16px"
+        android:visibility="gone" />
+
+    <RelativeLayout
+        android:id="@+id/dataLayout"
+        android:layout_width="180px"
+        android:layout_height="92px"
+        android:layout_x="216px"
+        android:layout_y="4px"
+        android:background="@color/color_Backcolor_MainMenu2"
+        android:visibility="gone"
+        >
+<!--        android:background="@drawable/ic_rectangle_length_rate">-->
+
+        <TextView
+            android:id="@+id/length"
+            style="@style/textStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="15px"
+            android:layout_marginTop="15px"
+            android:gravity="center"
+            android:textSize="20px"
+            android:text="@string/mainTopLeftLength" />
+
+        <TextView
+            android:id="@+id/rate"
+            style="@style/textStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_marginStart="15px"
+            android:layout_marginBottom="15px"
+            android:gravity="center"
+            android:textSize="19px"
+            android:text="@string/mainTopLeftRate" />
+
+        <TextView
+            android:id="@+id/peak"
+            style="@style/textStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_marginEnd="15px"
+            android:layout_marginTop="15px"
+            android:text="peak"
+            android:textSize="20px"
+            android:gravity="center" />
+    </RelativeLayout>
+
+<!--    <androidx.constraintlayout.widget.ConstraintLayout-->
+<!--        android:layout_x="4px"-->
+<!--        android:layout_y="72px"-->
+<!--        android:layout_width="172px"-->
+<!--        android:layout_height="19px"-->
+<!--        >-->
+<!--        <ImageView-->
+<!--            android:id="@+id/usbPcLink"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:background="@drawable/usb_pc_link"-->
+<!--            ui:layout_constraintLeft_toLeftOf="parent"-->
+<!--            ui:layout_constraintBottom_toBottomOf="parent"-->
+<!--            />-->
+
+<!--        <ImageView-->
+<!--            android:id="@+id/uDisk"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:background="@drawable/udisk"-->
+<!--            ui:layout_constraintLeft_toRightOf="@+id/usbPcLink"-->
+<!--            ui:layout_constraintBottom_toBottomOf="parent"-->
+<!--            android:layout_marginStart="3px"-->
+<!--            />-->
+
+<!--        <ImageView-->
+<!--            android:id="@+id/lan"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            ui:layout_constraintLeft_toRightOf="@id/uDisk"-->
+<!--            ui:layout_constraintBottom_toBottomOf="parent"-->
+<!--            android:background="@drawable/lan"-->
+<!--            android:layout_marginStart="3px"-->
+<!--            />-->
+
+<!--        <ImageView-->
+<!--            android:id="@+id/wifi"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:background="@drawable/wifi"-->
+<!--            ui:layout_constraintLeft_toRightOf="@+id/lan"-->
+<!--            ui:layout_constraintBottom_toBottomOf="parent"-->
+<!--            android:layout_marginStart="3px"-->
+<!--            />-->
+
+<!--        <com.micsig.tbook.ui.main.BatteryView-->
+<!--            android:id="@+id/battery"-->
+<!--            android:layout_width="19px"-->
+<!--            android:layout_height="19px"-->
+<!--            ui:layout_constraintLeft_toRightOf="@+id/wifi"-->
+<!--            ui:layout_constraintBottom_toBottomOf="parent"-->
+<!--            android:layout_marginStart="3px"-->
+<!--            />-->
+<!--        <TextView-->
+<!--            android:id="@+id/time"-->
+<!--            style="@style/textStyle"-->
+<!--            android:layout_width="40px"-->
+<!--            android:layout_height="20px"-->
+<!--            android:textSize="16px"-->
+<!--            android:text="@string/menu_bottom_time"-->
+<!--            android:layout_marginStart="5px"-->
+<!--            ui:layout_constraintLeft_toRightOf="@+id/battery"-->
+<!--            ui:layout_constraintBottom_toBottomOf="parent"-->
+<!--            />-->
+
+
+
+<!--    </androidx.constraintlayout.widget.ConstraintLayout>-->
+</AbsoluteLayout>

@@ -1,0 +1,248 @@
+package com.micsig.tbook.scope.channel;
+
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.Data.IBufferQueue;
+import com.micsig.tbook.scope.Data.IDataBuffer;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.measure.Measure;
+
+
+/**
+ * Created by zhuzh on 2018/3/15.
+ */
+
+public abstract class BaseChannel implements IChannel {
+    private static final String TAG = "BaseChannel";
+    private volatile int zOrder = 0;
+    private volatile double pos = 0;//1000对应的位置
+    private volatile boolean bOpen = false;
+    private volatile int chIdx = -1;
+    private volatile boolean bWaveValid = false;
+    private IBufferQueue dataBufferQueue = null;
+    private Measure measure = null;
+    private volatile String label;
+
+    private String name;
+
+
+    public BaseChannel(int chIdx,String name) {
+        this.name = name;
+        this.chIdx = chIdx;
+        measure = new Measure(this);
+        measure.WaveHeight(ScopeBase.getHeight());
+        measure.WaveHeightRate(1.0f);
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    public Measure getMeasure() {
+        return measure;
+    }
+
+    public int getzOrder() {
+        return zOrder;
+    }
+
+    public void setzOrder(int zOrder) {
+        this.zOrder = zOrder;
+    }
+
+    public  void setOpen(boolean bOpen) {
+        synchronized (this) {
+            this.bOpen = bOpen;
+        }
+    }
+
+    @Override
+    public boolean isOpen() {
+        synchronized (this) {
+            return bOpen;
+        }
+    }
+
+    @Override
+    public void setPos(double pos) {
+        synchronized (this) {
+            this.pos = pos;
+            calcCenterVal();
+        }
+    }
+
+//    protected void setPos(double pos) {
+//        synchronized (this) {
+////            if (pos < 0) {
+////                this.pos = (int) Math.round(pos - 0.5);
+////            } else {
+////                this.pos = (int) Math.round(pos + 0.5);
+////            }
+//            this.pos = pos;
+//        }
+//    }
+
+    @Override
+    public double getPosUI() {
+        synchronized (this) {
+            return ScopeBase.changeAccuracy(pos * ScopeBase.getToUICoff());
+        }
+    }
+
+    @Override
+    public double getPos() {
+        synchronized (this) {
+            return pos;//height=1000对应的位置
+        }
+    }
+
+    @Override
+    public void setLabel(String label) {
+        synchronized (this) {
+            this.label = label;
+        }
+    }
+
+    @Override
+    public String getLabel() {
+        synchronized (this) {
+            return this.label;
+        }
+    }
+
+
+    @Override
+    public int getChId() {
+        return chIdx;
+    }
+
+    @Override
+    public void setBuffer(IBufferQueue dataBuffer) {
+        this.dataBufferQueue = dataBuffer;
+    }
+
+    @Override
+    public boolean save(String pathName) {
+        boolean bret = false;
+        IDataBuffer dataBuffer = obtain();
+        if (dataBuffer != null && isWaveValid()) {
+            bret = dataBuffer.save(pathName);
+
+        }
+        if (dataBuffer != null) {
+            recycle(dataBuffer);
+        }
+        return bret;
+    }
+
+    @Override
+    public boolean saveCSV(String pathName) {
+        boolean bret = false;
+        IDataBuffer dataBuffer = obtain();
+        if (dataBuffer != null && isWaveValid()) {
+            bret = dataBuffer.saveCSV(pathName);
+        }
+        if (dataBuffer != null) {
+            recycle(dataBuffer);
+        }
+        return bret;
+    }
+
+    @Override
+    public IDataBuffer obtain() {
+
+        return dataBufferQueue.obtain();
+    }
+
+    @Override
+    public void recycle(IDataBuffer dataBuffer) {
+        dataBufferQueue.recycle(dataBuffer);
+    }
+
+    @Override
+    public IDataBuffer dequeue() {
+        return dataBufferQueue.dequeue();
+    }
+
+    @Override
+    public void enqueue(IDataBuffer dataBuffer) {
+        dataBufferQueue.enqueue(dataBuffer);
+    }
+
+    public synchronized boolean  isWaveValid() {
+        return bWaveValid;
+    }
+
+    public synchronized void setWaveValid(boolean bWaveValid) {
+        this.bWaveValid = bWaveValid;
+    }
+
+    public static final int VERTICAL_MODE_CH_ZERO = 1;
+    public static final int VERTICAL_MODE_SCREEN_CENTER = 0;
+    private volatile int verticalMode = VERTICAL_MODE_CH_ZERO;
+
+    public void setVerticalMode(int verticalMode) {
+        this.verticalMode = verticalMode;
+        EventFactory.sendEvent(EventFactory.EVENT_VERTICAL_MODE);
+    }
+
+    public int getVerticalMode() {
+        return verticalMode;
+    }
+
+    public abstract double getVScaleIdVal();//档位 即 垂直一格的幅值
+
+    public abstract double getVScaleVal();//通道幅度值
+
+    public abstract double getFineScale();
+    public void setVScaleId(int scaleId) {
+        autoVerticalMode();
+    }
+
+    protected volatile double centerVal = 0;
+
+    private void calcCenterVal() {
+        centerVal = pos * getVScaleIdVal() * getFineScale();
+    }
+
+    private void autoVerticalMode() {
+        if (verticalMode == VERTICAL_MODE_SCREEN_CENTER) {
+            double val = centerVal / (getVScaleIdVal() * getFineScale()) * ScopeBase.getToUICoff();
+            setPos(val);
+        }else{
+            calcCenterVal();
+        }
+    }
+
+    public abstract boolean isVScaleIdValid(int vScaleId);
+
+
+    public void setUpper(int upper) {
+        measure.MeasureUpper(upper);
+    }
+
+    public void setMiddle(int middle) {
+        measure.MeasureMiddle(middle);
+    }
+
+    public void setLower(int lower) {
+        measure.MeasureLower(lower);
+    }
+    public void setAbsUpper(double val){
+        measure.setAbsUpper(val);
+    }
+    public void setAbsMiddle(double val){
+        measure.setAbsMiddle(val);
+    }
+    public void setAbsLower(double val){
+        measure.setAbsLow(val);
+    }
+    public void setAbsEnable(boolean bAbsEnable){
+        measure.setMeasureAbs(bAbsEnable);
+    }
+    public boolean isAbsEnable(){
+        return measure.isAbsMeasure();
+    }
+
+}

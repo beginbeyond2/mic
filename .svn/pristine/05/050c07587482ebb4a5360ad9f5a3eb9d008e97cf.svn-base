@@ -1,0 +1,312 @@
+package com.micsig.tbook.scope.Calibrate;
+
+import android.util.Log;
+
+import com.micsig.tbook.scope.Auto.Auto;
+import com.micsig.tbook.scope.Data.IDataBuffer;
+import com.micsig.tbook.scope.Data.SyncHeader;
+import com.micsig.tbook.scope.Data.WaveData;
+import com.micsig.tbook.scope.Display.Display;
+import com.micsig.tbook.scope.Sample.MemDepthFactory;
+import com.micsig.tbook.scope.Sample.Sample;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.ScopeFrozen;
+import com.micsig.tbook.scope.ScopeMessage;
+import com.micsig.tbook.scope.Trigger.Trigger;
+import com.micsig.tbook.scope.Trigger.TriggerCommon;
+import com.micsig.tbook.scope.Trigger.TriggerEdge;
+import com.micsig.tbook.scope.Trigger.TriggerFactory;
+import com.micsig.tbook.scope.channel.Channel;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.channel.IChannel;
+import com.micsig.tbook.scope.fpga.FPGACommand;
+import com.micsig.tbook.scope.horizontal.HorizontalAxis;
+import com.micsig.tbook.scope.vertical.VerticalAxis;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Created by zhuzh on 2018-6-29.
+ */
+
+public abstract class Calibrate {
+    private int calibrateType;
+    private volatile boolean bCalibrate = false;
+    protected int memDepthSetBak;
+    private IDataBuffer [] chWaves = new IDataBuffer[ChannelFactory.CH_CNT];
+    private boolean finished=false;
+    protected boolean bFactorCalibrate = true;
+    protected final int channelNums;
+    protected CabteRegister cabteRegister;
+    protected Channel [] channel=new Channel[ChannelFactory.CH_CNT];
+    protected final String TAG_PRI="calibrate";
+    protected List<String> resultString=new ArrayList();
+
+    public Calibrate(int calibrateType){
+        this.calibrateType = calibrateType;
+
+        ChannelFactory.forEachCh((ch)->{
+            int idx = ch.getChId();
+            chWaves[idx] = null;
+            channel[idx] = ch;
+        });
+
+        channelNums = Scope.getInstance().getChNum();
+        cabteRegister = CabteRegister.getInstance();
+    }
+    protected void ms_sleep(long ms){
+        try{
+            Thread.sleep(ms);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+    public boolean begin(){
+        synchronized (this) {
+            int maxIdx = ChannelFactory.getMaxChIdx();
+            WaveData waveData;
+            int syncHeaer = SyncHeader.getSyncHeader();
+            for (int i = ChannelFactory.CH1; i < maxIdx; i++) {
+                waveData = (WaveData)channel[i].obtain();
+                if(waveData != null){
+                    if(waveData.getSyncHeader() == syncHeaer) {
+                        if(chWaves[i] != null){
+                            channel[i].recycle(chWaves[i]);
+                        }
+                        chWaves[i] = waveData;
+                    }else{
+                        channel[i].recycle(waveData);
+                        return false;
+                    }
+                }
+            }
+            bCalibrate = true;
+        }
+        return true;
+    }
+    public void end(){
+        synchronized (this) {
+            int maxIdx = ChannelFactory.getMaxChIdx();
+            for (int i = ChannelFactory.CH1; i < maxIdx; i++) {
+                if (chWaves[i] != null) {
+                    channel[i].recycle(chWaves[i]);
+                    chWaves[i] = null;
+                }
+            }
+            bCalibrate = false;
+        }
+    }
+    public boolean isCalibrate(){
+
+        return bCalibrate;
+    }
+    protected IDataBuffer getWave(int chIdx){
+
+        return chWaves[chIdx];
+    }
+
+    protected void setFinished() {
+        finished = true;
+    }
+
+
+    private double maxBandWidth = Channel.MAX_BANDWIDTH;
+    //校准开始前需要执行
+    public void iniCalibrate(){
+        FPGACommand.getInstance().setFlagCalibrate(true);
+        FPGACommand.getInstance().setCalibrateType(calibrateType);
+        SyncHeader.setCalibrate(true);
+        maxBandWidth = Channel.getMaxBandWidth();
+        Channel.setMaxBandWidth(Channel.MAX_BANDWIDTH);
+        //初始化校准寄存器
+        iniCalibrateReg();
+        //进入运行状态
+        Scope.getInstance().setRun(true);
+        //初始化配置
+        initCalibrateConfig();
+        resultString.clear();
+
+        //校准前准备工作
+        calibratePrepare();
+        finished = false;
+    }
+
+    //校准结束后需要执行
+    public void endCalibrate() {
+        finished = true;
+        Channel.setMaxBandWidth(maxBandWidth);
+        FPGACommand.getInstance().setFlagCalibrate(false);
+        FPGACommand.getInstance().setCalibrateType(-1);
+        SyncHeader.setCalibrate(false);
+        restoreCalibrateConfig();
+    }
+
+    //恢复设置
+    protected void restoreCalibrateConfig(){
+        //恢复存储深度设置
+        MemDepthFactory.forceMemDepth(memDepthSetBak);
+        //存储深度大小设置为自动
+        MemDepthFactory.getMemDepth().setMemDepthItem(0);
+
+    }
+
+
+    private volatile int initResistanceType = Channel.RESISTANCE_1M;
+    protected synchronized void setInitResistanceType(int resistanceType){
+        this.initResistanceType = resistanceType;
+    }
+    private synchronized int getInitResistanceType(){
+        return initResistanceType;
+    }
+    //校准初始化默认配置
+    public void initCalibrateConfig(){
+        TriggerFactory triggerFactory=TriggerFactory.getInstance();
+        //修改为边沿触发
+        if(TriggerFactory.getTriggerType() != Trigger.TRIG_TYPE_EDGE){
+            triggerFactory.setTriggerType(Trigger.TRIG_TYPE_EDGE);
+        }
+        //采用自动触发
+        triggerFactory.getTriggerCommon().setTriggerMode(TriggerCommon.TM_AUTO);
+        //触发抑制时间调小
+        triggerFactory.getTriggerCommon().setTriggerHoldOffTime(200/4);
+        TriggerEdge triggerEdge=(TriggerEdge)(triggerFactory.getTrigger(Trigger.TRIG_TYPE_EDGE));
+        //触发耦合：直流
+        triggerEdge.setTriggerCouple(TriggerEdge.COUPLING_DIRECT);
+        //调整每个通道的触发位置到0
+        for (int i=0; i<channelNums; i++) {
+            triggerEdge.getTriggerLevel(i).setPos(0);
+        }
+        //上升沿触发
+        triggerEdge.setTriggerEdge(TriggerEdge.TET_ASC);
+        //触发源设置为通道1
+        triggerEdge.setTriggerSource(defaultTriggerSource);
+        //退出自动
+        Auto.getInstance().setAuto(false);
+        //设置采样模式为正常模式
+        Sample.getInstance().setSampleType(Sample.SAMPLE_TYPE_NORMAL);
+        //设置存储深度强制类型为14M
+        memDepthSetBak = MemDepthFactory.getMemDepthSet();
+        MemDepthFactory.forceMemDepth(MemDepthFactory.getDefaultMemDepth());
+        //存储深度大小设置为140k
+        MemDepthFactory.getMemDepth().setMemDepthItem(5);
+        //波形显示为线模式
+        Display.getInstance().setDrawType(Display.DRAWTYPE_LINE);
+        //YT模式
+        Display.getInstance().setDisplayMode(Display.DISPLAY_YT);
+        //退出Zoom
+        Display.getInstance().setZoom(false);
+        //时基
+        HorizontalAxis.getInstance().setTimeScaleIdOfView(HorizontalAxis.TSI_2uS);
+        //触发时刻
+        HorizontalAxis.getInstance().setTimePosOfView(0);
+        //余辉时间500ms
+        Display.getInstance().setPersistAdjustTime(200);
+        //余辉模式：自动
+        Display.getInstance().setPersistType(Display.PERSIST_TYPE_AUTO);
+        //以屏幕中心进行x轴缩放
+        Display.getInstance().setHorRef(Display.HORREF_CENTER);
+        //通道设置
+        for(int i=0; i<channelNums; i++) {
+            //全带宽
+            channel[i].setBandWidthType(Channel.BANDWIDTH_TYPE_FULL,Channel.MAX_BANDWIDTH);
+
+            channel[i].setInvert(false); //关闭反相
+            channel[i].setCoupleType(Channel.COUPLE_TYPE_DC); //DC耦合
+            //如果有输入阻抗控制，则设置为1M输入阻抗
+            channel[i].setVerticalMode(Channel.VERTICAL_MODE_CH_ZERO);
+
+            channel[i].setResistanceType(getInitResistanceType());
+
+            //100mV档位
+            channel[i].setVScaleId(VerticalAxis.DANG_100mV);
+
+            channel[i].setFineScale(1.0); //精细电压档位为1.0
+            channel[i].setProbeType(VerticalAxis.PROBE_TYPE_VOL); //类型为电压
+            channel[i].setProbeRate(defaultProbeRate); //10X探头
+            channel[i].setPos(0); //通道纵向位置归零
+            channel[i].setDelay(0);
+            channel[i].setChOffsetVal(0);
+            for(int j=VerticalAxis.DANG_MIN;j<=VerticalAxis.DANG_MAX;j++){
+                channel[i].setZero(j,0);
+            }
+        }
+        //打开所有通道
+        for(int i=0; i<channelNums; i++) {
+            ChannelFactory.chOpen(i);
+        }
+        //关闭数学通道
+        ChannelFactory.forEachMath(mathChannel -> {
+            ChannelFactory.chClose(mathChannel.getChId());
+        });
+        //关闭串口通道
+        ChannelFactory.forEachSerial(serialChannel -> {
+            ChannelFactory.chClose(serialChannel.getChId());
+        });
+    }
+    protected double defaultProbeRate = 10;
+    protected int defaultTriggerSource = 0;
+
+    private int delay_cnt=0;
+    private int delay_set=0;
+    public void delaySet(int vol) {
+        delay_set = vol;
+        delay_cnt = 0;
+    }
+    public boolean isFinishedAction() {
+        //ScopeMessage.waitMsgFinished();
+        //return true;
+
+        if(!finished && (++delay_cnt > delay_set)) {
+            delay_cnt = 0;
+            return ScopeMessage.isEmpty();
+        }
+        return false;
+    }
+
+    public List getResultString(){
+        return resultString;
+    }
+    public String getTAG() {
+        return TAG_PRI;
+    }
+    public void setParam(Object vol) {
+
+    }
+    public Object getParam() {
+        return 0;
+    }
+
+    public abstract void iniCalibrateReg(); //初始化校准寄存器
+    public abstract void calibratePrepare(); //校准之前状态初始化
+    public abstract void setErrcode(int errcode);
+    public abstract int getErrcode(); //判断校准结果错误代码，0为无错误
+    public abstract boolean onCalibrate();
+    public boolean isFactorCalibrate(){
+        return this.bFactorCalibrate;
+    }
+    public void setFactorCalibrate(boolean bFactorCalibrate){
+        this.bFactorCalibrate = bFactorCalibrate;
+
+    }
+    public boolean checkParam(){
+        return false;
+    }
+
+
+    public synchronized void fpgaSync(){
+        int syncheader = -1;
+        ScopeFrozen scopeFrozen = ScopeFrozen.getInstance();
+        Scope scope = Scope.getInstance();
+        FPGACommand cmd = FPGACommand.getInstance();
+        if(scope.isRun(true)) {
+            syncheader = SyncHeader.upSyncHeader();
+            scopeFrozen.setSyncHeader(syncheader);
+            cmd.updataReg(1);
+            cmd.updataReg(0);
+        }
+    }
+    public synchronized void updateSync(){
+        SyncHeader.upSyncHeader();
+    }
+}

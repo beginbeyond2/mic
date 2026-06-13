@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AbsoluteLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_y="163px"
+    android:clickable="true">
+<!--    android:id="@+id/mBottomBar"-->
+
+<!--    <AbsoluteLayout-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:visibility="visible">-->
+
+<!--        <com.micsig.tbook.ui.MButton-->
+<!--            android:id="@+id/fineUp"-->
+<!--            android:layout_width="44px"-->
+<!--            android:layout_height="44px"-->
+<!--            android:layout_x="@dimen/mainBottomFineLeftX"-->
+<!--            android:layout_y="@dimen/mainBottomFineLeftY"-->
+<!--            android:visibility="gone"-->
+<!--            ui:touchDownBitmap="@drawable/fine_up_c"-->
+<!--            ui:touchUpBitmap="@drawable/fine_up_n" />-->
+
+<!--        <com.micsig.tbook.ui.MButton-->
+<!--            android:id="@+id/fineLeft"-->
+<!--            android:layout_width="44px"-->
+<!--            android:layout_height="44px"-->
+<!--            android:layout_x="@dimen/mainBottomFineLeftX"-->
+<!--            android:layout_y="@dimen/mainBottomFineLeftY"-->
+<!--            ui:touchDownBitmap="@drawable/fine_left_c"-->
+<!--            ui:touchUpBitmap="@drawable/fine_left_n" />-->
+
+<!--        <TextView-->
+<!--            android:layout_width="@dimen/mainBottomFineTextWidth"-->
+<!--            android:layout_height="@dimen/mainBottomFineTextHeight"-->
+<!--            android:layout_x="@dimen/mainBottomFineTextX"-->
+<!--            android:layout_y="@dimen/mainBottomFineTextY"-->
+<!--            android:gravity="center"-->
+<!--            android:text="@string/menu_bottom_adjust"-->
+<!--            android:textColor="@color/color_Text_white"-->
+<!--            android:textSize="15px" />-->
+
+<!--        <com.micsig.tbook.ui.MButton-->
+<!--            android:id="@+id/fineDown"-->
+<!--            android:layout_width="44px"-->
+<!--            android:layout_height="44px"-->
+<!--            android:layout_x="@dimen/mainBottomFineRightX"-->
+<!--            android:layout_y="@dimen/mainBottomFineRightY"-->
+<!--            android:visibility="gone"-->
+<!--            ui:touchDownBitmap="@drawable/fine_down_c"-->
+<!--            ui:touchUpBitmap="@drawable/fine_down_n" />-->
+
+<!--        <com.micsig.tbook.ui.MButton-->
+<!--            android:id="@+id/fineRight"-->
+<!--            android:layout_width="44px"-->
+<!--            android:layout_height="44px"-->
+<!--            android:layout_x="@dimen/mainBottomFineRightX"-->
+<!--            android:layout_y="@dimen/mainBottomFineRightY"-->
+<!--            ui:touchDownBitmap="@drawable/fine_right_c"-->
+<!--            ui:touchUpBitmap="@drawable/fine_right_n" />-->
+
+<!--    </AbsoluteLayout>-->
+
+<!--    <ImageButton-->
+<!--        android:id="@+id/leftTimeBase"-->
+<!--        android:layout_width="60px"-->
+<!--        android:layout_height="43px"-->
+<!--        android:layout_x="260px"-->
+<!--        android:layout_y="11px"-->
+<!--        android:background="@drawable/timebase_left"/>-->
+
+<!--    <TextView-->
+<!--        android:id="@+id/centerTimeBase"-->
+<!--        android:layout_width="64px"-->
+<!--        android:layout_height="43px"-->
+<!--        android:layout_x="319px"-->
+<!--        android:layout_y="11px"-->
+<!--        android:background="@drawable/timebase_center"-->
+<!--        android:gravity="center"-->
+<!--        android:lineSpacingMultiplier="0.9"-->
+<!--        android:text="5ms"-->
+<!--        android:textAllCaps="false"-->
+<!--        android:textColor="@color/color_Text_white"-->
+<!--        android:textSize="14px" />-->
+
+<!--    <ImageButton-->
+<!--        android:id="@+id/rightTimeBase"-->
+<!--        android:layout_width="61px"-->
+<!--        android:layout_height="43px"-->
+<!--        android:layout_x="383px"-->
+<!--        android:layout_y="11px"-->
+<!--        android:background="@drawable/timebase_right"/>-->
+
+<!--    <com.micsig.tbook.ui.MButton_CheckBox-->
+<!--        android:id="@+id/current"-->
+<!--        android:layout_width="61px"-->
+<!--        android:layout_height="43px"-->
+<!--        android:layout_x="510px"-->
+<!--        android:layout_y="10px"-->
+<!--        ui:checkedBitmap="@drawable/current_button_1"-->
+<!--        ui:unCheckedBitmap="@drawable/current_button" />-->
+
+<!--    <Button-->
+<!--        android:id="@+id/ch_slipdown"-->
+<!--        android:layout_width="@dimen/mainBottomSlipDownWidth"-->
+<!--        android:layout_height="@dimen/mainBottomSlipDownHeight"-->
+<!--        android:layout_x="@dimen/mainBottomSlipDownX"-->
+<!--        android:layout_y="7px"-->
+<!--        android:background="@drawable/ch_slipdown" />-->
+
+<!--    <TextView-->
+<!--        android:id="@+id/usbPcLink"-->
+<!--        android:layout_width="@dimen/mainBottomUsbPcLinkWidth"-->
+<!--        android:layout_height="@dimen/mainBottomUsbPcLinkHeight"-->
+<!--        android:layout_x="757px"-->
+<!--        android:layout_y="34px"-->
+<!--        android:background="@drawable/usb_pc_link" />-->
+
+<!--    <com.micsig.tbook.ui.main.BatteryView-->
+<!--        android:id="@+id/battery"-->
+<!--        android:layout_width="@dimen/mainBottomPowerWidth"-->
+<!--        android:layout_height="@dimen/mainBottomPowerHeight"-->
+<!--        android:layout_x="779px"-->
+<!--        android:layout_y="34px" />-->
+
+<!--    <TextView-->
+<!--        android:id="@+id/uDisk"-->
+<!--        android:layout_width="16px"-->
+<!--        android:layout_height="10px"-->
+<!--        android:layout_x="774px"-->
+<!--        android:layout_y="19px"-->
+<!--        android:background="@drawable/udisk"-->
+<!--        android:visibility="invisible" />-->
+
+<!--    <TextView-->
+<!--        android:id="@+id/time"-->
+<!--        style="@style/textStyle"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="@dimen/mainBottomTimeHeight"-->
+<!--        android:layout_x="762px"-->
+<!--        android:layout_y="-1px"-->
+<!--        android:text="@string/menu_bottom_time" />-->
+</AbsoluteLayout>

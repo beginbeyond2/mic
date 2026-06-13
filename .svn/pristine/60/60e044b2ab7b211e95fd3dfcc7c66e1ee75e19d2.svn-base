@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AbsoluteLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mBottomBar"
+    android:layout_width="@dimen/screenWidth"
+    android:layout_height="match_parent"
+    android:background="@color/color_Backcolor_MainMenu3"
+    android:paddingTop="4px"
+    android:clickable="true">
+
+    <include
+        android:id="@+id/bottomRightChannel"
+        layout="@layout/bottom_rightchannel_branchs" />
+    <include
+        android:id="@+id/bottomRightOther"
+        layout="@layout/bottom_rightother_branchs" />
+
+    <Button
+        android:id="@+id/enterYT"
+        android:layout_width="90px"
+        android:layout_height="68px"
+        android:layout_x="373px"
+        android:layout_y="4px"
+        android:background="@drawable/ic_bg_enter_yt_selector"
+        android:gravity="center|bottom"
+        android:text="@string/menu_bottom_enter_yt"
+        android:textAllCaps="false"
+        android:textColor="@drawable/selector_text_color"
+        android:textSize="20px" />
+
+    <Button
+        android:id="@+id/home"
+        android:layout_width="68px"
+        android:layout_height="68px"
+        android:layout_x="4px"
+        android:layout_y="4px"
+        android:background="@drawable/ic_bottom_quick_home_selector"
+        android:gravity="center"
+        android:visibility="gone"
+        />
+
+    <!--微调外包一层布局，隐藏显示，之前逻辑保留-->
+    <AbsoluteLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/fineText"
+            android:layout_width="148px"
+            android:layout_height="38px"
+            android:layout_x="88px"
+            android:layout_y="19px"
+            android:background="@drawable/shape_frame_bg_black"
+            android:clickable="true"
+            android:gravity="center"
+            android:text="@string/menu_bottom_adjust"
+            android:textAllCaps="false"
+            android:textColor="@color/main_text_color"
+            android:textSize="20px" />
+
+        <Button
+            android:id="@+id/fineUp"
+            android:layout_width="68px"
+            android:layout_height="68px"
+            android:layout_x="54px"
+            android:layout_y="4px"
+            android:background="@drawable/selector_fine_up"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/fineDown"
+            android:layout_width="68px"
+            android:layout_height="68px"
+            android:layout_x="202px"
+            android:layout_y="4px"
+            android:background="@drawable/selector_fine_down"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/fineLeft"
+            android:layout_width="68px"
+            android:layout_height="68px"
+            android:layout_x="54px"
+            android:layout_y="4px"
+            android:background="@drawable/selector_fine_left" />
+
+        <Button
+            android:id="@+id/fineRight"
+            android:layout_width="68px"
+            android:layout_height="68px"
+            android:layout_x="202px"
+            android:layout_y="4px"
+            android:background="@drawable/selector_fine_right" />
+    </AbsoluteLayout>
+
+    <Button
+        android:id="@+id/mainTopScreen"
+        android:layout_width="130px"
+        android:layout_height="68px"
+        android:layout_x="41px"
+        android:layout_y="4px"
+        android:gravity="center|bottom"
+        android:textAllCaps="false"
+        android:includeFontPadding="false"
+        android:button="@null"
+        android:textSize="20px"
+        android:textColor="@drawable/selector_text_color"
+        android:text="@string/main_capture"
+        android:background="@drawable/selector_screen_shot"
+        />
+
+    <Button
+        android:id="@+id/quickSave"
+        android:layout_width="130px"
+        android:layout_height="68px"
+        android:layout_x="202px"
+        android:layout_y="4px"
+        android:background="@drawable/selector_quick_save"
+        android:textSize="20px"
+        android:textColor="@drawable/selector_text_color"
+        android:gravity="center|bottom"
+        android:text="@string/main_quick_save"
+        android:textAllCaps="false" />
+
+
+
+    <LinearLayout
+        android:id="@+id/stopAutoSave"
+        android:layout_width="174px"
+        android:layout_height="68px"
+        android:layout_x="180px"
+        android:layout_y="4px"
+        android:layout_gravity="center_vertical"
+        android:visibility="gone"
+        android:orientation="vertical">
+
+        <ImageView
+            android:layout_width="84px"
+            android:layout_height="68px"
+            android:layout_gravity="center|top"
+            android:scaleType="fitCenter"
+            android:src="@drawable/svg_stop_save" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="-28px"
+            android:gravity="center"
+            android:text="@string/mainCenterBottomMenuAutoSaveStop"
+            android:textAllCaps="false"
+            android:textColor="@drawable/selector_text_color"
+            android:textSize="20px" />
+
+    </LinearLayout>
+
+
+<!--    <Button-->
+<!--        android:id="@+id/stopAutoSave"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="68px"-->
+<!--        android:layout_x="180px"-->
+<!--        android:layout_y="4px"-->
+<!--        android:background="@drawable/selector_quick_save"-->
+<!--        android:textSize="20px"-->
+<!--        android:textColor="@drawable/selector_text_color"-->
+<!--        android:gravity="center|bottom"-->
+<!--        android:text="@string/mainCenterBottomMenuAutoSaveStop"-->
+<!--        android:visibility="gone"-->
+<!--        android:textAllCaps="false" />-->
+
+    <!--Zoom按钮位置从顶部layout_maintop_right_button.xml移到这里，操作功能保留在MainHolderBottomQuick中-->
+    <CheckBox
+        android:id="@+id/mainTopZoom"
+        style="@style/buttonStyle"
+        android:layout_width="84px"
+        android:layout_height="68px"
+        android:layout_x="373px"
+        android:layout_y="4px"
+        android:button="@null"
+        android:gravity="center"
+        android:includeFontPadding="false"
+        android:text="@string/menu_bottom_qiuck_zoom"
+        android:textAllCaps="false"
+        android:textColor="@drawable/selector_text_color"
+        android:textSize="24px" />
+
+    <CheckBox
+        android:id="@+id/fine"
+        style="@style/textStyle"
+        android:layout_width="76px"
+        android:layout_height="65px"
+        android:layout_x="256px"
+        android:layout_y="5px"
+        android:gravity="center"
+        android:button="@null"
+        android:text="@string/menu_bottom_adjust"
+        android:textSize="16px"
+        android:textColor="#FF00AFFF"
+        android:background="@drawable/ic_rectangle_chx_selector"
+        android:visibility="gone"
+        />
+
+    <TextView
+        android:id="@+id/bgTimeBase"
+        android:layout_width="300px"
+        android:layout_height="68px"
+        android:background="@drawable/ic_rectangle_6"
+        android:layout_x="750px"
+        android:layout_y="4px" />
+
+    <ImageButton
+        android:id="@+id/leftTimeBase"
+        android:layout_width="100px"
+        android:layout_height="68px"
+        android:layout_x="750px"
+        android:layout_y="4px"
+        android:background="@null"
+        />
+<!--        android:background="@drawable/ic_timebase_left"-->
+
+    <TextView
+        android:id="@+id/centerTimeBase"
+        style="@style/textStyle"
+        android:layout_width="100px"
+        android:layout_height="68px"
+        android:layout_x="850px"
+        android:layout_y="4px"
+        android:gravity="center"
+        android:lineSpacingMultiplier="0.9"
+        android:text="5ms"
+        android:textAllCaps="false"
+        android:background="@null"
+        />
+<!--        android:background="@drawable/ic_timebase_center"-->
+
+    <ImageButton
+        android:id="@+id/rightTimeBase"
+        android:layout_width="100px"
+        android:layout_height="68px"
+        android:layout_x="950px"
+        android:layout_y="4px"
+        android:background="@null"
+        />
+<!--        android:background="@drawable/ic_timebase_right"-->
+
+    <Button
+        android:id="@+id/screenShot"
+        android:layout_width="76px"
+        android:layout_height="65px"
+        android:layout_x="798px"
+        android:layout_y="5px"
+        android:gravity="center"
+        android:background="@drawable/ic_adjust_zero_selector"
+        android:visibility="gone"
+        />
+
+    <CheckBox
+        android:id="@+id/per50"
+        android:layout_width="84px"
+        android:layout_height="68px"
+        android:layout_x="505px"
+        android:layout_y="4px"
+        android:button="@null"
+        android:background="@drawable/selector_rightslip_button"
+        android:gravity="center"
+        android:textSize="24px"
+        android:text="50%"
+        android:textColor="@drawable/selector_text_color"
+        />
+
+    <CheckBox
+        android:id="@+id/current"
+        android:layout_width="68px"
+        android:layout_height="68px"
+        android:layout_x="637px"
+        android:layout_y="4px"
+        android:gravity="center"
+        android:textSize="20px"
+        android:textColor="@drawable/selector_text_color"
+        android:button="@null"
+        android:text="CHx"
+        android:background="@drawable/selector_main_chx" />
+
+    <Button
+        android:id="@+id/ch_slipdown"
+        android:layout_width="@dimen/mainBottomSlipDownWidth"
+        android:layout_height="50px"
+        android:layout_x="740px"
+        android:layout_y="7px"
+        android:visibility="gone"
+        android:clickable="false"
+        android:background="@null"/>
+
+<!--    <com.micsig.tbook.tbookscope.main.mainbottom.MainBottomOtherChannels-->
+<!--        android:id="@+id/bottom_channel_others"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_x="1097px"-->
+<!--        android:layout_y="4px" />-->
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_x="1097px"
+        android:layout_y="4px">
+
+        <include layout="@layout/layout_bottom_other_channel" />
+
+    </LinearLayout>
+
+    </AbsoluteLayout>

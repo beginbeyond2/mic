@@ -1,0 +1,22 @@
+package com.micsig.tbook.scope.surface;
+
+import android.content.Context;
+
+import com.micsig.tbook.hardware.HardwareProduct;
+
+public class DeviceFactory {
+    private static HwDevice hwDevice = null;
+    public static HwDevice allocDevice(){
+        synchronized (DeviceFactory.class) {
+            return hwDevice;
+        }
+    }
+    public static HwDevice allocDevice(Context context){
+        synchronized (DeviceFactory.class){
+            if(hwDevice == null){
+                hwDevice = new XDmaDevManage(context,2);
+            }
+            return hwDevice;
+        }
+    }
+}

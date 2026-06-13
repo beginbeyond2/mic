@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AbsoluteLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <View
+        android:id="@+id/outView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+    <View
+        android:layout_width="@dimen/rightSlipChannelWidth"
+        android:layout_height="@dimen/rightDialogHeight"
+        android:layout_x="@dimen/rightChannelDialogX"
+        android:layout_y="@dimen/rightDialogY"
+        android:background="@color/color_Enable"
+        />
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_x="469px"
+        android:layout_y="600px"
+        android:background="@drawable/bg_popwindow_scale_half"
+        android:clickable="true">
+<!--        width=863px-->
+
+        <TextView
+            android:id="@+id/head"
+            style="@style/textStyle"
+            android:layout_width="120px"
+            android:layout_height="60px"
+            android:layout_marginTop="40px"
+            android:layout_marginStart="30px"
+            android:gravity="center"
+            android:text="@string/dialogscale_head" />
+
+        <TextView
+            android:id="@+id/show"
+            style="@style/editTextStyleRightHalf"
+            android:layout_width="120px"
+            android:layout_height="60px"
+            android:layout_marginStart="20px"
+            android:layout_alignBottom="@id/head"
+            android:layout_toEndOf="@id/head"
+            android:text="@string/dialogscale_show" />
+
+        <com.micsig.tbook.ui.top.view.frequency.TopViewBandWidthHzSmall
+            android:id="@+id/scaleSmallView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignEnd="@+id/scaleLargeView"
+            android:layout_marginStart="15px"
+            android:layout_marginTop="10px" />
+
+        <com.micsig.tbook.ui.top.view.frequency.TopViewBandWidthHzLarge
+            android:id="@+id/scaleLargeView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/scaleSmallView"
+            android:layout_margin="10px" />
+
+    </RelativeLayout>
+</AbsoluteLayout>

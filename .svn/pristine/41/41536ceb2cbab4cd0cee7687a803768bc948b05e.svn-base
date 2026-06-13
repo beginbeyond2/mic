@@ -1,0 +1,156 @@
+package com.micsig.tbook.tbookscope.wavezone.wave;
+
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.drawable.BitmapDrawable;
+
+import com.chillingvan.canvasgl.ICanvasGL;
+import com.micsig.tbook.tbookscope.GlobalVar;
+import com.micsig.tbook.tbookscope.util.App;
+import com.micsig.tbook.tbookscope.wavezone.IWorkMode;
+import com.micsig.tbook.ui.wavezone.IWave;
+import com.micsig.tbook.ui.wavezone.TChan;
+
+/**
+ * Created by liwb on 2017/11/6.
+ */
+
+public class WaveManage_XY implements IWorkMode, IWaveManage {
+
+    private Bitmap[][] resBmp = new Bitmap[3][6];
+
+    private void initResBmp() {
+        resBmp[1][0] = ((BitmapDrawable) App.get().getResources().getDrawable(com.micsig.tbook.ui.R.drawable.ch1_s_down)).getBitmap();
+        resBmp[1][1] = ((BitmapDrawable) App.get().getResources().getDrawable(com.micsig.tbook.ui.R.drawable.ch1_s_left)).getBitmap();
+        resBmp[1][2] = ((BitmapDrawable) App.get().getResources().getDrawable(com.micsig.tbook.ui.R.drawable.ch1_s)).getBitmap();
+        resBmp[1][3] = ((BitmapDrawable) App.get().getResources().getDrawable(com.micsig.tbook.ui.R.drawable.ch1_n_down)).getBitmap();
+        resBmp[1][4] = ((BitmapDrawable) App.get().getResources().getDrawable(com.micsig.tbook.ui.R.drawable.ch1_n_left)).getBitmap();
+        resBmp[1][5] = ((BitmapDrawable) App.get().getResources().getDrawable(com.micsig.tbook.ui.R.drawable.ch1_n)).getBitmap();
+
+        resBmp[2][0] = ((BitmapDrawable) App.get().getResources().getDrawable(com.micsig.tbook.ui.R.drawable.ch2_n)).getBitmap();
+        resBmp[2][1] = ((BitmapDrawable) App.get().getResources().getDrawable(com.micsig.tbook.ui.R.drawable.ch2_n_down)).getBitmap();
+        resBmp[2][2] = ((BitmapDrawable) App.get().getResources().getDrawable(com.micsig.tbook.ui.R.drawable.ch2_n_up)).getBitmap();
+        resBmp[2][3] = ((BitmapDrawable) App.get().getResources().getDrawable(com.micsig.tbook.ui.R.drawable.ch2_s)).getBitmap();
+        resBmp[2][4] = ((BitmapDrawable) App.get().getResources().getDrawable(com.micsig.tbook.ui.R.drawable.ch2_s_down)).getBitmap();
+        resBmp[2][5] = ((BitmapDrawable) App.get().getResources().getDrawable(com.micsig.tbook.ui.R.drawable.ch2_s_up)).getBitmap();
+    }
+
+    private ChannelWaveManage_XY channelWaveManage_xy;
+    private Bitmap bmp, tempBmp;
+    private Canvas mCanvas;
+    private Paint paint;
+
+    public WaveManage_XY(IWave.OnMovingWaveEvent onMovingWaveEvent, IWave.OnSelectChangeEvent onSelectChangeEvent) {
+        initResBmp();
+        bmp = Bitmap.createBitmap(GlobalVar.get().getWaveZoneWidth_Pix(IWorkMode.WorkMode_XY),
+                GlobalVar.get().getWaveZoneHeight_Pix(IWorkMode.WorkMode_XY), Bitmap.Config.ARGB_8888);
+        mCanvas = new Canvas(bmp);
+        paint = new Paint();
+
+        channelWaveManage_xy = new ChannelWaveManage_XY(resBmp, onMovingWaveEvent, onSelectChangeEvent);
+    }
+
+
+    //region interface IWaveManage
+    @Override
+    public void draw(ICanvasGL canvas) {
+        synchronized (bmp) {
+            canvas.drawBitmap(bmp, 0, 0);
+        }
+        channelWaveManage_xy.draw(canvas);
+    }
+
+    public void setWaveChange(int height) {
+        double temp = height / 1040f;
+        int waveWidth = (int) Math.round(GlobalVar.get().getWaveZoneWidth_Pix(IWorkMode.WorkMode_XY) * temp);
+        int waveHeight = (int) Math.round(GlobalVar.get().getWaveZoneHeight_Pix(IWorkMode.WorkMode_XY) * temp);
+        bmp = Bitmap.createBitmap(waveWidth, waveHeight, Bitmap.Config.ARGB_8888);
+        mCanvas = new Canvas(bmp);
+    }
+
+
+    @Override
+    public void setVisible(int ChNo, boolean visible) {
+        channelWaveManage_xy.setVisible(ChNo, visible);
+    }
+
+    @Override
+    public void setOffsetY(int offsetY) {
+        channelWaveManage_xy.setOffsetY(offsetY);
+    }
+
+    @Override
+    public void setPositionY(int chNo, double positionY) {
+        channelWaveManage_xy.setPositionY(chNo, positionY);
+    }
+
+    public void setPositionYFromEventBus(int chNo, int positionY) {
+        channelWaveManage_xy.setPositionYFromEventBus(chNo, positionY);
+    }
+
+    @Override
+    public double getPositionY(int chNo) {
+        return channelWaveManage_xy.getPositionY(chNo);
+    }
+
+
+    /**
+     * 50% 的位置
+     *
+     * @param chNo
+     */
+    @Override
+    public void setCenterChY(int chNo) {
+        if (!TChan.isChan(chNo)) {
+            return;
+        }
+//        channelWaveManage_xy.setCenterChY();
+        channelWaveManage_xy.setCenterChY(chNo);
+    }
+
+    /**
+     * 设置选中通道号，
+     *
+     * @param chNO
+     */
+    @Override
+    public void setSelectCursor(int chNO) {
+        channelWaveManage_xy.setSelectCursor(chNO);
+    }
+
+    /**
+     * 这个与YT模式不同，只要不是光标就是通道，左右移动是通道1，上下移动是通道2。
+     * 类似于时基的操作，所以这个也不需要处理
+     *
+     * @param x
+     * @param y
+     * @return 返回通道号  -1为没有选择
+     */
+    @Override
+    public int selectCursor(int x, int y) {
+        return channelWaveManage_xy.selectCursor(x,y);
+    }
+
+    @Override
+    public void movePix(int px) {
+        channelWaveManage_xy.movePix(px);
+    }
+
+    //endregion
+
+
+    //region interface IWorkMode
+
+    @Override
+    public void switchWorkMode(@WorkMode int workMode) {
+        channelWaveManage_xy.switchWorkMode(workMode);
+    }
+
+    @Override
+    public int getCurCh() {
+        return channelWaveManage_xy.getCurCh();
+    }
+
+    //endregion
+}

@@ -1,0 +1,271 @@
+package com.micsig.tbook.scope.probe.bean;
+
+
+import androidx.annotation.NonNull;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.micsig.base.DoubleUtil;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.probe.BaseProbe;
+import com.micsig.tbook.scope.vertical.VerticalAxis;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public abstract class BaseBean implements Cloneable {
+
+    private String prefix = "";
+    private String className = "";      //类别
+    private String probeType = "";       //类型
+    private String name = "";         //别名
+    private volatile boolean bMustAc = false;        //是否必须接适配器
+    private long bandwidth = 0;
+    private volatile boolean bScopeImpedence50 = false;
+    private boolean bScopeAdjust = false;
+    protected boolean bDa = false;
+
+    private int probeUnit = VerticalAxis.PROBE_TYPE_VOL;
+
+    public int getProbeUnit(){
+        return probeUnit;
+    }
+    public void setProbeUnit(int probeUnit){
+        this.probeUnit = probeUnit;
+    }
+
+
+    private List<Integer> listAutoProbeRate = new ArrayList<>();
+    public BaseBean() {
+
+    }
+    public synchronized String getPrefix(){
+        return prefix;
+    }
+    public synchronized void addAutoProbeRate(int v){
+        listAutoProbeRate.add(v);
+    }
+    public synchronized List<Integer> getAutoProbeRate(){
+        return listAutoProbeRate;
+    }
+    public synchronized void clearAutoProbeRate(){
+        listAutoProbeRate.clear();
+    }
+    public synchronized boolean isAutoProbeRate(){
+        return listAutoProbeRate.size() > 0;
+    }
+    public synchronized String getClassName() {
+        return className;
+    }
+
+    public synchronized void setClassName(String className) {
+        this.className = className;
+    }
+
+    public synchronized String getProbeType() {
+        return probeType;
+    }
+
+    public synchronized void setProbeType(String probeType) {
+        this.probeType = probeType;
+    }
+
+    public synchronized String getName() {
+        return name;
+    }
+
+    public synchronized void setName(String name) {
+        this.name = name;
+    }
+
+    public synchronized boolean isMustAc() {
+        return bMustAc;
+    }
+
+    public synchronized boolean isScopeImpedence50(){
+        return bScopeImpedence50;
+    }
+
+    public synchronized boolean isScopeAdjust(){return bScopeAdjust;}
+    public synchronized boolean isDa(){return bDa;}
+    public synchronized long getBandwidth(){return bandwidth;}
+    public synchronized void setBandwidth(long bandwidth){
+        this.bandwidth = bandwidth;
+    }
+    public synchronized List<String> getScaleNames(){ return scaleNames;}
+    public synchronized List<Double> getScaleValues(){return scaleValues;}
+
+    public synchronized void addScale(double val){
+
+        String sVal= getXFromDouble(val);
+        scaleNames.add(sVal);
+        scaleValues.add(Double.valueOf(val));
+    }
+    private static String getXFromDouble(double x) {
+        String unit = "";
+        if (x < 1) {
+            x = x * 1000;
+            unit = "mX";
+        } else if (x >= 1000) {
+            x = x / 1000;
+            unit = "kX";
+        } else {
+            unit = "X";
+        }
+        x += 0.001;
+        String s = String.valueOf(x);
+        if (s.length() >= 3) {
+            String substring = s.substring(0, 3);
+            if (substring.contains(".") && s.length() >= 4) {
+                substring = s.substring(0, 4);
+            }
+            if (substring.contains(".")) {
+                while (substring.endsWith("0")) {
+                    substring = substring.substring(0, substring.length() - 1);
+                }
+                if (substring.endsWith(".")) {
+                    substring = substring.substring(0, substring.length() - 1);
+                }
+            }
+            s = substring;
+        }
+        return s + unit;
+    }
+    public synchronized void clearScales(){
+        scaleNames.clear();
+        scaleValues.clear();
+    }
+    public synchronized void parseJson(JsonElement jsonElement) {
+        JsonObject jsonObject = jsonElement.getAsJsonObject();
+        if (jsonObject != null) {
+            JsonElement element = jsonObject.get("prefix");
+            if(element != null){
+                prefix = element.getAsString();
+            }
+            element = jsonObject.get("probetype");
+            if (element != null) {
+                probeType = element.getAsString();
+            }
+            element = jsonObject.get("name");
+            if (element != null) {
+                name = element.getAsString();
+            }
+            element = jsonObject.get("mustac");
+            if (element != null) {
+                bMustAc = element.getAsBoolean();
+            }
+            element = jsonObject.get("scope_impedence50");
+            if (element != null) {
+                bScopeImpedence50 = element.getAsBoolean();
+            }
+            element = jsonObject.get("scope_adjust");
+            if(element != null){
+                bScopeAdjust = element.getAsBoolean();
+            }
+            element = jsonObject.get("da");
+            if (element != null) {
+                bDa = element.getAsBoolean();
+            }
+            element =jsonObject.get("bandwidth");
+            if (element!=null){
+                bandwidth=element.getAsLong();
+            }
+            element =jsonObject.get("unit");
+            if (element!=null){
+                String str = element.getAsString();
+                for(int i=VerticalAxis.PROBE_TYPE_MIN;
+                            i<VerticalAxis.PROBE_TYPE_MAX;
+                            i++){
+                    if(ChannelFactory.getProbeString(i).equals(str)){
+                        probeUnit = i;
+                        break;
+                    }
+                }
+            }
+
+            JsonElement[] elements = new JsonElement[2];
+            JsonArray[] arrays = new JsonArray[2];
+            elements[0] = jsonObject.get("scalesname");
+            elements[1] = jsonObject.get("scalesvalue");
+
+            if (elements[0] != null && elements[1] != null) {
+                arrays[0] = elements[0].getAsJsonArray();
+                arrays[1] = elements[1].getAsJsonArray();
+                int s = Math.min(arrays[0].size(), arrays[1].size());
+                scaleNames.clear();
+                scaleValues.clear();
+                for (int i = 0; i < s; i++) {
+                    scaleNames.add(arrays[0].get(i).getAsString());
+                    scaleValues.add(arrays[1].get(i).getAsDouble());
+                }
+            }
+        }
+    }
+
+    public abstract BaseProbe createProbe();
+
+
+    protected List<String> scaleNames = new ArrayList<>();
+    protected List<Double> scaleValues = new ArrayList<>();
+
+
+    public synchronized List<String> getScaleName() {
+        return scaleNames;
+    }
+
+    public synchronized double getScaleValue(String key) {
+        double val = 0;
+
+        int s = Math.min(scaleNames.size(),scaleValues.size());
+
+        for (int i = 0; i < s; i++) {
+            String name = scaleNames.get(i);
+            if (name.equals(key)) {
+                val = scaleValues.get(i);
+                break;
+            }
+        }
+        return val;
+    }
+
+    public synchronized String getScaleKey(double val) {
+        String name = "";
+        int s = Math.min(scaleNames.size(),scaleValues.size());
+        for (int i = 0; i < s; i++) {
+            if (DoubleUtil.FuzzyCompare(val, scaleValues.get(i))) {
+                name = scaleNames.get(i);
+                break;
+            }
+        }
+        return name;
+    }
+
+    public synchronized int  getScaleIndex(double val) {
+        int idx = -1;
+        int s = scaleValues.size();
+        for (int i = 0; i < s; i++) {
+            if (DoubleUtil.FuzzyCompare(val, scaleValues.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        return idx;
+    }
+
+
+    @NonNull
+    @Override
+    protected BaseBean clone() throws CloneNotSupportedException {
+        BaseBean baseBean = (BaseBean)super.clone();
+        if(scaleNames != null && scaleNames.size() > 0){
+            baseBean.scaleNames = new ArrayList<>(scaleNames);
+        }
+
+        if(scaleValues != null && scaleValues.size() > 0){
+            baseBean.scaleValues = new ArrayList<>(scaleValues);
+        }
+        return baseBean;
+    }
+}
+

@@ -1,0 +1,13 @@
+package com.micsig.tbook.scope.fpga;
+
+public class FPGAReg_DISP_RESOLUTION extends FPGAReg{
+    public FPGAReg_DISP_RESOLUTION() {
+        super(FPGA_DISP_RESOLUTION, 4);
+    }
+    public void setWidth(int w){
+        setVal(0,0,16,w);
+    }
+    public void setHeight(int h){
+        setVal(0,16,16,h);
+    }
+}

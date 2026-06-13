@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AbsoluteLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <View
+        android:id="@+id/outView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <RelativeLayout
+        android:layout_width="608px"
+        android:layout_height="wrap_content"
+        android:layout_x="336px"
+        android:layout_y="587px"
+        android:background="@drawable/shape_frame_bg_black"
+        android:clickable="true"
+        android:padding="10px">
+
+        <TextView
+            android:id="@+id/title"
+            style="@style/textStyle"
+            android:layout_width="70px"
+            android:layout_height="50px"
+            android:gravity="center_vertical"
+            android:layout_marginStart="35px"
+            android:text="@string/dialogcount_title" />
+
+        <TextView
+            android:id="@+id/show"
+            style="@style/editTextStyleRight"
+            android:layout_width="100px"
+            android:layout_height="40px"
+            android:layout_marginStart="70px"
+            android:layout_marginLeft="70px"
+            android:layout_toEndOf="@id/title"
+            android:layout_toRightOf="@id/title"
+            android:textColor="@color/textColorNewRightViewEnable" />
+
+        <RadioButton
+            android:id="@+id/mhz"
+            style="@style/buttonStyle"
+            android:layout_width="70px"
+            android:layout_height="40px"
+            android:layout_marginStart="70px"
+            android:layout_marginLeft="70px"
+            android:layout_toEndOf="@id/show"
+            android:layout_toRightOf="@id/show"
+            android:button="@null"
+            android:checked="true"
+            android:gravity="center"
+            android:text="@string/dialogBandWidthMHz"
+            android:textColor="@color/textColorNewRightViewEnable"
+            android:textSize="16px" />
+
+        <RadioButton
+            android:id="@+id/khz"
+            style="@style/buttonStyle"
+            android:layout_width="70px"
+            android:layout_height="40px"
+            android:layout_marginStart="70px"
+            android:layout_marginLeft="70px"
+            android:layout_toEndOf="@id/mhz"
+            android:layout_toRightOf="@id/mhz"
+            android:button="@null"
+            android:gravity="center"
+            android:text="@string/dialogBandWidthKHz"
+            android:textColor="@color/textColorNewRightViewEnable"
+            android:textSize="16px" />
+
+        <Button
+            android:id="@+id/subtract"
+            style="@style/buttonStyle"
+            android:layout_width="70px"
+            android:layout_height="40px"
+            android:layout_below="@id/title"
+            android:layout_marginTop="15px"
+            android:layout_marginStart="35px"
+            android:includeFontPadding="false"
+            android:gravity="center"
+            android:text="@string/dialogcount_subtract"
+            android:textColor="@color/textColorNewRightViewEnable"
+            android:textSize="20px" />
+
+        <Button
+            android:id="@+id/add"
+            style="@style/buttonStyle"
+            android:layout_width="70px"
+            android:layout_height="40px"
+            android:layout_below="@id/title"
+            android:layout_alignStart="@id/khz"
+            android:layout_alignLeft="@id/khz"
+            android:layout_marginTop="15px"
+            android:includeFontPadding="false"
+            android:gravity="center"
+            android:text="@string/dialogcount_add"
+            android:textColor="@color/textColorNewRightViewEnable"
+            android:textSize="20px" />
+
+        <SeekBar
+            android:id="@+id/progress"
+            android:layout_width="302px"
+            android:layout_height="18px"
+            android:layout_below="@id/title"
+            android:layout_marginTop="20px"
+            android:layout_marginStart="22px"
+            android:layout_marginRight="22px"
+            android:layout_toLeftOf="@id/add"
+            android:layout_toRightOf="@id/subtract"
+            android:maxHeight="18px"
+            android:minHeight="18px"
+            android:background="@null"
+            android:layout_gravity="center_vertical"
+            android:thumb="@drawable/seekbar_bg_slider_14"
+            android:thumbOffset="0px"
+            android:progressDrawable="@drawable/bg_seekbar_bg_302_52"
+            android:splitTrack="false"
+            />
+    </RelativeLayout>
+</AbsoluteLayout>

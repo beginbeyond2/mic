@@ -1,0 +1,40 @@
+package com.micsig.tbook.tbookscope.wavezone;
+
+public class WorkModeBean {
+    @IWorkMode.WorkMode
+    private int preWorkMode;
+    @IWorkMode.WorkMode
+    private int nextWorkMode;
+    private boolean isFromEventBus;
+
+    public WorkModeBean(@IWorkMode.WorkMode int preWorkMode, @IWorkMode.WorkMode int nextWorkMode, boolean isFromEventBus) {
+        this.preWorkMode = preWorkMode;
+        this.nextWorkMode = nextWorkMode;
+        this.isFromEventBus = isFromEventBus;
+    }
+
+    public int getPreWorkMode() {
+        return preWorkMode;
+    }
+
+    public void setPreWorkMode(int preWorkMode) {
+        this.preWorkMode = preWorkMode;
+    }
+
+    @IWorkMode.WorkMode
+    public int getNextWorkMode() {
+        return nextWorkMode;
+    }
+
+    public void setNextWorkMode(@IWorkMode.WorkMode int nextWorkMode) {
+        this.nextWorkMode = nextWorkMode;
+    }
+
+    public boolean isFromEventBus() {
+        return isFromEventBus;
+    }
+
+    public void setFromEventBus(boolean fromEventBus) {
+        isFromEventBus = fromEventBus;
+    }
+}

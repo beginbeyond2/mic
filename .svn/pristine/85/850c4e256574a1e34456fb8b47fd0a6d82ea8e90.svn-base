@@ -1,0 +1,67 @@
+package com.micsig.tbook.tbookscope.scpi;
+
+/**
+ * Created by liwb on 2018/1/11.
+ */
+
+public class SCPIParam {
+
+    public int commandIndex;
+
+    public String sParam1;
+    public String sParam2;
+    public String sParam3;
+    public String sParam4;
+    public String sParam5;
+
+    public boolean bParam1;
+    public boolean bParam2;
+    public boolean bParam3;
+    public boolean bParam4;
+    public boolean bParam5;
+
+    public int iParam1;
+    public int iParam2;
+    public int iParam3;
+    public int iParam4;
+    public int iParam5;
+
+    public double dParam1;
+    public double dParam2;
+    public double dParam3;
+    public double dParam4;
+    public double dParam5;
+
+    public String sResultParam1;
+    public boolean bResultParam1;
+    public int iResultParam1;
+    public double dResultParam1;
+
+    public void clearData() {
+        commandIndex = -1;
+        sParam1 = null;
+        sParam2 = null;
+        sParam3 = null;
+        sParam4 = null;
+        sParam5 = null;
+        bParam1 = false;
+        bParam2 = false;
+        bParam3 = false;
+        bParam4 = false;
+        bParam5 = false;
+        iParam1 = -1;
+        iParam2 = -1;
+        iParam3 = -1;
+        iParam4 = -1;
+        iParam5 = -1;
+        dParam1 = -1;
+        dParam2 = -1;
+        dParam3 = -1;
+        dParam4 = -1;
+        dParam5 = -1;
+        sResultParam1 = null;
+        bResultParam1 = false;
+        iResultParam1 = -1;
+        dResultParam1 = -1;
+    }
+}

@@ -1,0 +1,461 @@
+package com.micsig.tbook.scope.Calibrate;
+
+import android.os.Build;
+
+import com.micsig.tbook.hardware.HardwareProduct;
+import com.micsig.tbook.scope.Calibrate.MHO38v1.HW_MHO38V1;
+import com.micsig.tbook.scope.Calibrate.MHO68v1.HW_MHO68V1;
+import com.micsig.tbook.scope.Calibrate.MHO68v2.HW_MHO68V2;
+import com.micsig.tbook.scope.channel.Channel;
+import com.micsig.tbook.scope.fpga.CHAZHI_COEF;
+import com.micsig.tbook.scope.fpga.MHO38_CHAZHI_COEF;
+import com.micsig.tbook.scope.fpga.MHO68V1_CHAZHI_COEF;
+import com.micsig.tbook.scope.fpga.MHO68V2_CHAZHI_COEF;
+import com.micsig.tbook.scope.vertical.VerticalAxis;
+
+public class HwConfig {
+
+    private HwConfig(ADC adc,
+                     HW hw,
+                     int adBits,
+                     int adMaxVal,
+                     int triggerLevelFactor,
+                     double adValPerPix,
+                     double wavFactor,
+                     double adFSR,
+                     double triggerHuiChaFactor,
+                     float [] defaultChCoef,
+                     int [] defaultAdFS,
+                     short [] defaultPga,
+                     int yPlaceFactor,
+                     int pix2AdFactor,
+                     int fpgaNums,
+                     int adcNums,
+                     double digitDang1M,
+                     double digitDang50){
+        this.adc = adc;
+        this.hw = hw;
+        this.adBits = adBits;
+        this.adMaxVal = adMaxVal;
+        this.triggerLevelFactor = triggerLevelFactor;
+        this.adValPerPix = adValPerPix;
+        this.wavFactor = wavFactor;
+        this.adFSR = adFSR;
+        this.triggerHuiChaFactor = triggerHuiChaFactor;
+        this.defaultChCoef = defaultChCoef;
+        this.defaultAdFS = defaultAdFS;
+        this.defaultPga = defaultPga;
+        this.yPlaceFactor = yPlaceFactor;
+        this.pix2AdFactor = pix2AdFactor;
+        this.fpgaNums = fpgaNums;
+        this.adcNums = adcNums;
+        this.digitDang_1M = digitDang1M;
+        this.digitDang_50 = digitDang50;
+    }
+
+
+
+
+    private static HwConfig allocMHO(){
+
+        HwConfig hwConfig = null;
+        switch (Build.PRODUCT){
+            case HardwareProduct.RK3588_MHO28_V1:
+            case HardwareProduct.RK3588_MHO38_V1:
+                CHAZHI_COEF.Init(MHO38_CHAZHI_COEF.chazhiCoef_sgl,
+                        MHO38_CHAZHI_COEF.chazhiCoef_dub,
+                        MHO38_CHAZHI_COEF.chazhiCoef_Line
+                );
+                hwConfig =  new HwConfig(new ADC_MXT2022(),new HW_MHO38V1(2),
+                        12,1023,16,1,
+                        0.25,0.86,0.8,
+                        cn_chCoef_mho38_v1, adfs_mho38_v1, pga_mho38_v1,4,
+                        4,2,4,0.0001,0.0001);
+                break;
+            case HardwareProduct.RK3588_MHO68_V1:
+                CHAZHI_COEF.Init(MHO68V1_CHAZHI_COEF.chazhiCoef_sgl,
+                        MHO68V1_CHAZHI_COEF.chazhiCoef_dub,
+                        MHO68V1_CHAZHI_COEF.chazhiCoef_Line
+                );
+                hwConfig = new HwConfig(new ADC_EV12AQ60x(),new HW_MHO68V1(2),
+                        12,1023,16,1,
+                        0.25,0.9658,1,
+                        cn_chCoef_mho68_v1, adfs_mho68_v1, pga_mho68_v1,4,
+                        4,2,2,0.0015,0.0015);
+                break;
+            case HardwareProduct.RK3588_MHO68_V2:
+                CHAZHI_COEF.Init(MHO68V2_CHAZHI_COEF.chazhiCoef_sgl,
+                        MHO68V2_CHAZHI_COEF.chazhiCoef_dub,
+                        MHO68V2_CHAZHI_COEF.chazhiCoef_Line
+                );
+                hwConfig = new HwConfig(new ADC_B12DJ3200NBB(), new HW_MHO68V2(2),
+                        12, 1023, 16, 1,
+                        0.25, 0.9658, 1,
+                        cn_chCoef_mho68_v2, adfs_mho68_v2, pga_mho68_v2, 4,
+                        4, 2,4, 0.0008,0.0015);
+                break;
+        }
+
+        return hwConfig;
+
+    }
+
+    private static HwConfig instance = null;
+    public static HwConfig getInstance(){
+        synchronized (HwConfig.class){
+            if(instance ==null){
+                instance = allocMHO();
+            }
+            return instance;
+        }
+    }
+    public ADC getAdc(){
+        return adc;
+    }
+
+    ADC adc;
+
+    private int adBits = 8;
+    private int adMaxVal = 255;
+    private int triggerLevelFactor =64;
+    private double adValPerPix = 4;
+    private double wavFactor = 1;
+    private double adFSR = 0.67;
+
+    private double triggerHuiChaFactor = 1.0;
+    private float [] defaultChCoef = cn_chCoef;
+    private int [] defaultAdFS = adfs_mho68_v2;
+    private short [] defaultPga = pga_eto;
+
+    private int yPlaceFactor = 256;
+
+    private int pix2AdFactor = 1;
+
+    private int fpgaNums = 1;
+
+    private int adcNums = 2;
+
+    private double digitDang_1M = VerticalAxis.getScaleIdValById(VerticalAxis.DANG_1mV);
+    private double digitDang_50 = VerticalAxis.getScaleIdValById(VerticalAxis.DANG_1mV);
+
+    private HW hw;
+    public HW getHW(){
+        return hw;
+    }
+
+    public double getDigitDang(int resistanceType){
+        if(resistanceType == Channel.RESISTANCE_1M) {
+            return digitDang_1M;
+        }else{
+            return digitDang_50;
+        }
+    }
+
+    public int getFpgaNums(){
+        return fpgaNums;
+    }
+    public int getAdcNums(){
+        return adcNums;
+    }
+
+    public int getAdcMaxChNums(){
+        return adc.getMaxChNums();
+    }
+
+    public int getPix2AdFactor(){
+        return pix2AdFactor;
+    }
+
+    public int getYPlaceFactor(){
+        return yPlaceFactor;
+    }
+    public int getAdbits(){
+
+        return adBits;
+    }
+
+    public int getAdMaxVal(){
+        return adMaxVal;
+    }
+
+    public int getTriggerLevelFactor(){
+        return triggerLevelFactor;
+    }
+
+    public double getAdValPerPix(){
+        return adValPerPix;
+    }
+    public double getWavFactor(){
+        return wavFactor;
+    }
+    public double getAdFSR(){
+        return adFSR;
+    }
+    public double getTriggerHuiChaFactor(){
+       return triggerHuiChaFactor;
+    }
+
+    public float [] getChCoefDefault(){
+        return defaultChCoef;
+    }
+    public short [] getPgaDefault(){
+        return defaultPga;
+    }
+    public int [] getADFsDefault(){
+        return defaultAdFS;
+    }
+
+    private static int[] adfs_mho38_v1 ={
+            16384,  // 250uV
+            16384,  // 500uV
+            16384,  // 1mV
+            16384,  // 2mV
+            16384,  // 5mV
+            16384,  // 10mV
+            16384,  // 20mV
+            16384,  // 50mV
+            16384,  // 100mV
+            16384,  // 200mV
+            16384,  // 500mV
+            16384,  // 1V
+            16384,  // 2V
+            16384,  // 5V
+            16384,  // 10V
+    };
+    private static int[] adfs_mho68_v1 ={
+            0x800,  // 250uV
+            0x800,  // 500uV
+            0x800,  // 1mV
+            0x800,  // 2mV
+            0x800,  // 5mV
+            0x800,  // 10mV
+            0x800,  // 20mV
+            0x800,  // 50mV
+            0x800,  // 100mV
+            0x800,  // 200mV
+            0x800,  // 500mV
+            0x800,  // 1V
+            0x800,  // 2V
+            0x800,  // 5V
+            0x800,  // 10V
+    };
+    private static int[] adfs_mho68_v2 ={
+            0xA000,  // 250uV
+            0xA000,  // 500uV
+            0xA000,  // 1mV
+            0xA000,  // 2mV
+            0xA000,  // 5mV
+            0xA000,  // 10mV
+            0xA000,  // 20mV
+            0xA000,  // 50mV
+            0xA000,  // 100mV
+            0xA000,  // 200mV
+            0xA000,  // 500mV
+            0xA000,  // 1V
+            0xA000,  // 2V
+            0xA000,  // 5V
+            0xA000,  // 10V
+    };
+    private static short[] pga_mho38_v1 ={
+            0x400,  // 250uV
+            0x400,  // 500uV
+            0x400,  // 1mV
+            0x407,  // 2mV
+            0x40E,  // 5mV
+            0x414,  // 10mV
+            0x41B,  // 20mV
+            0x405,  // 50mV
+            0x40B,  // 100mV
+            0x411,  // 200mV
+            0x419,  // 500mV
+            0x41F,  // 1V
+            0x406,  // 2V
+            0x404,  // 5V
+            0x407,  // 10V
+    };
+    public static short[] pga_mho68_v1 ={
+            0x201,  // 250uV
+            0x201,  // 500uV
+            0x202,  // 1mV
+            0x208,  // 2mV
+            0x210,  // 5mV
+            0x216,  // 10mV
+            0x21C,  // 20mV
+            0x207,  // 50mV
+            0x20D,  // 100mV
+            0x213,  // 200mV
+            0x21B,  // 500mV
+            0x215,  // 1V
+            0x21B,  // 2V
+            0x217,  // 5V
+            0x21D,  // 10V
+    };
+
+    public static short[] pga_mho68_v2 ={
+            0x200,  // 250uV
+            0x200,  // 500uV
+            0x206,  // 1mV
+            0x20C,  // 2mV
+            0x214,  // 5mV
+            0x21A,  // 10mV
+            0x220,  // 20mV
+            0x209,  // 50mV
+            0x20F,  // 100mV
+            0x215,  // 200mV
+            0x21D,  // 500mV
+            0x20C,  // 1V
+            0x212,  // 2V
+            0x21A,  // 5V
+            0x220,  // 10V
+    };
+    public static short[] pga_mho_8_50O ={
+            0x200,  // 250uV
+            0x200,  // 500uV
+            0x200,  // 1mV
+            0x200,  // 2mV
+            0x208,  // 5mV
+            0x20E,  // 10mV
+            0x214,  // 20mV
+            0x21C,  // 50mV
+            0x208,  // 100mV
+            0x20E,  // 200mV
+            0x216,  // 500mV
+            0x21C,  // 1V
+            0x219,  // 2V
+            0x215,  // 5V
+            0x21B,  // 10V
+    };
+
+    public static short[] pga_mho_8_50O_v2 ={
+            0x200,  // 250uV
+            0x200,  // 500uV
+            0x200,  // 1mV
+            0x206,  // 2mV
+            0x20E,  // 5mV
+            0x214,  // 10mV
+            0x21A,  // 20mV
+            0x214,  // 50mV
+            0x21A,  // 100mV
+            0x212,  // 200mV
+            0x21A,  // 500mV
+            0x220,  // 1V
+            0x219,  // 2V
+            0x215,  // 5V
+            0x21B,  // 10V
+    };
+
+    private static short[] pga_eto ={
+            0x410,  // 250uV
+            0x410,  // 500uV
+            0x411,  // 1mV
+            0x414,  // 2mV
+            0x418,  // 5mV
+            0x401,  // 10mV
+            0x404,  // 20mV
+            0x408,  // 50mV
+            0x405,  // 100mV
+            0x408,  // 200mV
+            0x401,  // 500mV
+            0x404,  // 1V
+            0x407,  // 2V
+            0x405,  // 5V
+            0x408,  // 10V
+    };
+
+
+
+    private static float[] cn_chCoef ={
+            //各档位偏移系数
+            0.148120879f,   // 250uV
+            0.148120879f,   // 500uV
+            0.12648448f,    // 1mV
+            0.25296896f,    // 2mV
+            0.6324224f,     // 5mV
+            1.2648448f,     // 10mV
+            2.5296896f,     // 20mV
+            6.324224f,      // 50mV
+            12.648448f,     // 100mV
+            25.296896f,     // 200mV
+            1.2648448f,     // 500mV
+            2.5296896f,     // 1V
+            5.0593792f,     // 2V
+            12.648448f,     // 5V
+            25.296896f,     // 10V
+    };
+
+    private static float[] cn_chCoef_mho38_v1 ={
+            //各档位偏移系数
+            0.064633569f, // 250uV
+            0.064633569f, // 500uV
+            0.129267139f, // 1mV
+            0.258534277f, // 2mV
+            0.646335693f, // 5mV
+            1.292671386f, // 10mV
+            2.585342771f, // 20mV
+            6.463356928f, // 50mV
+            12.92671386f, // 100mV
+            25.85342771f, // 200mV
+            1.292671386f, // 500mV
+            2.585342771f, // 1V
+            5.170685542f, // 2V
+            12.92671386f, // 5V
+            25.85342771f, // 10V
+    };
+    private static float[] cn_chCoef_mho68_v1 ={
+            //各档位偏移系数
+            0.063991399f, // 250uV
+            0.063991399f, // 500uV
+            0.127982797f, // 1mV
+            0.255965595f, // 2mV
+            0.639913987f, // 5mV
+            1.279827974f, // 10mV
+            2.559655948f, // 20mV
+            0.4186112f, // 50mV
+            0.8372224f, // 100mV
+            1.6744448f, // 200mV
+            4.186112f, // 500mV
+            2.093056f, // 1V
+            4.186112f, // 2V
+            2.61632f, // 5V
+            5.23264f, // 10V
+    };
+    public static float[] cn_chCoef_mho68_v2 ={
+            //各档位偏移系数
+            0.476250112f, // 250uV
+            0.476250112f, // 500uV
+            0.952500224f, // 1mV
+            1.905000448f, // 2mV
+            4.76250112f,  // 5mV
+            9.52500224f,  // 10mV
+            19.05000448f, // 20mV
+            1.422374851f, // 50mV
+            2.844749702f, // 100mV
+            5.689499404f, // 200mV
+            14.22374851f, // 500mV
+            1.935654057f, // 1V
+            3.871308114f, // 2V
+            9.678270285f, // 5V
+            19.35654057f, // 10V
+    };
+    public static float[] cn_chCoef_mho_8_50O_v2 ={
+            //各档位偏移系数
+            0.476250112f, // 250uV
+            0.27496274f,  // 500uV
+            0.54992548f,  // 1mV
+            1.099850961f,  // 2mV
+            2.749627402f,  // 5mV
+            5.499106426f,  // 10mV
+            10.99821285f,  // 20mV
+            5.426446733f,  // 50mV
+            10.85289347f,  // 100mV
+            4.065862889f,  // 200mV
+            10.16465722f,  // 500mV
+            20.32931444f,  // 1V
+            3.871308114f, // 2V
+            9.678270285f, // 5V
+            19.35654057f, // 10V
+    };
+    public static long getMaxAdInClk(){
+        return HwConfig.getInstance().adc.getMaxAdInClk();
+    }
+}

@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AbsoluteLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/layout_bottom_channel_other"
+    android:layout_width="@dimen/screenWidth"
+    android:layout_height="1124px"
+    android:visibility="gone">
+
+    <View
+        android:id="@+id/out_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <LinearLayout
+        android:layout_width="819px"
+        android:layout_height="907px"
+        android:layout_x="981px"
+        android:layout_y="216px"
+        android:padding="1px">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <RadioGroup
+                android:id="@+id/top_channel_group"
+                android:layout_width="wrap_content"
+                android:layout_height="70px"
+                android:orientation="horizontal"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <RadioButton
+                    android:id="@+id/channelMath"
+                    android:layout_width="164px"
+                    android:layout_height="match_parent"
+                    android:button="@null"
+                    android:checked="false"
+                    android:gravity="center"
+                    android:text="Math"
+                    android:textColor="@color/textcolor_radiobutton_channel_math"
+                    android:textSize="24px" />
+
+                <RadioButton
+                    android:id="@+id/channelRef"
+                    android:layout_width="164px"
+                    android:layout_height="match_parent"
+                    android:button="@null"
+                    android:checked="false"
+                    android:gravity="center"
+                    android:text="Ref"
+                    android:textColor="@color/textcolor_radiobutton_channel_ref"
+                    android:textSize="24px" />
+
+                <RadioButton
+                    android:id="@+id/channelSerials"
+                    android:layout_width="164px"
+                    android:layout_height="match_parent"
+                    android:button="@null"
+                    android:checked="false"
+                    android:gravity="center"
+                    android:text="Serial Bus"
+                    android:textColor="@color/textcolor_radiobutton_channel_bus"
+                    android:textSize="24px" />
+
+            </RadioGroup>
+
+            <TextView
+                android:id="@+id/btn_add_channel"
+                style="@style/buttonStyle"
+                android:layout_width="54px"
+                android:layout_height="54px"
+                android:layout_marginTop="8px"
+                android:layout_marginEnd="28px"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:text="+"
+                android:textSize="30px"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <LinearLayout
+                android:id="@+id/layout_channel_list"
+                android:layout_width="match_parent"
+                android:layout_height="837px"
+                android:orientation="vertical"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/top_channel_group">
+
+<!--                <com.micsig.tbook.tbookscope.rightslipmenu.RightLayoutMath-->
+<!--                    android:id="@+id/layout_math"-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:visibility="gone"-->
+<!--                    app:isNormal="true" />-->
+
+<!--                <com.micsig.tbook.tbookscope.rightslipmenu.RightLayoutRef-->
+<!--                    android:id="@+id/layout_ref"-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:visibility="gone"-->
+<!--                    app:isNormal="true" />-->
+
+<!--                <com.micsig.tbook.tbookscope.rightslipmenu.serials.RightLayoutSerials-->
+<!--                    android:id="@+id/layout_serials"-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:visibility="gone"-->
+<!--                    app:isNormal="true" />-->
+
+            </LinearLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </LinearLayout>
+
+</AbsoluteLayout>

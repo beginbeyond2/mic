@@ -1,0 +1,98 @@
+package com.micsig.tbook.scope.Auto;
+
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.channel.SerialChannel;
+import com.micsig.tbook.scope.fpga.FPGA_Status;
+
+/**
+ * Created by zhuzh on 2018-7-3.
+ */
+
+public class AutoManage {
+    public static final int AUTO_STOP = 0;
+    public static final int AUTO_START = 1;
+
+    private volatile int autoState = AUTO_STOP;
+    private Auto auto;
+    AutoAtion ation = null;
+    public AutoManage(Auto auto){
+        this.auto = auto;
+
+    }
+    public void autoStart(){
+        synchronized (this) {
+            ation = onPrepared();
+            if(ation != null){
+                ation.autoPrePared();
+            }
+            autoState = AUTO_START;
+        }
+        EventFactory.sendEvent(EventFactory.EVENT_AUTO_START);
+
+    }
+    public void autoStop(){
+        synchronized (this) {
+
+            ation = null;
+            autoState = AUTO_STOP;
+        }
+        Logger.d("AUTO","autoStop");
+        EventFactory.sendEvent(EventFactory.EVENT_AUTO_STOP);
+
+    }
+    public boolean autoDo(FPGA_Status fpgaStatus){
+        boolean bRet = true;
+        AutoAtion autoAtion;
+        synchronized (this){
+            autoAtion = ation;
+        }
+        if(autoAtion != null){
+            bRet = autoAtion.onAtion(fpgaStatus);
+        }
+        return bRet;
+    }
+    public int getAutoState(){
+        return  autoState;
+    }
+    //
+    private AutoAtion onPrepared(){
+        AutoAtion autoAtion = null;
+        boolean bSerialAuto = false;
+        SerialChannel serialChannel;
+
+        int maxIdx = ChannelFactory.getMaxSerialIdx();
+        for(int i=ChannelFactory.S1;i<maxIdx;i++){
+            serialChannel = ChannelFactory.getSerialChannel(i);
+            if(serialChannel != null && serialChannel.isOpen()){
+                bSerialAuto = true;
+                break;
+            }
+        }
+        if(bSerialAuto){
+            autoAtion = new SerialBusAutoAtion(auto);
+        }else {
+            autoAtion = new EdgeAutoAtion(auto);
+        }
+        return autoAtion;
+    }
+    public void modifyVertical(int chIdx) {
+        if(ation != null){
+            ation.onModifyVertical(chIdx);
+        }
+    }
+
+    public void modifyTimebase() {
+        if(ation != null){
+            ation.onModifyTimebase();
+        }
+    }
+
+    public void modifyLevel() {
+        if(ation != null){
+            ation.onModifyLevel();
+        }
+    }
+
+}

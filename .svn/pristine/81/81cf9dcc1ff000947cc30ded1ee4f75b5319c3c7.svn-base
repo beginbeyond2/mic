@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RadioButton xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/textView"
+    
+    android:layout_width="match_parent"
+    android:layout_height="54px"
+    android:layout_margin="7px"
+    android:gravity="center"
+    android:button="@null"
+    android:lines="1"
+    android:ellipsize="end"
+    android:text="Ch1"
+    android:textSize="@dimen/textSizeCur"
+    android:textAllCaps="false"
+    />

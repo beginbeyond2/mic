@@ -1,0 +1,663 @@
+package com.micsig.tbook.scope.measure;
+
+
+import android.util.Log;
+
+import androidx.annotation.IntDef;
+
+import com.micsig.tbook.scope.Calibrate.HwConfig;
+import com.micsig.tbook.scope.Data.SyncHeader;
+import com.micsig.tbook.scope.Data.WaveData;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.channel.BaseChannel;
+import com.micsig.tbook.scope.channel.Channel;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.channel.IChannel;
+import com.micsig.tbook.scope.channel.MathChannel;
+import com.micsig.tbook.scope.channel.RefChannel;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
+
+
+/**
+ * Created by zhuzh on 2018-4-13.
+ */
+
+public class Measure {
+
+    public static class MeasureType {
+        @IntDef({MEASURE_FIRST,MEASURE_PERIOD, MEASURE_FREQ, MEASURE_RISETIME, MEASURE_FALLTIME, MEASURE_DELAY,
+                MEASURE_POSITIVE_DUTY, MEASURE_NEGATIVE_DUTY, MEASURE_POSITIVE_PULSE_WIDTH,
+                MEASURE_NEGATIVE_PULSE_WIDTH, MEASURE_BURST_WIDTH, MEASURE_POSITIVE_OVERSHOOT,
+                MEASURE_NEGATIVE_OVERSHOOT, MEASURE_PHASE, MEASURE_PK_PK, MEASURE_AMPLITUDE,
+                MEASURE_HIGH, MEASURE_LOW, MEASURE_MAX, MEASURE_MIN, MEASURE_RMS, MEASURE_CRMS,
+                MEASURE_MEAN, MEASURE_CMEAN,MEASURE_POSITIVE_UNDERSHOOT,MEASURE_NEGATIVE_UNDERSHOOT,
+                MEASURE_AC_RMS,MEASURE_POSITIVE_RATE,MEASURE_NEGATIVE_RATE,MEASURE_LAST,
+                MEASURE_TVALUE,
+                MEASURE_CURSOR_X1,MEASURE_CURSOR_X2,MEASURE_COLV,
+                MEASURE_CLIPPING,
+                MEASURE_TIME_POT, MEASURE_FIRST_RISE_EDGE, MEASURE_FIRST_FALL_EDGE,
+                MEASURE_SECON_RISE_EDGE, MEASURE_SECON_FALL_EDGE, MEASURE_LAST_RISE_EDGE,
+                MEASURE_LAST_FALL_EDGE})
+        @Retention(RetentionPolicy.SOURCE)
+        public @interface MeasureItemType {
+        }
+
+        public static final int MEASURE_FIRST = 16;
+        public static final int MEASURE_PERIOD = MEASURE_FIRST;
+        public static final int MEASURE_FREQ = 17;
+        public static final int MEASURE_RISETIME = 18;
+        public static final int MEASURE_FALLTIME = 19;
+        public static final int MEASURE_DELAY = 20;
+        public static final int MEASURE_POSITIVE_DUTY = 21;
+        public static final int MEASURE_NEGATIVE_DUTY = 22;
+        public static final int MEASURE_POSITIVE_PULSE_WIDTH = 23;
+        public static final int MEASURE_NEGATIVE_PULSE_WIDTH = 24;
+        public static final int MEASURE_BURST_WIDTH = 25;
+        public static final int MEASURE_POSITIVE_OVERSHOOT = 26;
+        public static final int MEASURE_NEGATIVE_OVERSHOOT = 27;
+        public static final int MEASURE_PHASE = 28;
+        public static final int MEASURE_PK_PK = 29;
+        public static final int MEASURE_AMPLITUDE = 30;
+        public static final int MEASURE_HIGH = 31;
+        public static final int MEASURE_LOW = 32;
+        public static final int MEASURE_MAX = 33;
+        public static final int MEASURE_MIN = 34;
+        public static final int MEASURE_RMS = 35;
+        public static final int MEASURE_CRMS = 36;
+        public static final int MEASURE_MEAN = 37;
+        public static final int MEASURE_CMEAN = 38;
+        public static final int MEASURE_AC_RMS = 39;
+        public static final int MEASURE_POSITIVE_RATE = 40;
+        public static final int MEASURE_NEGATIVE_RATE = 41;
+        public static final int MEASURE_TVALUE = 42;
+        public static final int MEASURE_LAST = MEASURE_TVALUE;
+
+
+        //第一个上升沿位置：选通区域最左侧=0，单位S[内部使用]，用于计算周期、
+
+        public static final int MEASURE_CURSOR_X1 = 51;
+        public static final int MEASURE_CURSOR_X2 = 52;
+        public static final int MEASURE_POSITIVE_UNDERSHOOT = 53;
+        public static final int MEASURE_NEGATIVE_UNDERSHOOT = 54;
+        public static final int MEASURE_COLV = 55;
+        public static final int MEASURE_CLIPPING = 56;
+        public static final int MEASURE_TIME_POT = 57;
+        public static final int MEASURE_FIRST_RISE_EDGE = 58;
+        //第一个下降沿位置，参见“第一个上升沿位置”
+        public static final int MEASURE_FIRST_FALL_EDGE = 59;
+        //第二个上升沿位置，
+        public static final int MEASURE_SECON_RISE_EDGE = 60;
+        //第二个下降沿位置
+        public static final int MEASURE_SECON_FALL_EDGE = 61;
+        //最后一个上升沿位置
+        public static final int MEASURE_LAST_RISE_EDGE = 62;
+        //最后一个下降沿位置
+        public static final int MEASURE_LAST_FALL_EDGE = 63;
+        public static final int MEASURE_ITEM_MAX = 64;
+
+    }
+
+    public static final int INDICATION_LEFT  =   (0);
+    public static final int INDICATION_TOP   =   (1);
+    public static final int INDICATION_RIGHT =   (2);
+    public static final int INDICATION_BOTTOM=   (3);
+
+    public static final int RL_FIRST_RISE_EDGE = 0;
+    public static final int RL_FIRST_FALL_EDGE = 1;
+    public static final int RL_LAST_RISE_EDGE = 2;
+    public static final int RL_LAST_FALL_EDGE = 3;
+    //header 16 * 4  = 64 byte
+    //0,1,2,3 chIdx 32bit 4 byte
+    //4,5,6,7,8,9,10,11 enable 64bit 8 byte
+    //12,13,14,15,16,17,18,19 valid 64bit 8 byte
+    //20 phase relation to ch 1 byte
+    //21 delay edge 1byte
+    //22 delay relation to ch 1 byte
+    //23 delay relation to ch edge 1 byte
+    //24 col 2 byte
+    //26 high 1 byte
+    //27 middle 1 byte
+    //28 low 1 byte
+    //29 abs 1 byte
+    //30 begin 2 byte
+    //32 end 2 byte
+    //34 h 2 byte
+    //36 vrate 4 byte;
+    //40 hrate 4 byte
+    //44 pos 4 byte
+    //48 vscale 4 byte
+    //52 absHigh 4 byte
+    //56 absMiddle 4 byte
+    //60 absLow 4 byte
+    private ByteBuffer byteBuffer;
+    private FloatBuffer floatBuffer;
+    private IChannel channel;
+    private MeasureStatics measureStatics;
+
+    public Measure(IChannel channel) {
+        this.channel = channel;
+        byteBuffer = ByteBuffer.allocateDirect(MeasureType.MEASURE_FIRST * 4
+                +  (MeasureType.MEASURE_ITEM_MAX - MeasureType.MEASURE_FIRST) * 4 * 5
+                + 64);
+        byteBuffer.order(ByteOrder.nativeOrder());
+        floatBuffer = byteBuffer.asFloatBuffer();
+        byteBuffer.putInt(0, channel.getChId() & 0xFF);
+        byteBuffer.putLong(4, 0);
+        byteBuffer.putLong(12, 0);
+
+        MeasureUpper(90);
+        MeasureMiddle(50);
+        MeasureLower(10);
+        MeasureBegin(0);
+        MeasureEnd(ScopeBase.getWidth()-1);
+        setMeasureAbs(false);
+        measureStatics = new MeasureStatics(this);
+    }
+
+    public int getChIdx(){
+        return channel.getChId();
+    }
+
+    public MeasureStaticsBean getMeasureStatics(@MeasureType.MeasureItemType int measureType){
+        return measureStatics.getStatics(measureType);
+    }
+
+
+    public boolean isEnable() {
+        long val = byteBuffer.getLong(4);
+        return val != 0;
+    }
+    public MeasureStatics getMeasureStatics(){
+        return measureStatics;
+    }
+    public void setStaticsItemEnable(@MeasureType.MeasureItemType int measureType,boolean bEnable){
+        measureStatics.setStaticsItemEnable(measureType,bEnable);
+    }
+
+    public void MeasurePhase(int chIdx) {
+        byteBuffer.put(20, (byte)(chIdx & 0xFF));
+    }
+    private boolean bMeasureDelay = false;
+    private boolean bMeasurePhase = false;
+    public boolean isMeasureDelay(){
+        return  bMeasureDelay;
+    }
+    public boolean isMeasurePhase(){
+        return  bMeasurePhase;
+    }
+    public void MeasureDelayEnable(boolean bEnable){
+        bMeasureDelay = bEnable;
+        MeasureItemEnable(MeasureType.MEASURE_DELAY,bEnable);
+    }
+    public void MeasurePhaseEnable(boolean bEnable){
+        bMeasurePhase = bEnable;
+        MeasureItemEnable(MeasureType.MEASURE_PHASE,bEnable);
+    }
+    public void MeasureDelay(int selfEdge, int chIdx, int chEdge) {
+        byteBuffer.put(21, (byte) (selfEdge & 0xFF));
+        byteBuffer.put(22, (byte)(chIdx& 0xFF));
+        byteBuffer.put(23, (byte)(chEdge& 0xFF));
+    }
+
+    //自动测试使用
+    public void MeasureCol(int col){
+        byteBuffer.putShort(24,(short)(col & 0xFFFF));
+    }
+    public synchronized void setMeasureCursor(int x1, int x2){
+        this.x1 = x1;
+        this.x2 = x2;
+        int v = ((x1 & 0xFFF) << 20) | ((x2 & 0xFFF) << 8) | (channel.getChId() & 0xFF);
+        byteBuffer.putInt(0,v);
+    }
+    int x1 = 0;
+    int x2 = 0;
+    public synchronized int getCursorX1(){
+        return x1;
+    }
+    public synchronized int getCursorX2(){
+        return x2;
+    }
+    public void MeasureUpper(int val){
+        byteBuffer.put(26,(byte) (val & 0xFF));
+    }
+    public void MeasureMiddle(int val){
+        byteBuffer.put(27,(byte) (val & 0xFF));
+    }
+    public void MeasureLower(int val){
+        byteBuffer.put(28,(byte) (val & 0xFF));
+    }
+    public void setMeasureAbs(boolean bAbs){
+        byteBuffer.put(29,(byte) (bAbs ? 1 : 0));
+    }
+    public boolean isAbsMeasure(){
+        return (byteBuffer.get(29) & 0xFF) == 0x01;
+    }
+
+    public synchronized void setCursorMeasureRange(boolean bCursorMeasureRange){
+        this.bCursorMeasureRange = bCursorMeasureRange;
+    }
+    private synchronized boolean isCursorMeasureRange(){
+        return bCursorMeasureRange;
+    }
+    boolean bCursorMeasureRange = false;
+    public void MeasureBegin(int val){
+
+        byteBuffer.putShort(30,(short) (val & 0xFFFF));
+    }
+    public void MeasureEnd(int val){
+        byteBuffer.putShort(32,(short) (val & 0xFFFF));
+    }
+    public void WaveHeight(int val){
+        byteBuffer.putShort(34,(short) (val & 0xFFFF));
+    }
+    public void WaveHeightRate(float val){
+        byteBuffer.putFloat(36,val);
+    }
+
+    public float getHorizontalRate(){
+        return byteBuffer.getFloat(40);
+    }
+
+    public void setChPos(int pos){
+        byteBuffer.putInt(44,pos);
+    }
+
+    public void setVRate(float val){
+        byteBuffer.putFloat(48,val);
+    }
+
+    private void abs(){
+        HwConfig hwConfig = HwConfig.getInstance();
+        //Log.d("zhuzh","absUpper:" + absUpper + ",absMiddle:" + absMiddle + ",absLow:" + absLow + ",adpix:" + channel.getADVerticalPerPix());
+        byteBuffer.putInt(52, (int) Math.round((absUpper / (channel.getADVerticalPerPix() * hwConfig.getWavFactor())) * ScopeBase.getToFPGACoff()));
+        byteBuffer.putInt(56, (int) Math.round((absMiddle / (channel.getADVerticalPerPix() * hwConfig.getWavFactor())) * ScopeBase.getToFPGACoff()));
+        byteBuffer.putInt(60, (int) Math.round((absLow / (channel.getADVerticalPerPix() * hwConfig.getWavFactor())) * ScopeBase.getToFPGACoff()));
+
+        byteBuffer.putFloat(1024,(float) (tvalue_v/(channel.getADVerticalPerPix() * hwConfig.getWavFactor())));
+        byteBuffer.putInt(1028,tvalue_n);
+    }
+
+    double absUpper = 0.9;
+    double absMiddle = 0.5;
+    double absLow = 0.1;
+    public void setAbsUpper(double high){
+        this.absUpper = high;
+    }
+    public void setAbsMiddle(double val){
+        this.absMiddle = val;
+    }
+    public void setAbsLow(double val){
+        this.absLow = val;
+    }
+
+
+    double tvalue_v = 0;
+    int tvalue_n = 1;
+    public void setTValue(double v,int n){
+        tvalue_v = v;
+        tvalue_n = n;
+    }
+
+
+    public int getMeasureUpper(){
+        return byteBuffer.get(26) & 0xFF;
+    }
+    public int getMeasureMiddle(){
+        return byteBuffer.get(27) & 0xFF;
+    }
+    public int getMeasureLower(){
+        return byteBuffer.get(28) & 0xFF;
+    }
+    public int getMeasureBegin(){
+        return byteBuffer.getShort(30) & 0xFFFF;
+    }
+    public int getMeasureEnd(){
+        return byteBuffer.getShort(32) & 0xFFFF;
+    }
+
+    public int getPhaseRefChIdx() {
+        return byteBuffer.get(20) & 0xFF;
+    }
+    public int getDelaySelfEdge() {
+        return byteBuffer.getInt(21) & 0xFF;
+    }
+    public int getDelayRefChIdx() {
+        return byteBuffer.getInt(22) & 0xFF;
+    }
+    public int getDelayRefChEdge() {
+        return byteBuffer.getInt(23) & 0xFF;
+    }
+
+
+
+
+    public boolean isMeasureItemEnable(@MeasureType.MeasureItemType int measureType) {
+        long val = byteBuffer.getLong(4);
+        return ((val >>> measureType) & 0x01) != 0;
+    }
+
+    public void MeasureItemEnable(@MeasureType.MeasureItemType int measureType, boolean enable) {
+        long mask = 1;
+        long val = byteBuffer.getLong(4);
+        mask = mask << measureType;
+        val &= ~(mask);
+        if (enable)
+            val |= mask;
+        byteBuffer.putLong(4, val);
+    }
+
+    public void setMeasureItemValid(@MeasureType.MeasureItemType int measureType, boolean bValid) {
+        long mask = 1;
+        long val = byteBuffer.getLong(12);
+        mask = mask << measureType;
+        val &= ~(mask);
+        if (bValid)
+            val |= mask;
+        byteBuffer.putLong(12, val);
+    }
+
+    public boolean isMeasureItemValid(@MeasureType.MeasureItemType int measureType) {
+        if(ChannelFactory.isMath_FFT_Ch(channel.getChId())){
+            MathChannel mathChannel = (MathChannel)channel;
+            switch (measureType){
+                case MeasureType.MEASURE_CURSOR_X1:
+                    return mathChannel.isCursorX1Valid();
+                case MeasureType.MEASURE_CURSOR_X2:
+                    return mathChannel.isCursorX2Valid();
+            }
+        }
+        long val = byteBuffer.getLong(12);
+        return ((val >>> measureType) & 0x01) == 1;
+    }
+
+    public void setMeasureItemVal(@MeasureType.MeasureItemType int measureType, double val) {
+        floatBuffer.put(measureType, (float)val);
+    }
+
+    public float getMeasureItemVal(@MeasureType.MeasureItemType int measureType) {
+        if(ChannelFactory.isMath_FFT_Ch(channel.getChId())){
+            MathChannel mathChannel = (MathChannel)channel;
+            switch (measureType){
+                case MeasureType.MEASURE_CURSOR_X1:
+                    return (float) mathChannel.getCursorX1Value();
+                case MeasureType.MEASURE_CURSOR_X2:
+                    return (float) mathChannel.getCursorX2Value();
+            }
+        }
+
+        float val = floatBuffer.get(measureType);
+        double tmpVal = 0;
+        if(ChannelFactory.isDynamicCh(channel.getChId()) && !isCursorMeasureRange()){
+            Channel ch = (Channel)channel;
+            switch (measureType){
+                case MeasureType.MEASURE_MAX:
+                    tmpVal = ch.getMaxVal();
+                    if(val < tmpVal){
+                        val = (float)tmpVal;
+                    }
+                    break;
+                case MeasureType.MEASURE_MIN:
+                    tmpVal = ch.getMinVal();
+                    if(val > tmpVal){
+                        val = (float)tmpVal;
+                    }
+                    break;
+                case MeasureType.MEASURE_PK_PK:
+                    tmpVal = (ch.getPKPKVal());
+
+                    if(val < tmpVal) {
+                        val = (float) tmpVal;
+                    }
+                    break;
+            }
+        }
+
+
+
+        return val;
+    }
+
+    //0 不小削波，1 正削，2 负削，3 双削，4 无波
+    public int getClipping(){
+        double val = getMeasureItemVal(MeasureType.MEASURE_CLIPPING);
+        return (int)(val + 0.1);
+    }
+
+    public int getIndication(int measureType,int dir){
+
+        int idx = measureType - MeasureType.MEASURE_FIRST;
+        float val = floatBuffer.get(MeasureType.MEASURE_ITEM_MAX + idx * 4 + dir);
+        val = Math.round(ScopeBase.changeAccuracy(val * ScopeBase.getToUICoff()));
+        if(ChannelFactory.isDynamicCh(channel.getChId()) && !isCursorMeasureRange()){
+            Channel ch = (Channel)channel;
+            double maxVal = getMeasureItemVal(MeasureType.MEASURE_MAX);
+            double minVal = getMeasureItemVal(MeasureType.MEASURE_MIN);
+            WaveData dataBuffer = (WaveData) channel.obtain();
+            if (dataBuffer==null){
+                return Math.round(val);
+            }
+            double v = ch.getADVerticalPerPix() * dataBuffer.getProbeRate() / ch.getProbeRate();
+            channel.recycle(dataBuffer);
+            maxVal = ScopeBase.getNewHeight() / 2 - ch.getPosUI() - maxVal / v;
+            minVal = ScopeBase.getNewHeight() / 2 - ch.getPosUI() - minVal / v;
+
+            if(Scope.getInstance().isZoom()){
+                maxVal = maxVal * ScopeBase.getZoomHeight()/ScopeBase.getHeight();
+                minVal = minVal * ScopeBase.getZoomHeight()/ScopeBase.getHeight();
+            }
+
+            switch (measureType){
+                case MeasureType.MEASURE_MAX:
+                    if(dir == INDICATION_TOP) {
+                        val = (float) maxVal;
+                    }
+                    break;
+                case MeasureType.MEASURE_MIN:
+                    if(dir == INDICATION_BOTTOM) {
+                        val = (float) minVal;
+                    }
+
+                    break;
+                case MeasureType.MEASURE_PK_PK:
+                    if(dir == INDICATION_TOP) {
+                        val = (float) maxVal;
+                    }else if(dir == INDICATION_BOTTOM) {
+                        val = (float) minVal;
+                    }
+                    break;
+            }
+        }
+        return Math.round(val);
+    }
+
+    public void setIndication(int measureType,int dir,float val){
+        int idx = measureType - MeasureType.MEASURE_FIRST;
+        floatBuffer.put(MeasureType.MEASURE_ITEM_MAX + idx * 4 + dir,val);
+    }
+
+    private int waveX = 0;
+    public boolean MeasureCalc() {
+        boolean bMeasure = false;
+        BaseChannel baseChannel = (BaseChannel)channel;
+        if(baseChannel != null) {
+            WaveData dataBuffer = (WaveData) channel.obtain();
+            if (dataBuffer != null) {
+                setChPos((int) Math.round(baseChannel.getPos()));
+                setVRate((float) ((dataBuffer.getVScaleVal()/dataBuffer.getProbeRate())/(baseChannel.getFineScale()*baseChannel.getVScaleIdVal())));
+                abs();
+                WaveHeightRate(
+                        Scope.getInstance().isZoom()
+                                ?(float) ScopeBase.getZoomHeight()/ScopeBase.getHeight()
+                                :1.0f
+                );
+                waveX = dataBuffer.getStartX();
+                if(ChannelFactory.isRefCh(channel.getChId())){
+                    RefChannel refChannel = (RefChannel) channel;
+                    synchronized (refChannel.surfaceLock){
+                        int startx = dataBuffer.getStartX();
+                        int endx = dataBuffer.getEndX();
+                        refChannel.calcXOffset(dataBuffer);
+                        bMeasure = MeasureNative(dataBuffer.getByteBuffer(), byteBuffer);
+                        dataBuffer.setStartX(startx);
+                        dataBuffer.setEndX(endx);
+                    }
+                }else {
+                    bMeasure = MeasureNative(dataBuffer.getByteBuffer(), byteBuffer);
+                }
+                channel.recycle(dataBuffer);
+            }
+        }
+        return bMeasure;
+    }
+
+    public void calcStatics(){
+        measureStatics.calcStatics();
+    }
+    public boolean MeasurePhase(Measure refMeasure) {
+
+        if (this.isMeasureItemValid(MeasureType.MEASURE_FIRST_RISE_EDGE)
+                && refMeasure.isMeasureItemValid(MeasureType.MEASURE_FIRST_RISE_EDGE)) {
+            double val;
+            double chFirstFallingEdge, refChFirstFallingEdge;
+            double chPhase, refChPhase;
+            double refTimePot,timePot;
+
+            chFirstFallingEdge = getMeasureItemVal(MeasureType.MEASURE_FIRST_RISE_EDGE);
+            refChFirstFallingEdge = refMeasure.getMeasureItemVal(MeasureType.MEASURE_FIRST_RISE_EDGE);
+            timePot = getMeasureItemVal(MeasureType.MEASURE_TIME_POT);
+            refTimePot = refMeasure.getMeasureItemVal(MeasureType.MEASURE_TIME_POT);
+
+            if(isMeasureItemValid(MeasureType.MEASURE_PERIOD)){
+                chPhase = getMeasureItemVal(MeasureType.MEASURE_PERIOD); //S
+                val = (chFirstFallingEdge-refChFirstFallingEdge)*360.0*timePot/chPhase;
+                while (val > 180) {
+                    val -= 360;
+                }
+                while (val < -180) {
+                    val += 360;
+                }
+
+                double v = getHorizontalRate();
+                setIndication(MeasureType.MEASURE_PHASE,INDICATION_LEFT,Math.round(getStartX() + chFirstFallingEdge/v));
+                setIndication(MeasureType.MEASURE_PHASE,INDICATION_RIGHT,Math.round(refMeasure.getStartX() + refChFirstFallingEdge/v));
+                setMeasureItemVal(MeasureType.MEASURE_PHASE, -val);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public int getStartX(){
+        int begin = getMeasureBegin();
+        if(begin <= waveX){
+            begin = waveX;
+        }
+        return begin;
+    }
+
+    public boolean MeasureDelay(Measure refMeasure) {
+
+        boolean bRet = false;
+        double pos1, pos2, timePot, refTimePot, val;
+        int _selfEdge = getDelaySelfEdge();
+        int relateEdge = getDelayRefChEdge();
+
+        boolean selfEdge = false, selfEdgePos = false, refEdge = false, refEdgePos = false;
+        switch (_selfEdge) {
+            case RL_LAST_RISE_EDGE:
+            case RL_FIRST_RISE_EDGE:
+                selfEdge = false;//上升沿
+                break;
+            case RL_FIRST_FALL_EDGE:
+            case RL_LAST_FALL_EDGE:
+                selfEdge = true;//下降沿
+                break;
+        }
+        switch (relateEdge) {
+            case RL_LAST_RISE_EDGE:
+            case RL_FIRST_RISE_EDGE:
+                refEdge = false;//上升沿
+                break;
+            case RL_FIRST_FALL_EDGE:
+            case RL_LAST_FALL_EDGE:
+                refEdge = true;//下降沿
+                break;
+        }
+        switch (_selfEdge) {
+            case RL_LAST_RISE_EDGE:
+            case RL_LAST_FALL_EDGE:
+                selfEdgePos = true;//尾沿
+                break;
+            case RL_FIRST_RISE_EDGE:
+            case RL_FIRST_FALL_EDGE:
+                selfEdgePos = false;//首沿
+                break;
+        }
+
+        switch (relateEdge) {
+            case RL_LAST_RISE_EDGE:
+            case RL_LAST_FALL_EDGE:
+                refEdgePos = true;//尾沿
+                break;
+            case RL_FIRST_RISE_EDGE:
+            case RL_FIRST_FALL_EDGE:
+                refEdgePos = false;//首沿
+                break;
+        }
+
+
+        //取待测点位置
+        if (selfEdge) {
+            if (selfEdgePos)
+                pos1 = getMeasureItemVal(MeasureType.MEASURE_LAST_FALL_EDGE);
+            else
+                pos1 = getMeasureItemVal(MeasureType.MEASURE_FIRST_FALL_EDGE);
+        } else {
+            if (selfEdgePos) pos1 = getMeasureItemVal(MeasureType.MEASURE_LAST_RISE_EDGE);
+            else pos1 = getMeasureItemVal(MeasureType.MEASURE_FIRST_RISE_EDGE);
+        }
+
+        //取参考点位置
+        if (refEdge) {
+            if (refEdgePos) pos2 = refMeasure.getMeasureItemVal(MeasureType.MEASURE_LAST_FALL_EDGE);
+            else pos2 = refMeasure.getMeasureItemVal(MeasureType.MEASURE_FIRST_FALL_EDGE);
+        } else {
+            if (refEdgePos) pos2 = refMeasure.getMeasureItemVal(MeasureType.MEASURE_LAST_RISE_EDGE);
+            else pos2 = refMeasure.getMeasureItemVal(MeasureType.MEASURE_FIRST_RISE_EDGE);
+        }
+        if (pos1 < 0 || pos2 < 0) {
+            bRet = false;
+        } else {
+            timePot = getMeasureItemVal(MeasureType.MEASURE_TIME_POT);
+            refTimePot = refMeasure.getMeasureItemVal(MeasureType.MEASURE_TIME_POT);
+
+            val = pos1 * timePot - pos2 * refTimePot;
+
+            double v = getHorizontalRate();
+
+            setIndication(MeasureType.MEASURE_DELAY,INDICATION_LEFT,Math.round(getStartX() + pos1/v));
+            setIndication(MeasureType.MEASURE_DELAY,INDICATION_RIGHT,Math.round(refMeasure.getStartX() + pos2/v));
+            setMeasureItemVal(MeasureType.MEASURE_DELAY, val);
+            bRet = true;
+        }
+        return bRet;
+    }
+
+    private boolean MeasureNative(ByteBuffer chBuffer, ByteBuffer measureItem) {
+        boolean bMeasure = false;
+        if (chBuffer.isDirect() && measureItem.isDirect()) {
+            bMeasure = measure(chBuffer, measureItem);
+        }
+        return bMeasure;
+    }
+
+
+    private static native boolean measure(ByteBuffer chBuffer, ByteBuffer measureItem);
+}

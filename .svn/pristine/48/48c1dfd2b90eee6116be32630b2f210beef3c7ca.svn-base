@@ -1,0 +1,32 @@
+package com.micsig.tbook.scope.Auto;
+
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.fpga.FPGA_Status;
+
+/**
+ * Created by zhuzh on 2018-7-13.
+ */
+
+public class FreqCounterManage {
+    public boolean freqDo(FPGA_Status fpgaStatus){
+        FPGA_Status.FpgaFreq freq = fpgaStatus.getFreq();
+        if(freq.isVaild()){
+            //算式：fz = N*1e9/(T*fpga时钟周期-单位ns)，计算的结果单位为Hz
+            //mini的始终周期值为8ns
+            double fz = -1;
+            int chIdx = FreqCounter.getInstance().getChIdx();
+            if(Scope.getInstance().isChannelInSample(chIdx)){
+                if(freq.getN() == 0){
+                    fz = 0;
+                }else{
+                    fz = freq.getN()*3.75e8/freq.getT();
+                }
+                FreqCounter.getInstance().setFreqVal(fz);
+                return true;
+            }
+        }else{
+            FreqCounter.getInstance().setFreqVal(-1);
+        }
+        return false;
+    }
+}

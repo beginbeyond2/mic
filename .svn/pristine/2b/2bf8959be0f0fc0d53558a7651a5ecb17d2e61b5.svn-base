@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/mainRightDoubleChannelLayout"
+    android:orientation="vertical"
+    android:layout_width="120px"
+    android:layout_height="@dimen/mainCenterHeightMeasureRow0"
+    android:paddingTop="0px"
+    android:paddingBottom="48px"
+    android:background="@color/color_Backcolor_MainMenu3"
+    android:gravity="center_horizontal">
+
+    <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+        android:id="@+id/rightCh1MasterDouble"
+        android:layout_width="match_parent"
+        android:layout_height="238px"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/mark"
+        android:gravity="center"
+        app:text="1"
+        app:checked="true"
+        app:large="true" />
+
+    <TextView
+        android:id="@+id/mark"
+        android:layout_width="match_parent"
+        android:layout_height="64px"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
+    <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster
+        android:id="@+id/rightCh2MasterDouble"
+        android:layout_width="match_parent"
+        android:layout_height="238px"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/mark"
+        android:layout_marginBottom="10px"
+        android:gravity="center"
+        app:text="2"
+        app:checked="true"
+        app:large="true" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

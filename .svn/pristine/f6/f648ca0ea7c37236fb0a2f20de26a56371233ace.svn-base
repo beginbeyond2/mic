@@ -1,0 +1,24 @@
+package com.micsig.tbook.scope.fpga;
+
+/**
+ * Created by zhuzh on 2018-3-23.
+ */
+
+public class FPGAReg_CH_OFFSET_DA12 extends FPGAReg{
+    public FPGAReg_CH_OFFSET_DA12(){
+        super(FPGA_CH_OFFSET_DA12,8);
+    }
+
+    public void setCh2(int val){
+        setVal(0,0,16,val);
+    }
+    public void setCh1(int val){
+        setVal(0,16,16,val);
+    }
+    public void setCh4(int val){
+        setVal(1,0,16,val);
+    }
+    public void setCh3(int val){
+        setVal(1,16,16,val);
+    }
+}

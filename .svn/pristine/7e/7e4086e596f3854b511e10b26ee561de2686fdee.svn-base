@@ -1,0 +1,386 @@
+package com.micsig.tbook.ui.wavezone;
+
+import android.content.Context;
+import android.graphics.Color;
+
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.ui.util.svg.SvgNodeInfo;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+
+/**
+ * @auother Liwb
+ * @description: TChan的名子来源为:ToolsChannel
+ *
+ * @data:2024-3-20 10:02
+ */
+public class TChan {
+    //region 常量
+    public static final int NULL= 0;
+    public static final int Ch1 = 1;
+    public static final int Ch2 = 2;
+    public static final int Ch3 = 3;
+    public static final int Ch4 = 4;
+    public static final int Ch5 = 5;
+    public static final int Ch6 = 6;
+    public static final int Ch7 = 7;
+    public static final int Ch8 = 8;
+
+    public static final int Math1 = 9;
+    public static final int Math2 = 10;
+    public static final int Math3 = 11;
+    public static final int Math4 = 12;
+    public static final int Math5 = 13;
+    public static final int Math6 = 14;
+    public static final int Math7 = 15;
+    public static final int Math8 = 16;
+
+    public static final int R1 = 17;
+    public static final int R2 = 18;
+    public static final int R3 = 19;
+    public static final int R4 = 20;
+    public static final int R5 = 21;
+    public static final int R6 = 22;
+    public static final int R7 = 23;
+    public static final int R8 = 24;
+
+    public static final int S1 = 25;
+    public static final int S2 = 26;
+    public static final int S3 = 27;
+    public static final int S4 = 28;
+
+    public static final int RefActive = 29;
+    public static final int MathActive = 30;
+
+    /**
+     * rowCursor
+     */
+    public static final int Cursor_col_1 = 0x41;//行
+    public static final int Cursor_col_2 = 0x42;
+    /**
+     * rowCursor 联动
+     */
+    public static final int Cursor_col_3 = 0x43;//行联动，点击不选中
+    public static final int Cursor_col_4 = 0x44;//行联动，点击选中
+
+    /**
+     * colCursor
+     */
+    public static final int Cursor_row_1 = 0x51;//列
+    public static final int Cursor_row_2 = 0x52;
+    /**
+     * colCursor 联动
+     */
+    public static final int Cursor_row_3 = 0x53;//列联动，点击不选中
+    public static final int Cursor_row_4 = 0x54;//列联动，点击选中
+    public static final int Cursor_all = 0x55; //表示选中所有光标
+
+    public static final int SingleRect = 0x56;
+    public static final int TriggerTime = 0x60;
+    public static final int TriggerLevel = 0x61;
+    public static final int ValueLevel = 0x62;
+
+
+    public static final int MaxChan=S4;
+    public static final int MaxSerial=4;
+    public static final int MaxLogicChan =Ch8;
+    public static final int AUTO=R8;
+    //endregion
+
+    /**
+     * 原理上就是减一，与ChannelFactory保持一致
+     * @param uiChNo
+     * @return
+     */
+    public static int toFpgaChNo(int uiChNo){
+        return uiChNo-TChan.Ch1+ ChannelFactory.CH1;
+    }
+
+    public static int toUiChNo(int fpgaChNo){
+        return fpgaChNo+TChan.Ch1;
+    }
+
+    /**
+     * 转换到TChan的通道号
+     * @param serialsNumber  默认从1开始
+     * @return
+     */
+    public static int toSerialTChan(int serialsNumber) {
+        return serialsNumber + TChan.R8;
+    }
+
+
+
+    public static int ExtChToChIdxOfScpi(int index){
+        if (index==29){
+            return TChan.Ch8;
+        }
+        return index;
+    }
+    public static int ChToExtChOfScpi(int index)
+    {
+        if (index==TChan.Ch8){
+            return 29;
+        }
+        return index;
+    }
+    /**
+     * 转换到TChan的通道号
+     *
+     * @param mathIndex 默认从1开始
+     * @return
+     */
+    public static int toMathChan(int mathIndex) {
+        return mathIndex + TChan.Ch8;
+    }
+
+    /**
+     *
+     * @param TChanMathNo TChan.Math1~TChan.Math8
+     * @return 返回 mathNumber为1开始的整型
+     */
+    public static int toMathNumber(int TChanMathNo) {
+        if (TChan.isMath(TChanMathNo)) {
+            return TChanMathNo - TChan.Math1 + 1;
+        }
+        return 1;
+    }
+
+
+    /**
+     * 转换到TChan的通道号
+     *
+     * @param refNumber 默认从1开始
+     * @return
+     */
+    public static int toRefTChan(int refNumber) {
+        return refNumber + TChan.Math8;
+    }
+
+
+    /**
+     *
+     * @param TChanRefNo TChan.R1~TChan.R8
+     * @return 返回 refNumber为1开始的整型
+     */
+    public static int toRefNumber(int TChanRefNo) {
+        if (TChan.isRef(TChanRefNo)) {
+            return TChanRefNo - TChan.R1 + 1;
+        }
+        return 1;
+    }
+
+    /**
+     * 转换到下层可以使用的通道号，从串型通道号
+     * @param serialsNumber  串型通道号都是从1开始的
+     * @return
+     */
+    public static int toFpgaBySerialNumber(int serialsNumber){
+        int tChan=toSerialTChan(serialsNumber);
+        return toFpgaChNo(tChan);
+    }
+    /**
+     *
+     * @param TChanSNo TChan.S1~TChan.S4
+     * @return 返回 serialsNumber为1开始的整型
+     */
+    public static int toSerialNumber(int TChanSNo){
+        if (TChan.isSerial(TChanSNo)) {
+            return TChanSNo - TChan.S1 + 1;
+        }
+        return 1;
+    }
+    public static int toSerialNumber(String SerialName){
+        int ch= findChanByValue(SerialName);
+        return toSerialNumber(ch);
+    }
+
+    //region foreach
+    public static void foreachAllChan(Consumer<Integer> action){
+        for(int i=TChan.Ch1;i<=MaxChan;i++){
+            action.accept(i);
+        }
+    }
+    public static void foreachCh1ToR8(Consumer<Integer> action){
+        for(int i=TChan.Ch1;i<=TChan.R8;i++){
+            action.accept(i);
+        }
+    }
+    public static void foreachMath1ToR8(Consumer<Integer> action){
+        for (int i = TChan.Math1; i <= TChan.R8; i++) {
+            action.accept(i);
+        }
+    }
+    public static void foreachChan(Consumer<Integer> action){
+        for(int i=TChan.Ch1;i<=TChan.Ch8;i++){
+            action.accept(i);
+        }
+    }
+    public static void foreachChan(Consumer<Integer> action, Predicate<Integer> continuePredicate){
+        for(int i=TChan.Ch1;i<=TChan.Ch8;i++){
+            if (continuePredicate.test(i)){
+                continue;
+            }
+            action.accept(i);
+        }
+    }
+    public static void foreachMath(Consumer<Integer> action){
+        for(int i=TChan.Math1;i<=TChan.Math8;i++){
+            action.accept(i);
+        }
+    }
+    public static void foreachRef(Consumer<Integer> action){
+        for(int i=TChan.R1;i<=TChan.R8;i++){
+            action.accept(i);
+        }
+    }
+    public static void foreachSerial(Consumer<Integer> action){
+        for(int i=TChan.S1;i<=TChan.S4;i++){
+            action.accept(i);
+        }
+    }
+    public static boolean foreachSerialResult(Function<Integer,Boolean> action){
+        boolean result=false;
+        for(int i=TChan.S1;i<=TChan.S4;i++){
+           boolean b= action.apply(i);
+           result = result|| b;
+        }
+        return result;
+    }
+
+    public static boolean isChan(int chNo){
+        return chNo >= Ch1 && chNo <= Ch8;
+    }
+    public static boolean isMath(int chNo){
+        return chNo>=Math1 && chNo<=Math8;
+    }
+    public static boolean isRef(int chNo){
+        return chNo>=R1 && chNo<=R8;
+    }
+    public static boolean isSerial(int chNo){
+        return chNo>=S1 && chNo<=S4;
+    }
+
+    public static boolean isCh1ToR8(int chNo){
+        return chNo>=Ch1 && chNo<=R8;
+    }
+    public static boolean isCh1ToS4(int chNo){
+        return chNo>=Ch1 && chNo<=S4;
+    }
+    public static boolean isMathToR8(int chNo){
+        return chNo>=Math1 && chNo<=R8;
+    }
+
+    public static boolean isMathToS4(int chNo) {
+        return chNo >= Math1 && chNo <= S4;
+    }
+    public static boolean isChToMath(int chNo){
+        return chNo>=Ch1 && chNo<=Math8;
+    }
+
+    public static boolean isCursorRow2(int chNo){
+        return chNo==Cursor_row_1 || chNo==Cursor_row_2;
+    }
+    public static boolean isCursorCol2(int chNo){
+        return chNo==Cursor_col_1 || chNo==Cursor_col_2;
+    }
+    public static boolean isCursorRow4(int chNo){
+        return chNo==Cursor_row_1 || chNo==Cursor_row_2 || chNo==Cursor_row_3 || chNo==Cursor_row_4;
+    }
+    public static boolean isCursorCol4(int chNo){
+        return chNo==Cursor_col_1 || chNo==Cursor_col_2 || chNo==Cursor_col_3 || chNo==Cursor_col_4;
+    }
+    public static boolean isCursor8(int chNo){
+        return chNo==Cursor_col_1 || chNo==Cursor_col_2 || chNo==Cursor_col_3 || chNo==Cursor_col_4
+                || chNo==Cursor_row_1 || chNo==Cursor_row_2 || chNo==Cursor_row_3 || chNo==Cursor_row_4 || chNo == SingleRect;
+    }
+    public static boolean isCursor6(int chNo){
+        return chNo==Cursor_col_1 || chNo==Cursor_col_2 || chNo==Cursor_col_3
+                || chNo==Cursor_row_1 || chNo==Cursor_row_2 || chNo==Cursor_row_3 ;
+    }
+    public static boolean isCursor4(int chNo){
+        return chNo==Cursor_col_1 || chNo==Cursor_col_2
+                || chNo==Cursor_row_1 || chNo==Cursor_row_2 ;
+    }
+    //endregion
+
+    public static int getChannelColor(Context context, int channelId) {
+        int defaultColor = Color.argb(255, 240, 240, 240);
+        if (channelId < 0 || channelId > SvgNodeInfo.getColorsForChannelSize - 1) {
+            return defaultColor;
+        } else {
+            return SvgNodeInfo.getColorsIntForChannel()[channelId];
+        }
+    }
+
+    public static int getChannelColor(Context context,String chName){
+        int ch= findChanByValue(chName);
+        return getChannelColor(context,ch);
+    }
+    public static int getColorToChannel(Context context,int color) {
+        int ch=0;
+        for (Map.Entry entry : SvgNodeInfo.getALLColorMap().entrySet()) {
+            if ((Integer) entry.getValue() == color) {
+                ch = (Integer) entry.getKey();
+                return ch;
+            }
+        }
+        return ch;
+    }
+
+    private static HashMap<Integer,String> mapChanName;
+    private static void tryInitMapChanName(){
+        if (mapChanName==null){
+            mapChanName=new HashMap<>();
+            mapChanName.put(TChan.Ch1,"CH1");
+            mapChanName.put(TChan.Ch2,"CH2");
+            mapChanName.put(TChan.Ch3,"CH3");
+            mapChanName.put(TChan.Ch4,"CH4");
+            mapChanName.put(TChan.Ch5,"CH5");
+            mapChanName.put(TChan.Ch6,"CH6");
+            mapChanName.put(TChan.Ch7,"CH7");
+            mapChanName.put(TChan.Ch8,"CH8");
+
+            mapChanName.put(TChan.Math1,"Math1");
+            mapChanName.put(TChan.Math2,"Math2");
+            mapChanName.put(TChan.Math3,"Math3");
+            mapChanName.put(TChan.Math4,"Math4");
+            mapChanName.put(TChan.Math5,"Math5");
+            mapChanName.put(TChan.Math6,"Math6");
+            mapChanName.put(TChan.Math7,"Math7");
+            mapChanName.put(TChan.Math8,"Math8");
+
+            mapChanName.put(TChan.R1,"Ref1");
+            mapChanName.put(TChan.R2,"Ref2");
+            mapChanName.put(TChan.R3,"Ref3");
+            mapChanName.put(TChan.R4,"Ref4");
+            mapChanName.put(TChan.R5,"Ref5");
+            mapChanName.put(TChan.R6,"Ref6");
+            mapChanName.put(TChan.R7,"Ref7");
+            mapChanName.put(TChan.R8,"Ref8");
+
+            mapChanName.put(TChan.S1,"S1");
+            mapChanName.put(TChan.S2,"S2");
+            mapChanName.put(TChan.S3,"S3");
+            mapChanName.put(TChan.S4,"S4");
+        }
+    }
+    public static String getChannelName(int chIdx){
+        tryInitMapChanName();
+        return mapChanName.getOrDefault(chIdx,"NULL");
+    }
+    public static int findChanByValue(String chName){
+        tryInitMapChanName();
+        int chan=-1;
+        for(Map.Entry<Integer,String> entry:mapChanName.entrySet()){
+            if (entry.getValue().equals(chName)){
+                return entry.getKey();
+            }
+        }
+        return chan;
+    }
+}

@@ -1,0 +1,73 @@
+package com.micsig.tbook.scope.Event;
+
+/**
+ * Created by zhuzh on 2018-4-9.
+ */
+
+public class EventBase {
+    private Object data = null;
+    private int eventId = -1;
+    private int channelIndex = -1;//示例：数学通道的时候，用来存当前操作的数学通道号
+    private boolean mainSender = false;
+    private boolean async = false;
+
+    public boolean isAsync() {
+        return async;
+    }
+
+    public void setAsync(boolean async) {
+        this.async = async;
+    }
+
+    public EventBase(int id){
+        this.eventId = id;
+    }
+
+    public EventBase(int id, Object data, int... channelIndex) {
+        this.eventId = id;
+        this.data = data;
+        if (channelIndex.length > 0) {
+            this.channelIndex = channelIndex[0];
+        }
+    }
+
+    public int getChannelIndex() {
+        return channelIndex;
+    }
+
+    public void setChannelIndex(int channelIndex) {
+        this.channelIndex = channelIndex;
+    }
+
+    public void setId(int id){
+        this.eventId = id;
+    }
+
+    public int getId(){
+        return eventId;
+    }
+
+    public void setData(Object data){
+        this.data = data;
+    }
+
+    public Object getData(){
+        return this.data;
+    }
+
+    public boolean isMainSender() {
+        return mainSender;
+    }
+
+    public void setMainSender(boolean mainSender) {
+        this.mainSender = mainSender;
+    }
+
+    @Override
+    public String toString() {
+        return "EventBase{" +
+                "eventId=" + eventId +
+                ", data=" + data +
+                '}';
+    }
+}

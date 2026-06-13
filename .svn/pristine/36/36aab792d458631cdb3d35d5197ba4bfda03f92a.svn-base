@@ -1,0 +1,442 @@
+package com.micsig.tbook.tbookscope.wavezone;
+
+import android.content.Context;
+import android.graphics.Color;
+import android.os.Handler;
+import android.os.Message;
+import android.view.MotionEvent;
+import android.widget.TextView;
+
+import com.chillingvan.canvasgl.ICanvasGL;
+import com.chillingvan.canvasgl.glview.texture.GLTextureView;
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.channel.Channel;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.tbookscope.GlobalVar;
+import com.micsig.tbook.tbookscope.MainViewGroup;
+import com.micsig.tbook.tbookscope.R;
+import com.micsig.tbook.ui.wavezone.IChan;
+import com.micsig.tbook.tbookscope.middleware.MiddleMain;
+import com.micsig.tbook.tbookscope.rxjava.RxBus;
+import com.micsig.tbook.tbookscope.rxjava.RxEnum;
+import com.micsig.tbook.tbookscope.util.CacheUtil;
+import com.micsig.tbook.tbookscope.wavezone.display.CursorManage;
+import com.micsig.tbook.tbookscope.wavezone.display.WaveGridManage;
+import com.micsig.tbook.tbookscope.wavezone.measure.MeasureManage;
+import com.micsig.tbook.tbookscope.wavezone.wave.WaveManage;
+import com.micsig.tbook.ui.util.TBookUtil;
+import com.micsig.tbook.ui.wavezone.IWave;
+import com.micsig.tbook.ui.wavezone.TChan;
+
+/**
+ * Created by liwb on 2017/10/30.
+ */
+
+public class WaveZoneDisplay_XY extends GLTextureView implements IWorkMode {
+    private static final String TAG = "WaveZoneDisplay_XY";
+
+    private Context context;
+    private MainViewGroup mainViewGroup;
+    private long startTime, endTime, dt;
+    private Handler handler;
+
+    public WaveZoneDisplay_XY(Context context, MainViewGroup mainViewGroup) {
+        super(context);
+        this.context = context;
+        this.mainViewGroup = mainViewGroup;
+        this.setBackgroundColor(Color.TRANSPARENT);
+        this.setOpaque(false);
+        startTime = System.currentTimeMillis();
+
+        handler = new Handler() {
+            @Override
+            public void handleMessage(Message msg) {
+                int w = WorkModeManage.getInstance().getmWorkMode();
+                switch (msg.what) {
+                    case 0: {
+                        WorkModeManage.getInstance().switchWorkMode(w);
+                    }
+                    break;
+                    case 1:
+                        break;
+                }
+
+                // super.handleMessage(msg);
+            }
+        };
+    }
+
+    /**
+     * 强制清屏
+     */
+    public void forceClearGlCanvas() {
+        queueEvent(new Runnable() {
+            @Override
+            public void run() {
+                synchronized (this) {
+                    WaveZoneDisplay_XY.this.mCanvas.clearBuffer(Color.TRANSPARENT);
+                }
+            }
+        });
+
+    }
+
+    //region interface IWorkMode
+
+    @Override
+    public void switchWorkMode(@WorkMode int workMode) {
+        MeasureManage.getInstance().switchWorkMode(workMode);
+        WaveManage.get().switchWorkMode(workMode);
+        CursorManage.getInstance().switchWorkMode(workMode);
+    }
+
+
+    //endregion
+
+    //region GLContinuousView
+
+    @Override
+    protected void init() {
+        super.init();
+    }
+
+    @Override
+    protected void onGLDraw(ICanvasGL canvas) {
+        //25帧
+
+        synchronized (this) {
+            if (WorkModeManage.getInstance().isWorkModeChange()) {
+                if (WorkModeManage.getInstance().getWorkModeManageState() == WorkModeManage.WorkModeManage_Ready) {
+                    handler.sendEmptyMessage(0);
+                    return;
+                }
+                return;
+            }
+
+            //绘制
+            canvas.clearBuffer(Color.TRANSPARENT);
+            WaveGridManage.getInstance().draw(IWorkMode.WorkMode_XY, canvas);
+            //主要是初始化的位置与YT模式不一样
+            CursorManage.getInstance().draw(canvas);
+            //只有光标的测量，且与YT模式下少一个。可以做开。
+            MeasureManage.getInstance().draw(canvas);
+            //这个得重做，因为只有通道1，2
+            WaveManage.get().draw(canvas);
+        }
+        CacheUtil.get().setLoadMenuState(CacheUtil.LOAD_WaveZoneDisplayManage, true);
+
+    }
+
+    //region onTouchEvent变量
+    int index = -1;    //线号
+    int oldX, oldY;    //上一个点的坐标
+    //向一个方向滑动后，向另一个方向滑动就不管用。
+    int slideDirection = -1; // -1 为没有点击 1，左右，2上下
+    int downX, downY;
+
+    private final static int MOVESIZE = 10;
+    public final static int MOVE_LEFTRIGHT = 1;
+    public final static int MOVE_UPDOWN = 2;
+    private TextView btnFineText;
+    //endregion
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        int x = (int) event.getX();
+        int y = (int) event.getY();
+        switch (event.getAction() & MotionEvent.ACTION_MASK) {
+            case MotionEvent.ACTION_DOWN: {
+                //处理是否有东西被选择
+                downX = oldX = (int) event.getX();
+                downY = oldY = (int) event.getY();
+                slideDirection = -1;
+
+                index = CursorManage.getInstance().selectCursor(downX, downY);
+                if (index > 0) {
+                    CursorManage.getInstance().setSelectCursor(index);
+                    CursorManage.getInstance().setSelectHighColor(index);
+                    if (TChan.isCursorRow2(index)) {
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, MOVE_UPDOWN);
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, index);
+                    } else {
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, MOVE_LEFTRIGHT);
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, index);
+                    }
+                } else if ((index = WaveManage.get().selectCursor(x, y)) >= 0) {
+                    WaveManage.get().setSelectCursor(index);
+                    MiddleMain.getIns().getChanSelectorManage().setActivityChannel(IChan.toIChan(index-1));
+//                    RxBus.getInstance().post(RxEnum.MAINCENTER_CHANNEL_SELECT, new MainCenterMsgChannels(index));
+                    RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, index);
+                }
+            }
+            break;
+            case MotionEvent.ACTION_MOVE: {
+                if (slideDirection == -1) {
+                    if (Math.abs((int) event.getX() - downX) > MOVESIZE) {
+                        slideDirection = MOVE_LEFTRIGHT;
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, slideDirection);
+                        if (TChan.isCursor8(index)==false) {
+                            WaveManage.get().setSelectCursor(TChan.Ch1);
+                            index = TChan.Ch1;
+                            RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, TChan.Ch1);
+                        } else {
+                            RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, index);
+                        }
+                    } else if (Math.abs((int) event.getY() - downY) > MOVESIZE) {
+                        slideDirection = MOVE_UPDOWN;
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, slideDirection);
+                        if (TChan.isCursor8(index)==false) {
+                            WaveManage.get().setSelectCursor(TChan.Ch2);
+                            index = TChan.Ch2;
+                            RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, TChan.Ch2);
+                        } else {
+                            RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, index);
+                        }
+                    }
+                }
+                dealCursor(event, slideDirection);
+                boolean fine = TBookUtil.isFine();
+                int numFine = TBookUtil.getNumFine();
+                switch (index) {
+                    case TChan.Cursor_col_1:
+                    case TChan.Cursor_col_2:
+                    case TChan.Cursor_row_1:
+                    case TChan.Cursor_row_2:
+                        cursorSingleMove(fine,numFine,event);
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, index);
+                        break;
+                    case TChan.Cursor_col_3:
+                    case TChan.Cursor_row_3:
+                    case TChan.Cursor_row_4:
+                    case TChan.Cursor_col_4:
+                    case TChan.Cursor_all:
+                    case TChan.SingleRect:{
+                        if (slideDirection==-1) break;
+                        if ( (slideDirection==MOVE_UPDOWN && (index == TChan.Cursor_col_4 || index == TChan.SingleRect))
+                                || (slideDirection==MOVE_LEFTRIGHT && (index == TChan.Cursor_row_4 || index == TChan.SingleRect))) {
+                            int offsetX = oldX - (int) event.getX();
+                            int offsetY = oldY - (int) event.getY();
+                            CursorManage.getInstance().MoveLabel(offsetX, offsetY);
+                        }else {
+                            cursorLinkMove(fine, numFine, event,index);
+                            RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, index);
+                        }
+                        oldX=(int)event.getX();
+                        oldY=(int)event.getY();
+                    }break;
+//                        if (event.getPointerCount() == 1) {
+//                            int offsetX = oldX - (int) event.getX();
+//                            int offsetY = oldY - (int) event.getY();
+//                            if (fine) {
+//                                if (Math.abs(offsetX) > numFine && slideDirection == MOVE_LEFTRIGHT) {
+//                                    CursorManage.getInstance().moveSelectCursor(offsetX / numFine, offsetY / numFine);
+//                                    oldX = (int) event.getX();
+//                                }
+//                                if (Math.abs(offsetY) > numFine && slideDirection == MOVE_UPDOWN) {
+//                                    CursorManage.getInstance().moveSelectCursor(offsetX / numFine, offsetY / numFine);
+//                                    oldY = (int) event.getY();
+//                                }
+//                            } else {
+//                                CursorManage.getInstance().moveSelectCursor(offsetX, offsetY);
+//                                oldX = (int) event.getX();
+//                                oldY = (int) event.getY();
+//                            }
+//                        } else if (event.getPointerCount() == 2) {
+//                            int offsetX = oldX - (int) event.getX();
+//                            int offsetY = oldY - (int) event.getY();
+//                            if (fine) {
+//                                if (Math.abs(offsetX) > numFine && slideDirection == MOVE_LEFTRIGHT) {
+//                                    CursorManage.getInstance().moveMultiSelectCursor(offsetX / numFine, offsetY / numFine);
+//                                    oldX = (int) event.getX();
+//                                }
+//                                if (Math.abs(offsetY) > numFine && slideDirection == MOVE_UPDOWN) {
+//                                    CursorManage.getInstance().moveMultiSelectCursor(offsetX / numFine, offsetY / numFine);
+//                                    oldY = (int) event.getY();
+//                                }
+//                            } else {
+//                                CursorManage.getInstance().moveMultiSelectCursor(offsetX, offsetY);
+//                                oldX = (int) event.getX();
+//                                oldY = (int) event.getY();
+//                            }
+//                        }
+//                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, index);
+//                        break;
+                    case TChan.Ch1: {
+                        int offsetX = oldX - (int) event.getX();
+                        int offsetY = oldY - (int) event.getY();
+
+                        int channelIndex = ChannelFactory.CH1;
+                        Channel channel = ChannelFactory.getDynamicChannel(channelIndex);
+                        if (GlobalVar.get().isEnableChannelZero()) {
+                            channel.setZero(channel.getZero() - offsetX);
+                            if (btnFineText == null) {
+                                btnFineText = (TextView) mainViewGroup.findViewById(R.id.fineText);
+                            }
+                            btnFineText.setText(TBookUtil.getD4FromD(channel.getMoveZeroVal()));
+                        } else {
+                            WaveManage.get().setOffsetY(offsetX);
+                        }
+
+//                        if (fine) {
+//                            if (Math.abs(offsetX) > numFine) {
+//                                WaveManage.get().setOffsetY(offsetX / numFine);
+//                                oldX = (int) event.getX();
+//                            }
+//                        } else {
+//                            WaveManage.get().setOffsetY(offsetX);
+                            oldX = (int) event.getX();
+                            oldY = (int) event.getY();
+//                        }
+                    }
+                    break;
+                    case TChan.Ch2: {
+                        int offsetX = oldX - (int) event.getX();
+                        int offsetY = oldY - (int) event.getY();
+
+                        int channelIndex = ChannelFactory.CH2;
+                        Channel channel = ChannelFactory.getDynamicChannel(channelIndex);
+                        if (GlobalVar.get().isEnableChannelZero()) {
+                            channel.setZero(channel.getZero() + offsetY);
+                            if (btnFineText == null) {
+                                btnFineText = (TextView) mainViewGroup.findViewById(R.id.fineText);
+                            }
+                            btnFineText.setText(TBookUtil.getD4FromD(channel.getMoveZeroVal()));
+                        } else {
+                            WaveManage.get().setOffsetY(offsetY);
+                        }
+
+//                        if (fine) {
+//                            if (Math.abs(offsetY) > numFine) {
+//                                WaveManage.get().setOffsetY(offsetY / numFine);
+//                                oldY = (int) event.getY();
+//                            }
+//                        } else {
+//                            WaveManage.get().setOffsetY(offsetY);
+                            oldX = (int) event.getX();
+                            oldY = (int) event.getY();
+//                        }
+                    }
+                    break;
+                }
+
+            }
+            break;
+            case MotionEvent.ACTION_UP: {
+                switch (index) {
+                    case TChan.Cursor_col_1:
+                    case TChan.Cursor_col_2:
+                    case TChan.Cursor_col_3:
+                    case TChan.Cursor_row_1:
+                    case TChan.Cursor_row_2:
+                    case TChan.Cursor_row_3:
+                    case TChan.Cursor_col_4:
+                    case TChan.Cursor_row_4:
+                    case TChan.Cursor_all:
+                        CursorManage.getInstance().moveFinish();
+                        break;
+                }
+            }
+            break;
+            case MotionEvent.ACTION_POINTER_DOWN: {
+//                Logger.i(TAG,"down multi:"+index+" pointerCount:"+event.getPointerCount());
+                downX = oldX = (int) event.getX(0);
+                downY = oldY = (int) event.getY(0);
+//                int i = CursorManage.getInstance().getCurrSelectCursor();
+//                if (event.getPointerCount() == 2 && i > 0) {
+//                    index = i;
+//                    CursorManage.getInstance().setCursorTracking(index);
+//                }
+            }
+            break;
+            case MotionEvent.ACTION_POINTER_UP: {
+                int id = event.getActionIndex();
+                if (id == 0) {
+                    downX = oldX = (int) event.getX(1);
+                    downY = oldY = (int) event.getY(1);
+                } else {
+                    downX = oldX = (int) event.getX(0);
+                    downY = oldY = (int) event.getY(0);
+                }
+                Logger.i(TAG, "up index:" + index);
+                if (index == TChan.Cursor_row_1 || index == TChan.Cursor_row_2
+                        || index == TChan.Cursor_col_1 || index == TChan.Cursor_col_2) {
+                    CursorManage.getInstance().setSelectCursor(index);
+                    if (TChan.isCursorRow2(index))
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, MOVE_UPDOWN);
+                    else
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, MOVE_LEFTRIGHT);
+                } else if (index == TChan.Cursor_col_3 || index == TChan.Cursor_row_3) {
+                    CursorManage.getInstance().setCursorTracking(index);
+                    if (index == TChan.Cursor_row_3) {
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, MOVE_UPDOWN);
+                    } else {
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, MOVE_LEFTRIGHT);
+                    }
+                }
+            }
+            break;
+        }
+        return true;
+    }
+
+    private boolean dealCursor(MotionEvent event, int slideDirection) {
+        if (event.getPointerCount() == 2) {
+            if (slideDirection == MOVE_LEFTRIGHT) {
+                int i = CursorManage.getInstance().getCurrSelectCursor();
+                if (i > 0 && CursorManage.getInstance().getColVisible()) {
+                    index = TChan.Cursor_col_3;
+                    CursorManage.getInstance().setCursorTracking(index);
+                    return true;
+                }
+            } else if (slideDirection == MOVE_UPDOWN) {
+                int i = CursorManage.getInstance().getCurrSelectCursor();
+                if (i > 0 && CursorManage.getInstance().getRowVisible()) {
+                    index = TChan.Cursor_row_3;
+                    CursorManage.getInstance().setCursorTracking(index);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    //光标单体滑动
+    private void cursorSingleMove(boolean fine,int numFine,MotionEvent event){
+        int offsetX = oldX - (int) event.getX();
+        int offsetY = oldY - (int) event.getY();
+        if (fine) {
+            if (Math.abs(offsetX) > numFine) {
+                CursorManage.getInstance().moveSelectCursor(offsetX / numFine, offsetY / numFine);
+                oldX = (int) event.getX();
+            }
+            if (Math.abs(offsetY) > numFine) {
+                CursorManage.getInstance().moveSelectCursor(offsetX / numFine, offsetY / numFine);
+                oldY = (int) event.getY();
+            }
+        } else {
+            CursorManage.getInstance().moveSelectCursor(offsetX, offsetY);
+            oldX = (int) event.getX();
+            oldY = (int) event.getY();
+        }
+    }
+    //光标联动滑动
+    private void cursorLinkMove(boolean fine,int numFine,MotionEvent event,int cursorIdx){
+        int offsetX = oldX - (int) event.getX();
+        int offsetY = oldY - (int) event.getY();
+        if (fine) {
+            if (Math.abs(offsetX) > numFine) {
+                CursorManage.getInstance().moveMultiSelectCursor(offsetX / numFine, offsetY / numFine,cursorIdx);
+                oldX = (int) event.getX();
+            }
+            if (Math.abs(offsetY) > numFine) {
+                CursorManage.getInstance().moveMultiSelectCursor(offsetX / numFine, offsetY / numFine,cursorIdx);
+                oldY = (int) event.getY();
+            }
+        } else {
+            CursorManage.getInstance().moveMultiSelectCursor(offsetX, offsetY,cursorIdx);
+            oldX = (int) event.getX();
+            oldY = (int) event.getY();
+        }
+    }
+    //endregion
+}

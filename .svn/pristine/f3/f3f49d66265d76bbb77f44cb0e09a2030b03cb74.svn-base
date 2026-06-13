@@ -1,0 +1,15 @@
+package com.micsig.tbook.scope.fpga;
+
+public class FPGAReg_DNA extends FPGAReg{
+    private FPGAReg recvReg;
+    public FPGAReg_DNA() {
+        super(0, 8,true);
+        recvReg = new FPGAReg(0,8);
+    }
+    public long getDNA(){
+        return ((long)recvReg.getVal(0) << 32) | recvReg.getVal(1);
+    }
+    public FPGAReg getRecvReg(){
+        return recvReg;
+    }
+}

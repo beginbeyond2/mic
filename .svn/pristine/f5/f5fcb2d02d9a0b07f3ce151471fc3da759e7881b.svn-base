@@ -1,0 +1,188 @@
+package com.micsig.tbook.scope.Sample;
+
+import android.util.Log;
+
+import com.micsig.base.Logger;
+import com.micsig.tbook.hardware.HardwareProduct;
+import com.micsig.tbook.scope.Calibrate.HwConfig;
+import com.micsig.tbook.scope.Scope;
+
+public class SegmentSample {
+    private final static String TAG = "SegmentSample";
+    private static volatile SegmentSample instance = null;
+
+    public static SegmentSample getInstance() {
+        if (instance == null) {
+            synchronized (SegmentSample.class) {
+                if (instance == null ) {
+                    instance = new SegmentSample();
+                }
+            }
+        }
+        return instance;
+    }
+    volatile boolean bSegmentEnable = false;
+    SegmentSampleAction segmentSampleAction;
+    private SegmentSample(){
+        segmentSampleAction = new SegmentSampleAction(this);
+    }
+
+    public boolean isSegmentEnable() {
+        return bSegmentEnable;
+    }
+
+    public void setSegmentEnable(boolean bSegmentEnable) {
+        Log.d(TAG, "setSegmentEnable() called with: bSegmentEnable = [" + bSegmentEnable + "]");
+        this.bSegmentEnable = bSegmentEnable;
+        segmentSampleAction.SegmentEnable();
+    }
+//    public static final int SEGMENT_MAX = 256 * 1024;
+    public static final int SEGMENT_MAX = 10 * 1000 + 1;
+    public static final int SEGMENT_MIN = 2;
+    private int segmentNums = SEGMENT_MIN;
+    public void setSegmentNums(int segmentNums){
+
+        Logger.d(TAG,"segmentNums:" + segmentNums);
+        this.segmentNums = segmentNums;
+        segmentSampleAction.SegmentEnable();
+//        IMemDepth memDepth = MemDepthFactory.getMemDepth();
+//        if(memDepth.getMemDepthItem() == 0){
+//            memDepth.setMemDepthItem(0);
+//        }
+    }
+    public int getSegmentNums(){
+        if(bEnableMaxSegment){
+            this.segmentNums = getMaxSegmentNums();
+        }
+        return this.segmentNums;
+    }
+    private boolean bEnableMaxSegment = false;
+    public void setEnableMaxSegment(boolean bEnableMaxSegment){
+        this.bEnableMaxSegment = bEnableMaxSegment;
+    }
+    public boolean isEnableMaxSegment(){
+        return bEnableMaxSegment;
+    }
+    public static final int SEGMENT_16M = 16 * 1024 * 1024;
+    public static final long SEGMENT_LENGTH = (
+            HardwareProduct.isMHO68V1()
+            || HardwareProduct.isMHO68V2() )
+            ? 4000L * 1024 * 1024
+            : 1920L * 1024 * 1024;
+    public int getSegmentSample(long zun){
+
+        return (int)(SegmentSample.SEGMENT_LENGTH / getSegmentSpace(zun));
+    }
+
+    public static long getSegmentSpace(long zun){
+        if (zun <= SegmentSample.SEGMENT_16M) {
+            int k = 1024;
+            while (k < zun) {
+                k *= 2;
+            }
+            return  k;
+        } else {
+            long k = 1;
+            while ((k * SegmentSample.SEGMENT_16M) < zun) {
+                k++;
+            }
+            return k * SegmentSample.SEGMENT_16M;
+        }
+    }
+
+    public int getMaxSegmentNums(){
+        IMemDepth memDepth = MemDepthFactory.getMemDepth();
+        if(memDepth.getMemDepthItem() == 0){
+            return SEGMENT_MAX-1;
+        }else {
+            int nums = SEGMENT_MIN;
+            Scope scope = Scope.getInstance();
+            Sample sample = Sample.getInstance();
+            long zun = sample.getSampleMemDepth();
+            nums = getSegmentSample(zun) / (scope.getChannelSampOnCnt(true) / HwConfig.getInstance().getFpgaNums());
+            if (nums > SEGMENT_MAX) {
+                nums = SEGMENT_MAX;
+            }
+            if (nums < SEGMENT_MIN) {
+                nums = SEGMENT_MIN;
+            }
+            return nums - 1;
+        }
+    }
+    public static final int SEGMENT_DISPLAY_SFRAME = 0; //单帧
+    public static final int SEGMENT_DISPLAY_FITTING = 1; //拟合
+    private int segmentDisplayType =SEGMENT_DISPLAY_SFRAME;
+    public void setSegmentDisplayType(int segmentDisplayType){
+        this.segmentDisplayType = segmentDisplayType;
+        segmentSampleAction.segmentChange();
+    }
+    public synchronized int getSegmentDisplayType(){
+        return segmentDisplayType;
+    }
+    private int fittingBegingFrame = 0;
+    private int fittingEndFrame = 1;
+
+    public int getFittingBegingFrame() {
+        return fittingBegingFrame;
+    }
+
+    public void setFittingBegingFrame(int fittingBegingFrame) {
+        this.fittingBegingFrame = fittingBegingFrame;
+        if(getSegmentDisplayType() == SEGMENT_DISPLAY_FITTING) {
+            segmentSampleAction.segmentChange();
+        }
+    }
+
+    public int getFittingEndFrame() {
+        return fittingEndFrame;
+    }
+
+    public void setFittingEndFrame(int fittingEndFrame) {
+        this.fittingEndFrame = fittingEndFrame;
+        if(getSegmentDisplayType() == SEGMENT_DISPLAY_FITTING) {
+            segmentSampleAction.segmentChange();
+        }
+    }
+    private long frameNo = 0;
+
+    public synchronized long getFrameNo() {
+        return frameNo;
+
+    }
+    public void setFrameNo(long frameNo,boolean bChange){
+        this.frameNo = frameNo;
+        if(bChange) {
+            if(getSegmentDisplayType() == SEGMENT_DISPLAY_SFRAME) {
+                segmentSampleAction.segmentChange();
+            }
+        }else{
+            segmentSampleAction.cmdSegment();
+        }
+    }
+    public synchronized void setFrameNo(long frameNo,int segmentDisplayType){
+        this.frameNo = frameNo;
+        this.segmentDisplayType = segmentDisplayType;
+        segmentSampleAction.segmentChange();
+    }
+
+    public void setFrameNo(long frameNo) {
+        setFrameNo(frameNo,true);
+    }
+    private long beginSampleTime = System.currentTimeMillis();
+    public long getBeginSampleTime(){
+        return beginSampleTime;
+    }
+    public void updateBeginSampleTime(){
+        this.beginSampleTime = System.currentTimeMillis();
+    }
+
+    private int segmentFrames = 0;
+    public void setSegmentFrames(int nums){
+        segmentFrames = nums;
+        segmentSampleAction.segmentFrames();
+    }
+    public int getSegmentFrames(){
+
+        return segmentFrames;
+    }
+}

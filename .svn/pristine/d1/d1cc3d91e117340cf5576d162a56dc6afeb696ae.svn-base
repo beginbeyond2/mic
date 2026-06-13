@@ -1,0 +1,55 @@
+package com.micsig.tbook.scope.fpga;
+
+import com.micsig.tbook.scope.Bus.IBus;
+import com.micsig.tbook.scope.Bus.MILSTD1553BBus;
+
+/**
+ * Created by zhuzh on 2018-5-30.
+ */
+
+public class FPGAReg_BUS_1553B extends FPGAReg_BUS {
+    public FPGAReg_BUS_1553B(int addr) {
+        super(addr, 20);
+    }
+    public void setSrc(int val){
+        setVal(0,2,val);
+    }
+    public void setTriggerMode(int val){
+        setVal(1,0,4,val);
+    }
+    public void setData(int val){
+        setVal(1,8,16,val);
+    }
+    public void setData1(int val){
+        setVal(1,19,5,val);
+    }
+
+
+    @Override
+    public void configBus(int fpgaIdx,IBus iBus) {
+        MILSTD1553BBus bus = (MILSTD1553BBus)iBus;
+        int triggerType = bus.getTriggerType();
+        int src = (bus.getSrcChIdx());
+        FPGAReg_BUS_LEVEL busLevel = (FPGAReg_BUS_LEVEL) FPGACommand.getReg(fpgaIdx,FPGA_BUS_LEVEL);
+        setSrc(chIdx2BusSrc(src));
+        busLevel.setBusSrcExt(getBusIdx(),((src>>2)&0x1));
+        setTriggerMode(triggerType);
+        switch(triggerType) {
+            case MILSTD1553BBus.MILSTD1553B_TRIGGER_COMMAND_STATUS_WORD:
+                 setData(bus.getCmdStatus());
+                break;
+            case MILSTD1553BBus.MILSTD1553B_TRIGGER_DATA_WORD:   //val1:[8:23]
+                setData(bus.getData());
+                break;
+            case MILSTD1553BBus.MILSTD1553B_TRIGGER_RT_ADDRESS: //val1:[19:23]
+                setData1(bus.getAddr());
+                break;
+            default:
+                setData(0);
+                break;
+        }
+        setLevel(busLevel,src,IBus.IDLE_LEVEL_HIGH);
+        FPGACommand.sendCmd(busLevel);
+    }
+
+}

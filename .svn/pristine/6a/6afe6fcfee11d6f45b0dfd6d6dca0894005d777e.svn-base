@@ -1,0 +1,176 @@
+package com.micsig.tbook.tbookscope.rxjava;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.annotations.NonNull;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.functions.Action;
+import io.reactivex.rxjava3.functions.Consumer;
+import io.reactivex.rxjava3.internal.functions.Functions;
+import io.reactivex.rxjava3.internal.observers.LambdaObserver;
+import io.reactivex.rxjava3.subjects.PublishSubject;
+import io.reactivex.rxjava3.subjects.Subject;
+
+
+/**
+ * Created by liwb on 2017/5/11.
+ */
+
+public class RxBus {
+    private HashMap<Object, Subject> maps = new HashMap<>();
+
+    private HashMap<Object,List<LambdaObserver>> disposableHashMap=new HashMap<>();
+    private HashMap<Object, List<Bean>> bakBeanMap=new HashMap<>();
+
+    private HashMap<Object, Consumer<Object>> OnErrorMap=new HashMap<>();
+    private HashMap<Object, Action> OnCompleteMap=new HashMap<>();
+    //region 单例
+    public static class RxBusHolder {
+        public static final RxBus rxBus = new RxBus();
+    }
+
+    public static RxBus getInstance() {
+        return RxBusHolder.rxBus;
+    }
+    //endregion
+
+
+    public RxBus() {
+        OnErrorMap.put(RxEnum.DEFAULT,this::OnError);
+        OnCompleteMap.put(RxEnum.DEFAULT,this::OnComplete);
+    }
+
+    private void OnComplete() {
+//        Log.d(Tag.Debug, String.format("OnComplete" ));
+    }
+
+    private void OnError(Object o) {
+//        Log.d(Tag.Debug, String.format("OnError: %s",o.getClass().getSimpleName() ));
+    }
+
+    public void init(){}
+
+    /// 根据传递的 eventType 类型返回特定类型(eventType)的 被观察者
+    public <T> Observable<T> register(@NonNull Object tag) {
+        if (maps.containsKey(tag)) {
+            unregister(tag);
+        }
+        Subject<T> subject = PublishSubject.<T>create().toSerialized();
+        maps.put(tag, subject);
+        return subject;
+    }
+    @SuppressWarnings("unchecked")
+    public void unregister(@NonNull Object tag) {
+        Subject subjects = maps.get(tag);
+        if (subjects != null) {
+            List<LambdaObserver> dList=disposableHashMap.get(tag);
+            if (dList!=null) {
+                if (subjects.hasComplete()) {
+                    for (int i = 0; i < dList.size(); i++) {
+                        subjects.onSubscribe(dList.get(i));
+                    }
+                    dList.clear();
+                }
+                if (subjects.hasObservers() == false) {
+                    for (int i = 0; i < dList.size(); i++) {
+                        dList.get(i).dispose();
+                    }
+                    dList.clear();
+                }
+            }
+            maps.remove(tag);
+        }
+    }
+
+    /***
+     * 返回observalble
+     * @param tag
+     * @param <T>
+     * @return
+     */
+    public  <T> Observable getObservable(Object tag) {
+        Subject subjects = maps.get(tag);
+        if (subjects != null) {
+            return subjects;
+        }
+        return null;
+    }
+
+    public <T> Disposable dealObservable(Object tag, Consumer<T> OnNext){
+        Consumer<T> onError= (Consumer<T>) OnErrorMap.get(tag);
+        if (onError==null){
+            onError= (Consumer<T>) OnErrorMap.get(RxEnum.DEFAULT);
+        }
+        Action onComplete=  OnCompleteMap.get(tag);
+        if (onComplete==null){
+            onComplete=  OnCompleteMap.get(RxEnum.DEFAULT);
+        }
+        return dealObservable(tag,OnNext,onError,onComplete);
+    }
+
+
+
+    private  <T> Disposable dealObservable(Object tag,Consumer<T> OnNext,Consumer<T> OnError,Action OnComplete){
+        Subject subject=maps.get(tag);
+        if (subject!=null){
+            LambdaObserver dis=new LambdaObserver(OnNext,OnError,OnComplete, Functions.emptyConsumer());
+            subject.observeOn(AndroidSchedulers.mainThread()).subscribe(dis);
+
+
+            addDestroyMap(tag,dis);
+            addBakMap(tag,OnNext,OnError,OnComplete);
+            return dis;
+        }
+        return null;
+    }
+    private <T> void addDestroyMap(Object tag, LambdaObserver dis){
+        if (disposableHashMap.containsKey(tag)==false){
+            disposableHashMap.put(tag,new ArrayList<>());
+        }
+        List<LambdaObserver> list= disposableHashMap.get(tag);
+        list.add(dis);
+        disposableHashMap.put(tag,list);
+    }
+
+    private <T> void addBakMap(Object tag, Consumer<T> OnNext, Consumer<T> OnError, Action OnComplete){
+        if (bakBeanMap.containsKey(tag)==false){
+            bakBeanMap.put(tag,new ArrayList<>());
+        }
+        List<Bean> list=bakBeanMap.get(tag);
+        list.add(new Bean(OnNext,OnError,OnComplete));
+        bakBeanMap.put(tag,list);
+    }
+
+
+    @SuppressWarnings("unchecked")
+    public void post(@NonNull Object o) {
+        post(o, o);
+    }
+    @SuppressWarnings("unchecked")
+    public void post(@NonNull Object tag, @NonNull Object o) {
+        Subject subjects = maps.get(tag);
+        if (subjects == null) {
+            System.out.println("post:null");
+        }
+        if (subjects != null) {
+            subjects.onNext(o);
+        }
+    }
+
+    class Bean<T>{
+
+        Consumer<? super T> onNext;
+        Consumer<? super T> onError;
+        Action onComplete;
+        public Bean(Consumer<? super T> onNext,Consumer<? super T> onError,Action onComplete){
+            this.onNext=onNext;
+            this.onError=onError;
+            this.onComplete=onComplete;
+        }
+    }
+
+}

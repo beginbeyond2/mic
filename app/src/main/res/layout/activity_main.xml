@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge>
+
+<!--    <LinearLayout-->
+<!--        android:id="@+id/topstatus"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="@dimen/mainTopHeight"-->
+<!--        android:layoutDirection="ltr">-->
+
+<!--        <com.micsig.tbook.tbookscope.main.maintop.MainTopLayoutLeft-->
+<!--            android:layout_width="276px"-->
+<!--            android:layout_height="35px" />-->
+
+<!--        <com.micsig.tbook.tbookscope.main.maintop.MainTopLayoutCenter-->
+<!--            android:layout_width="150px"-->
+<!--            android:layout_height="35px" />-->
+
+<!--        <com.micsig.tbook.tbookscope.main.maintop.MainTopLayoutRight-->
+<!--            android:id="@+id/mainTopRight"-->
+<!--            android:layout_width="374px"-->
+<!--            android:layout_height="35px" />-->
+<!--        &lt;!&ndash;顶部工具�? !&ndash;&gt;-->
+<!--    </LinearLayout>-->
+
+<!--    <AbsoluteLayout-->
+<!--        android:id="@+id/rlListView"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="@dimen/mainCenterHeightWithDivider"-->
+<!--        android:layout_y="@dimen/mainTopHeight">-->
+
+
+<!--        <TextureView-->
+<!--            android:id="@+id/textureView"-->
+<!--            android:layout_width="700px"-->
+<!--            android:layout_height="500px"-->
+<!--            android:layout_x="1px"-->
+<!--            android:layout_y="1px" />-->
+
+<!--        <include layout="@layout/middlebar" />-->
+
+<!--        &lt;!&ndash; 中间工具�? !&ndash;&gt;-->
+<!--    </AbsoluteLayout>-->
+
+<!--    <AbsoluteLayout-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="@dimen/mainBottomHeight"-->
+<!--        android:layout_y="537px">-->
+
+<!--        <include layout="@layout/bottombar_quick" />-->
+
+<!--        <include layout="@layout/bottombar" />-->
+<!--        &lt;!&ndash; 底层工具�?!&ndash;&gt;-->
+<!--    </AbsoluteLayout>-->
+
+<!--    &lt;!&ndash; 这里用来做一些特殊的处理，比如时基的档位要超出到显示的外面来 &ndash;&gt;-->
+
+<!--    <com.micsig.tbook.tbookscope.main.maincenter.MainLayoutCenterChannel-->
+<!--        android:id="@+id/mainLayoutCenterChannels"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_x="@dimen/mainCenterChannelX"-->
+<!--        android:layout_y="@dimen/mainCenterChannelY" />-->
+
+<!--    <com.micsig.tbook.tbookscope.main.maincenter.MainLayoutCenterMenu-->
+<!--        android:id="@+id/mainLayoutCenterMenu"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_x="0px"-->
+<!--        android:layout_y="0px" />-->
+
+<!--    <View-->
+<!--        android:id="@+id/loading"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="match_parent"-->
+<!--        android:clickable="true" />-->
+
+<!--    <include layout="@layout/dialogs" />-->
+
+<!--    <include layout="@layout/briefdisplay_text" />-->
+
+<!--    <com.micsig.tbook.ui.main.AnimationView-->
+<!--        android:id="@+id/focusControl"-->
+<!--        android:layout_width="1px"-->
+<!--        android:layout_height="1px"-->
+<!--        android:layout_x="0px"-->
+<!--        android:layout_y="0px"-->
+<!--        android:background="@drawable/pre_select"-->
+<!--        android:visibility="gone" />-->
+
+<!--    <FrameLayout-->
+<!--        android:id="@+id/MaskLayerLayout"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="match_parent"-->
+<!--        android:layout_x="0px"-->
+<!--        android:layout_y="0px"-->
+<!--        android:visibility="gone">-->
+
+<!--        <View-->
+<!--            android:layout_width="25px"-->
+<!--            android:layout_height="25px"-->
+<!--            android:layout_gravity="end"-->
+<!--            android:layout_marginTop="3px"-->
+<!--            android:layout_marginEnd="9px"-->
+<!--            android:background="@drawable/lock_screen" />-->
+
+<!--        <View-->
+<!--            android:id="@+id/lock_screentClickState"-->
+<!--            android:layout_width="55px"-->
+<!--            android:layout_height="55px"-->
+<!--            android:layout_gravity="end"-->
+<!--            android:layout_marginTop="3px"-->
+<!--            android:layout_marginEnd="34px"-->
+<!--            android:background="@drawable/lock_screenclickstate"-->
+<!--            android:visibility="gone" />-->
+
+<!--    </FrameLayout>-->
+
+<!--&lt;!&ndash;    <include layout="@layout/screen_recorder_time" />&ndash;&gt;-->
+
+<!--    <TextView-->
+<!--        android:id="@+id/toast"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:background="@drawable/bg_toast"-->
+<!--        android:textColor="@color/textColorNewTopViewEnable"-->
+<!--        android:gravity="center"-->
+<!--        android:textSize="18px" />-->
+</merge>

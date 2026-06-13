@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+
+    >
+
+    <!--width:1075px, height=186px !-->
+<!--    <com.micsig.tbook.tbookscope.main.dialog.DialogMeasureStatics-->
+<!--        android:id="@+id/dialogMeasureStatics"-->
+<!--        android:layout_x="99px"-->
+<!--        android:layout_y="768px"-->
+<!--        android:layout_width="1701px"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:elevation="40px"-->
+<!--        android:outlineSpotShadowColor="@android:color/transparent"-->
+<!--        android:outlineAmbientShadowColor="@android:color/transparent"-->
+<!--        android:translationZ="40px"-->
+<!--        android:visibility="gone"-->
+<!--        />-->
+    <com.micsig.tbook.tbookscope.main.mainbottom.MainBottomMeasureItem
+        android:id="@+id/bottom_measure_item"
+        android:layout_width="@dimen/mainCenterWidth"
+        android:layout_height="1040px"
+        android:layout_x="0px"
+        android:layout_y="0px"
+        android:elevation="35px"
+        android:outlineSpotShadowColor="@android:color/transparent"
+        android:outlineAmbientShadowColor="@android:color/transparent"
+        android:translationZ="35px"
+
+        >
+
+    </com.micsig.tbook.tbookscope.main.mainbottom.MainBottomMeasureItem>
+
+    <com.micsig.tbook.tbookscope.main.dialog.DialogMeasureStatics
+        android:id="@+id/dialogMeasureStatics"
+        android:layout_x="58px"
+        android:layout_y="1001px"
+        android:layout_width="1742px"
+        android:layout_height="wrap_content"
+        android:elevation="40px"
+        android:outlineSpotShadowColor="@android:color/transparent"
+        android:outlineAmbientShadowColor="@android:color/transparent"
+        android:translationZ="40px"
+        />
+</merge>

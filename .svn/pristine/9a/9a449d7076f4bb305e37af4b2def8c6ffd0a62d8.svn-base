@@ -1,0 +1,1162 @@
+package com.micsig.tbook.scope;
+
+import android.content.Context;
+import android.content.res.Resources;
+import android.os.SystemClock;
+import android.util.Log;
+
+import com.micsig.base.Logger;
+import com.micsig.tbook.hardware.Hardware;
+import com.micsig.tbook.scope.Auto.Auto;
+import com.micsig.tbook.scope.Calibrate.CabteRegister;
+import com.micsig.tbook.scope.Calibrate.HwConfig;
+import com.micsig.tbook.scope.Calibrate.IADC;
+import com.micsig.tbook.scope.DB.DBHelper;
+import com.micsig.tbook.scope.Data.DataFactory;
+import com.micsig.tbook.scope.Data.SaveBin;
+import com.micsig.tbook.scope.Data.SaveCsv;
+import com.micsig.tbook.scope.Data.SaveRecoverySession;
+import com.micsig.tbook.scope.Data.WaveData;
+import com.micsig.tbook.scope.Display.Display;
+import com.micsig.tbook.scope.Display.DisplayXYService;
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.Sample.Sample;
+import com.micsig.tbook.scope.Sample.SegmentSample;
+import com.micsig.tbook.scope.Trigger.TriggerFactory;
+import com.micsig.tbook.scope.channel.Channel;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.channel.MathChannel;
+import com.micsig.tbook.scope.channel.RefChannel;
+import com.micsig.tbook.scope.channel.SegmentedSingleBean;
+import com.micsig.tbook.scope.channel.SerialChannel;
+import com.micsig.tbook.scope.fpga.FPGABoot;
+import com.micsig.tbook.scope.horizontal.HorizontalAxis;
+import com.micsig.tbook.scope.horizontal.HorizontalAxisMath;
+import com.micsig.tbook.scope.math.MathService;
+import com.micsig.tbook.scope.math.mathEx.MathExt;
+import com.micsig.tbook.scope.measure.MeasureService;
+import com.micsig.tbook.scope.probe.BaseProbe;
+import com.micsig.tbook.scope.probe.ProbeFactory;
+import com.micsig.tbook.scope.probe.ProbeUtils;
+import com.micsig.tbook.scope.surface.DeviceFactory;
+import com.micsig.tbook.scope.surface.HwDevice;
+import com.micsig.tbook.scope.vertical.VerticalAxis;
+
+import java.io.InputStream;
+import java.io.RandomAccessFile;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Observable;
+import java.util.Observer;
+
+/**
+ * Created by zhuzh on 2018/3/13.
+ */
+
+public class Scope implements Observer {
+    private static final String TAG="Scope";
+
+    public static final int TYPE_NONE = FPGABoot.FPGA_TYPE_NONE;
+    public static final int TYPE_NORMAL = FPGABoot.FPGA_TYPE_NORMAL;
+    public static final int TYPE_TXT = FPGABoot.FPGA_TYPE_TXT;
+
+    static {System.loadLibrary("scope-lib");}
+    private static volatile Scope instance = null;
+    public static Scope getInstance(){
+        return instance;
+    }
+
+    public static Scope getInstance(Context context) {
+        if (instance == null) {
+            synchronized (Scope.class) {
+                if (instance == null && context != null) {
+                    instance = new Scope(context);
+                }
+            }
+        }
+        return instance;
+    }
+    public volatile static boolean fpgaClockInStatus = false;
+    public volatile static boolean fpgaClockOutStatus = false;
+    public volatile static int fpgaTemperature1 = 0;
+    public volatile static int fpgaTemperature2 = 0;
+
+
+    public volatile static int [] fanSpeed = {0,0,0,0};
+    public static int fpgaVer = 0;
+    public static long fpgaDna = 0;
+    private Context mContext;
+    private Hardware mHardware;
+    private ChannelFactory mChannelFactory;
+    private Sample sample;
+    private SegmentSample segmentSample;
+    private EventFactory eventFactory;
+    private Display display;
+    private HorizontalAxis horizontalAxis;
+    private FPGABoot fpgaBoot;
+    private DataFactory dataFactory;
+    private TriggerFactory triggerFactory;
+    private MeasureService measureService;
+    private MathService mathService;
+    private CabteRegister cabteRegister;
+    private ScopeFrozen scopeFrozen;
+    private DisplayXYService xyService;
+
+    private DBHelper dbHelper;
+    private IADC adc;
+    private Scope(Context context){
+        mContext = context;
+        mHardware = Hardware.getInstance(mContext);
+        dbHelper = new DBHelper(context);
+        DeviceFactory.allocDevice(context);
+        MathExt.initMathExprOpenCL(context.getAssets());
+    }
+
+
+    public void initScope(){
+        scopeFrozen = ScopeFrozen.getInstance();
+        mChannelFactory = ChannelFactory.getInstance();
+
+        fpgaBoot = FPGABoot.getInstance(mContext);
+        dataFactory = DataFactory.getInstance();
+        eventFactory = EventFactory.getInstance();
+        sample = Sample.getInstance();
+        segmentSample = SegmentSample.getInstance();
+
+        triggerFactory = TriggerFactory.getInstance();
+        display = Display.getInstance();
+        horizontalAxis = HorizontalAxis.getInstance();
+        measureService = MeasureService.getInstance();
+        mathService = MathService.getInstance();
+        xyService = DisplayXYService.getInstance();
+        adc = HwConfig.getInstance().getAdc();
+        loadProbe();
+
+        EventFactory.addEventObserver(EventFactory.EVENT_FPGA_LOAD_OK,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_CHANNEL_VSCALE,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_SCOPE_STATE,this);
+
+        cabteRegister = CabteRegister.getInstance(mContext);
+    }
+
+    private void loadProbe(){
+        ProbeFactory probeFactory = ProbeFactory.getInstance();
+        probeFactory.setDbHelper(dbHelper);
+        probeFactory.parseJsontoProbe(ProbeUtils.loadProbe(mContext));
+        //ProbeUtils.downloadProbe();
+
+    }
+
+    public void standby(){
+        mHardware.standby();
+        fpgaBoot.reset();
+    }
+
+
+
+    public int getHwVersion(){
+        return mHardware.getHwVersion();
+    }
+
+    public int getChNum(){
+        return mHardware.getChNum();
+    }
+    public void resume(){
+        boolean bLoad = fpgaBoot.getFpgaType() ==FPGABoot.FPGA_TYPE_NONE;
+        resume(bLoad);
+        if(isRun()){
+            setRun(true);
+            ScopeMessage.runResume();
+        }
+    }
+    public void resume(boolean run){
+        if(run) {
+            fpgaBoot.resume();
+        }else {
+            resumeProbe();
+            ScopeMessage.getInstance().touchPause();
+        }
+    }
+    public void resumeProbe() {
+        Channel channel;
+        int maxIdx = ChannelFactory.getMaxChIdx();
+        for(int i=ChannelFactory.CH1;i<maxIdx;i++){
+            channel = ChannelFactory.getDynamicChannel(i);
+            if(channel != null){
+                BaseProbe baseProbe = channel.getProbe();
+                if(baseProbe != null){
+                    baseProbe.resume();
+                }
+            }
+        }
+    }
+    public double getAutoProbeRate(int chIdx){
+        return mHardware.getChProbeRate(chIdx);
+    }
+
+    public void pause(){
+        ScopeMessage.runPause();
+
+    }
+    public void Refresh(){
+        EventFactory.getInstance().sendEvent(EventFactory.EVENT_DRAW_TYPE);
+    }
+    //运行停止
+    public void setRun(boolean bRun){
+        if(isAuto()){
+            Auto(false);
+        }
+        if(isSingle()){
+            setSingle(false);
+        }
+        ScopeFrozen scopeFrozen = ScopeFrozen.getInstance();
+        boolean bRool = scopeFrozen.isRool();
+
+        sample.setRunSample(bRun);
+        if(bRun){
+            if(isInScrollMode()) {
+                if(isZoom()){
+                    setZoom(false);
+                    EventFactory.sendEvent(EventFactory.EVENT_DISPLAY_ZOOM,true);
+                }
+//                horizontalAxis.setTimePosOfView(0);
+                EventFactory.sendEvent(EventFactory.EVENT_TIME_POS,true);
+            }
+            clearWave();
+            if(bRool){
+//                horizontalAxis.setTimePosOfView(0);
+                EventFactory.sendEvent(EventFactory.EVENT_TIME_POS,true);
+            }
+        }
+    }
+
+    public boolean isRun(){
+        return isRun(false);
+    }
+
+
+    public boolean isRun(boolean bFpga){
+        boolean bSample = sample.isRunSample();
+        if(bFpga && bSample){
+            switch (sample.getSampleState()){
+                case Sample.SAMPLE_TRANSIENT:
+                case Sample.SAMPLE_TRANSIENT_DIAPLAY:
+                    bSample = false;
+                    break;
+            }
+        }
+        return bSample;
+    }
+
+    public void setZoom(boolean bEnable){
+        setZoom(bEnable,true);
+    }
+
+    public void setZoomFlags(int flags) {
+        display.setZoomFlags(flags);
+    }
+
+    public void setZoom(boolean bEnable,boolean bModify){
+        display.setZoom(bEnable, bModify);
+    }
+
+    public boolean isZoom(){
+        return display.isZoom();
+    }
+    //自动
+    public void Auto(boolean bAuto){
+
+        if(bAuto){
+            if(isSingle()){
+                setSingle(false);
+            }
+            if(!isRun()){
+                setRun(true);
+            }
+        }
+        Auto.getInstance().setAuto(bAuto);
+        if(bAuto){
+            sample.setRunSample(true);
+        }
+    }
+    public boolean isAuto(){
+        return Auto.getInstance().isAuto();
+    }
+
+    //单序列
+    public void setSingle(boolean bSingle){
+        if(bSingle){
+            if(isAuto()){
+                Auto(false);
+            }
+            if(isInScrollMode()) {
+//                horizontalAxis.setTimePosOfView(0);
+                EventFactory.sendEvent(EventFactory.EVENT_TIME_POS);
+            }
+            clearWave();
+        }
+
+        Logger.d(TAG,"Single:"+ bSingle );
+        sample.setSingle(bSingle);
+    }
+    public boolean isSingle(){
+        return sample.isSingle();
+    }
+    public boolean isInXYMode(){
+        return display.isXYMode();
+    }
+    public boolean isInScrollMode(){
+        return (horizontalAxis.isGreater100ms() && display.isRoll());
+    }
+
+    public boolean isInSlowScaleMode(){
+        return (horizontalAxis.isGreater100ms() && (!display.isRoll()));
+    }
+    public boolean isSerialText(){
+        return fpgaBoot.getFpgaType() == FPGABoot.FPGA_TYPE_TXT;
+    }
+    public int getType(){
+        return fpgaBoot.getFpgaType();
+    }
+    public void setType(int type){
+        if(fpgaBoot.getFpgaType() != type) {
+            Logger.d(TAG,"loadFpga!....");
+            fpgaBoot.loadFpga(type);
+            clearWave();
+        }
+    }
+
+    public int getChannelSampOnCnt(boolean bRun){
+        return getChannelSampOnCnt(bRun,null);
+    }
+    public int getChannelSampOnCnt(){
+        return getChannelSampOnCnt(null);
+    }
+
+    public int getChannelSampOnCnt(boolean [] ch_en){
+        return getChannelSampOnCnt(isRun(),ch_en);
+    }
+    public int getChannelSampOnCnt(boolean bRun,boolean [] ch_en){
+        int nums = 0;
+        boolean[] sel = new boolean[ChannelFactory.CH_CNT];
+        int maxIdx = ChannelFactory.getMaxChIdx();
+
+        for(int i=ChannelFactory.CH1;i<maxIdx;i++){
+            sel[i] = isChannelInSample(i,bRun);
+            if(sel[i]){
+                nums++;
+            }
+        }
+
+        nums = adc.getSampleChannel(sel);
+
+        if(ch_en != null){
+            System.arraycopy(sel, 0, ch_en, 0, sel.length);
+        }
+        return nums;
+    }
+
+
+
+    public boolean isChannelInSample(int chIdx){
+
+        if(ChannelFactory.isDynamicCh(chIdx)){
+            return isChannelInSample(chIdx,isRun());
+        }else {
+            return false;
+        }
+    }
+    public boolean isChannelInSample(int chIdx,boolean bRun){
+
+        boolean bInSample = false;
+        if(bRun){
+            if(ChannelFactory.isDynamicCh(chIdx)
+                    && chIdx < ChannelFactory.getMaxChIdx()){
+                if(ChannelFactory.isChOpen(chIdx)){
+                    bInSample = true;
+                }else {
+                    if(!isInScrollMode()
+                            && TriggerFactory.isTriggerSource(chIdx)) {
+                        bInSample = true;
+                    }
+                    else {
+                        SerialChannel serialChannel;
+                        int maxIdx = ChannelFactory.getMaxSerialIdx();
+                        for (int i = ChannelFactory.S1; i < maxIdx; i++) {
+                            serialChannel = ChannelFactory.getSerialChannel(i);
+                            if (serialChannel != null && serialChannel.isOpen()
+                                    && serialChannel.getBus().isChInSample(chIdx)) {
+                                bInSample = true;
+                                break;
+                            }
+                        }
+                        if(!bInSample) {
+                            MathChannel mathChannel;
+                            maxIdx = ChannelFactory.getMaxMathIdx();
+                            for(int i=ChannelFactory.MATH1;i<maxIdx;i++){
+                                mathChannel = ChannelFactory.getMathChannel(i);
+                                if (mathChannel != null
+                                        && mathChannel.isOpen()
+                                        && mathChannel.isChInSample(chIdx)) {
+                                    bInSample = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else {
+            bInSample = ScopeFrozen.getInstance().isChSamped(chIdx);
+        }
+        return bInSample;
+    }
+    public long maxSampClk(){
+        long n = HwConfig.getInstance().getAdcNums();
+        long m = getChannelSampOnCnt();
+        if(m < n){
+            m = n;
+        }
+        return n * adc.getMaxAdInClk() / m;
+    }
+
+    //获取ch1、2、3、4的采样速率
+    public double getSampleRate(){
+        return getSampleRate(isRun());
+    }
+
+    public double getSampleRate(boolean bRun){
+        if(bRun){
+            return sampFre_R();
+        }
+        return sampFre_S();
+    }
+    private double sampFre_R(){
+        int memdepth = sample.getSampleMemDepth();
+        memdepth /= ScopeBase.getWidth();
+        memdepth *= ScopeBase.getWidth();
+        long f1 = (long)(memdepth/timeScale_mainBoard()/ScopeBase.getHorizonGridCnt() + 0.1);
+        long maxSampFre = (long)maxSampClk()*1000*1000L;
+        if(f1 > maxSampFre){
+            f1 = maxSampFre;
+        }
+        else {
+            if(maxSampFre % f1 != 0) {
+                int c = (int)(maxSampFre / f1);
+                do {
+                    if (c % 2 == 0 || c % 5 == 0) {
+                        if (maxSampFre % c == 0) {
+                            break;
+                        }
+                    }
+                    c++;
+                } while (true);
+                f1 = maxSampFre/c;
+            }
+        }
+        return f1;
+    }
+    private double sampFre_S(){
+        return scopeFrozen.getSampFre();
+    }
+    public static double getSampleRate(int chIdx){
+        if(ChannelFactory.isValidCh(chIdx))
+            return ChannelFactory.getValidChannel(chIdx).getSampleRate();
+        return 1.0;
+    }
+
+    public double screenNum_Main(){
+        return screenNum_Main(isRun());
+    }
+    public double screenNum_Main(boolean bRun){
+        if(bRun){
+            return screenNum_Main_R();
+        }
+        return screenNum_Main_S();
+    }
+    private double screenNum_Main_R(){
+        double f = getSampleRate(true);
+        double t1 = timeScale_mainBoard()*ScopeBase.getHorizonGridCnt();
+        return (double) sample.getSampleMemDepth()/(f*t1);
+    }
+    private double screenNum_Main_S(){
+        double f = scopeFrozen.getSampFre();
+        int timeId = horizontalAxis.getTimeScaleIdOfView(HorizontalAxis.WPI_STANDARD);
+        double t1 = horizontalAxis.getTimeScaleIdVal(timeId) * ScopeBase.getHorizonGridCnt();
+
+        double num = scopeFrozen.getMemDepth()/(f*t1);
+        return num;
+    }
+
+    public double screenNum_zoom(){
+        return screenNum_zoom(isRun());
+    }
+    public double screenNum_zoom(boolean bRun){
+        if(bRun){
+            return screenNum_zoom_R();
+        }
+        return screenNum_zoom_S();
+    }
+    private double screenNum_zoom_R(){
+        return timeScale_mainBoard()/timeScale_zoomBoard();
+    }
+    private double screenNum_zoom_S(){
+        return screenNum_zoom_R();
+    }
+
+    public double timeScale_mainBoard(){
+        return horizontalAxis.getTimeScaleIdVal(horizontalAxis.getTimeScaleIdOfView(HorizontalAxis.WPI_STANDARD));
+    }
+    public double timeScale_zoomBoard(){
+        return horizontalAxis.getTimeScaleIdVal(horizontalAxis.getTimeScaleIdOfView(HorizontalAxis.WPI_LARGE));
+    }
+    public long timeOneScreen_main(){
+        long t1 = HorizontalAxis.Sto100FS(timeScale_mainBoard());
+        return t1 * ScopeBase.getHorizonGridCnt();
+    }
+    public long timeOneScreen_zoom(){
+        long t1 = HorizontalAxis.Sto100FS(timeScale_zoomBoard());
+        //long t1 = (long)(timeScale_zoomBoard()*1000*1000*1000*1000*10+0.01);
+        return t1 * ScopeBase.getHorizonGridCnt();
+    }
+    //返回进入zoom模式时，缩略图应该在哪个档位
+    public int enterZoom_SL_scale() {
+        //采用查表的方法
+        long zunSampDepth = zunMemDepth();
+        int id;
+        double zunSampFre = getSampleRate();
+        if(isRun()) {
+            id = horizontalAxis.getTimeScaleIdOfView(HorizontalAxis.WPI_STANDARD);
+        } else {
+            id = scopeFrozen.getTimeScaleId();
+        }
+
+        //由公式：存储深度=采样率*一屏的时间  =>  一屏时间=存储深度/采样率
+        //一屏时间=一格时间值（即档位值）*一屏格数  =>  档位=存储深度/采样率/一屏格数
+        //该档位即为单屏档位的界限值
+        double dScaleValue = zunSampDepth / (zunSampFre * ScopeBase.getHorizonGridCnt());
+
+
+        Log.d(TAG,"dScaleValue:" + dScaleValue + ",zunSampDepth:" + zunSampDepth +",zunSampFre:" + zunSampFre);
+
+
+        int id_max = horizontalAxis.timeValtoTimeScaleId(dScaleValue);
+
+        if(id > id_max){
+            id = id_max;
+        }
+
+        do {
+            long n = (long) (horizontalAxis.getTimeScaleIdVal(id) * ScopeBase.getHorizonGridCnt() * zunSampFre + 0.1);
+            if (n % ScopeBase.getWidth() == 0) {
+                break;
+            }
+            id--;
+        }while (true);
+
+
+        return id;
+    }
+
+    public long enterZoom_SL_timePos() {
+        //注意: 需要先调用enterZoom_SL_scale()
+        long timePos;
+        if(isRun()){
+            timePos = horizontalAxis.getTimePosOfView(HorizontalAxis.WPI_STANDARD);
+        }
+        else {
+            timePos = scopeFrozen.getTimePosOfView();
+        }
+
+
+        //记住，缩略视图的时基档已经调整过了，使只有单屏
+        long halfTimeScreen_n = -timeOneScreen_main()/2;
+        if(timePos < halfTimeScreen_n)
+            return halfTimeScreen_n;
+        else
+            return timePos;
+    }
+
+    public int vPosOfZeroConvesionToZoomSuoLie(int normalPosition) {
+        return (int)(1.0*ScopeBase.zoomYGrid_fangda()/2
+                +1.0*normalPosition*ScopeBase.zoomYGrid_suolue()/ScopeBase.YGridWave());
+    }
+
+    public int vPosOfZeroConvesionToZoomFanda(int normalPosition) {
+        return (int)(-1.0*ScopeBase.zoomYGrid_suolue()/2
+                +1.0*normalPosition*ScopeBase.zoomYGrid_fangda()/ScopeBase.YGridWave());
+    }
+
+    public int ZoomFandaConvesionTovPosOfZero(int zoomPosition) {
+        return (int)(1.0*(zoomPosition+ScopeBase.zoomYGrid_suolue()/2)
+                *(1.0*ScopeBase.YGridWave()/ScopeBase.zoomYGrid_fangda()));
+    }
+
+    @Override
+    public void update(Observable observable, Object data) {
+
+            EventBase event = (EventBase)data;
+//        Logger.d(TAG,"eventid:" + event.getId());
+            if(event.getId() == EventFactory.EVENT_FPGA_LOAD_OK){
+                Log.d("Scope","FPGA_LOAD_OK");
+                //ScopeMessage.runResume();
+                ScopeMessage.getInstance().sendFpgaId();
+                setRun(true);
+            }else  if(event.getId() == EventFactory.EVENT_CHANNEL_VSCALE){
+
+                int chIdx = (int)event.getData();
+                if(ChannelFactory.isDynamicCh(chIdx)) {
+                    Channel channel = ChannelFactory.getDynamicChannel(chIdx);
+                    if(channel != null) {
+                        int val = vSpanOfView(channel.getResistanceType(),channel.getVScaleVal()/channel.getProbeRate());
+                        channel.setVRange(-val, val);
+                        channel.checkPos();
+                    }
+                }
+            }else if( event.getId() == EventFactory.EVENT_SCOPE_STATE){
+                if(isRun()) {
+                    int maxIdx = ChannelFactory.getMaxChIdx();
+                    for (int i = ChannelFactory.CH1; i < maxIdx; i++) {
+                        Channel channel = ChannelFactory.getDynamicChannel(i);
+                        if (channel != null) {
+                            int val = vSpanOfView(channel.getResistanceType(),channel.getVScaleVal() / channel.getProbeRate());
+                            channel.setVRange(-val, val);
+                            channel.checkPos();
+                        }
+                    }
+                }
+            }
+    }
+
+    public static int vSpanOfView(int resistanceType,double vScaleVal){//返回100对应的极值
+
+        CabteRegister cab = CabteRegister.getInstance();
+        int dang = cab.getRatioIdx(resistanceType,vScaleVal);
+
+        if(!Scope.getInstance().isRun()){
+            dang = cab.getRatioDangCnt();
+        }
+        double vRang = cab.getVerticalRange(resistanceType,dang);
+
+        vRang = vRang * ScopeBase.getVerticalPerGridPixels() / vScaleVal;
+        return (int) Math.round(vRang);
+    }
+    public double zoomYScale(int  chIdx){
+        if(ChannelFactory.isDynamicCh(chIdx)){
+
+            Channel channel = ChannelFactory.getDynamicChannel(chIdx);
+            VerticalAxis verticalAxis = scopeFrozen.getChVertical(chIdx);
+            if(verticalAxis != null && channel != null){
+
+                return scopeFrozen.getYFactor(chIdx) * verticalAxis.getScaleIdVal()*verticalAxis.getFineScale()
+                        /(channel.getVScaleIdVal() * channel.getFineScale());
+            }
+        }
+        return 0;
+    }
+
+
+    public long zunMemDepth(){
+        return zunMemDepth(isRun());
+    }
+
+    public long zunMemDepth(boolean bRun){
+        if(bRun){
+            return sample.getSampleMemDepth();
+        }
+        return scopeFrozen.getMemDepth();
+    }
+    public long zunMemDepth(int chCnt){
+        return zunMemDepth(isRun(),chCnt);
+    }
+    public long zunMemDepth(boolean bRun,int chCnt){
+        if(bRun){
+            return sample.getSampleMemDepth(chCnt);
+        }
+        return scopeFrozen.getMemDepth();
+    }
+
+
+
+    public void clearPersist(){
+        display.clearPersist();
+        display.clearFftPersist();
+    }
+    public void clearWave(){
+
+        display.clearFftPersist();
+        display.clearPersist();
+        display.clearWave();
+        ChannelFactory.forEachCh(channel -> channel.setWaveValid(false));
+        ChannelFactory.forEachMath(mathChannel -> mathChannel.setWaveValid(false));
+        DisplayXYService.getInstance().ClearXY();
+    }
+
+
+    public void forceTrigger(){
+        ScopeMessage.getInstance().forceTrigger();
+    }
+
+    public boolean getFpgaClockInOutStatus(boolean isIn) {
+        return ScopeMessage.getInstance().getFpgaClockInOutStatus(isIn);
+    }
+
+    public void batteryProtect(){
+        mHardware.batteryProtect();
+    }
+
+
+    public void enableCommand(boolean bEnable){
+        EventFactory.getInstance().setEnable(bEnable);
+        ScopeMessage.getInstance().enableCommand(bEnable);
+    }
+
+    public String product;
+    private String sn;
+
+    public String getProduct() {
+        return product;
+    }
+
+    public String getSn() {
+        return sn;
+    }
+
+    public void setUsbInfo(String product, String serial,String ver){
+        product = product.replace("\r\n","").trim();
+        serial = serial.replace("\r\n","").trim();
+        ver = ver.replace("\r\n","").trim();
+        this.product = product;
+        this.sn = serial;
+        mHardware.setUsbInfo(this.product, this.sn,ver);
+    }
+    public int getSysVersion(){
+        return mHardware.getSysVersion();
+    }
+    public double convertPos(double pos){
+        if(isZoom()){
+            pos = pos * ScopeBase.getZoomHeight() / ScopeBase.getHeight();
+        }
+        return pos;
+    }
+    private int getResistanceType(int chIdx,int val){
+        return ((val & (1<<chIdx)) == 0) ? Channel.RESISTANCE_1M : Channel.RESISTANCE_50;
+    }
+
+    public void setResistanceType(int val){
+
+        Channel channel;
+        long ts = SystemClock.elapsedRealtime();
+        int maxIdx = ChannelFactory.getMaxChIdx();
+        for(int i=ChannelFactory.CH1;i<maxIdx;i++){
+            int resistanceType = getResistanceType(i,val);
+            if(resistanceType == Channel.RESISTANCE_1M) {
+                channel = ChannelFactory.getDynamicChannel(i);
+                if (channel != null && channel.getResistanceType() == Channel.RESISTANCE_50) {
+                    if(channel.getResistanceTS() > 0 && (ts - channel.getResistanceTS()) > 2000) {
+                        channel.setResistanceType(Channel.RESISTANCE_1M);
+                    }
+                }
+            }
+        }
+    }
+
+    public void segmentTimTimestamp(){
+        ScopeMessage.getInstance().segmentTimestamp();
+    }
+
+    public boolean isSegmentEnable(){
+        return isSegmentEnable(isRun());
+    }
+    public boolean isSegmentEnable(boolean bRun){
+        if(bRun){
+            return segmentSample.isSegmentEnable();
+        }else{
+            return scopeFrozen.isSegmentEnable();
+        }
+    }
+
+    //设置单帧 播放帧号
+    public void setSegmentFrameNo(long frameNo){
+        if(!isRun()){
+            long frameNums = getSegmentFrameNums();
+            if(frameNums > 0 && frameNo >= 0) {
+                Logger.d(TAG,"frameNo:" + frameNo + ",frameNums:" + frameNums+",getSegmentFrameNo:"+getSegmentFrameNo() );
+
+                if(getSegmentFrameNo() != frameNo) {
+                    segmentSample.setFrameNo(frameNo % frameNums);
+                }
+            }
+        }
+    }
+
+    //获得当前帧的帧号
+    public int getSegmentFrameNo(){
+        if(!isRun()){
+            return scopeFrozen.getSegmentFrameNo();
+        }
+        return 0;
+    }
+
+    //获得 可以有多少帧可以回放
+    public int getSegmentFrameNums(){
+        if(!isRun()){
+            return scopeFrozen.getSegmentFrameNums();
+        }
+        return 0;
+    }
+
+    // 或的当前帧的时间戳，ns 距采样时间开始时间。
+    public long getSegmentTimestamp(){
+        if(!isRun()){
+            return scopeFrozen.getSegmentTimestamp();
+        }
+        return 0;
+    }
+    //获取当前所有帧的时间戳
+    public List<SegmentedSingleBean> getAllFrameTimestamp(){
+
+        synchronized (this) {
+            return listSegmentTimestamp;
+        }
+    }
+
+    private List<SegmentedSingleBean> listSegmentTimestamp = new ArrayList<>();
+    public void clearSegmentTimestamp(){
+        synchronized (this) {
+            listSegmentTimestamp.clear();
+        }
+    }
+
+    public void addSegmentTimestamp(long ts){
+        synchronized (this) {
+//            Logger.d(TAG,"ts:" + ts);
+            int idx = listSegmentTimestamp.size() + 1;
+            listSegmentTimestamp.add(new SegmentedSingleBean(idx,ts));
+        }
+    }
+    public boolean isTouchFine(){
+        return ChannelFactory.isDynamicCh(fineChidx) && bTouchFine;
+    }
+
+    private boolean bTouchFine = false;
+    private int fineChidx = -1;
+    private double fineScaleVal = 0;
+    private double finePos = 0;
+
+    private int fineSampleBak = -1;
+    public void Sfine(){
+        fineChidx = -1;
+        int chIdx = ChannelFactory.getChActivate();
+        if(ChannelFactory.isDynamicCh(chIdx)){
+            Channel channel = ChannelFactory.getDynamicChannel(chIdx);
+            if(channel != null){
+                fineChidx = chIdx;
+                fineScaleVal = channel.getVScaleVal();
+                finePos = channel.getPos();
+            }
+        }else if(ChannelFactory.isRefCh(chIdx)){
+//            RefChannel refChannel = ChannelFactory.getRefChannel(chIdx);
+//            if(refChannel != null){
+//                fineScaleVal = refChannel.getVScaleVal();
+//                finePos = refChannel.getPos();
+//                fineChidx = chIdx;
+//            }
+        }else if(ChannelFactory.isMathCh(chIdx)){
+//            MathChannel mathChannel = ChannelFactory.getMathChannel();
+//            if(mathChannel != null){
+//                fineScaleVal = mathChannel.getVScaleVal();
+//                finePos = mathChannel.getPos();
+//                fineChidx = chIdx;
+//            }
+        }
+    }
+    public void Efine(){
+        int chIdx = fineChidx;
+        fineChidx = -1;
+        bTouchFine = false;
+        if(ChannelFactory.isDynamicCh(chIdx)){
+            Channel channel = ChannelFactory.getDynamicChannel(chIdx);
+            if(channel != null){
+                channel.setVScaleVal(channel.getVScaleVal());
+            }
+            if(fineSampleBak != -1) {
+                if (fineSampleBak != Sample.SAMPLE_STOP) {
+                    sample.frozenSample(fineSampleBak);
+                }
+            }
+            fineSampleBak = -1;
+            ScopeMessage.getInstance().touchResume();
+        }
+    }
+
+
+    public void Vfine(double y,double v){
+
+        y -= ((double) ScopeBase.getHeight() / 2);
+        v = fineScaleVal / v;
+        double a = (finePos + y) * fineScaleVal;
+
+        if(ChannelFactory.isDynamicCh(fineChidx)){
+            Channel channel = ChannelFactory.getDynamicChannel(fineChidx);
+            if(channel != null) {
+
+                if(Math.abs(v - channel.getVScaleVal()) / channel.getVScaleVal() >= 0.05){
+                    if(!bTouchFine){
+                        bTouchFine = true;
+                        fineSampleBak = sample.getSampleState();
+                        ScopeMessage.getInstance().touchPause();
+                    }
+                    v /= channel.getProbeRate();
+                    double max = VerticalAxis.getScaleIdValById(channel.getMaxGear());
+                    double min = VerticalAxis.getScaleIdValById(channel.getMinGear());
+                    if(v < min){
+                        v = min;
+                    }else if(v > max){
+                        v = max;
+                    }
+                    channel.setFineScale(v/channel.getVScaleIdVal());
+                    channel.setPos((int)(( a /channel.getVScaleVal() - y )));
+                    channel.setVScaleVal(channel.getVScaleVal());
+                }
+            }
+        }else if(ChannelFactory.isRefCh(fineChidx)){
+//            RefChannel refChannel = ChannelFactory.getRefChannel(fineChidx);
+//            if(refChannel != null){
+//                if(Math.abs(v - refChannel.getVScaleVal()) / refChannel.getVScaleVal() >= 0.01){
+//
+//                    refChannel.setVScaleVal(v);
+//                    refChannel.setPos((int)(( a /refChannel.getVScaleVal() - y )));
+//                }
+//            }
+        }else if(ChannelFactory.isMathCh(fineChidx)){
+//            MathChannel mathChannel = ChannelFactory.getMathChannel();
+//            if(mathChannel != null){
+//                if(Math.abs(v - mathChannel.getVScaleVal()) / mathChannel.getVScaleVal() >= 0.01){
+//                    mathChannel.setVScaleVal(v);
+//                    mathChannel.setPos((int)(( a /mathChannel.getVScaleVal() - y )));
+//                }
+//            }
+        }
+    }
+
+    public void horizontalAxisScale(int x,int val){
+        Log.d(TAG, "horizontalAxisScale() called with: x = [" + x + "], val = [" + val + "]");
+        x = ScopeBase.getWidth() / 2 - x;
+        int chIdx = ChannelFactory.getChActivate();
+
+        if(ChannelFactory.isMath_FFT_Ch(chIdx) ){
+            MathChannel mathChannel = ChannelFactory.getMathChannel(chIdx);
+            HorizontalAxisMath horizontalAxisMath = mathChannel.getHorizontalAxisMathFFT();
+            List<Double> list = horizontalAxisMath.getxAxis();
+
+            int bakIdx = horizontalAxisMath.getHorizontalScaleId();
+            int idx = bakIdx + val;
+            if(idx < 0)  idx = 0;
+            else if(idx >= list.size()){
+                idx = list.size() - 1;
+            }
+            if(idx != bakIdx) {
+                if (idx >= 0 && idx < list.size()) {
+                    long pos = horizontalAxisMath.getXPosOfView();
+
+                    double sOld = horizontalAxisMath.fftXScaleIdVal();
+
+                    horizontalAxisMath.setHorizontalScaleId(idx);
+
+                    double sNew = horizontalAxisMath.fftXScaleIdVal();
+                    pos = (long) (pos * sOld / sNew) - x;
+
+                    horizontalAxisMath.setXPosOfView(pos);
+                    horizontalAxisMath.correctXPose();
+                    EventFactory.sendEvent(EventFactory.EVENT_TIME_SCALE, true);
+                }
+            }
+        } else if (ChannelFactory.isRefCh(chIdx)) {
+            refHorScale(x, val, chIdx);
+        } else {
+            chHorScale(x, val);
+        }
+    }
+
+    private void refHorScale(int x,int val, int chIdx) {
+        Scope scope = Scope.getInstance();
+        if (scope.isSerialText()) return;//文本页面 鼠标滚轮不改变时基。
+        RefChannel refChannel = (RefChannel) ChannelFactory.getValidChannel(chIdx);
+
+        List<Double> list = refChannel.getHorizontalAxisRef().getxAxis();
+        int bakIdx = refChannel.getRefTimeScaleId_ui();
+        if (HorizontalAxis.getInstance().getScaleFollowingCh() && refChannel.getRefType() != WaveData.FFT_WAVE) {
+            list = horizontalAxis.getxAxis();
+            bakIdx = horizontalAxis.getTimeScaleIdOfView();
+        }
+        int idx = bakIdx + val;
+        if(idx < 0)  idx = 0;
+        else if(idx >= list.size()){
+            idx = list.size() - 1;
+        }
+        if(bakIdx != idx) {
+            if (idx >= 0 && idx < list.size()) {
+                //x 像素位置 左正右负 实际1200 ，显示 为 -300位置。
+                long oldTrTime = refChannel.getTimePosOfView();
+                long clickTime = refChannel.getTimePosOfView(x);
+                long deltTime = oldTrTime - clickTime;
+                refChannel.setRefTimeScale(list.get(idx), 0);
+                long newClickTime = refChannel.getTimePosOfView(x);
+                long newTrTime = deltTime + newClickTime;
+                long newTrPix = refChannel.getTimePoseOfViewPix(newTrTime);
+                refChannel.setXPosOfViewPix(newTrPix);
+
+
+                if (HorizontalAxis.getInstance().getScaleFollowingCh()) {
+                    int bak_id = horizontalAxis.getTimeScaleIdOfView();
+                    int id = bak_id + val;
+                    if (id < HorizontalAxis.getMinGear()) {
+                        id = HorizontalAxis.getMinGear();
+                    } else if (id > HorizontalAxis.getMaxGear()) {
+                        id = HorizontalAxis.getMaxGear();
+                    }
+                    if (HorizontalAxis.isValidScaleId(id)) {
+                        horizontalAxis.setTimeScaleIdOfView(id);
+                        horizontalAxis.setTimePosOfView(newTrPix);
+                    }
+                }
+
+                EventFactory.sendEvent(EventFactory.EVENT_TIME_SCALE, true);
+            }
+        }
+    }
+
+    private void chHorScale(int x,int val) {
+        Scope scope = Scope.getInstance();
+        if (scope.isSerialText()) return;//文本页面 鼠标滚轮不改变时基。
+        int bak_id = horizontalAxis.getTimeScaleIdOfView();
+        int id = bak_id + val;
+        if(id < HorizontalAxis.getMinGear()){
+            id = HorizontalAxis.getMinGear();
+        }else if( id > HorizontalAxis.getMaxGear()){
+            id = HorizontalAxis.getMaxGear();
+        }
+        if(bak_id != id) {
+            if (HorizontalAxis.isValidScaleId(id)) { //以手指点击位置为中心放大，保持原始触发时间和点击位置对应时间之间的差不变
+                double v = horizontalAxis.getTimeScaleIdVal();
+                long pos = horizontalAxis.getTimePosOfView();
+                pos = horizontalAxis.timePoseOfViewChangeEx(v, pos, x);
+
+                v = horizontalAxis.getTimeScaleIdVal(id);
+                pos += horizontalAxis.timePoseOfViewChangeEx(v, 0, -x);
+                horizontalAxis.setTimeScaleIdOfView(id);
+                horizontalAxis.setTimePosOfView(pos);
+                horizontalAxis.correctTimePose();
+            }
+        }
+    }
+
+
+    public void doubleClicked(int x){
+        horizontalAxisScale(x,1);
+    }
+
+
+    public void AdReset(){
+        ScopeMessage.getInstance().sendADReset();
+    }
+
+    private boolean bUsersetReset = false;
+    public void setUsersetReset(boolean bUsersetReset){
+        this.bUsersetReset = bUsersetReset;
+    }
+    public boolean isUsersetReset(){
+        return bUsersetReset;
+    }
+
+    private volatile boolean bUI = false;
+    public boolean isUI(){
+        return bUI;
+    }
+    public void setUI(boolean b){
+        bUI = b;
+    }
+
+    private InputStream getInputStream(int probe,int sw){
+        InputStream is = null;
+
+        Resources res = mContext.getResources();
+        int resId = res.getIdentifier(Integer.toHexString(probe) + "_" + Integer.toHexString(sw), "raw", mContext.getPackageName());
+        if(resId != 0){
+            is = mContext.getResources().openRawResource(resId);
+        }
+        return is;
+    }
+    private volatile boolean bStandby = false;
+    public  void setStandby(boolean bStandby){
+        synchronized (this){
+            this.bStandby = bStandby;
+        }
+        if(bStandby) {
+            SaveBin.getInstance().stop();
+            SaveCsv.getInstance().stop();
+            SaveRecoverySession.getInstance().stop();
+
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+
+
+
+//        if(bStandby){
+//            Channel channel;
+//            for(int i=0;i<ChannelFactory.CH_MAX;i++){
+//                channel = ChannelFactory.getDynamicChannel(i);
+//                if(channel != null){
+//                    if(channel.isAutoProbe()){
+//                        BaseProbe baseProbe = channel.getProbe();
+//                        if(baseProbe != null){
+//                            baseProbe.standby(bStandby);
+//                        }
+//                    }
+//                }
+//            }
+//        }
+    }
+    public synchronized boolean isStandby(){
+        return bStandby;
+    }
+
+
+    public boolean sendSampleState(int state){
+        boolean bRet = true;
+        Display display  = Display.getInstance();
+        Sample sample = Sample.getInstance();
+        Scope scope = Scope.getInstance();
+        if(display.isXYMode()
+                || sample.isSingle()
+                || scope.isAuto()
+                || scope.isSerialText()
+                || scope.isEnableChannelZero()
+                ){
+                if(state > Sample.SAMPLE_RUN){
+                    bRet = false;
+                }
+        }
+        if(bRet){
+            sample.sendSampleState(state);
+        }
+        return bRet;
+    }
+
+    private boolean bEnableChannelZero = false;
+    public synchronized void setEnableChannelZero(boolean bEnableChannelZero){
+        this.bEnableChannelZero = bEnableChannelZero;
+    }
+    public synchronized boolean isEnableChannelZero(){
+        return this.bEnableChannelZero;
+    }
+
+
+}

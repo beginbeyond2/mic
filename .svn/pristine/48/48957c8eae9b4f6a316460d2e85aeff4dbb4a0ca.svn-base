@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.micsig.tbook.tbookscope.rightslipmenu.RightLayoutMath xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/rightSlipMenuBar_math3"
+    android:layout_width="819px"
+    android:layout_height="907px"
+    android:layout_x="@dimen/rightSlipX"
+    android:layout_y="@dimen/rightSlipOtherYBig"
+    android:background="@drawable/bg_rightslipmenu_math"
+    android:clickable="true"
+    android:elevation="100px"
+    android:outlineAmbientShadowColor="@android:color/transparent"
+    android:outlineSpotShadowColor="@android:color/transparent"
+    android:paddingStart="@dimen/dividerSize"
+    android:translationZ="100px"
+    app:mathChannelNumber="Math3" />

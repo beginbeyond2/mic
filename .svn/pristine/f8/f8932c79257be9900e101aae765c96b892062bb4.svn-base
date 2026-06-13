@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@android:id/background"
+        android:drawable="@drawable/seekbar_bg_302_52" />
+    <item android:id="@android:id/progress"
+        android:top="24px"
+        android:bottom="24px"
+        android:left="6px"
+        android:right="6px"
+        >
+        <clip>
+            <shape>
+<!--                <stroke android:color="@android:color/transparent" android:width="14px" />-->
+<!--                <padding android:top="6px" android:bottom="6px" android:left="6px" />-->
+                <corners android:radius="4dp" />
+                <solid android:color="#FF00AEFF" />
+            </shape>
+        </clip>
+    </item>
+</layer-list>

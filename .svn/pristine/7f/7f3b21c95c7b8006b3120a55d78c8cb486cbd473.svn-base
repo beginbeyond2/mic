@@ -1,0 +1,222 @@
+package com.micsig.tbook.scope.channel;
+
+import com.micsig.tbook.scope.Bus.ARINC429Bus;
+import com.micsig.tbook.scope.Bus.CanBus;
+import com.micsig.tbook.scope.Bus.I2CBus;
+import com.micsig.tbook.scope.Bus.IBus;
+import com.micsig.tbook.scope.Bus.LinBus;
+import com.micsig.tbook.scope.Bus.MILSTD1553BBus;
+import com.micsig.tbook.scope.Bus.SpiBus;
+import com.micsig.tbook.scope.Bus.UartBus;
+import com.micsig.tbook.scope.Data.DataFactory;
+import com.micsig.tbook.scope.Data.IBufferQueue;
+import com.micsig.tbook.scope.Data.IDataBuffer;
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.measure.Measure;
+
+
+
+/**
+ * Created by zhuzh on 2018-5-29.
+ */
+
+public class SerialChannel implements IChannel {
+
+    private int zOrder = 0;
+    private double pos = 0;//1000对应的值
+    private boolean bOpen = false;
+    private int chIdx = -1;
+    private String name;
+    private IBufferQueue dataBufferQueue = null;
+    private IBus[]bus = new IBus[IBus.BUS_CNT];
+    private int busType = IBus.UART;
+    private SerialChannelAction serialChannelAction;
+    private String label = "";
+    public SerialChannel(int chIdx){
+        this.chIdx = chIdx;
+        this.name = "S" + chIdx;
+        bus[IBus.UART] = new UartBus(chIdx);
+        bus[IBus.LIN] = new LinBus(chIdx);
+        bus[IBus.CAN] = new CanBus(chIdx);
+        bus[IBus.SPI] = new SpiBus(chIdx);
+        bus[IBus.I2C] = new I2CBus(chIdx);
+        bus[IBus.ARINC429] = new ARINC429Bus(chIdx);
+        bus[IBus.MILSTD1553B] = new MILSTD1553BBus(chIdx);
+        serialChannelAction = new SerialChannelAction(this);
+        setBuffer(DataFactory.allocateBufferSerial());
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public void setLabel(String label) {
+        this.label = label;
+    }
+
+    @Override
+    public String getLabel() {
+        return label;
+    }
+
+    public IBus getBus(int busIdx){
+        if(IBus.isValid(busIdx))
+            return bus[busIdx];
+        return null;
+    }
+
+    public IBus getBus(){
+        return getBus(busType);
+    }
+
+    public void setBusType(int busType){
+        if(IBus.isValid(busType)) {
+            this.busType = busType;
+            serialChannelAction.busTypeChange();
+        }
+    }
+
+    public int getBusType(){
+        return busType;
+    }
+
+    public boolean isChInSample(int chIdx){
+        IBus bus = getBus();
+        return bus.isChInSample(chIdx);
+    }
+    public boolean isChUse(int chIdx){
+        boolean bChOpen = false;
+        for (int i=0;i<IBus.BUS_CNT;i++){
+            if(bus[i].isChInSample(chIdx)){
+                bChOpen = true;
+                break;
+            }
+        }
+        return  bChOpen;
+    }
+
+    @Override
+    public Measure getMeasure() {
+        return null;
+    }
+
+    @Override
+    public void setBuffer(IBufferQueue dataBufferQueue) {
+        this.dataBufferQueue = dataBufferQueue;
+    }
+
+
+    @Override
+    public void open() {
+        synchronized (this) {
+            bOpen = true;
+        }
+        serialChannelAction.busTypeChange();
+        EventFactory.sendEvent(new EventBase(EventFactory.EVENT_CHANNEL_OPEN,getChId()));
+    }
+
+    @Override
+    public boolean isOpen() {
+        synchronized (this) {
+            return bOpen;
+        }
+    }
+
+    @Override
+    public void close() {
+        synchronized (this) {
+            bOpen = false;
+        }
+        serialChannelAction.busTypeChange();
+        EventFactory.sendEvent(new EventBase(EventFactory.EVENT_CHANNEL_CLOSE,getChId()));
+    }
+
+    @Override
+    public void activate() {
+
+    }
+
+    @Override
+    public void setPos(double pos) {
+        pos = pos * ScopeBase.getToFPGACoff();
+        this.pos = pos;
+    }
+
+    @Override
+    public double getPosUI() {
+        return ScopeBase.changeAccuracy(pos * ScopeBase.getToUICoff());
+    }
+
+    @Override
+    public double getPos() {
+        return this.pos;
+    }
+
+    @Override
+    public int getChId() {
+        return chIdx;
+    }
+
+    @Override
+    public int getzOrder() {
+        return zOrder;
+    }
+
+    @Override
+    public void setzOrder(int zOrder) {
+        this.zOrder = zOrder;
+    }
+
+    @Override
+    public double getVerticalPerPix() {
+        return 0;
+    }
+
+    @Override
+    public double getADVerticalPerPix() {
+        return 0;
+    }
+
+    @Override
+    public double getSampleRate() {
+        return 0;
+    }
+
+    @Override
+    public double getSampleRate2display(){return 0;}
+
+    @Override
+    public boolean save(String pathName) {
+        return false;
+    }
+
+    @Override
+    public boolean saveCSV(String pathName) {
+        return false;
+    }
+
+
+    @Override
+    public IDataBuffer obtain() {
+        return dataBufferQueue.obtain();
+    }
+
+    @Override
+    public void recycle(IDataBuffer dataBuffer) {
+        dataBufferQueue.recycle(dataBuffer);
+    }
+
+    @Override
+    public IDataBuffer dequeue() {
+        return dataBufferQueue.dequeue();
+    }
+
+    @Override
+    public void enqueue(IDataBuffer dataBuffer) {
+        dataBufferQueue.enqueue(dataBuffer);
+    }
+}

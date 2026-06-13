@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/advanceMathLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingStart="28px"
+    android:paddingTop="28px"
+    android:paddingEnd="28px"
+    android:visibility="gone">
+
+
+    <TextView
+        android:id="@+id/advanceMathFormulaTitle"
+        style="@style/textStylePrompt"
+        android:layout_width="150px"
+        android:layout_height="82px"
+        android:gravity="center_vertical"
+        android:text="@string/mathAdvanceExpr" />
+
+    <TextView
+        android:id="@+id/advanceMathFormula"
+        style="@style/editTextStyle"
+        android:layout_width="352px"
+        android:layout_height="82px"
+        android:layout_alignParentEnd="true"
+        android:gravity="center"
+        android:maxLines="2"
+        android:text="1234567890"
+        android:textColor="@color/textColor" />
+
+    <View
+        android:id="@+id/driver1"
+        android:layout_width="match_parent"
+        android:layout_height="2px"
+        android:layout_below="@+id/advanceMathFormula"
+        android:layout_marginTop="14px"
+        android:layout_marginBottom="14px"
+        android:background="@drawable/bg_right_layout_divider" />
+
+
+    <TextView
+        android:id="@+id/advanceMathVar1Title"
+        style="@style/textStylePrompt"
+        android:layout_width="150px"
+        android:layout_height="54px"
+        android:layout_below="@id/driver1"
+        android:gravity="center_vertical"
+        android:text="@string/mathAdvanceVar1" />
+
+    <TextView
+        android:id="@+id/advanceMathVar1Number"
+        style="@style/editTextStyle"
+        android:layout_width="230px"
+        android:layout_height="54px"
+        android:layout_below="@+id/driver1"
+        android:layout_toStartOf="@+id/advanceMathVar1Power"
+        android:gravity="center"
+        android:text="-9.1234"
+        android:textColor="@color/textColor" />
+
+    <TextView
+        android:id="@+id/advanceMathVar1Power"
+        style="@style/editTextStyle"
+        android:layout_width="108px"
+        android:layout_height="54px"
+        android:layout_below="@+id/driver1"
+        android:layout_alignParentEnd="true"
+        android:layout_marginStart="14px"
+        android:gravity="center"
+        android:text="-9"
+        android:textColor="@color/textColor" />
+
+
+    <View
+        android:id="@+id/driver2"
+        android:layout_width="match_parent"
+        android:layout_height="2px"
+        android:layout_below="@+id/advanceMathVar1Power"
+        android:layout_marginTop="14px"
+        android:layout_marginBottom="14px"
+        android:background="@drawable/bg_right_layout_divider" />
+
+    <TextView
+        android:id="@+id/advanceMathVar2Title"
+        style="@style/textStylePrompt"
+        android:layout_width="150px"
+        android:layout_height="54px"
+        android:layout_below="@id/driver2"
+        android:gravity="center_vertical"
+        android:text="@string/mathAdvanceVar2" />
+
+    <TextView
+        android:id="@+id/advanceMathVar2Number"
+        style="@style/editTextStyle"
+        android:layout_width="230px"
+        android:layout_height="54px"
+        android:layout_below="@+id/driver2"
+        android:layout_toStartOf="@+id/advanceMathVar2Power"
+        android:gravity="center"
+        android:text="9.500"
+        android:textColor="@color/textColor" />
+
+    <TextView
+        android:id="@+id/advanceMathVar2Power"
+        style="@style/editTextStyle"
+        android:layout_width="108px"
+        android:layout_height="54px"
+        android:layout_below="@+id/driver2"
+        android:layout_alignParentEnd="true"
+        android:layout_marginStart="14px"
+        android:gravity="center"
+        android:text="-9"
+        android:textColor="@color/textColor" />
+
+    <TextView
+        android:id="@+id/advanceMathUnitTitle"
+        style="@style/textStylePrompt"
+        android:layout_width="120px"
+        android:layout_height="54px"
+        android:layout_below="@+id/advanceMathVar2Power"
+        android:layout_marginTop="14px"
+        android:gravity="center_vertical"
+        android:text="@string/rightMathAxbUnitTitle" />
+
+    <TextView
+        android:id="@+id/advanceMathUnitDetail"
+        style="@style/editTextStyle"
+        android:layout_width="230px"
+        android:layout_height="54px"
+        android:layout_below="@+id/advanceMathVar2Power"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="14px"
+        android:gravity="center"
+        android:text="dBm"
+        android:textColor="@color/textColor" />
+
+</RelativeLayout>

@@ -1,0 +1,97 @@
+package com.micsig.tbook.tbookscope.wavezone.bean;
+
+import android.graphics.Rect;
+
+/**
+ * Created by liwb on 2018/1/4.
+ */
+
+public class CursorMsg {
+
+    private boolean row1Visible;
+    private boolean row2Visible;
+    private boolean col1Visible;
+    private boolean col2Visible;
+
+    private Rect row1Position=new Rect();
+    private Rect row2Position=new Rect();
+    private Rect col1Position=new Rect();
+    private Rect col2Position=new Rect();
+
+    public boolean isRow1Visible() {
+        return row1Visible;
+    }
+
+    public void setRow1Visible(boolean row1Visible) {
+        this.row1Visible = row1Visible;
+    }
+
+    public boolean isRow2Visible() {
+        return row2Visible;
+    }
+
+    public void setRow2Visible(boolean row2Visible) {
+        this.row2Visible = row2Visible;
+    }
+
+    public boolean isCol1Visible() {
+        return col1Visible;
+    }
+
+    public void setCol1Visible(boolean col1Visible) {
+        this.col1Visible = col1Visible;
+    }
+
+    public boolean isCol2Visible() {
+        return col2Visible;
+    }
+
+    public void setCol2Visible(boolean col2Visible) {
+        this.col2Visible = col2Visible;
+    }
+
+    public Rect getRow1Position() {
+        return row1Position;
+    }
+
+    public void setRow1Position(int x,int y,int w,int h) {
+        this.row1Position.left =x;
+        this.row1Position.top=y;
+        this.row1Position.right=x+w;
+        this.row1Position.bottom=y+h;
+    }
+
+    public Rect getRow2Position() {
+        return row2Position;
+    }
+
+    public void setRow2Position(int x,int y,int w,int h)
+    {
+        this.row2Position.left = x;
+        this.row2Position.top=y;
+        this.row2Position.right=x+w;
+        this.row2Position.bottom=y+h;
+    }
+
+    public Rect getCol1Position() {
+        return col1Position;
+    }
+
+    public void setCol1Position(int x,int y,int w,int h) {
+        this.col1Position.left = x;
+        this.col1Position.top=y;
+        this.col1Position.right=x+w;
+        this.col1Position.bottom=y+h;
+    }
+
+    public Rect getCol2Position() {
+        return col2Position;
+    }
+
+    public void setCol2Position(int x,int y,int w,int h) {
+        this.col2Position.left = x;
+        this.col2Position.top=y;
+        this.col2Position.right=x+w;
+        this.col2Position.bottom=y+h;
+    }
+}

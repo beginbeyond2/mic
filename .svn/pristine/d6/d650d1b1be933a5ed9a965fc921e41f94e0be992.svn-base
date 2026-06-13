@@ -1,0 +1,376 @@
+package com.micsig.tbook.scope.surface;
+
+import android.content.Context;
+import android.graphics.GraphicBuffer;
+import android.hardware.DeviceManager;
+import android.os.ParcelFileDescriptor;
+import android.os.SystemClock;
+import android.util.Log;
+
+import com.micsig.base.Logger;
+import com.micsig.tbook.hardware.Hardware;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileDescriptor;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+
+
+public class XDmaDevice extends HwDevice{
+    private final static String TAG = "XDmaDevice";
+    private long mDevice;
+
+    public final static int XDMA_NONE = 0;
+    public final static int XDMA_START = 1;
+    public final static int XDMA_PAUSE = 2;
+    public final static int XDMA_DONE = 3;
+
+    private String fpgaStatus = "/sys/devices/platform/3c0800000.pcie/fpga";
+
+    private String xdmaRemove = "/sys/bus/pci/devices/0002:20:00.0/remove";
+
+    private String xdmaRemove2 = "/sys/bus/pci/rescan";
+
+    private final static String [][] XDMA_C2H = {
+            {"/dev/xdma0_c2h_0","/dev/xdma0_c2h_1"},
+            {"/dev/xdma1_c2h_0","/dev/xdma1_c2h_1"},
+    };
+    private final static String [][] XDMA_EVENT = {
+            {"/dev/xdma0_events_0","/dev/xdma0_events_1"},
+            {"/dev/xdma1_events_0","/dev/xdma1_events_1"},
+    };
+
+    private final static String []XDMA_USER = {
+            "/dev/xdma0_user","/dev/xdma1_user"
+    };
+    private final static String[] XDMA_C2H2={
+            "/dev/xdma0_c2h_2","/dev/xdma1_c2h_2"
+    };
+
+    private final static String[] XDMA_H2C={
+            "/dev/xdma0_h2c_0","/dev/xdma1_h2c_0"
+    };
+
+
+    private ByteBuffer userBuffer = null;
+    private ParcelFileDescriptor [] XdmaDataFD = new ParcelFileDescriptor[2];
+    private ParcelFileDescriptor [] XdmaEventFD = new ParcelFileDescriptor[2];
+
+    private ParcelFileDescriptor XdmaUserFD = null;
+    private ParcelFileDescriptor XdmaC2HFD = null;
+    private ParcelFileDescriptor XdmaH2CFD = null;
+    volatile boolean bOpen = false;
+    private volatile int xDmaStatus = XDMA_NONE;
+
+    public void setStatus(String name){
+        setStatus(name,"1");
+    }
+    public void setStatus(String name,String val){
+        Log.d(TAG, "setStatus() called with: name = [" + name + "], val = [" + val + "]");
+        try {
+            ParcelFileDescriptor parcelFileDescriptor = deviceManager.openDevicePort(name);
+            if(parcelFileDescriptor != null) {
+                FileOutputStream out = new FileOutputStream(parcelFileDescriptor.getFileDescriptor());
+                OutputStreamWriter writer = new OutputStreamWriter(out);
+                writer.write(val);
+                writer.flush();
+                writer.close();
+                out.close();
+                parcelFileDescriptor.close();
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+    private int getFpgaState(String devName){
+        int v = 0;
+        try {
+            ParcelFileDescriptor parcelFileDescriptor = deviceManager.openDevicePort(devName);
+            if (parcelFileDescriptor != null) {
+                FileReader fileReader = new FileReader(parcelFileDescriptor.getFileDescriptor());
+                BufferedReader bufferedReader = new BufferedReader(fileReader);
+                String str = bufferedReader.readLine();
+                if (str != null && str.length() > 0) {
+                    str = str.replace("\n", "");
+                    v = Integer.parseInt(str);
+                }
+                fileReader.close();
+                bufferedReader.close();
+                parcelFileDescriptor.close();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        Log.d(TAG, "getFpgaState() called:" + v + "," + devName);
+        return v;
+    }
+
+    public XDmaDevice(Context context,int idx){
+        super(context,idx);
+    }
+    public XDmaDevice(Context context,int idx,String fpgeDev,String devRemove,String devRemove2){
+        super(context,idx);
+        this.fpgaStatus = fpgeDev;
+        this.xdmaRemove = devRemove;
+        this.xdmaRemove2 = devRemove2;
+    }
+    @Override
+    public  boolean openFpga(){
+        if(xDmaStatus == XDMA_PAUSE
+                || xDmaStatus == XDMA_NONE){
+            int s = getFpgaState(fpgaStatus);
+            if(s == 0){
+                setStatus(fpgaStatus);
+            }else if(s >= 3){
+                setStatus(fpgaStatus,"4");
+                s = getFpgaState(fpgaStatus);
+                if(s == 0xFF){
+                    bOpen = false;
+                    return false;
+                }
+            }
+            ms_sleep(200);
+        }
+        return true;
+    }
+    @Override
+    public synchronized boolean openDevice(){
+        Log.d(TAG, "openDevice() called:" + idx);
+        bOpen = true;
+        while (bOpen){
+            boolean bExists = true;
+            ms_sleep(100);
+
+            for (String string : XDMA_C2H[idx]) {
+                File f = new File(string);
+                if (!f.exists()) {
+                    bExists = false;
+                    break;
+                }
+            }
+
+            if(bExists){
+                break;
+            }
+        }
+        ms_sleep(200);
+        for(int i=0;i<XdmaDataFD.length;i++) {
+            do {
+                ms_sleep(100);
+                try {
+                    if (XdmaDataFD[i] == null) {
+                        XdmaDataFD[i] = deviceManager.openDevicePort(XDMA_C2H[idx][i]);
+                    }
+                    if (XdmaEventFD[i] == null) {
+                        XdmaEventFD[i] = deviceManager.openDevicePort(XDMA_EVENT[idx][i]);
+                    }
+                    if(XdmaUserFD == null){
+                        XdmaUserFD = deviceManager.openDevicePort(XDMA_USER[idx]);
+                    }
+                    if(XdmaC2HFD == null){
+                        XdmaC2HFD = deviceManager.openDevicePort(XDMA_C2H2[idx]);
+                    }
+                    if(XdmaH2CFD == null){
+                        XdmaH2CFD = deviceManager.openDevicePort(XDMA_H2C[idx]);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            } while ((XdmaDataFD[i] == null
+                    || XdmaEventFD[i] == null
+                    || XdmaUserFD == null
+                    || XdmaC2HFD == null
+                    || XdmaH2CFD == null
+            ) && bOpen);
+        }
+
+        if(bOpen) {
+            boolean ret = native_openex(idx,XdmaDataFD[0].getFileDescriptor(), XdmaEventFD[0].getFileDescriptor(),getSurfaceNative());
+            if(ret){
+                ret = native_open(idx,XdmaDataFD[1].getFileDescriptor(), XdmaEventFD[1].getFileDescriptor());
+                if(ret){
+                    ret = native_openuser(idx,XdmaUserFD.getFileDescriptor(),XdmaC2HFD.getFileDescriptor(),XdmaH2CFD.getFileDescriptor());
+                    if(ret) {
+                        userBuffer = native_userbuffer(idx);
+                        xDmaStatus = XDMA_DONE;
+                    }
+                }
+            }
+            return ret;
+        }
+        return false;
+    }
+
+    @Override
+    public void closeDevice(){
+        bOpen = false;
+        synchronized (this) {
+            native_close(idx);
+            for(int i=0;i<XdmaDataFD.length;i++) {
+                try {
+                    if (XdmaDataFD[i] != null) {
+                        XdmaDataFD[i].close();
+                        XdmaDataFD[i]  = null;
+                    }
+                    if (XdmaEventFD[i]  != null) {
+                        XdmaEventFD[i].close();
+                        XdmaEventFD[i] = null;
+                    }
+                    if(XdmaUserFD != null){
+                        XdmaUserFD.close();
+                        XdmaUserFD = null;
+                    }
+                    if(XdmaC2HFD != null){
+                        XdmaC2HFD.close();
+                        XdmaC2HFD = null;
+                    }
+                    if(XdmaH2CFD != null){
+                        XdmaH2CFD.close();
+                        XdmaH2CFD = null;
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+//        ms_sleep(100);
+//        File f = new File(xdmaRemove2);
+//        if(f.exists()) {
+//            setStatus(xdmaRemove2);
+//        }
+
+
+    }
+
+    @Override
+    public boolean closeFpga() {
+        File f = new File(xdmaRemove);
+        if(f.exists()) {
+            setStatus(xdmaRemove);
+        }
+        xDmaStatus = XDMA_PAUSE;
+        return true;
+    }
+
+    @Override
+    public ByteBuffer lockBuffer(int idx){
+        ByteBuffer byteBuffer = null;
+        if(idx == this.idx) {
+            if (isOpen()) {
+                byteBuffer = native_lock(idx);
+            }
+            if (byteBuffer == null) {
+                ms_sleep(10);
+            }
+        }
+        return byteBuffer;
+    }
+    @Override
+    public void unlockBuffer(int idx){
+        native_unlock(idx);
+    }
+
+    @Override
+    public void clear() {
+        native_clear(idx);
+    }
+
+    @Override
+    public ByteBuffer getBarBuffer(int idx) {
+        if(idx == this.idx) {
+            return userBuffer;
+        }
+        return null;
+    }
+
+    @Override
+    public boolean store(RandomAccessFile randomAccessFile) {
+        try {
+            return native_store(idx,randomAccessFile.getFD());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    @Override
+    public boolean restore(RandomAccessFile randomAccessFile) {
+        try {
+            return native_restore(idx,randomAccessFile.getFD());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    @Override
+    public void stop() {
+        native_stop(idx);
+    }
+
+    @Override
+    public int getSaveRecoveryProgress() {
+        return native_progress(idx);
+    }
+
+    @Override
+    public void resume() {
+        Log.d(TAG, "resume() called:" + isOpen());
+        if(!isOpen()) {
+            SurfaceNative surfaceNative;
+            do {
+                surfaceNative = getSurfaceNative();
+                if(surfaceNative != null){
+                    break;
+                }
+                ms_sleep(100);
+            }while (true);
+        }
+    }
+
+    @Override
+    public void suspend() {
+
+        int s = getFpgaState(fpgaStatus);
+        if(s >= 2) {
+            setStatus(fpgaStatus, "3");
+        }
+    }
+
+    @Override
+    public synchronized boolean isOpen() {
+        return bOpen  && xDmaStatus == XDMA_DONE;
+    }
+
+    @Override
+    public boolean isAsyncOpen() {
+        return true;
+    }
+
+    private native ByteBuffer native_lock(int idx);
+    private native void native_unlock(int idx);
+    private native boolean native_open(int idx,FileDescriptor dataFd,FileDescriptor eventFd);
+    private native boolean native_openex(int idx,FileDescriptor dataFd,FileDescriptor eventFd,SurfaceNative surfaceNative);
+
+    private native boolean native_openuser(int idx,FileDescriptor barfd,FileDescriptor c2hfd,FileDescriptor h2cfd);
+
+    private native boolean native_store(int idx,FileDescriptor fd);
+    private native boolean native_restore(int idx,FileDescriptor fd);
+
+    private native void native_stop(int idx);
+
+    private native int native_progress(int idx);
+    private native ByteBuffer native_userbuffer(int idx);
+    private native void native_close(int idx);
+
+    private native void native_clear(int idx);
+
+}

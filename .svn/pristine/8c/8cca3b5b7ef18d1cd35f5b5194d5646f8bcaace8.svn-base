@@ -1,0 +1,66 @@
+package com.micsig.tbook.scope.channel;
+
+import com.micsig.base.RxMsgSelect;
+
+/**
+ * @auother Liwb
+ * @description:
+ * @data:2020/5/28 9:04
+ */
+public class SegmentedSingleBean extends RxMsgSelect {
+
+    private int FrameId;
+    private long timeMs = -1;
+    private String strTime = null;
+    public SegmentedSingleBean(){
+
+    }
+
+    public SegmentedSingleBean(int frameId, String timeMs){
+        FrameId = frameId;
+        strTime = timeMs;
+    }
+    public SegmentedSingleBean(int frameId, long timeMs) {
+        FrameId = frameId;
+        this.timeMs = timeMs;
+    }
+
+    public int getFrameId() {
+        return FrameId;
+    }
+
+    public long getTimestamp(){
+        return timeMs;
+    }
+
+    public String getTimeMs() {
+        if(timeMs > 0) {
+            return getMsFromNs(timeMs);
+        }
+        if(strTime != null){
+            return strTime;
+        }
+        return "---";
+    }
+
+    @Override
+    public String toString() {
+        return "SegmentedSingleBean{" +
+                "FrameId=" + FrameId +
+                ", timeMs='" + timeMs + '\'' +
+                '}';
+    }
+
+    public static String getMsFromNs(long ns) {
+        String value = String.valueOf(ns / (1000 * 1000));
+        String string = String.valueOf(ns);
+        while (string.length() < 6) {
+            string = "0" + string;
+        }
+        value = value + "." + string.substring(string.length() - 6);
+        if (value.length() > 9) {
+            value = value.substring(0,9);
+        }
+        return value + "ms";
+    }
+}

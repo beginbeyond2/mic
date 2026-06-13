@@ -1,0 +1,141 @@
+package com.micsig.tbook.tbookscope.wavezone;
+
+import android.util.Log;
+import android.view.MotionEvent;
+
+public class DoubleFinger {
+
+    public interface DoubleFingerlistener{
+        public void onHorizontalSlide(double val);
+        public void onHorizontalZoom(double y,double v);
+        public void onVerticalSlide(double val);
+        public void onVerticalZoom(double y,double v);
+        public void onBegin();
+        public void onEnd();
+    }
+
+    private float [] fine_down_x = new float[2];
+    private float [] fine_down_y = new float[2];
+
+    private float [] fine_move_x = new float[2];
+    private float [] fine_move_y = new float[2];
+    private static int TOUCH_THRESHOLD = 15;
+    private static final int FINE_HORIZONTAL_SLIDE = 1;
+    private static final int FINE_HORIZONTAL_ZOOM = 2;
+    private static final int FINE_VERTICAL_SLIDE = 3;
+    private static final int FINE_VERTICAL_ZOOM = 4;
+    private static final int FINE_DIR_NONE = 0;
+    private int fine_dir = FINE_DIR_NONE; //
+    private float [] L = {0,0};
+    DoubleFingerlistener fingerlistener;
+    public DoubleFinger(DoubleFingerlistener fingerlistener){
+        this.fingerlistener = fingerlistener;
+
+    }
+
+    public boolean onDoubleFinger(MotionEvent event){
+
+        int pointCount = event.getPointerCount();
+        boolean bRet = false;
+        if(fingerlistener != null) {
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    fine_dir = FINE_DIR_NONE;
+                    fine_down_x[0] = event.getX();
+                    fine_down_y[0] = event.getY();
+                    break;
+                case MotionEvent.ACTION_POINTER_DOWN:
+                    if (pointCount == 2) {
+                        for (int i = 0; i < 2; i++) {
+                            fine_move_x[i] = fine_down_x[i] = event.getX(i);
+                            fine_move_y[i] = fine_down_y[i] = event.getY(i);
+                        }
+                        L[0] = Math.abs(fine_down_x[0] - fine_down_x[1]);
+                        L[1] = Math.abs(fine_down_y[0] - fine_down_y[1]);
+                        fingerlistener.onBegin();
+                    }
+                    break;
+                case MotionEvent.ACTION_POINTER_UP:
+                    if (pointCount == 2) {
+                        fingerlistener.onEnd();
+                    }
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    if(pointCount == 1) {
+                        if(fine_dir == FINE_DIR_NONE){
+                            if (Math.abs(event.getX() - fine_down_x[0]) > TOUCH_THRESHOLD){
+                                fine_dir = FINE_HORIZONTAL_SLIDE;
+                            }else if(Math.abs(event.getY() - fine_down_y[0]) > TOUCH_THRESHOLD){
+                                fine_dir = FINE_VERTICAL_SLIDE;
+                            }
+                        }
+                    }else if (pointCount == 2) {
+
+                        float[] x = {0, 0};
+                        float[] y = {0, 0};
+                        float[] l = {0, 0};
+
+                        for (int i = 0; i < 2; i++) {
+                            x[i] = event.getX(i) - fine_down_x[i];
+                            y[i] = event.getY(i) - fine_down_y[i];
+                        }
+
+                        l[0] = Math.abs(event.getX(0) - event.getX(1));
+                        l[1] = Math.abs(event.getY(0) - event.getY(1));
+
+
+                        if (fine_dir == FINE_DIR_NONE) {
+                            if (Math.abs(x[0]) > TOUCH_THRESHOLD && Math.abs(x[1]) > TOUCH_THRESHOLD) {
+                                fine_dir = (x[0] * x[1]) > 0 ? FINE_HORIZONTAL_SLIDE : FINE_HORIZONTAL_ZOOM;
+                            } else if (Math.abs(y[0]) > TOUCH_THRESHOLD && Math.abs(y[1]) > TOUCH_THRESHOLD) {
+                                fine_dir = (y[0] * y[1]) > 0 ? FINE_VERTICAL_SLIDE : FINE_VERTICAL_ZOOM;
+                            }else if(Math.abs(l[0] - L[0]) > TOUCH_THRESHOLD * 2){
+                                fine_dir = FINE_HORIZONTAL_ZOOM;
+                            }else if(Math.abs(l[1] - L[1]) > TOUCH_THRESHOLD * 2){
+                                fine_dir = FINE_VERTICAL_ZOOM;
+                            }
+                        }
+                        boolean bSlide = false;
+                        if (fine_dir != FINE_DIR_NONE) {
+                            switch (fine_dir) {
+                                case FINE_HORIZONTAL_SLIDE: {
+                                    float val = (fine_move_x[0] - event.getX(0) + fine_move_x[1] - event.getX(1)) / TOUCH_THRESHOLD * 2;
+                                    if (Math.abs(val) > 1) {
+                                        fingerlistener.onHorizontalSlide(val);
+                                        bSlide = true;
+                                    }
+                                }
+                                    break;
+                                case FINE_HORIZONTAL_ZOOM:
+                                    fingerlistener.onHorizontalZoom((event.getX(0) + event.getX(1)) / 2,
+                                            Math.abs(event.getX(0) - event.getX(1)) / Math.abs(fine_down_x[0] - fine_down_x[1]));
+                                    break;
+                                case FINE_VERTICAL_SLIDE: {
+                                    float val = (fine_move_y[0] - event.getY(0) + fine_move_y[1] - event.getY(1)) /  TOUCH_THRESHOLD * 2;
+                                    if (Math.abs(val) > 1) {
+                                        fingerlistener.onVerticalSlide(val);
+                                        bSlide = true;
+                                    }
+                                }
+                                    break;
+                                case FINE_VERTICAL_ZOOM:
+                                    fingerlistener.onVerticalZoom((event.getY(0) + event.getY(1)) / 2,
+                                            Math.abs(event.getY(0) - event.getY(1)) / Math.abs(fine_down_y[0] - fine_down_y[1]));
+                                    break;
+                            }
+                        }
+                        if(bSlide) {
+                            for (int i = 0; i < 2; i++) {
+                                fine_move_x[i] = event.getX(i);
+                                fine_move_y[i] = event.getY(i);
+                            }
+                        }
+                        bRet = true;
+                    }
+                    break;
+            }
+        }
+
+        return bRet;
+    }
+}

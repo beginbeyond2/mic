@@ -1,0 +1,41 @@
+package com.micsig.tbook.scope.Trigger;
+
+import com.micsig.base.FilterThread;
+import com.micsig.tbook.scope.Action.FPGAMessage;
+import com.micsig.tbook.scope.Action.XAction;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.Scope;
+
+/**
+ * Created by zhuzh on 2018-4-10.
+ */
+
+public class TriggerLevelAction extends XAction {
+    private static final String TAG = "TriggerLevelAction";
+    private TriggerLevel triggerLevel;
+    private FilterThread filterThread = new FilterThread(TAG);
+    private int level = Integer.MAX_VALUE;
+
+    public TriggerLevelAction(final TriggerLevel triggerLevel){
+        this.triggerLevel = triggerLevel;
+        filterThread.setDelayMillis(100);
+        filterThread.setRunnable(new Runnable() {
+            @Override
+            public void run() {
+                int v = (int) Math.round(triggerLevel.getPos());
+                if(level != v || !Scope.getInstance().isSingle() ) {
+                    level = v;
+                    sendFpgaMsg(FPGAMessage.FPGA_CMD_TRIG_LEVEL);
+                }
+            }
+        });
+    }
+    public void TriggerLevelChange(){
+        filterThread.run();
+        sendEvent(EventFactory.EVENT_TRIGGER_LEVEL);
+    }
+
+    public void triggerLevelUserChange(){
+        sendEvent(EventFactory.EVENT_TRIGGER_LEVEL_USER);
+    }
+}

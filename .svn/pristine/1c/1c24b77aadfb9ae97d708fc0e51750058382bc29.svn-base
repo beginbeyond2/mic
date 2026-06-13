@@ -1,0 +1,15 @@
+package com.micsig.tbook.scope.fpga;
+
+import android.util.Log;
+
+public class FPGAReg_CH_CAPACITANCE_16BIT extends FPGAReg{
+
+    public FPGAReg_CH_CAPACITANCE_16BIT(){
+        super(FPGA_CH_CAPACITANCE1_16BIT,8);
+    }
+
+    public void setHigh(int chIdx,int val){
+        setVal(chIdx/2,(chIdx%2) *16,16,val);
+    }
+
+}

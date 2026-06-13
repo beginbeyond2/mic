@@ -1,0 +1,28 @@
+package com.micsig.tbook.scope.channel;
+
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.Action.XAction;
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+
+/**
+ * Created by zhuzh on 2018-5-25.
+ */
+
+public class RefChannelAction extends XAction {
+    private static final String TAG = "RefChannelAction";
+    RefChannel refChannel;
+    public RefChannelAction(RefChannel refChannel){
+        this.refChannel = refChannel;
+    }
+    public void loadWave(){
+        this.refChannel.setWaveValid(true);
+        sendEvent(EventFactory.EVENT_REF_WAVE_UPDATE);
+    }
+
+    public void changeChTimeBase() {
+        double timeBase = this.refChannel.getRefTimeScaleVal();
+        Logger.i(TAG, "channel= " + this.refChannel.getName() + " ,timeBase= " + timeBase);
+        sendEvent(new EventBase(EventFactory.EVENT_CHANGE_CH_TIMEBASE, timeBase, refChannel.getChId()));
+    }
+}

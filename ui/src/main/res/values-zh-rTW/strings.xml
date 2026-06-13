@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="menu_bottom_adjust">微調</string>
+    <string name="menu_bottom_save">快速\r\n儲存</string>
+    <string name="menu_bottom_cursor">游標</string>
+    <string name="menu_bottom_time">10:13</string>
+    <string name="menu_bottom_qiuck_screen">截圖</string>
+    <string name="menu_bottom_qiuck_zoom">Zoom</string>
+    <string name="menu_bottom_qiuck_all_measure">測量</string>
+    <string name="menu_bottom_qiuck_serials_txt">解碼</string>
+    <string name="menu_bottom_qiuck_center_menu">菜單</string>
+    <string name="menu_bottom_qiuck_segment">分段導航</string>
+    <string name="menu_bottom_qiuck_home">主頁</string>
+    <string name="menu_bottom_enter_yt">進入YT</string>
+    <string name="dialog_center_menu_half_timebase">時基</string>
+    <string name="dialog_center_menu_half_level">水平</string>
+    <string name="dialog_center_menu_half_hor_cursor">水平光標</string>
+    <string name="dialog_center_menu_half_ver_cursor">垂直光標</string>
+    <string name="dialog_center_menu_half_channels">通道</string>
+    <string name="dialog_ok">確定</string>
+    <string name="dialog_cancel">取消</string>
+    <string name="topSerialsHeadData">數據</string>
+    <string name="topSerialsHeadData1">數據1</string>
+    <string name="topSerialsHeadData2">數據2</string>
+    <string name="topSerialsHeadLabel">標籤</string>
+    <string name="topSerialsHeadSdi">SDI</string>
+    <string name="topSerialsHeadSsm">SSM</string>
+    <string name="topSerialsHeadId">ID</string>
+    <string name="topSerialsHeadDlc">DLC</string>
+    <string name="topSerialsHeadAddr">Addr</string>
+    <string name="topSerialsHeadCondition">條件</string>
+    <string name="m1553bCsWordCsWordHead">指令/狀態字</string>
+    <string name="m1553bDataWordDataHead">數據字</string>
+    <string name="m1553bRtAddrRtAddrHead">遠程終端地址</string>
+    <string name="internal_storage">內部儲存空間</string>
+    <string name="new_folder"> 新建文件夾</string>
+    <string name="seleced_folder"> 選中的文件夾</string>
+    <string name="file_selection_not_supported"> 不支援選擇檔案</string>
+    <string name="label_file">檔案</string>
+    <string name="label_folder">文件夾</string>
+    <string name="toast_create_success">創建成功</string>
+    <string name="toast_create_failure">創建失敗</string>
+    <string name="error_already_exists">已存在</string>
+    <string name="spiDataDataHead">數據</string>
+    <string name="mainTopLeftStateRun">運行</string>
+    <string name="mainTopLeftStateStop">停止</string>
+    <string name="mainTopLeftStateWait">等待</string>
+    <string name="mainTopLeftStateAuto">自動</string>
+    <string name="mainTopLeftSD">SD</string>
+    <string name="mainTopLeftLength">87.5K</string>
+    <string name="mainTopLeftRate">3.13MSa/s</string>
+    <string name="mainTopCenterShow">0ps</string>
+    <string name="mainRightSample">256平均</string>
+    <string name="mainCenterRadioButtonDefault">Auto</string>
+
+    <string name="view_savewithhead_title">\t名字</string>
+    <string name="view_savewithhead_input">1704060001</string>
+    <string name="view_savewithhead_confirm">儲存</string>
+    <string name="view_seekbarwithhead_title">亮度</string>
+    <string name="view_seekbarwithhead_show">66%</string>
+    <string name="view_display_brightness">亮度</string>
+    <string name="view_display_transparency">菜單透明度</string>
+    <string name="view_display_intensity">强度</string>
+    <string name="view_afterglow_clearup">清除</string>
+    <string name="view_horizontallist_title">調節</string>
+    <string name="view_display_adjust">調節</string>
+    <string name="view_horizontallist_show">100ms</string>
+    <string name="view_trigger_inhibitiontimetitle">抑制時間</string>
+    <string name="view_trigger_inhibitiontimevalue">200ns</string>
+    <string name="view_trigger_pulsewidth">1us</string>
+    <string name="view_trigger_logic">1us</string>
+    <string name="trigger_pulsewidth">脈寬</string>
+    <string name="trigger_overTime">超時</string>
+    <string name="triggervideo_linehead">掃描線</string>
+    <string name="triggervideo_linedetail">1</string>
+    <string name="triggeruart_datatitle">Data</string>
+    <string name="triggeruart_datadetail">56</string>
+    <string name="triggerslope_timehighhead">最大時間</string>
+    <string name="triggerslope_timelowhead">最小時間</string>
+    <string name="triggerrunt_timehigh">最大時間</string>
+    <string name="triggerrunt_timelow">最小時間</string>
+    <string name="triggerlogic_timehigh">最大時間</string>
+    <string name="triggerlogic_timelow">最小時間</string>
+    <string name="triggerpulsewidth_timehigh">最大時間</string>
+    <string name="triggerpulsewidth_timelow">最小時間</string>
+    <string name="triggernedge_time">時間</string>
+    <string name="triggernedge_edge">邊緣</string>
+    <string name="triggernedge_edgevalue">345</string>
+    <string name="settingoscillograph_saveas">儲存到</string>
+    <string name="settingfactory_pleasesure">請確定是否恢復出廠設定！</string>
+    <string name="settingfactory_sure">是</string>
+    <string name="settingcalibration_pleasesure">校正前請確保移除探棒！</string>
+    <string name="settingcalibration_sure">確定</string>
+    <string name="autosetting_levelhead">門限電平</string>
+    <string name="autosetting_leveldetail">10</string>
+    <string name="oscillograpg_storage">存儲</string>
+    <string name="oscillograpg_recovery">恢復</string>
+    <string name="measure_clear">清除</string>
+    <string name="measure_relationto">相對於</string>
+    <string name="sure">確定</string>
+    <string name="save_saveto">儲存到</string>
+    <string name="save_r1">R1</string>
+    <string name="save_r2">R2</string>
+    <string name="save_r3">R3</string>
+    <string name="save_r4">R4</string>
+    <string name="Information">信息</string>
+    <string name="dialogcount_title">N邊緣</string>
+    <string name="dialogcount_x1">1x</string>
+    <string name="dialogcount_x100">100x</string>
+    <string name="dialogcount_subtract">-</string>
+    <string name="dialogcount_add">+</string>
+    <string name="dialogmeasuredelay_head">Ch1</string>
+    <string name="dialogmeasurephase_head">Ch1</string>
+    <string name="dialogscale_head">邏輯</string>
+    <string name="dialogscale_show">9.00ms</string>
+    <string name="serialsUserDefine">自定義</string>
+    <string name="mainBottomScreenRecorderStart">開始錄製視頻:</string>
+    <string name="mainBottomScreenRecorderEnd">結束錄製視頻。</string>
+    <string name="mainBottomScreenShot">截圖成功:</string>
+    <string name="topSlipUsersetSaveRecoveryDefaultName">默認</string>
+    <string name="topSlipUsersetSaveRecoveryStorage">保存成功</string>
+    <string name="topSlipUsersetSaveRecoveryRecovery">恢復成功</string>
+    <string name="msgForGoHomeWhenLockScreen">當前觸摸功能為關閉狀態
+		\n要進入案頭則觸摸功能將打開
+		\n確認進入案頭請再次按”主頁”鍵
+		\n按其他鍵則返回
+	</string>
+    <string name="topBtn">上半部</string>
+    <string name="bottomBtn">下半部</string>
+    <string name="topZeroTitle">零點校準</string>
+    <string name="topADGainTitle">AD增益校準</string>
+    <string name="topADZeroTitle">AD零點校準</string>
+    <string name="centerChGain">通道增益校準（需接校準訊號）</string>
+    <string name="bottomZeroTitle">零點校準</string>
+    <string name="bottomOffsetTitle">偏移量係數校準</string>
+    <string name="bottomChDiffTitle">通道差异校準</string>
+    <string name="calibration">（已校準）</string>
+    <string name="unCalibration">（未校準）</string>
+    <string name="topSaveSaveInToast">沒有檢測到U盤</string>
+    <string name="dialogMsgExitToHome">確定退出到home頁面？</string>
+    <string name="dialogMsgInSlowTimeBase">切換滾屏模式，FFT將會退出！</string>
+    <string name="keyBoardMsgBeyond">超出可輸入限制</string>
+    <string name="msgClickFFTInRoll">滾屏模式下，不能設定為fft狀態！</string>
+    <string name="msgBatteryLow">電池電量過低，請連接轉接器！</string>
+    <string name="msgParameterLimited">參數限制！</string>
+    <string name="msgOpenMathInModeXY">XY模式下，不支持Math通道！</string>
+    <string name="msgSelfAdjustRun">自校準正在進行中……</string>
+    <string name="msgSelfAdjustSuccess">自校準成功！</string>
+    <string name="msgSelfAdjustFail">自校準失敗！錯誤代碼：%1$s</string>
+    <string name="msgTopSaveNameExisted">檔案名字%1$s已存在！</string>
+    <string name="msgTopSaveBinNoSupport">不支持保存該通道為bin數據！</string>
+    <string name="msgTopSaveBinSuccess">波形 %1$s 保存成功！</string>
+    <string name="msgTopSaveBinFailed">波形 %1$s 保存失敗！</string>
+    <string name="msgTopSaveCsvNotSelect" translatable="false">請先選擇要保存的通道!</string>
+    <string name="msgTopSaveCsvNotSpace" translatable="false">磁碟空間不足!</string>
+    <string name="serialsWordTitleS1">S1</string>
+    <string name="serialsWordTitleS2">S2</string>
+    <string name="serialsWordTitleS3">S3</string>
+    <string name="serialsWordTitleS4">S4</string>
+    <string name="serialsWordTitleS12">S1&amp;S2</string>
+    <string name="serialsWordClear">清零</string>
+    <string name="serialsWordTip">請先打開通道！</string>
+    <string name="serialsWordUartTitleBin">二進位</string>
+    <string name="serialsWordUartTitleHex">十六進位</string>
+    <string name="serialsWordUartTitleASCII">ASCII</string>
+    <string name="serialsWordUartTip">請先保持所选通道的設定相同</string>
+    <string name="serialsWordLinTitleCh">Ch</string>
+    <string name="serialsWordLinTitleTime">時間</string>
+    <string name="serialsWordLinTitleId">ID</string>
+    <string name="serialsWordLinTitleData">數據</string>
+    <string name="serialsWordLinTitleError">錯誤</string>
+    <string name="serialsWordLinTitleCheck">校驗</string>
+    <string name="serialsWordLinTitleTrigger">觸發</string>
+    <string name="serialsWordCanTitleCh">Ch</string>
+    <string name="serialsWordCanTitleTime">時間</string>
+    <string name="serialsWordCanTitleId">ID</string>
+    <string name="serialsWordCanTitleType">類型</string>
+    <string name="serialsWordCanTitleDlc">DLC</string>
+    <string name="serialsWordCanTitleData">數據</string>
+    <string name="serialsWordCanTitleCrc">CRC</string>
+    <string name="serialsWordCanTitleError">錯誤</string>
+    <string name="serialsWordCanTitleTrigger">觸發</string>
+    <string name="serialsWordSpiTitleCh">Ch</string>
+    <string name="serialsWordSpiTitleTime">時間</string>
+    <string name="serialsWordSpiTitleData">數據</string>
+    <string name="serialsWordSpiTitleTrigger">觸發</string>
+    <string name="serialsWordI2cTitleCh">Ch</string>
+    <string name="serialsWordI2cTitleTime">時間</string>
+    <string name="serialsWordI2cTitleAddr">地址</string>
+    <string name="serialsWordI2cTitleData">數據</string>
+    <string name="serialsWordI2cTitleConfirm">確認</string>
+    <string name="serialsWordI2cTitleTrigger">觸發</string>
+    <string name="serialsWordI2cTitleRestart">重啓</string>
+    <string name="serialsWordM429TitleCh">Ch</string>
+    <string name="serialsWordM429TitleTime">時間</string>
+    <string name="serialsWordM429TitleLabel">LABEL</string>
+    <string name="serialsWordM429TitleSdi">SDI</string>
+    <string name="serialsWordM429TitleData">數據</string>
+    <string name="serialsWordM429TitleSsm">SSM</string>
+    <string name="serialsWordM429TitleError">錯誤</string>
+    <string name="serialsWordM429TitleTrigger">觸發</string>
+    <string name="serialsWordM1553bTitleCh">Ch</string>
+    <string name="serialsWordM1553bTitleTime">時間</string>
+    <string name="serialsWordM1553bTitleType">類型</string>
+    <string name="serialsWordM1553bTitleRAdr">RAdr</string>
+    <string name="serialsWordM1553bTitleData">數據</string>
+    <string name="serialsWordM1553bTitleTrigger">觸發</string>
+    <string name="serialsWordM1553bTitleError">錯誤</string>
+    <string name="serialsWordUartMsg">TX FRAMES:%1$s\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tERR:%2$s(%3$s)</string>
+    <string name="serialsWordCanMsg">FRAMES:%1$s\t\t\t\t\t\t\t\t\t\t\t\tSPEC:%2$s\t\t\t\t\t\t\t\t\t\t\t\tERR FR:%3$s(%4$s)</string>
+    <string name="serialsWordM429Msg">WORDS:%1$s\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tERRORS:%2$s(%3$s)</string>
+
+    <string name="serialsWordUartMsgFrameTitle">TX幀數:</string>
+    <string name="serialsWordUartMsgErrorTitle">錯誤:</string>
+    <string name="serialsWordCanMsgTotalTitle">幀數:</string>
+    <string name="serialsWordCanMsgSpaceTitle">SPEC:</string>
+    <string name="serialsWordCanMsgErrorTitle">錯誤:</string>
+    <string name="serialsWordM429MsgFrameTitle">字數:</string>
+    <string name="serialsWordM429MsgErrorTitle">錯誤:</string>
+
+    <string name="rightMathMenuFftMeasure_DC">直流</string>
+    <string name="rightMathMenuFftMeasure_Freq">頻率</string>
+    <string name="rightMathMenuFftMeasure_Amp">幅值</string>
+    <string name="screenShotSuccess">截圖成功:</string>
+    <string name="saveRecoveryFileIsNotExist">文件不存在！加載默認配置!!</string>
+    <string name="rightMathAxbUnitTitle">單位</string>
+
+    <string name="msgNumberFormatException">輸入不合法</string>
+    <string name="mainCenterMenuAuto">自動\n設置</string>
+    <string name="mainCenterMenuRunStop">運行\n停止</string>
+    <string name="mainCenterMenuAutoRange">自動\n量程</string>
+    <string name="mainCenterMenuSEQ">單次\n觸發</string>
+    <string name="sysNoSupport">系統版本太低，無法支持此功能！</string>
+
+    <string name="settingWirelesskeyboard" >無線手柄</string>
+    <string name="probeRemoveSignal">請去掉被測信號.</string>
+    <string name="probeCalibrationSuccessful" >校準成功.</string>
+    <string name="probeCalibrationFailed">校準失敗.</string>
+    <string name="probeAbnormal" >探頭校準失敗，請檢查探頭連接信號后重新校準！</string>
+    <string name="probeSignalAbnormal" >請核對探頭輸入信號，重新校準！</string>
+
+    <string name="msgKeyBoardBatteryLow">無線手柄電池電量低，請連接充電線!</string>
+    <string name="msgMathAdvanceFormulaError">位置 %1$s 處的 %2$s 錯誤</string>
+    <string name="msgMathAdvanceFormulaNull">表達式不能為空</string>
+    <string name="mainCenterMenuZero">校零</string>
+    <string name="mainTopLeftStateNormal">正常</string>
+    <string name="serials">總線</string>
+    <string name="msgAutoZeroFailed">自動校零失敗</string>
+    <string name="msgAutoZeroSuccess">自動校零完成</string>
+    <string name="msgAutoZeroRunning">自動校零進行中</string>
+
+    <string name="channelProbeAlarmMsg1RangeOut">超出測量範圍！</string>
+    <string name="channelProbeAlarmMsg2BatteryLow">探頭電池電量低，請更換！</string>
+    <string name="channelProbeAlarmMsg3CommAbnormal">探頭通訊異常，請重新插拔探頭！</string>
+    <string name="channelProbeAlarmMsg4FiftySwitch">50Ω/1M 切換異常。</string>
+    <string name="channelProbeAlarmMsg5ConvHighTemp">電光轉換器高溫。</string>
+    <string name="channelProbeAlarmMsg6CompHighTemp">光電還原器高溫。</string>
+    <string name="channelProbeAlarmMsg7AcDcAbnormal">DC/AC切換異常。</string>
+    <string name="channelProbeAlarmMsgAreplaceBattery">請更換電池！</string>
+    <string name="channelProbeAlarmMsgBMismatch" >衰减棒与探头不匹配</string>
+    <string name="channelProbeAlarmMsgCAttenuator" >衰减棒错误</string>
+
+    <string name="dialog_measure_static_curr_value" translatable="false">當前值:</string>
+    <string name="dialog_measure_static_avg_value" translatable="false">平均值:</string>
+    <string name="dialog_measure_static_max_value" translatable="false">最大值:</string>
+    <string name="dialog_measure_static_min_value" translatable="false">最小值:</string>
+    <string name="dialog_measure_static_mean_var_value" translatable="false">均方差:</string>
+    <string name="dialog_measure_static_count_value" translatable="false">計 數:</string>
+
+    <string name="mathRefSerialsSlip_math" translatable="false">Math</string>
+    <string name="mathRefSerialsSlip_ref" translatable="false">Ref</string>
+    <string name="mathRefSerialsSlip_serials" translatable="false">總線</string>
+
+    <string name="mathRefSerialsSlip_display">顯示</string>
+    <string name="mathRefSerialsSlip_delete" translatable="false">删除</string>
+
+    <string name="mathRefSerials_can_not_add" translatable="false">請先删除已有通道！</string>
+    <string name="serials_can_not_add" translatable="false">未獲取到SerialChannel，請稍後再試！</string>
+    <string name="math_can_not_add" translatable="false">未獲取到MathChannel，請稍後再試！</string>
+    <string name="ref_can_not_add" translatable="false">未獲取到RefChannel，請稍後再試！</string>
+    <string name="serials_channel_already_max" translatable="false">已有串口通道達到最大！</string>
+    <string name="math_channel_already_max" translatable="false">已有數學通道達到最大！</string>
+    <string name="ref_channel_already_max" translatable="false">已有參攷通道達到最大！</string>
+
+    <string name="top_edge_external_trigger" translatable="false">外部</string>
+    <string name="top_user_auxout_trigger_tips" translatable="false">允許最大輸入電壓是5Vpp的正偏訊號，超出可能損壞示波器！</string>
+    <string name="top_user_auxout_clock_tips" translatable="false">是否等待外部時鐘輸入信號？</string>
+
+    <string name="select_ref_data_first" translatable="false">請先選擇Ref通道數據！</string>
+    <string name="all_ref_checked" translatable="false">參考通道已滿！</string>
+    <string name="dialog_no_ref_data_checked" translatable="false">沒有可添加的通道數據！</string>
+    <string name="file_load_fail" translatable="false">文件解析失敗！</string>
+
+    <string name="top_save_wave_directory" translatable="false">路徑</string>
+    <string name="top_save_browse" translatable="false">瀏覽</string>
+    <string name="top_save_file_name_add" translatable="false">文件名遞增</string>
+    <string name="top_slip_directory_save_to" translatable="false">請先選擇要保存的位置！</string>
+    <string name="top_slip_select_file_first" translatable="false">請先選擇文件！</string>
+    <string name="select_flie_not_exist" translatable="false">文件不存在！</string>
+    <string name="top_slip_save_invoke" translatable="false">調用</string>
+    <string name="top_slip_save_invoke_session" translatable="false">狀態</string>
+    <string name="top_slip_save_invoke_setting" translatable="false">設置</string>
+    <string name="top_slip_save_invoke_wave" translatable="false">波形</string>
+    <string name="top_slip_save_session_success" translatable="false">保存成功!</string>
+    <string name="top_slip_save_session_failed" translatable="false">保存失敗!</string>
+    <string name="top_slip_recovery_session_failed" translatable="false">恢復失敗!</string>
+    <string name="top_slip_recovery_session_success" translatable="false">恢復成功!</string>
+    <string name="top_slip_save_wave_path_unable" translatable="false">路徑失效!</string>
+    <string name="top_slip_save_file_exists" translatable="false">文件已存在，是否覆蓋？</string>
+    <string name="file_name_not_null">文件名不能爲空！</string>
+    <string name="no_storage_space" translatable="false">存儲空間不夠。</string>
+    <string name="storage_type_not_avaiable" translatable="false">文件過大，當前U盤格式不支持。</string>
+    <string name="file_not_support" translatable="false">此文件無法在當前型號上打開，請注意硬件版本。</string>
+
+    <string name="top_userset_time_base" translatable="false">水平位置</string>
+    <string name="ref_pahse_delay" translatable="false">相位延遲</string>
+
+</resources>

@@ -1,0 +1,38 @@
+#ifndef SCPI_CMD_DISP_H
+#define SCPI_CMD_DISP_H
+
+#include "../inc/scpi.h"
+
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
+scpi_result_t DISP_WAV(scpi_t * context);//������Ļ�в��ε���ʾ��ʽ
+scpi_result_t DISP_WAVQ(scpi_t * context);//��ѯ��Ļ�в��ε���ʾ��ʽ
+scpi_result_t DISP_BG(scpi_t * context);//������Ļ�в��ε���ʾ��ʽ
+scpi_result_t DISP_BGQ(scpi_t * context);//��ѯ��Ļ�в��ε���ʾ��ʽ
+scpi_result_t DISP_BRIG(scpi_t * context);//������Ļ�в�����ʾ������
+scpi_result_t DISP_BRIGQ(scpi_t * context);//��ѯ��Ļ�в�����ʾ������
+scpi_result_t DISP_GRAT(scpi_t * context);//������Ļ��ʾ����������
+scpi_result_t DISP_GRATQ(scpi_t * context);//��ѯ��Ļ��ʾ����������
+scpi_result_t DISP_INT(scpi_t * context);//������Ļ��������ʾ������
+scpi_result_t DISP_INTQ(scpi_t * context); //��ѯ��Ļ��������ʾ������
+scpi_result_t DISP_PERS_MODE(scpi_t * context);//���������ʾģʽ
+scpi_result_t DISP_PERS_MODEQ(scpi_t * context);//��ѯ�����ʾģʽ
+scpi_result_t DISP_PERS_ADJ(scpi_t * context); //���������ͨ��ʾģʽ�����ʱ��
+scpi_result_t DISP_PERS_ADJQ(scpi_t * context); //��ѯ�����ͨ��ʾģʽ�����ʱ��
+scpi_result_t DISP_PERS_CLE(scpi_t * context);//��������ʾ
+scpi_result_t DISP_HIGH(scpi_t * context);//��������رո�ˢ��
+scpi_result_t DISP_HIGHQ(scpi_t * context);//��ѯ��ˢ�´�������ر�
+scpi_result_t DISP_HORR(scpi_t * context); //������Ļˮƽչ������ģʽ
+scpi_result_t DISP_HORRQ(scpi_t * context);//��ѯ��Ļˮƽչ������ģʽ
+scpi_result_t DISP_ZOOM(scpi_t * context);//��������ر�ZOOM
+scpi_result_t DISP_ZOOMQ(scpi_t * context);//��ѯZOOM��������ر�
+scpi_result_t DISP_CCT(scpi_t * context);//��������ر�ZOOM
+scpi_result_t DISP_CCTQ(scpi_t * context);//��ѯZOOM��������ر�
+
+#ifdef  __cplusplus
+}
+#endif
+
+#endif // SCPI_CMD_DISP_H

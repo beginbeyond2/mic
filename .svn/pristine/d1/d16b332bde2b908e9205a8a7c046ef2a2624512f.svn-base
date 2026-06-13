@@ -1,0 +1,119 @@
+package com.micsig.tbook.scope.math;
+
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.channel.Channel;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.channel.MathChannel;
+import com.micsig.tbook.scope.vertical.VerticalAxis;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class MathExprWave extends MathDualWave {
+    private String exprString = "0";
+    private List<Integer> mathSources = new ArrayList<>();
+
+    public MathExprWave(MathChannel channel) {
+        super(MATH_EXPR, channel);
+    }
+
+    public synchronized void addSource(int chIdx) {
+        mathSources.add(chIdx);
+        mathChannel.chSampleChange();
+        mathChannel.forceRefresh();
+        sendEvent(EventFactory.EVENT_MATH_SOURCE,true);
+    }
+
+    public synchronized void clearSource() {
+        mathSources.clear();
+        mathChannel.chSampleChange();
+        mathChannel.forceRefresh();
+        sendEvent(EventFactory.EVENT_MATH_SOURCE,true);
+    }
+
+
+    public List<Integer> getMathSources() {
+        return mathSources;
+    }
+
+    public static MathExprError isExprValid(String exprString){
+        //Logger.d("isExprValid() called with: exprString = [" + exprString + "]");
+        return MathNative.mathExprValid(exprString);
+    }
+
+    public void setExprString(String exprString) {
+        //exprString = "!1";
+        MathExprError mathExprError = isExprValid(exprString);
+        if (mathExprError.isSuccess() && !this.exprString.equals(exprString)) {
+            this.exprString = exprString;
+            mathChannel.forceRefresh();
+            setExprChange(true);
+        }
+    }
+    private boolean bExprChange = true;
+    public void setExprChange(boolean bExprChange){
+        this.bExprChange = bExprChange;
+    }
+    public boolean isExprChange(){
+        return bExprChange;
+    }
+    private double var1 = 0;
+    private double var2 = 0;
+    public double getVar1() {
+        return var1;
+    }
+    public void setVar1(double var1) {
+        this.var1 = var1;
+    }
+
+    public double getVar2() {
+        return var2;
+    }
+
+    public void setVar2(double var2) {
+        this.var2 = var2;
+    }
+
+    public String getExprString() {
+        return this.exprString;
+    }
+
+    @Override
+    public synchronized boolean isChInSample(int chIdx) {
+        for (int i = 0; i < mathSources.size(); i++) {
+            if (mathSources.get(i).equals(chIdx)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public int generateProbeType() {
+        return VerticalAxis.PROBE_TYPE_CUSTOM;
+    }
+
+
+    @Override
+    public int getDefaultVScaleId() {
+        double _vScale = 0;
+        int chIdx = 0;
+        Channel src = null;
+        if(mathSources.size() > 0){
+            for(int i=0;i<mathSources.size();i++)
+            {
+                chIdx = mathSources.get(i);
+                src = ChannelFactory.getDynamicChannel(chIdx);
+                if(src != null){
+                    _vScale += src.getVScaleVal();
+                }
+            }
+        }else{
+            _vScale = 1;
+        }
+        return getVScaleVal(_vScale);
+    }
+    public int maxVal2VScaleId(double val){
+        return getVScaleVal(val);
+    }
+}

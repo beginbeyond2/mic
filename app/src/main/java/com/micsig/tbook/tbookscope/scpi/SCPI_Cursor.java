@@ -1,0 +1,179 @@
+package com.micsig.tbook.tbookscope.scpi;
+
+import com.micsig.base.Logger;
+import com.micsig.tbook.tbookscope.middleware.command.Command;
+
+/**
+ * Created by liwb on 2018/1/12.
+ */
+
+public class SCPI_Cursor {
+    private static final String TAG="SCPI_Cursor";
+//     new SCPICommandStruct(":CURSor:HORizontal","SCPI_Cursor","Horizontal"),//打开或关闭水平光标功能
+//            new SCPICommandStruct(":CURSor:HORizontal?","SCPI_Cursor","HorizontalQ"),//查询水平光标功能
+//            new SCPICommandStruct(":CURSor:VERTical","SCPI_Cursor","Vertical"),//打开或关闭垂直光标功能
+//            new SCPICommandStruct(":CURSor:VERTical?","SCPI_Cursor","VerticalQ"),//查询垂直光标功能
+//            new SCPICommandStruct(":CURSor:CX1","SCPI_Cursor","Cx1"),//设置垂直光标A的位置
+//            new SCPICommandStruct(":CURSor:PLUS:CXA","SCPI_Cursor","Plus_Cxa"),//设置垂直光标A的位置
+//            new SCPICommandStruct(":CURSor:CX1?","SCPI_Cursor","Cx1Q"),//查询垂直光标A的位置
+//            new SCPICommandStruct(":CURSor:CX2","SCPI_Cursor","Cx2"),//设置垂直光标B的位置
+//            new SCPICommandStruct(":CURSor:PLUS:CXB","SCPI_Cursor","Plus_Cxb"),//设置垂直光标B的位置
+//            new SCPICommandStruct(":CURSor:CX2?","SCPI_Cursor","Cx2Q"),//查询垂直光标B的位置
+//            new SCPICommandStruct(":CURSor:CY1","SCPI_Cursor","CY1"),//设置水平光标A的位置
+//            new SCPICommandStruct(":CURSor:PLUS:CYA","SCPI_Cursor","PLUS_CYA"),//设置水平光标A的位置
+//            new SCPICommandStruct(":CURSor:CY1?","SCPI_Cursor","CY1Q"),//查询水平光标A的位置
+//            new SCPICommandStruct(":CURSor:CY2","SCPI_Cursor","CY2"),//设置水平光标B的位置
+//            new SCPICommandStruct(":CURSor:PLUS:CYB","SCPI_Cursor","PLUS_CYB"),//设置水平光标B的位置
+//            new SCPICommandStruct(":CURSor:CY2?","SCPI_Cursor","CY2Q"),//查询水平光标B的位置
+//            new SCPICommandStruct(":CURSor:X1Value?","SCPI_Cursor","X1ValueQ"),//查询垂直光标A的X值
+//            new SCPICommandStruct(":CURSor:X2Value?","SCPI_Cursor","X2ValueQ"),//查询垂直光标B的X值
+//            new SCPICommandStruct(":CURSor:Y1Value?","SCPI_Cursor","Y1ValueQ"),//查询水平光标A的Y值
+//            new SCPICommandStruct(":CURSor:Y2Value?","SCPI_Cursor","Y2ValueQ"),//查询水平光标B的Y值
+//            new SCPICommandStruct(":CURSor:XDELta?","SCPI_Cursor","XdeltaQ"),//查询垂直光标A和B之间的差值，单位与水平单位相同
+//            new SCPICommandStruct(":CURSor:YDELta?","SCPI_Cursor","YdeltaQ"),//查询水平光标A和B之间的差值，单位与垂直单位相同
+//            new SCPICommandStruct(":CURSor:RATio?","SCPI_Cursor","RatioQ"),//查询水平光标A和B之间的差值与垂直光标A和B之间的差值之间的比值
+//            new SCPICommandStruct(":CURSor:SOURce","SCPI_Cursor","Source"),//设置光标测量的通道源
+//            new SCPICommandStruct(":CURSor:SOURce?","SCPI_Cursor","SourceQ"),//查询光标测量的通道源
+//            new SCPICommandStruct(":CURSor:FREQ?","SCPI_Cursor","FreqQ"),//查询垂直光标x1和x2之间的1/x，单位HZ
+
+    public static void Horizontal(SCPIParam param) {
+        Command.get().getCursor().Horizontal(param.bParam1, true);
+    }
+
+    public static String HorizontalQ(SCPIParam param) {
+        boolean b=Command.get().getCursor().HorizontalQ();
+        return ToolsSCPI.getOpenState(b);
+    }
+
+    public static void Vertical(SCPIParam param) {
+        Command.get().getCursor().Vertical(param.bParam1, true);
+    }
+
+    public static String VerticalQ(SCPIParam param) {
+        boolean b=Command.get().getCursor().VerticalQ();
+        return ToolsSCPI.getOpenState(b);
+    }
+
+    public static void Cx1(SCPIParam param) {
+        Command.get().getCursor().Cx1(param.iParam1, true);
+    }
+
+    public static void Plus_Cxa(SCPIParam param) {
+        Command.get().getCursor().Plus_Cxa(param.iParam1, true);
+    }
+
+    public static String Cx1Q(SCPIParam param) {
+        int i=Command.get().getCursor().Cx1Q();
+        return ToolsSCPI.getInt(i);
+    }
+
+    public static void Cx2(SCPIParam param) {
+        Command.get().getCursor().Cx2(param.iParam1, true);
+    }
+
+    public static void Plus_Cxb(SCPIParam param) {
+        Command.get().getCursor().Plus_Cxb(param.iParam1, true);
+    }
+
+    public static String Cx2Q(SCPIParam param) {
+        int i=Command.get().getCursor().Cx2Q();
+        return ToolsSCPI.getInt(i);
+    }
+
+    public static void CY1(SCPIParam param) {
+        Command.get().getCursor().CY1(param.iParam1, true);
+    }
+
+    public static void PLUS_CYA(SCPIParam param) {
+        Command.get().getCursor().PLUS_CYA(param.iParam1, true);
+    }
+
+    public static String CY1Q(SCPIParam param) {
+        int i = (int) Math.round(Command.get().getCursor().CY1Q());
+        return ToolsSCPI.getInt(i);
+    }
+
+    public static void CY2(SCPIParam param) {
+        Command.get().getCursor().CY2(param.iParam1, true);
+    }
+
+    public static void PLUS_CYB(SCPIParam param) {
+        Command.get().getCursor().PLUS_CYB(param.iParam1, true);
+    }
+
+    public static String CY2Q(SCPIParam param) {
+        int i= (int) Math.round(Command.get().getCursor().CY2Q());
+        return ToolsSCPI.getInt(i);
+    }
+
+    public static void X1Value(SCPIParam param) {
+        Command.get().getCursor().X1Value(param.dParam1, true);
+    }
+
+    public static void X2Value(SCPIParam param) {
+        Command.get().getCursor().X2Value(param.dParam1, true);
+    }
+
+    public static String X1ValueQ(SCPIParam param) {
+        double d=Command.get().getCursor().X1ValueQ();
+        return ToolsSCPI.getDouble(d);
+    }
+
+    public static String X2ValueQ(SCPIParam param) {
+        double d=Command.get().getCursor().X2ValueQ();
+        return ToolsSCPI.getDouble(d);
+    }
+    public static void Y1Value(SCPIParam param) {
+        Command.get().getCursor().Y1Value(param.dParam1, true);
+    }
+
+    public static void Y2Value(SCPIParam param) {
+        Command.get().getCursor().Y2Value(param.dParam1, true);
+    }
+    public static String Y1ValueQ(SCPIParam param) {
+        double d=Command.get().getCursor().Y1ValueQ();
+        return  ToolsSCPI.getDouble(d);
+    }
+
+    public static String Y2ValueQ(SCPIParam param) {
+        double d=Command.get().getCursor().Y2ValueQ();
+        return ToolsSCPI.getDouble(d);
+    }
+
+    public static String XdeltaQ(SCPIParam param) {
+        double d=Command.get().getCursor().XdeltaQ();
+        return ToolsSCPI.getDouble(d);
+    }
+
+    public static String YdeltaQ(SCPIParam param) {
+        double d=Command.get().getCursor().YdeltaQ();
+        return ToolsSCPI.getDouble(d);
+    }
+
+    public static String RatioQ(SCPIParam param) {
+        double d=Command.get().getCursor().RatioQ();
+        return ToolsSCPI.getDouble(d);
+    }
+
+    public static void Source(SCPIParam param) {
+        Logger.i(TAG,"scpi_source:"+param.iParam1);
+        Command.get().getCursor().Source(param.iParam1, true);
+    }
+
+    public static String SourceQ(SCPIParam param) {
+        int i=Command.get().getCursor().SourceQ();
+        return ToolsSCPI.getChAll(i);
+    }
+
+    public static String FreqQ(SCPIParam param) {
+        double d=Command.get().getCursor().FreqQ();
+        return ToolsSCPI.getDouble(d);
+    }
+    public static void Trace(SCPIParam param){
+        Command.get().getCursor().Trace(param.bParam1,true);
+    }
+    public static String TraceQ(SCPIParam param){
+        boolean b= Command.get().getCursor().TraceQ();
+        return ToolsSCPI.getOpenState(b);
+    }
+}

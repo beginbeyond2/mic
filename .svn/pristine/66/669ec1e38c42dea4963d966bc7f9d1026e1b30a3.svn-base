@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="topLayoutMeasure" type="id" />
+    <item name="topLayoutSave" type="id" />
+
+    <item name="layoutAutoSet" type="id" />
+    <item name="layoutAutoRange" type="id" />
+
+    <item name="triggerCommon" type="id" />
+    <item name="triggerEdge" type="id" />
+    <item name="triggerPulsewidth" type="id" />
+    <item name="triggerLogic" type="id" />
+    <item name="triggerNEdge" type="id" />
+    <item name="triggerRunt" type="id" />
+    <item name="triggerSlope" type="id" />
+    <item name="triggerTimeout" type="id" />
+    <item name="triggerVideo" type="id" />
+    <item name="triggerS1" type="id" />
+    <item name="triggerS2" type="id" />
+
+    <item name="displayCommon" type="id" />
+    <item name="displayWaveform" type="id" />
+    <item name="displayGraticule" type="id" />
+    <item name="displayPersist" type="id" />
+
+    <item name="usersetDepth" type="id" />
+    <item name="usersetFactoryReset" type="id" />
+    <item name="usersetSelfAdjust" type="id" />
+    <item name="usersetSaveRecovery" type="id" />
+
+    <item name="tag_view_tag" type="id" />
+    <item name="tag_view_index" type="id" />
+</resources>

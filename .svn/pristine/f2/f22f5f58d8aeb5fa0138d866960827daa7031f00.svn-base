@@ -1,0 +1,208 @@
+package com.micsig.tbook.scope.vertical;
+
+/**
+ * Created by Administrator on 2018/9/7.
+ */
+
+public class VerticalAxisMathDual extends VerticalAxis{
+
+    //_YDANG_CL_EX
+    public static final int DANG_DUAL_NONE    = -1;
+    public static final int DANG_DUAL_1FV     =  0;
+    public static final int DANG_DUAL_2FV     =  1;
+    public static final int DANG_DUAL_5FV     =  2;
+    public static final int DANG_DUAL_10FV    =  3;
+    public static final int DANG_DUAL_20FV    =  4;
+    public static final int DANG_DUAL_50FV    =  5;
+    public static final int DANG_DUAL_100FV   =  6;
+    public static final int DANG_DUAL_200FV   =  7;
+    public static final int DANG_DUAL_500FV   =  8;
+    public static final int DANG_DUAL_1PV     =  9;
+    public static final int DANG_DUAL_2PV     =  10;
+    public static final int DANG_DUAL_5PV     =  11;
+    public static final int DANG_DUAL_10PV    =  12;
+    public static final int DANG_DUAL_20PV    =  13;
+    public static final int DANG_DUAL_50PV    =  14;
+    public static final int DANG_DUAL_100PV   =  15;
+    public static final int DANG_DUAL_200PV   =  16;
+    public static final int DANG_DUAL_500PV   =  17;
+    public static final int DANG_DUAL_1NV     =  18;
+    public static final int DANG_DUAL_2NV     = 19;
+    public static final int DANG_DUAL_5NV     = 20;
+    public static final int DANG_DUAL_10NV    = 21;
+    public static final int DANG_DUAL_20NV    = 22;
+    public static final int DANG_DUAL_50NV    = 23;
+    public static final int DANG_DUAL_100NV   = 24;
+    public static final int DANG_DUAL_200NV   = 25;
+    public static final int DANG_DUAL_500NV   = 26;
+    public static final int DANG_DUAL_1UV     = 27;
+    public static final int DANG_DUAL_2UV     = 28;
+    public static final int DANG_DUAL_5UV     = 29;
+    public static final int DANG_DUAL_10UV    = 30;
+    public static final int DANG_DUAL_20UV    = 31;
+    public static final int DANG_DUAL_50UV    = 32;
+    public static final int DANG_DUAL_100UV   = 33;
+    public static final int DANG_DUAL_200UV   = 34;
+    public static final int DANG_DUAL_500UV   = 35;
+    public static final int DANG_DUAL_1mV     = 36;
+    public static final int DANG_DUAL_2mV     = 37;
+    public static final int DANG_DUAL_5mV     = 38;
+    public static final int DANG_DUAL_10mV    = 39;
+    public static final int DANG_DUAL_20mV    = 40;
+    public static final int DANG_DUAL_50mV    = 41;
+    public static final int DANG_DUAL_100mV   = 42;
+    public static final int DANG_DUAL_200mV   = 43;
+    public static final int DANG_DUAL_500mV   = 44;
+    public static final int DANG_DUAL_1V      = 45;
+    public static final int DANG_DUAL_2V      = 46;
+    public static final int DANG_DUAL_5V      = 47;
+    public static final int DANG_DUAL_10V     = 48;
+    public static final int DANG_DUAL_20V     = 49;
+    public static final int DANG_DUAL_50V     = 50;
+    public static final int DANG_DUAL_100V    = 51;
+    public static final int DANG_DUAL_200V    = 52;
+    public static final int DANG_DUAL_500V    = 53;
+    public static final int DANG_DUAL_1KV     = 54;
+    public static final int DANG_DUAL_2KV     = 55;
+    public static final int DANG_DUAL_5KV     = 56;
+    public static final int DANG_DUAL_10KV    = 57;
+    public static final int DANG_DUAL_20KV    = 58;
+    public static final int DANG_DUAL_50KV    = 59;
+    public static final int DANG_DUAL_100KV   = 60;
+    public static final int DANG_DUAL_200KV   = 61;
+    public static final int DANG_DUAL_500KV   = 62;
+    public static final int DANG_DUAL_1MV     = 63;
+    public static final int DANG_DUAL_2MV     = 64;
+    public static final int DANG_DUAL_5MV     = 65;
+    public static final int DANG_DUAL_10MV    = 66;
+    public static final int DANG_DUAL_20MV    = 67;
+    public static final int DANG_DUAL_50MV    = 68;
+    public static final int DANG_DUAL_100MV   = 69;
+    public static final int DANG_DUAL_200MV   = 70;
+    public static final int DANG_DUAL_500MV   = 71;
+    public static final int DANG_DUAL_1GV     = 72;
+    public static final int DANG_DUAL_2GV     = 73;
+    public static final int DANG_DUAL_5GV     = 74;
+    public static final int DANG_DUAL_10GV    = 75;
+    public static final int DANG_DUAL_20GV    = 76;
+    public static final int DANG_DUAL_50GV    = 77;
+    public static final int DANG_DUAL_100GV   = 78;
+    public static final int DANG_DUAL_200GV   = 79;
+    public static final int DANG_DUAL_500GV   = 80;
+    public static final int DANG_DUAL_1TV     = 81;
+    public static final int DANG_DUAL_2TV     = 82;
+    public static final int DANG_DUAL_5TV     = 83;
+    public static final int DANG_DUAL_10TV    = 84;
+    public static final int DANG_DUAL_20TV    = 85;
+    public static final int DANG_DUAL_50TV    = 86;
+    public static final int DANG_DUAL_100TV   = 87;
+    public static final int DANG_DUAL_200TV   = 88;
+    public static final int DANG_DUAL_500TV   = 89;
+    public static final int DANG_DUAL_MIN = DANG_DUAL_1FV;
+    public static final int DANG_DUAL_MAX = DANG_DUAL_500TV;
+    public static final int DANG_DUAL_CNT = DANG_DUAL_MAX-DANG_DUAL_MIN+1;
+
+
+    private static double scaleArray[] = {
+            1e-15, 2e-15,  5e-15,  10e-15, 20e-15, 50e-15, 100e-15,200e-15,500e-15,//fv
+            1e-12, 2e-12,  5e-12,  10e-12, 20e-12, 50e-12, 100e-12,200e-12,500e-12,//pv
+            1e-9,  2e-9,   5e-9,   10e-9,  20e-9,  50e-9,  100e-9, 200e-9, 500e-9, //nv
+            1e-6,  2e-6,   5e-6,   10e-6,  20e-6,  50e-6,  100e-6, 200e-6, 500e-6, //uv
+            1e-3,  2e-3,   5e-3,   10e-3,  20e-3,  50e-3,  100e-3, 200e-3, 500e-3, //mv
+            1,     2,      5,      10,     20,     50,     100,    200,    500,    //v
+            1e3,   2e3,    5e3,    10e3,   20e3,   50e3,   100e3,  200e3,  500e3,  //kV
+            1e6,   2e6,    5e6,    10e6,   20e6,   50e6,   100e6,  200e6,  500e6,  //MV
+            1e9,   2e9,    5e9,    10e9,   20e9,   50e9,   100e9,  200e9,  500e9,//GV
+            1e12,   2e12,    5e12,    10e12,   20e12,   50e12,   100e12,  200e12,  500e12,//TV
+    };
+    public static boolean isValidScaleId(int scaleId){
+        return (scaleId >= DANG_DUAL_MIN && scaleId <= DANG_DUAL_MAX);
+    }
+
+    private int scaleId = DANG_DUAL_1V;
+    private double fineScale = 1.0;
+
+    public VerticalAxisMathDual(){}
+
+    public VerticalAxisMathDual(int scaleId,float fine){
+        this.scaleId = scaleId;
+        this.fineScale = fine;
+    }
+
+    @Override
+    public void setScaleId(int scaleId){
+        if(isValidScaleId(scaleId))
+            this.scaleId = scaleId;
+    }
+    @Override
+    public void setFineScale(double fine) {
+        fineScale = fine;
+    }
+    @Override
+    public int getScaleId(){
+        return scaleId;
+    }
+    @Override
+    public double getFineScale() {
+        return fineScale;
+    }
+    @Override
+    public double getScaleVal(){
+        return getScaleIdVal() * getFineScale();
+    }
+    //主要用于数学双波形的档位扩展和查询
+    public static double getScaleIdValById(int scaleId){
+        if (scaleId < 0 || scaleId > scaleArray.length - 1) scaleId = 0;
+        return scaleArray[scaleId];
+    }
+    public static int getScaleIdByValue(double scaleIdVal){
+        int ret = DANG_DUAL_MAX;
+        for(int i=DANG_DUAL_MIN; i<DANG_DUAL_CNT; i++) {
+            if(scaleIdVal < (scaleArray[i]+scaleArray[i]*1e-3)) {
+                ret = i; break;
+            }
+        }
+        return ret;
+    }
+    public int getScaleVal(double _scale){
+        return getScaleIdByValue(_scale);
+    }
+    @Override
+    public double getScaleIdVal(){
+        return getScaleIdVal(scaleId);
+    }
+    @Override
+    public double getScaleIdVal(int id) {
+        return getScaleIdValById(id);
+    }
+
+    private boolean isValidScaleId(int scaleId, double scaleIdVal){
+        double val = getScaleIdVal(scaleId);
+        return scaleIdVal > (val - val / 10) && scaleIdVal < (val + val / 10);
+    }
+
+    private int findNearScale(int scaleId, double scaleIdVal) {
+        double valLeft = getScaleIdVal(scaleId);
+        double valRight = getScaleIdVal(scaleId + 1);
+        if (valLeft <= scaleIdVal && valRight >= scaleIdVal && Math.abs(valLeft - scaleIdVal) <= Math.abs(valRight - scaleIdVal)) {
+            return scaleId;
+        } else if (valLeft <= scaleIdVal && valRight >= scaleIdVal && Math.abs(valLeft - scaleIdVal) >= Math.abs(valRight - scaleIdVal)) {
+            return scaleId + 1;
+        } else {
+            return -1;
+        }
+    }
+
+    @Override
+    public int getScaleId(double scaleIdVal) {
+        for (int i = DANG_DUAL_MIN; i <= DANG_DUAL_CNT; i++) {
+            if (i < DANG_DUAL_CNT && findNearScale(i, scaleIdVal) != -1) {
+                return findNearScale(i, scaleIdVal);
+            } else if (isValidScaleId(i, scaleIdVal)) {
+                return i;
+            }
+        }
+        return DANG_DUAL_MIN;
+    }
+
+}

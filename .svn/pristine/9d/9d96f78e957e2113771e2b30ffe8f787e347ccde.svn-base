@@ -1,0 +1,18 @@
+package com.micsig.tbook.scope.fpga;
+
+import com.micsig.tbook.scope.Sample.Sample;
+
+/**
+ * Created by zhuzh on 2018/3/16.
+ */
+
+public class FPGAReg_PJBL_TIMES extends FPGAReg {
+    public FPGAReg_PJBL_TIMES() {
+        super(FPGAReg.FPGA_PJBL_TIMES,4);
+    }
+
+    @Override
+    public void onCommand() {
+        setVal(0,32, Sample.getInstance().getSampleNum());
+    }
+}

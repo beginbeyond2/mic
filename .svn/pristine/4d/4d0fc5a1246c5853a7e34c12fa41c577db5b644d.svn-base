@@ -1,0 +1,15 @@
+package com.micsig.tbook.scope.fpga;
+
+import android.util.Log;
+
+public class FPGAReg_CH_CAP_DA extends FPGAReg{
+
+    public FPGAReg_CH_CAP_DA(){
+        super(FPGA_CH_CAP_DA12,8);
+    }
+
+    public void setHigh(int chIdx,int val){
+        setVal(chIdx/2,(chIdx%2) *16,16,val);
+    }
+
+}

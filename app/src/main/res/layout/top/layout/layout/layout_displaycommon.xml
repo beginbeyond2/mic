@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/displayHorRef"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="33px"
+        app:headWidth="130px" />
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/displayTimebase"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="140px"
+        android:layout_toEndOf="@+id/displayHorRef"
+        app:headWidth="100px" />
+
+
+    <TextView
+        android:id="@+id/title_time_pos"
+        style="@style/textStyle"
+        android:layout_width="100px"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/displayTimebase"
+        android:layout_alignBottom="@id/displayTimebase"
+        android:layout_marginStart="140px"
+        android:layout_toEndOf="@+id/displayTimebase"
+        android:gravity="center|right"
+        android:text="@string/top_userset_time_base" />
+
+    <TextView
+        android:id="@+id/edit_time_pos"
+        style="@style/editTextStyle"
+        android:layout_width="120px"
+        android:layout_height="60px"
+        android:layout_alignTop="@+id/title_time_pos"
+        android:layout_alignBottom="@id/title_time_pos"
+        android:layout_marginStart="16px"
+        android:layout_toEndOf="@+id/title_time_pos"
+        android:gravity="center" />
+
+
+    <TextView
+        android:id="@+id/displayScaleTitle"
+        style="@style/textStyle"
+        android:layout_width="130px"
+        android:layout_height="60px"
+        android:layout_below="@+id/displayHorRef"
+        android:layout_alignParentLeft="true"
+        android:layout_marginStart="33px"
+        android:layout_marginTop="30px"
+        android:layout_marginRight="16px"
+        android:gravity="center_vertical|right"
+        android:text="@string/displayScale" />
+
+    <com.micsig.tbook.ui.MSwitchBox
+        android:id="@+id/displayScale"
+        android:layout_width="72px"
+        android:layout_height="36px"
+        android:layout_alignTop="@+id/displayScaleTitle"
+        android:layout_marginTop="10px"
+        android:layout_toEndOf="@+id/displayScaleTitle" />
+
+    <TextView
+        android:id="@+id/displayRollTitle"
+        style="@style/textStyle"
+        android:layout_width="80px"
+        android:layout_height="60px"
+        android:layout_alignTop="@+id/displayScale"
+        android:layout_alignBottom="@+id/displayScale"
+        android:layout_marginStart="328px"
+        android:layout_marginRight="16px"
+        android:layout_toEndOf="@+id/displayScale"
+        android:gravity="center_vertical|right"
+        android:text="@string/dispalyRoll" />
+
+    <com.micsig.tbook.ui.MSwitchBox
+        android:id="@+id/displayRoll"
+        android:layout_width="72px"
+        android:layout_height="36px"
+        android:layout_alignTop="@+id/displayRollTitle"
+        android:layout_toEndOf="@+id/displayRollTitle" />
+
+
+    <TextView
+        android:id="@+id/displayCCTTitle"
+        style="@style/textStyle"
+        android:layout_width="100px"
+        android:layout_height="60px"
+        android:layout_alignTop="@+id/displayRoll"
+        android:layout_alignBottom="@+id/displayRoll"
+        android:layout_marginStart="308px"
+        android:layout_marginRight="16px"
+        android:layout_toEndOf="@+id/displayRoll"
+        android:gravity="center_vertical|right"
+        android:text="@string/displayCCT" />
+
+    <com.micsig.tbook.ui.MSwitchBox
+        android:id="@+id/displayCCT"
+        android:layout_width="72px"
+        android:layout_height="36px"
+        android:layout_alignTop="@+id/displayCCTTitle"
+        android:layout_toEndOf="@+id/displayCCTTitle" />
+
+    <com.micsig.tbook.ui.top.view.TopViewSeekBar
+        android:id="@+id/transparency"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/displayCCT"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginStart="33px"
+        android:layout_marginTop="30px"
+        android:layout_marginEnd="350px"
+        android:visibility="gone"
+        app:headWidth="135px" />
+</RelativeLayout>

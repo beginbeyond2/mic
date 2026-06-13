@@ -1,0 +1,27 @@
+package com.micsig.tbook.scope.fpga;
+
+/**
+ * Created by zhuzh on 2018-4-8.
+ */
+
+public class FPGAReg_TRIG_COUPLE extends FPGAReg {
+    public FPGAReg_TRIG_COUPLE() {
+        super(FPGA_TRIG_COUPLE, 4);
+    }
+
+    public void setDC(int val){
+        setVal(0,1,val);
+    }
+    public void setAC(int val){
+        setVal(1,1,val);
+    }
+    public void setLow(int val){
+        setVal(2,1,val);
+    }
+    public void setHig(int val){
+        setVal(3,1,val);
+    }
+    public void setNoi(int val){
+        setVal(4,1,val);
+    }
+}

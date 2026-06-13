@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <com.micsig.tbook.ui.MTextView
+        android:id="@+id/rangeTitle"
+        style="@style/textStyle"
+        android:layout_width="120px"
+        android:layout_height="60px"
+        android:gravity="center_vertical|end"
+        android:text="@string/autoRangeRange"
+        android:layout_marginStart="15px"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <com.micsig.tbook.ui.MSwitchBox
+        android:id="@+id/rangeDetail"
+        android:layout_width="72px"
+        android:layout_height="36px"
+        android:layout_marginBottom="10px"
+        android:layout_marginStart="16px"
+        android:layout_alignBottom="@+id/rangeTitle"
+        android:layout_toEndOf="@+id/rangeTitle" />
+
+
+    <TextView
+        android:id="@+id/verticalTitle"
+        style="@style/textStyle"
+        android:layout_width="120px"
+        android:layout_height="60px"
+        android:gravity="center_vertical|end"
+        android:text="@string/autoRangeVertical"
+        android:layout_marginStart="100px"
+        android:layout_toEndOf="@+id/rangeDetail"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <com.micsig.tbook.ui.MSwitchBox
+        android:id="@+id/verticalDetail"
+        android:layout_width="72px"
+        android:layout_height="36px"
+        android:layout_marginBottom="10px"
+        android:layout_marginStart="16px"
+        android:layout_alignBottom="@+id/verticalTitle"
+        android:layout_toEndOf="@+id/verticalTitle" />
+
+
+    <TextView
+        android:id="@+id/horizontalTitle"
+        style="@style/textStyle"
+        android:layout_width="120px"
+        android:layout_height="60px"
+        android:layout_alignTop="@+id/verticalTitle"
+        android:layout_toEndOf="@+id/verticalDetail"
+        android:gravity="center_vertical|end"
+        android:text="@string/autoRangeHorizontal"
+        android:layout_marginStart="100px"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <com.micsig.tbook.ui.MSwitchBox
+        android:id="@+id/horizontalDetail"
+        android:layout_width="72px"
+        android:layout_height="36px"
+        android:layout_marginTop="10px"
+        android:layout_marginStart="16px"
+        android:layout_alignTop="@+id/verticalTitle"
+        android:layout_toEndOf="@+id/horizontalTitle" />
+
+
+    <TextView
+        android:id="@+id/levelTitle"
+        style="@style/textStyle"
+        android:layout_width="120px"
+        android:layout_height="60px"
+        android:layout_toEndOf="@+id/horizontalDetail"
+        android:layout_alignTop="@+id/verticalTitle"
+        android:gravity="center_vertical|end"
+        android:text="@string/autoRangeLevel"
+        android:layout_marginStart="100px"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <com.micsig.tbook.ui.MSwitchBox
+        android:id="@+id/levelDetail"
+        android:layout_width="72px"
+        android:layout_height="36px"
+        android:layout_marginTop="10px"
+        android:layout_marginStart="16px"
+        android:layout_alignTop="@+id/verticalTitle"
+        android:layout_toEndOf="@+id/levelTitle" />
+</RelativeLayout>

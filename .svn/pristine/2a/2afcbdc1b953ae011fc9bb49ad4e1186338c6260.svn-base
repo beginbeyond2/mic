@@ -1,0 +1,28 @@
+package com.micsig.tbook.scope.fpga;
+
+/**
+ * Created by zhuzh on 2018-4-8.
+ */
+
+public class FPGAReg_CH_Y_PLACE_BC extends FPGAReg {
+    public FPGAReg_CH_Y_PLACE_BC() {
+        super(FPGA_CH_Y_PLACE_BC, 8);
+    }
+    public void setChYBc(int idx,int val){
+        switch (idx){
+            case 0:
+                setVal(0,16,val);
+                break;
+            case 1:
+                setVal(16,16,val);
+                break;
+            case 2:
+                setVal(1,0,16,val);
+                break;
+            case 3:
+                setVal(1,16,16,val);
+                break;
+        }
+    }
+
+}

@@ -1,0 +1,217 @@
+apply plugin: 'com.android.application'
+
+//apply plugin: 'bugly'
+
+//bugly {
+//    debug = true
+//    appId = '89d7c931ea' // 注册时分配的App ID
+//    appKey = 'e3757b45-31b1-4782-ba93-5bd0f8b8d597' // 注册时分配的App Key
+//
+//}
+def getVersionCode() {
+    def versionFile = file('version.properties')
+    if (versionFile.canRead()) {
+        Properties versionProps = new Properties()
+        versionProps.load(new FileInputStream(versionFile))
+        def versionCode = versionProps['VERSION_CODE'].toInteger()
+        if(ci){
+            versionProps['VERSION_CODE'] = (++versionCode).toString()
+            versionProps.store(versionFile.newWriter(), null)
+        }
+        return versionCode
+    } else {
+        throw new GradleException("Could not find version.properties!")
+    }
+}
+
+android {
+    def currentVersionCode = getVersionCode()
+
+    compileSdkVersion 31
+    buildToolsVersion "30.0.3"
+    defaultConfig {
+        applicationId "com.micsig.tbook.tbookscope"
+        minSdkVersion 30
+        targetSdkVersion 31
+        versionCode currentVersionCode
+        versionName "1.0" + "." + currentVersionCode
+        renderscriptTargetApi 31
+        renderscriptSupportModeEnabled true
+
+        multiDexEnabled true
+        externalNativeBuild {
+            cmake {
+                cppFlags "-std=c++11"
+            }
+        }
+        ndk {
+
+            abiFilters 'arm64-v8a'
+            ldLibs "log"
+        }
+
+        buildConfigField("boolean", "APP_TESTING", "$testing")
+        buildConfigField("boolean", "APP_DEVELOP","$develop")
+    }
+
+    signingConfigs {
+        release {
+            storeFile file("../../sign/micsig.jks")
+            storePassword "micsig"
+            keyAlias "micsig"
+            keyPassword "micsig"
+            v1SigningEnabled true
+            v2SigningEnabled true
+        }
+        debug {
+            storeFile file("../../sign/micsig.jks")
+            storePassword "micsig"
+            keyAlias "micsig"
+            keyPassword "micsig"
+            v1SigningEnabled true
+            v2SigningEnabled true
+        }
+    }
+
+//    productFlavors{
+//        flavorDimensions ("scopeType")
+//        ETO{
+//            manifestPlaceholders = [SCOPE_ID:"9cd9e966-27a1-4e54-8ff4-c10e3692e633"]
+//            dimension "scopeType"
+//        }
+//        MDO{
+//            manifestPlaceholders = [SCOPE_ID:"e338b212-22cd-4018-be3c-47bd001b2416"]
+//            dimension "scopeType"
+//        }
+//    }
+
+    buildTypes {
+
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+//            if(ci){
+                signingConfig null
+//            }else{
+//                signingConfig signingConfigs.release
+//            }
+            buildConfigField "boolean","LOG_DEBUG","false"
+            manifestPlaceholders = [
+                    APP_NAME_MAIN: "@string/app_name"
+            ]
+
+        }
+        debug {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.debug
+            buildConfigField "boolean","LOG_DEBUG","true"
+            manifestPlaceholders = [
+                    APP_NAME_MAIN: "@string/app_name"
+            ]
+
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path "CMakeLists.txt"
+        }
+    }
+    sourceSets {
+
+        main {
+//            jni.srcDirs = []
+//            jniLibs.srcDir "src/main/libs"
+            res.srcDirs = [
+                    'src/main/res/drawable/loadpicture',
+                    'src/main/res/drawable/main_xml',
+                    'src/main/res/drawable/menu_right_picture',
+                    'src/main/res/drawable/menu_bottom_picture',
+                    'src/main/res/drawable/menu_top_picture',
+                    'src/main/res/drawable/menu_channel_picture',
+                    'src/main/res/drawable/menu_channel_math_picture',
+                    'src/main/res/drawable/menu_context',
+                    'src/main/res/drawable/menu_half',
+                    'src/main/res/drawable/rightslipmenu',
+                    'src/main/res/drawable/main',
+                    'src/main/res/drawable/main/maintop',
+                    'src/main/res/drawable',
+
+                    'src/main/res/values',
+
+                    'src/main/res/raw/sound',
+                    'src/main/res/raw/externalkeyupdateinfo',
+
+                    'src/main/res/layout/rightslipmenubar_quick/RadioGroup',
+                    'src/main/res/layout/rightslipmenubar_quick',
+                    'src/main/res/layout/main_screen',
+                    'src/main/res/layout/rightslipmenu',
+                    'src/main/res/layout/top',
+                    'src/main/res/layout/top/layout',
+                    'src/main/res/layout/top/popwindow',
+                    'src/main/res/layout/main',
+                    'src/main/res/layout/main/maintop',
+                    'src/main/res/layout',
+                    'src/main/res',
+            ]
+        }
+    }
+
+
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    configurations.all {
+        resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+            def requested = details.requested
+            if (requested.group == 'com.android.support') {
+                if (!requested.name.startsWith("multidex")) {
+                    details.useVersion '26.0.2'
+                }
+            }
+        }
+    }
+
+
+}
+
+dependencies {
+    //compile fileTree(include: ['*.jar'], dir: 'libs')
+
+    //    compile project(':ui')
+    //    compile project(':scope_permission')
+    //    compile project(':scope')
+    api project(path: ':canvasgl')
+    api project(path: ':ui')
+    api project(path: ':smartproperty')
+    api project(path: ':scope')
+
+    //    compile project(':LibraryManager:testlib')
+    //    debugCompile project(path: ':scope', configuration: 'debug')
+    implementation 'com.android.support.constraint:constraint-layout:2.0.4'
+    //RxJava的依赖包
+    implementation 'io.reactivex.rxjava3:rxandroid:3.0.0'
+    implementation project(':pathselector')
+    //RxAndroid的依赖包
+    implementation 'io.reactivex.rxjava3:rxjava:3.0.0'
+    implementation 'com.android.support:support-annotations:28.0.0'
+    implementation 'pl.droidsonroids.gif:android-gif-drawable:1.2.7'
+    implementation 'com.github.bumptech.glide:glide:3.7.0'
+
+    implementation 'com.github.getActivity:XXPermissions:18.0'
+    implementation project(':pathselector')
+
+//    compileOnly files('libs/framework.jar')
+//    debugCompile 'com.squareup.leakcanary:leakcanary-android:1.5.1'
+//    releaseCompile 'com.squareup.leakcanary:leakcanary-android-no-op:1.5.1'
+    implementation 'com.google.code.gson:gson:2.8.9'
+
+//    compile 'com.tencent.bugly:crashreport:latest.release' //其中latest.release指代最新Bugly SDK版本号，也可以指定明确的版本号，例如2.2.0
+//    compile 'com.tencent.bugly:nativecrashreport:latest.release'
+    implementation 'com.alibaba:fastjson:2.0.28'
+    implementation 'androidx.recyclerview:recyclerview:1.2.1'
+    implementation 'androidx.appcompat:appcompat:1.0.0'
+}

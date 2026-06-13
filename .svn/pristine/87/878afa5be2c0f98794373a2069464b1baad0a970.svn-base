@@ -1,0 +1,86 @@
+package com.micsig.tbook.scope.fpga;
+
+/**
+ * Created by zhuzh on 2018/3/21.
+ */
+
+public class FPGAReg_DISP_PLACE_MAIN extends FPGAReg {
+    public FPGAReg_DISP_PLACE_MAIN() {
+        super(FPGAReg.FPGA_DISP_PLACE_MAIN,32);
+    }
+    public int getPlace(){
+        return getVal(0);
+    }
+    public void setPlace(int val){
+        setVal(0,val);
+    }
+
+    public void setXiaoShu(int val){
+        setVal(1,0,8,val);
+    }
+    public void setNumsPerLie1(int val){
+        setVal(2,val);
+    }
+    public int getNumsPerLie2(){
+        return getVal(3);
+    }
+    public void setNumsPerLie2(int val){
+        setVal(3,val);
+    }
+
+    public void setDaoShuLieNum(int val){
+        //setVal(4,val);
+    }
+
+    public void setLastLen(int val){
+        setVal(4,val);
+    }
+    public void setLen(int val){
+        setVal(5,val);
+    }
+//    public int getNumCouY(){
+//        return getVal(6) & 0x7F;
+//    }
+//    public int getNeedCouY(){
+//        return (getVal(6) >> 15) & 0x01;
+//    }
+//    public void setNumCouY(int val){
+//        setVal(6,0,15,val);
+//    }
+//    public void setNeedCouY(int val){
+//        setVal(6,15,1,val);
+//    }
+    int NumCouY = 0;
+    int NeedCouY = 0;
+    public void setNumCouY(int val){
+        NumCouY = val;
+    }
+    public int getNumCouY(){
+        return NumCouY;
+    }
+    public void setNeedCouY(int val){
+        NeedCouY = val;
+    }
+    public int getNeedCouY(){
+        return NeedCouY;
+    }
+    public void setLastXStart(int val){
+        setVal(6,0,16,val);
+    }
+    public void setLastXEnd(int val){
+        setVal(6,16,16,val);
+    }
+    public void setXStart(int val){
+        setVal(7,0,16,val);
+    }
+    public int getXStart(){
+        return getVal(7) & 0xFFFF;
+    }
+    public void setXEnd(int val){
+        setVal(7,16,16,val);
+    }
+    public int getXEnd(){
+        return (getVal(7) >>> 16) & 0xFFFF;
+    }
+
+}

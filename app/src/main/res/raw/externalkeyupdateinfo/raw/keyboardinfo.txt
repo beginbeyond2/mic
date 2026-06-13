@@ -1,0 +1,1 @@
+{"hardwareVersion":"2","softwareVersion":"11"}                                                  

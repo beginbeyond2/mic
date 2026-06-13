@@ -1,0 +1,1549 @@
+package com.micsig.tbook.tbookscope.wavezone.wave;
+
+
+import android.graphics.Rect;
+import android.os.Handler;
+import android.os.Message;
+import android.util.Log;
+
+import com.chillingvan.canvasgl.ICanvasGL;
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.Bus.IBus;
+import com.micsig.tbook.scope.Display.DisplayXYService;
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.Event.EventUIObserver;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.Trigger.Trigger;
+import com.micsig.tbook.scope.Trigger.TriggerFactory;
+import com.micsig.tbook.scope.Trigger.TriggerLevel;
+import com.micsig.tbook.scope.channel.Channel;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.channel.MathChannel;
+import com.micsig.tbook.scope.channel.RefChannel;
+import com.micsig.tbook.scope.channel.SerialChannel;
+import com.micsig.tbook.scope.math.MathDualWave;
+import com.micsig.tbook.scope.math.MathExprWave;
+import com.micsig.tbook.scope.math.MathFFTWave;
+import com.micsig.tbook.scope.surface.PreviewTextureView;
+import com.micsig.tbook.tbookscope.GlobalVar;
+import com.micsig.tbook.tbookscope.LoadCache;
+import com.micsig.tbook.tbookscope.MainViewGroup;
+import com.micsig.tbook.tbookscope.R;
+import com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelBranch;
+import com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannelMaster;
+import com.micsig.tbook.tbookscope.middleware.Tag;
+import com.micsig.tbook.tbookscope.middleware.command.Command;
+import com.micsig.tbook.tbookscope.rightslipmenu.serials.RightLayoutSerials;
+import com.micsig.tbook.tbookscope.rightslipmenu.serials.RightMsgSerials;
+import com.micsig.tbook.tbookscope.rxjava.RxBus;
+import com.micsig.tbook.tbookscope.rxjava.RxEnum;
+import com.micsig.tbook.tbookscope.tools.Tools;
+import com.micsig.tbook.tbookscope.util.CacheUtil;
+import com.micsig.tbook.tbookscope.wavezone.IWorkMode;
+import com.micsig.tbook.tbookscope.wavezone.WorkModeBean;
+import com.micsig.tbook.tbookscope.wavezone.WorkModeManage;
+import com.micsig.tbook.tbookscope.wavezone.display.CursorManage;
+import com.micsig.tbook.tbookscope.wavezone.display.WaveGridManage;
+import com.micsig.tbook.tbookscope.wavezone.display.WaveMaskLayer_YTZoom;
+import com.micsig.tbook.tbookscope.wavezone.trigger.ITriggerLine;
+import com.micsig.tbook.tbookscope.wavezone.trigger.VoltageLineManage;
+import com.micsig.tbook.ui.main.LeftPositionView;
+import com.micsig.tbook.ui.util.TBookUtil;
+import com.micsig.tbook.ui.wavezone.IWave;
+import com.micsig.tbook.ui.wavezone.TChan;
+
+import io.reactivex.rxjava3.functions.Consumer;
+
+
+/**
+ * Created by liwb on 2017/11/7.
+ * 波形管理是管理，YT模式与XY模式，YT模式包括：YT与YTZOOM
+ */
+
+public class WaveManage implements IWorkMode, IWaveManage {
+    private static final String TAG = "WaveManage";
+
+    //region 单例
+    private static final class WaveManageHolder {
+        public static final WaveManage instance = new WaveManage();
+    }
+
+    public static WaveManage get() {
+        return WaveManageHolder.instance;
+    }
+    //endregion
+
+    private WaveManage_XY waveManage_xy;
+    private WaveManage_YT waveManage_yt;
+    private MainViewGroup mainViewGroup;
+
+    private WaveManage() {
+        waveManage_xy = new WaveManage_XY(onMovingWaveEvent, onSelectChangeEvent);
+        waveManage_yt = new WaveManage_YT(onMovingWaveEvent, onSelectChangeEvent);
+        RxBus.getInstance().getObservable(RxEnum.MAIN_LOAD_CACHE).subscribe(consumerLoadCache);
+        RxBus.getInstance().getObservable(RxEnum.MAIN_LOAD_CACHE_EX).subscribe(consumerLoadCacheEx);
+        RxBus.getInstance().getObservable(RxEnum.WAVEZONE_WORKMODE_CHANGE).subscribe(consumerWorkModeChange);
+        RxBus.getInstance().getObservable(RxEnum.RIGHTLAYOUT_SERIALS).subscribe(consumerRightSerials);
+        EventFactory.addEventObserver(EventFactory.EVENT_CHANNEL_POS, eventUIObserver);
+        EventFactory.addEventObserver(EventFactory.EVENT_MATH_VPOS, eventUIObserver);
+        EventFactory.addEventObserver(EventFactory.EVENT_REF_VPOS, eventUIObserver);
+        EventFactory.addEventObserver(EventFactory.EVENT_WAVE_LABEL_SELECT,eventUIObserver);
+        EventFactory.addEventObserver(EventFactory.EVENT_WAVE_LABEL_MOVE, eventUIObserver);
+
+    }
+
+    private Consumer<RightMsgSerials> consumerRightSerials = new Consumer<RightMsgSerials>() {
+
+        @Override
+        public void accept(RightMsgSerials rightMsgSerials) throws Exception {
+            if(!rightMsgSerials.isFromEventBus()) {
+                ChannelFactory.forEachCh(channel -> {
+                    changeSerialTrigVol_channel(channel.getChId());
+                });
+            }
+        }
+    };
+
+    public void setWaveTextureView(PreviewTextureView waveTextureView) {
+        waveManage_yt.setWaveTextureView(waveTextureView);
+    }
+
+    /**
+     * 设置点选功能使能
+     */
+    public void setClickSelectEnable(boolean clickSelectEnable) {
+        waveManage_yt.setClickSelectEnable(clickSelectEnable);
+    }
+
+    public void setWaveChange(int height) {
+        WaveMaskLayer_YTZoom.getInstance().changeZoomH(height >> 2);
+        waveManage_yt.setWaveChange(height);
+//        waveManage_xy.setWaveChange(height);
+        TChan.foreachChan(this::setOffset);
+        TChan.foreachRef(this::setRefOffset);
+        TChan.foreachMath(this::setMathOffset);
+
+    }
+
+    public void changeChannelColor(int chIndex, String colorStr) {
+        waveManage_yt.changeColor(chIndex, colorStr);
+
+    }
+
+    public void init(MainViewGroup mainViewGroup) {
+        this.mainViewGroup = mainViewGroup;
+    }
+
+    private Consumer<LoadCache> consumerLoadCache = new Consumer<LoadCache>() {
+        @Override
+        public void accept(LoadCache loadCache) throws Exception {
+            setCache();
+            CacheUtil.get().setLoadMenuState(CacheUtil.LOAD_WaveManage, true);
+        }
+    };
+
+    private Consumer<LoadCache> consumerLoadCacheEx = new Consumer<LoadCache>() {
+        @Override
+        public void accept(LoadCache loadCache) throws Exception {
+            setCache();
+            TChan.foreachChan(chan -> {
+                setOffset(chan);
+            });
+            TChan.foreachRef(refChan -> {
+                setRefOffset(refChan);
+            });
+            TChan.foreachMath(mathChan -> {
+                setMathOffset(mathChan);
+            });
+        }
+    };
+
+    private void setCache() {
+
+        int curWorkMode = WorkModeManage.getInstance().getmWorkMode();
+        if(curWorkMode != IWorkMode.WorkMode_XY) {
+            TChan.foreachChan((chNo)->{
+                Channel ch = ChannelFactory.getDynamicChannel(TChan.toFpgaChNo(chNo));
+                if (ch != null) {
+                    int val = Scope.vSpanOfView(ch.getResistanceType(),ch.getVScaleVal() / ch.getProbeRate());
+                    ch.setVRange(-val, val);
+                }
+
+            });
+            TChan.foreachRef((chan)->{
+                setPositionY(chan, Tools.getYTChannelPositionUI(chan));
+            });
+            TChan.foreachChan((chNo)->{
+                Channel ch = ChannelFactory.getDynamicChannel(TChan.toFpgaChNo(chNo));
+                if (ch!=null){
+                    ch.setPos(Tools.getYTChannelPosition(chNo));
+                }
+                setPositionY(chNo,Tools.getYTChannelPositionUI(chNo));
+            });
+            TChan.foreachMath((mathNo)->{
+                MathChannel math = ChannelFactory.getMathChannel(TChan.toFpgaChNo(mathNo));
+                if (math!=null && math.getPosUI()!=Tools.getYTChannelPosition(mathNo)){
+                    math.setPos(Tools.getYTChannelPosition(mathNo));
+                }
+                setPositionY(mathNo,Tools.getYTChannelPositionUI(mathNo));
+            });
+            TChan.foreachRef((refNo)->{
+                RefChannel ref = ChannelFactory.getRefChannel(TChan.toFpgaChNo(refNo));
+                if (ref!=null){
+                    ref.setPos(Tools.getYTChannelPosition(refNo));
+                }
+            });
+        }
+
+        WorkModeManage.getInstance().setWorkModeOnlyChangeData(WorkMode_XY);
+        waveManage_xy.setPositionY(TChan.Ch1, CacheUtil.get().getDouble(CacheUtil.MAIN_WAVE_CH_XY_POSITION + TChan.Ch1));
+        DisplayXYService.getInstance().setX(ScopeBase.getXYWidth() / 2 - (int) waveManage_xy.getPositionY(TChan.Ch1));
+        waveManage_xy.setPositionY(TChan.Ch2, CacheUtil.get().getDouble(CacheUtil.MAIN_WAVE_CH_XY_POSITION + TChan.Ch2));
+        DisplayXYService.getInstance().setY(ScopeBase.getXYWidth() / 2 - (int) waveManage_xy.getPositionY(TChan.Ch2));
+        WorkModeManage.getInstance().setWorkModeOnlyChangeData(curWorkMode);
+    }
+
+    private void setMathWaveVScaleId(int mathChan) {
+        int mathType = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_MATH_TYPE + mathChan);
+        MathChannel mathChannel = ChannelFactory.getMathChannel(TChan.toFpgaChNo(mathChan));
+        if (mathChannel == null) return;
+        if (mathType == CacheUtil.MATHTYPE_AXB) {
+            MathExprWave exprWave = mathChannel.getMathExprWave();
+            exprWave.setVScaleId(CacheUtil.get().getInt(CacheUtil.MAIN_RIGHT_MATH_AXB_VSCALE_ID + mathChan));
+        } else if (mathType == CacheUtil.MATHTYPE_DW) {
+            MathDualWave dualWave = mathChannel.getMathDualWave();
+            dualWave.setVScaleId(CacheUtil.get().getInt(CacheUtil.MAIN_RIGHT_MATH_DW_VSCALE_ID + mathChan));
+        } else if (mathType == CacheUtil.MATHTYPE_AM) {
+            MathExprWave exprWave = mathChannel.getMathExprWave();
+            exprWave.setVScaleId(CacheUtil.get().getInt(CacheUtil.MAIN_RIGHT_MATH_AM_VSCALE_ID + mathChan));
+        } else {
+            if (CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_MATH_FFT_TYPE_ID + mathChan) == 1) {
+                MathFFTWave mathFFTWave = mathChannel.getMathFFTWave();
+                mathFFTWave.setVScaleId(CacheUtil.get().getInt(CacheUtil.MAIN_RIGHT_MATH_FFT_DB_VSCALE_ID + mathChan));
+            } else {
+                MathFFTWave mathFFTWave = mathChannel.getMathFFTWave();
+                mathFFTWave.setVScaleId(CacheUtil.get().getInt(CacheUtil.MAIN_RIGHT_MATH_FFT_RMS_VSCALE_ID + mathChan));
+            }
+        }
+    }
+
+    private Consumer<WorkModeBean> consumerWorkModeChange = new Consumer<WorkModeBean>() {
+        @Override
+        public void accept(WorkModeBean workModeBean) throws Exception {
+            switch (workModeBean.getNextWorkMode()) {
+                case IWorkMode.WorkMode_YT:
+                case IWorkMode.WorkMode_YTZOOM:
+                    waveManage_yt.refresh();
+                    WaveGridManage.getInstance().refresh();
+                    TChan.foreachChan(chan -> setOffset(chan));
+                    TChan.foreachRef(refChan -> setRefOffset(refChan));
+                    TChan.foreachMath(mathChan -> setMathOffset(mathChan));
+                    break;
+            }
+        }
+    };
+
+    private boolean isSelectLabel = false;
+    private int labelSelectChan = -1;
+    private int isLabelTouchX = -1;//Label点击位置
+    private int labelTouchLeft;//开始点击时的Label左边界
+
+    private EventUIObserver eventUIObserver = new EventUIObserver() {
+        @Override
+        public void update(Object data) {
+            EventBase eventBase = (EventBase) data;
+            int id = eventBase.getId();
+            if (id == EventFactory.EVENT_CHANNEL_POS) {
+                for (int i = ChannelFactory.CH1; i < ChannelFactory.CH_CNT; i++) {
+//                    if (!ChannelFactory.isChOpen(i)) continue;
+                    Channel channel = ChannelFactory.getDynamicChannel(i);
+                    if (channel == null) continue;
+                    double y = ScopeBase.getNewHeight() / 2.0 - channel.getPosUI();
+                    y = Tools.YT2Zoom(y);
+//                    Log.d(Tag.Debug, String.format("WaveManage.update CHAN newHeight:%s,PosUI:%s,y:%s,channel:%s", ScopeBase.getNewHeight(), channel.getPosUI(), y, channel.getName()));
+//                    Log.d(Tag.Debug, String.format("WaveManage.update: %s,%s",y,getPositionY(TChan.toUiChNo(i)) ));
+                    if (y != getPositionY(TChan.toUiChNo(i))) {
+                        setPositionYFromEventBus(TChan.toUiChNo(i), y);
+                    }
+                }
+            } else if (id == EventFactory.EVENT_MATH_VPOS) {
+//                int chIdx = (int) eventBase.getData();
+//                if (ChannelFactory.isChOpen(chIdx)) {
+                TChan.foreachMath(mathCh -> {
+                    MathChannel mathChannel = ChannelFactory.getMathChannel(TChan.toFpgaChNo(mathCh));
+                    if (mathChannel != null) {
+                        double y = ScopeBase.getNewHeight() / 2.0 - mathChannel.getPosUI();
+                        y = Tools.YT2Zoom(y);
+//                        Log.d(Tag.Debug, String.format("WaveManage.update newHeight:%s,PosUI:%s,y:%s,channel:%s\"", ScopeBase.getNewHeight(), mathChannel.getPosUI(), y, mathChannel.getName()));
+                        if (y != getPositionY(mathCh)) {
+                            setPositionYFromEventBus(mathCh, y);
+                        }
+                    }
+                });
+//                }
+            } else if (id == EventFactory.EVENT_REF_VPOS) {
+                TChan.foreachRef((ref)->{
+                    int fpgaRef=TChan.toFpgaChNo(ref);
+//                    if (ChannelFactory.isChOpen(fpgaRef)) {
+                        double y = ScopeBase.getNewHeight() / 2.0 - ChannelFactory.getRefChannel(fpgaRef).getPosUI();
+                        y = Tools.YT2Zoom(y);
+                        if (y != getPositionY(ref)) {
+                            setPositionYFromEventBus(ref, y);
+                        }
+//                    }
+                });
+            } else if (id == EventFactory.EVENT_WAVE_LABEL_SELECT) {//点击选中label
+                String point = (String) eventBase.getData();
+                String[] temp = point.split(";");
+                isSelectLabel = waveManage_yt.isLabelContains(Integer.parseInt(temp[0]), Integer.parseInt(temp[1]));
+                labelSelectChan = waveManage_yt.getLabelSelectChan();
+                isLabelTouchX = Integer.parseInt(temp[0]);
+                labelTouchLeft = waveManage_yt.getLabelRect(labelSelectChan).left;
+                Logger.i("WaveManage touch x= " + Integer.parseInt(temp[0]) + " ,y= " + Integer.parseInt(temp[1]) + " ,isLabelContains= " + isSelectLabel);
+            } else if (id == EventFactory.EVENT_WAVE_LABEL_MOVE) {//左右滑动label
+                String point = (String) eventBase.getData();
+                String[] temp = point.split(";");
+                if (isSelectLabel && isLabelTouchX != Integer.parseInt(temp[0])) {
+                    Logger.i("WaveManage move deltaX= " + (Integer.parseInt(temp[0]) - isLabelTouchX) + " ,labelRect.left= " + labelTouchLeft + " ,isLabelTouchX= " + isLabelTouchX);
+                    waveManage_yt.changeLabelPos(labelSelectChan, labelTouchLeft + Integer.parseInt(temp[0]) - isLabelTouchX);
+                }
+            }
+        }
+    };
+
+    MainRightLayoutItemChannelBranch ch1Branch, ch2Branch, ch3Branch, ch4Branch, mathBranch, refBranch, s1Branch, s2Branch;
+    MainRightLayoutItemChannelMaster ch1Master, ch2Master, ch3Master, ch4Master,ch5Master,ch6Master,ch7Master,ch8Master;
+    MainRightLayoutItemChannelMaster ref1Master, ref2Master, ref3Master, ref4Master, ref5Master, ref6Master, ref7Master, ref8Master;
+    MainRightLayoutItemChannelMaster math1Master, math2Master, math3Master, math4Master, math5Master, math6Master, math7Master, math8Master;
+
+    LeftPositionView leftPositionView;
+
+    private IWave.OnMovingWaveEvent onMovingWaveEvent = new IWave.OnMovingWaveEvent() {
+        @Override
+        public void OnMovingWave(IWave iWave, long x, double y, boolean isSwitchWorkMode, boolean isFromEventBus) {
+
+            switch (WorkModeManage.getInstance().getmWorkMode()) {
+                case IWorkMode.WorkMode_XY: {
+                    switch (iWave.getLineNameID()) {
+                        case TChan.Ch1:
+                        case TChan.Ch3:
+                        case TChan.Ch5:
+                        case TChan.Ch7:
+                            if (!isFromEventBus) {
+                                DisplayXYService.getInstance().setX(ScopeBase.getXYWidth() / 2 - (int) x);
+                            }
+                            CacheUtil.get().putMap(CacheUtil.MAIN_WAVE_CH_XY_POSITION + iWave.getLineNameID(), String.valueOf(x));
+                            break;
+                        case TChan.Ch2:
+                        case TChan.Ch4:
+                        case TChan.Ch6:
+                        case TChan.Ch8:
+                            if (!isFromEventBus) {
+                                DisplayXYService.getInstance().setY(ScopeBase.getXYHeight() / 2 - (int) Math.round(y));
+                            }
+                            CacheUtil.get().putMap(CacheUtil.MAIN_WAVE_CH_XY_POSITION + iWave.getLineNameID(), String.valueOf(y));
+                            break;
+//                        case IWave.Ch3:
+//                            if (!isFromEventBus) {
+//                                DisplayXYService.getInstance().setX(ScopeBase.getXYWidth() / 2 - (int) x);
+//                            }
+//                            CacheUtil.get().putMap(CacheUtil.MAIN_WAVE_CH_XY_POSITION + iWave.getLineNameID(), String.valueOf(x));
+//                            break;
+//                        case IWave.Ch4:
+//                            if (!isFromEventBus) {
+//                                DisplayXYService.getInstance().setY(ScopeBase.getXYHeight() / 2 - y);
+//                            }
+//                            CacheUtil.get().putMap(CacheUtil.MAIN_WAVE_CH_XY_POSITION + iWave.getLineNameID(), String.valueOf(y));
+//                            break;
+                    }
+                    if (!isSwitchWorkMode) {
+                        CursorManage.getInstance().curChannelMove();
+                    }
+                }
+                break;
+                case IWorkMode.WorkMode_YT:
+                case IWorkMode.WorkMode_YTZOOM:
+                    if (leftPositionView == null) {
+                        leftPositionView = (LeftPositionView) mainViewGroup.findViewById(R.id.leftPositionView);
+                    }
+                    int chIdx = iWave.getLineNameID();
+                    Command.get().getChannel().setPosition(chIdx - 1, y);
+                    Tools.putChannelPosition(chIdx, y);//这里是保存的像素位置
+                    y = Tools.getYTChannelPosition(chIdx);//转换为正负偏移量
+                    int idx = chIdx -1;
+                    if(ChannelFactory.isDynamicCh(idx)){
+                        if (!isFromEventBus) {
+                            Channel channel = ChannelFactory.getDynamicChannel(idx);
+                            if (channel != null) {
+                                channel.setPos(y, true);
+                            }
+                        }
+                        setOffset(chIdx);
+                    }else if(ChannelFactory.isMathCh(idx)){
+                        if (!isFromEventBus) {
+                            MathChannel mathChannel = ChannelFactory.getMathChannel(idx);
+                            if(mathChannel != null){
+                                if (mathChannel.getPosUI() != y) {
+                                    mathChannel.setPos(y);
+                                }
+                            }
+                        }
+//                        if (mathBranch == null) {
+//                            mathBranch = (MainRightLayoutItemChannelBranch) mainViewGroup.findViewById(R.id.rightMathBranch);
+//                        }
+                        setMathOffset(TChan.toUiChNo(idx));
+                    }else if(ChannelFactory.isRefCh(idx)){
+                        if (!isFromEventBus) {
+                            RefChannel refChannel = ChannelFactory.getRefChannel(idx);
+                            if (refChannel != null && refChannel.getPosUI() != y) {
+                                refChannel.setPos(y);
+                            }
+                        }
+//                        if (refBranch == null) {
+//                            refBranch = (MainRightLayoutItemChannelBranch) mainViewGroup.findViewById(R.id.rightRefBranch);
+//                        }
+//                        setRefOffset(refBranch, idx);
+                        setRefOffset(TChan.toUiChNo(idx));
+                    }
+
+
+
+
+                    ITriggerLine triggerLine = VoltageLineManage.getInstance().getVoltageLine(VoltageLineManage.VoltageLineType_Trigger);
+                    int curCh = iWave.getLineNameID();//1~4
+
+                    if (ChannelFactory.isChActivate(TChan.toFpgaChNo(curCh)) && !isSwitchWorkMode)
+                        CursorManage.getInstance().curChannelMove();
+
+                    if (!TChan.isChan(curCh)) return;
+
+                    double triggerChannelTempH = Tools.getLevelCache(CacheUtil.TRIGGER_CHANNEL_TEMP_H + curCh);
+                    double triggerChannelTemp = Tools.getLevelCache(CacheUtil.TRIGGER_CHANNEL_TEMP + curCh);
+
+
+                    if (triggerLine.getShowMode() == ITriggerLine.ShowMode_Two) {
+                        if (iWave.getLineNameID() == triggerLine.getChannelId()) {
+                            triggerLine.setOtherY(ITriggerLine.VoltageLine_High, getPositionY(curCh) - triggerChannelTempH);
+                            triggerLine.setOtherY(ITriggerLine.VoltageLine_Low, getPositionY(curCh) - triggerChannelTemp);
+                            Tools.putLevelCache(CacheUtil.TRIGGER_CHANNEL_H + curCh,
+                                    getPositionY(curCh) - triggerLine.getOtherY(ITriggerLine.VoltageLine_High));
+                            Tools.putLevelCache(CacheUtil.TRIGGER_CHANNEL + curCh,
+                                   getPositionY(curCh) - triggerLine.getOtherY(ITriggerLine.VoltageLine_Low));
+                            sendMsgWaveToLevel(MsgWaveToLevel.LEVELTYPE_TRIGGER, curCh);
+                            Trigger trigger = TriggerFactory.getInstance().getTrigger();
+                            if (trigger.isTriggerSource( TChan.toFpgaChNo(curCh))) {
+                                trigger.getTriggerLevel(TriggerLevel.TRIGGER_LEVEL_LOW, TChan.toFpgaChNo(curCh))
+                                        .setPos(Tools.getYTLevelCache(CacheUtil.TRIGGER_CHANNEL + curCh));
+                                trigger.getTriggerLevel(TriggerLevel.TRIGGER_LEVEL_HIGH, TChan.toFpgaChNo(curCh))
+                                        .setPos(Tools.getYTLevelCache(CacheUtil.TRIGGER_CHANNEL_H + curCh));
+                            }
+                        }
+                    } else {
+                        triggerLine.setOtherY(curCh, getPositionY(curCh) - triggerChannelTemp);
+
+                        Tools.putLevelCache(CacheUtil.TRIGGER_CHANNEL + curCh, getPositionY(curCh) - triggerLine.getOtherY(curCh));
+                        sendMsgWaveToLevel(MsgWaveToLevel.LEVELTYPE_TRIGGER, curCh);
+                        Trigger trigger = TriggerFactory.getInstance().getTrigger();
+                        if (trigger.isTriggerSource(TChan.toFpgaChNo(curCh))) {
+                            if(!isFromEventBus) {
+                                trigger.getTriggerLevel(TriggerLevel.TRIGGER_LEVEL_LOW, TChan.toFpgaChNo(curCh))
+                                        .setPos(Tools.getYTLevelCache(CacheUtil.TRIGGER_CHANNEL + curCh));
+                            }
+                        }
+                    }
+                    int serials = 0;
+                    boolean s1 = CacheUtil.get().getBoolean(CacheUtil.MAIN_RIGHT_SERIAL + CacheUtil.S1);
+                    boolean s2 = CacheUtil.get().getBoolean(CacheUtil.MAIN_RIGHT_SERIAL + CacheUtil.S2);
+                    boolean s3 = CacheUtil.get().getBoolean(CacheUtil.MAIN_RIGHT_SERIAL + CacheUtil.S3);
+                    boolean s4 = CacheUtil.get().getBoolean(CacheUtil.MAIN_RIGHT_SERIAL + CacheUtil.S4);
+                    if (s1 || s2 || s3 || s4) {
+                        SerialChannel serialChannel;
+                        int maxIdx = ChannelFactory.getMaxSerialIdx();
+                        for (int i = ChannelFactory.S1; i < maxIdx; i++) {
+                            serialChannel = ChannelFactory.getSerialChannel(i);
+                            if (serialChannel != null && serialChannel.isOpen()) {
+                                IBus bus = serialChannel.getBus();
+                                if (bus != null && bus.isChInSample(TChan.toFpgaChNo(curCh))) {
+                                    serials = CacheUtil.S1 + (i - ChannelFactory.S1);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+//                    Logger.e("limh", "serials= " + serials);
+                    if(serials == 0) break;
+                    if (serials == CacheUtil.S1) {
+                        CacheUtil.get().setValueLevelSerials(CacheUtil.S1);
+                        double valueChannelTempH = Tools.getLevelCache(CacheUtil.VALUE_CHANNEL_TEMP_H + curCh);
+                        double valueChannelTemp = Tools.getLevelCache(CacheUtil.VALUE_CHANNEL_TEMP + curCh);
+                        int i = 0;
+                        ITriggerLine valueLine = VoltageLineManage.getInstance().getVoltageLine(VoltageLineManage.VoltageLineType_Value1);
+                        ITriggerLine valueLine2 = VoltageLineManage.getInstance().getVoltageLine(VoltageLineManage.VoltageLineType_Value2);
+                        ITriggerLine valueLine3 = VoltageLineManage.getInstance().getVoltageLine(VoltageLineManage.VoltageLineType_Value3);
+                        ITriggerLine valueLine4 = VoltageLineManage.getInstance().getVoltageLine(VoltageLineManage.VoltageLineType_Value4);
+                        boolean s2M429 = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS + CacheUtil.S2) == CacheUtil.M429;
+                        boolean s3M429 = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS + CacheUtil.S3) == CacheUtil.M429;
+                        boolean s4M429 = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS + CacheUtil.S4) == CacheUtil.M429;
+                        int levelType = MsgWaveToLevel.LEVELTYPE_VALUE1;
+                        if (CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS + CacheUtil.S1) == CacheUtil.M429) {
+                            valueLine.setShowMode(ITriggerLine.ShowMode_Two);
+                            if (s2M429) {
+                                valueLine2.setShowMode(ITriggerLine.ShowMode_Two);
+                            } else {
+                                valueLine2.setShowMode(ITriggerLine.ShowMode_One);
+                            }
+                            if (s3M429) {
+                                valueLine3.setShowMode(ITriggerLine.ShowMode_Two);
+                            } else {
+                                valueLine3.setShowMode(ITriggerLine.ShowMode_One);
+                            }
+                            if (s4M429) {
+                                valueLine4.setShowMode(ITriggerLine.ShowMode_Two);
+                            } else {
+                                valueLine4.setShowMode(ITriggerLine.ShowMode_One);
+                            }
+                            if (iWave.getLineNameID() == valueLine.getChannelId()) {
+                                if (s2M429) {
+                                    if(valueLine2.getChannelId() == curCh) {
+                                        valueLine2.setOtherY(ITriggerLine.VoltageLine_High, getPositionY(curCh) - valueChannelTempH);
+                                        valueLine2.setOtherY(ITriggerLine.VoltageLine_Low, getPositionY(curCh) - valueChannelTemp);
+                                    }
+                                } else {
+                                    valueLine2.setOtherY(curCh, getPositionY(curCh) - valueChannelTemp);
+                                }
+                                if (s3M429) {
+                                    if(valueLine3.getChannelId() == curCh) {
+                                        valueLine3.setOtherY(ITriggerLine.VoltageLine_High, getPositionY(curCh) - valueChannelTempH);
+                                        valueLine3.setOtherY(ITriggerLine.VoltageLine_Low, getPositionY(curCh) - valueChannelTemp);
+                                    }
+                                } else {
+                                    valueLine3.setOtherY(curCh, getPositionY(curCh) - valueChannelTemp);
+                                }
+                                if (s4M429) {
+                                    if(valueLine4.getChannelId() == curCh) {
+                                        valueLine4.setOtherY(ITriggerLine.VoltageLine_High, getPositionY(curCh) - valueChannelTempH);
+                                        valueLine4.setOtherY(ITriggerLine.VoltageLine_Low, getPositionY(curCh) - valueChannelTemp);
+                                    }
+                                } else {
+                                    valueLine4.setOtherY(curCh, getPositionY(curCh) - valueChannelTemp);
+                                }
+
+                                valueLine.setOtherY(ITriggerLine.VoltageLine_High, getPositionY(curCh) - valueChannelTempH);
+                                valueLine.setOtherY(ITriggerLine.VoltageLine_Low, getPositionY(curCh) - valueChannelTemp);
+                                Tools.putLevelCache(CacheUtil.VALUE_CHANNEL_H + curCh,
+                                        getPositionY(curCh) - valueLine.getOtherY(ITriggerLine.VoltageLine_High));
+                                Tools.putLevelCache(CacheUtil.VALUE_CHANNEL + curCh,
+                                       getPositionY(curCh) - valueLine.getOtherY(ITriggerLine.VoltageLine_Low));
+                                sendMsgWaveToLevel(levelType, curCh);
+                            }
+                        } else {
+                            valueLine.setShowMode(ITriggerLine.ShowMode_One);
+                            if (s2M429) {
+                                if(valueLine2.getChannelId() == curCh) {
+                                    valueLine2.setOtherY(ITriggerLine.VoltageLine_High, getPositionY(curCh) - valueChannelTempH);
+                                    valueLine2.setOtherY(ITriggerLine.VoltageLine_Low, getPositionY(curCh) - valueChannelTemp);
+                                }
+                            } else {
+                                valueLine2.setOtherY(curCh, getPositionY(curCh) - valueChannelTemp);
+                            }
+                            if (s3M429) {
+                                if(valueLine3.getChannelId() == curCh) {
+                                    valueLine3.setOtherY(ITriggerLine.VoltageLine_High, getPositionY(curCh) - valueChannelTempH);
+                                    valueLine3.setOtherY(ITriggerLine.VoltageLine_Low, getPositionY(curCh) - valueChannelTemp);
+                                }
+                            } else {
+                                valueLine3.setOtherY(curCh, getPositionY(curCh) - valueChannelTemp);
+                            }
+                            if (s4M429) {
+                                if(valueLine4.getChannelId() == curCh) {
+                                    valueLine4.setOtherY(ITriggerLine.VoltageLine_High, getPositionY(curCh) - valueChannelTempH);
+                                    valueLine4.setOtherY(ITriggerLine.VoltageLine_Low, getPositionY(curCh) - valueChannelTemp);
+                                }
+                            } else {
+                                valueLine4.setOtherY(curCh, getPositionY(curCh) - valueChannelTemp);
+                            }
+
+
+                            valueLine.setOtherY(curCh, getPositionY(curCh) - valueChannelTemp);
+                            Tools.putLevelCache(CacheUtil.VALUE_CHANNEL + curCh, getPositionY(curCh) - valueLine.getOtherY(curCh));
+                            sendMsgWaveToLevel(levelType, curCh);
+                        }
+                        CacheUtil.get().setValueLevelSerials(0);
+                    } else if (serials == CacheUtil.S2) {
+                        CacheUtil.get().setValueLevelSerials(CacheUtil.S2);
+                        double valueChannelTempH = Tools.getLevelCache(CacheUtil.VALUE_CHANNEL_TEMP_H + curCh);
+                        double valueChannelTemp = Tools.getLevelCache(CacheUtil.VALUE_CHANNEL_TEMP + curCh);
+                        int i = 1;
+                        ITriggerLine valueLine = VoltageLineManage.getInstance().getVoltageLine(VoltageLineManage.VoltageLineType_Value2);
+                        ITriggerLine valueLine1 = VoltageLineManage.getInstance().getVoltageLine(VoltageLineManage.VoltageLineType_Value1);
+                        ITriggerLine valueLine3 = VoltageLineManage.getInstance().getVoltageLine(VoltageLineManage.VoltageLineType_Value3);
+                        ITriggerLine valueLine4 = VoltageLineManage.getInstance().getVoltageLine(VoltageLineManage.VoltageLineType_Value4);
+                        boolean s1M429 = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS + CacheUtil.S1) == CacheUtil.M429;
+                        boolean s3M429 = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS + CacheUtil.S3) == CacheUtil.M429;
+                        boolean s4M429 = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS + CacheUtil.S4) == CacheUtil.M429;
+                        int levelType = MsgWaveToLevel.LEVELTYPE_VALUE2;
+                        if (CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS + CacheUtil.S2) == CacheUtil.M429) {
+                            valueLine.setShowMode(ITriggerLine.ShowMode_Two);
+                            if (s1M429) {
+                                valueLine1.setShowMode(ITriggerLine.ShowMode_Two);
+                            } else {
+                                valueLine1.setShowMode(ITriggerLine.ShowMode_One);
+                            }
+                            if (s3M429) {
+                                valueLine3.setShowMode(ITriggerLine.ShowMode_Two);
+                            } else {
+                                valueLine3.setShowMode(ITriggerLine.ShowMode_One);
+                            }
+                            if (s4M429) {
+                                valueLine4.setShowMode(ITriggerLine.ShowMode_Two);
+                            } else {
+                                valueLine4.setShowMode(ITriggerLine.ShowMode_One);
+                            }
+
+                            if (iWave.getLineNameID() == valueLine.getChannelId()) {
+                                if (s1M429) {
+                                    if(valueLine1.getChannelId() == curCh) {
+                                        valueLine1.setOtherY(ITriggerLine.VoltageLine_High, getPositionY(curCh) - valueChannelTempH);
+                                        valueLine1.setOtherY(ITriggerLine.VoltageLine_Low, getPositionY(curCh) - valueChannelTemp);
+                                    }
+                                } else {
+                                    valueLine1.setOtherY(curCh, getPositionY(curCh) - valueChannelTemp);
+                                }
+                                if (s3M429) {
+                                    if(valueLine3.getChannelId() == curCh) {
+                                        valueLine3.setOtherY(ITriggerLine.VoltageLine_High, getPositionY(curCh) - valueChannelTempH);
+                                        valueLine3.setOtherY(ITriggerLine.VoltageLine_Low, getPositionY(curCh) - valueChannelTemp);
+                                    }
+                                } else {
+                                    valueLine3.setOtherY(curCh, getPositionY(curCh) - valueChannelTemp);
+                                }
+                                if (s4M429) {
+                                    if(valueLine4.getChannelId() == curCh) {
+                                        valueLine4.setOtherY(ITriggerLine.VoltageLine_High, getPositionY(curCh) - valueChannelTempH);
+                                        valueLine4.setOtherY(ITriggerLine.VoltageLine_Low, getPositionY(curCh) - valueChannelTemp);
+                                    }
+                                } else {
+                                    valueLine4.setOtherY(curCh, getPositionY(curCh) - valueChannelTemp);
+                                }
+
+                                valueLine.setOtherY(ITriggerLine.VoltageLine_High, getPositionY(curCh) - valueChannelTempH);
+                                valueLine.setOtherY(ITriggerLine.VoltageLine_Low, getPositionY(curCh) - valueChannelTemp);
+                                Tools.putLevelCache(CacheUtil.VALUE_CHANNEL_H + curCh,
+                                        getPositionY(curCh) - valueLine.getOtherY(ITriggerLine.VoltageLine_High));
+                                Tools.putLevelCache(CacheUtil.VALUE_CHANNEL + curCh,
+                                        getPositionY(curCh) - valueLine.getOtherY(ITriggerLine.VoltageLine_Low));
+                                sendMsgWaveToLevel(levelType, curCh);
+                            }
+                        } else {
+                            valueLine.setShowMode(ITriggerLine.ShowMode_One);
+                            if (s1M429) {
+                                if(valueLine1.getChannelId() == curCh) {
+                                    valueLine1.setOtherY(ITriggerLine.VoltageLine_High, getPositionY(curCh) - valueChannelTempH);
+                                    valueLine1.setOtherY(ITriggerLine.VoltageLine_Low, getPositionY(curCh) - valueChannelTemp);
+                                }
+                            } else {
+                                valueLine1.setOtherY(curCh, getPositionY(curCh) - valueChannelTemp);
+                            }
+                            if (s3M429) {
+                                if(valueLine3.getChannelId() == curCh) {
+                                    valueLine3.setOtherY(ITriggerLine.VoltageLine_High, getPositionY(curCh) - valueChannelTempH);
+                                    valueLine3.setOtherY(ITriggerLine.VoltageLine_Low, getPositionY(curCh) - valueChannelTemp);
+                                }
+                            } else {
+                                valueLine3.setOtherY(curCh, getPositionY(curCh) - valueChannelTemp);
+                            }
+                            if (s4M429) {
+                                if(valueLine4.getChannelId() == curCh) {
+                                    valueLine4.setOtherY(ITriggerLine.VoltageLine_High, getPositionY(curCh) - valueChannelTempH);
+                                    valueLine4.setOtherY(ITriggerLine.VoltageLine_Low, getPositionY(curCh) - valueChannelTemp);
+                                }
+                            } else {
+                                valueLine4.setOtherY(curCh, getPositionY(curCh) - valueChannelTemp);
+                            }
+                            valueLine.setOtherY(curCh, getPositionY(curCh) - valueChannelTemp);
+                            Tools.putLevelCache(CacheUtil.VALUE_CHANNEL + curCh,
+                                   getPositionY(curCh) - valueLine.getOtherY(curCh));
+                            sendMsgWaveToLevel(levelType, curCh);
+                        }
+                        CacheUtil.get().setValueLevelSerials(0);
+                    } else if (serials == CacheUtil.S3) {
+                        CacheUtil.get().setValueLevelSerials(CacheUtil.S3);
+                        double valueChannelTempH = Tools.getLevelCache(CacheUtil.VALUE_CHANNEL_TEMP_H + curCh);
+                        double valueChannelTemp = Tools.getLevelCache(CacheUtil.VALUE_CHANNEL_TEMP + curCh);
+                        int i = 1;
+                        ITriggerLine valueLine = VoltageLineManage.getInstance().getVoltageLine(VoltageLineManage.VoltageLineType_Value3);
+                        ITriggerLine valueLine1 = VoltageLineManage.getInstance().getVoltageLine(VoltageLineManage.VoltageLineType_Value1);
+                        ITriggerLine valueLine2 = VoltageLineManage.getInstance().getVoltageLine(VoltageLineManage.VoltageLineType_Value2);
+                        ITriggerLine valueLine4 = VoltageLineManage.getInstance().getVoltageLine(VoltageLineManage.VoltageLineType_Value4);
+                        boolean s1M429 = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS + CacheUtil.S1) == CacheUtil.M429;
+                        boolean s2M429 = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS + CacheUtil.S2) == CacheUtil.M429;
+                        boolean s4M429 = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS + CacheUtil.S4) == CacheUtil.M429;
+                        int levelType = MsgWaveToLevel.LEVELTYPE_VALUE3;
+                        if (CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS + CacheUtil.S3) == CacheUtil.M429) {
+                            valueLine.setShowMode(ITriggerLine.ShowMode_Two);
+                            if (s1M429) {
+                                valueLine1.setShowMode(ITriggerLine.ShowMode_Two);
+                            } else {
+                                valueLine1.setShowMode(ITriggerLine.ShowMode_One);
+                            }
+                            if (s2M429) {
+                                valueLine2.setShowMode(ITriggerLine.ShowMode_Two);
+                            } else {
+                                valueLine2.setShowMode(ITriggerLine.ShowMode_One);
+                            }
+                            if (s4M429) {
+                                valueLine4.setShowMode(ITriggerLine.ShowMode_Two);
+                            } else {
+                                valueLine4.setShowMode(ITriggerLine.ShowMode_One);
+                            }
+
+                            if (iWave.getLineNameID() == valueLine.getChannelId()) {
+                                if (s1M429) {
+                                    if(valueLine1.getChannelId() == curCh) {
+                                        valueLine1.setOtherY(ITriggerLine.VoltageLine_High, getPositionY(curCh) - valueChannelTempH);
+                                        valueLine1.setOtherY(ITriggerLine.VoltageLine_Low, getPositionY(curCh) - valueChannelTemp);
+                                    }
+                                } else {
+                                    valueLine1.setOtherY(curCh, getPositionY(curCh) - valueChannelTemp);
+                                }
+                                if (s2M429) {
+                                    if(valueLine2.getChannelId() == curCh) {
+                                        valueLine2.setOtherY(ITriggerLine.VoltageLine_High, getPositionY(curCh) - valueChannelTempH);
+                                        valueLine2.setOtherY(ITriggerLine.VoltageLine_Low, getPositionY(curCh) - valueChannelTemp);
+                                    }
+                                } else {
+                                    valueLine2.setOtherY(curCh, getPositionY(curCh) - valueChannelTemp);
+                                }
+                                if (s4M429) {
+                                    if(valueLine4.getChannelId() == curCh) {
+                                        valueLine4.setOtherY(ITriggerLine.VoltageLine_High, getPositionY(curCh) - valueChannelTempH);
+                                        valueLine4.setOtherY(ITriggerLine.VoltageLine_Low, getPositionY(curCh) - valueChannelTemp);
+                                    }
+                                } else {
+                                    valueLine4.setOtherY(curCh, getPositionY(curCh) - valueChannelTemp);
+                                }
+
+                                valueLine.setOtherY(ITriggerLine.VoltageLine_High, getPositionY(curCh) - valueChannelTempH);
+                                valueLine.setOtherY(ITriggerLine.VoltageLine_Low, getPositionY(curCh) - valueChannelTemp);
+                                Tools.putLevelCache(CacheUtil.VALUE_CHANNEL_H + curCh,
+                                      getPositionY(curCh) - valueLine.getOtherY(ITriggerLine.VoltageLine_High));
+                                Tools.putLevelCache(CacheUtil.VALUE_CHANNEL + curCh,
+                                       getPositionY(curCh) - valueLine.getOtherY(ITriggerLine.VoltageLine_Low));
+                                sendMsgWaveToLevel(levelType, curCh);
+                            }
+                        } else {
+                            valueLine.setShowMode(ITriggerLine.ShowMode_One);
+                            if (s1M429) {
+                                if(valueLine1.getChannelId() == curCh) {
+                                    valueLine1.setOtherY(ITriggerLine.VoltageLine_High, getPositionY(curCh) - valueChannelTempH);
+                                    valueLine1.setOtherY(ITriggerLine.VoltageLine_Low, getPositionY(curCh) - valueChannelTemp);
+                                }
+                            } else {
+                                valueLine1.setOtherY(curCh, getPositionY(curCh) - valueChannelTemp);
+                            }
+                            if (s2M429) {
+                                if(valueLine2.getChannelId() == curCh) {
+                                    valueLine2.setOtherY(ITriggerLine.VoltageLine_High, getPositionY(curCh) - valueChannelTempH);
+                                    valueLine2.setOtherY(ITriggerLine.VoltageLine_Low, getPositionY(curCh) - valueChannelTemp);
+                                }
+                            } else {
+                                valueLine2.setOtherY(curCh, getPositionY(curCh) - valueChannelTemp);
+                            }
+                            if (s4M429) {
+                                if(valueLine4.getChannelId() == curCh) {
+                                    valueLine4.setOtherY(ITriggerLine.VoltageLine_High, getPositionY(curCh) - valueChannelTempH);
+                                    valueLine4.setOtherY(ITriggerLine.VoltageLine_Low, getPositionY(curCh) - valueChannelTemp);
+                                }
+                            } else {
+                                valueLine4.setOtherY(curCh, getPositionY(curCh) - valueChannelTemp);
+                            }
+                            valueLine.setOtherY(curCh, getPositionY(curCh) - valueChannelTemp);
+                            Tools.putLevelCache(CacheUtil.VALUE_CHANNEL + curCh,
+                                    getPositionY(curCh) - valueLine.getOtherY(curCh));
+                            sendMsgWaveToLevel(levelType, curCh);
+                        }
+                        CacheUtil.get().setValueLevelSerials(0);
+                    } else if (serials == CacheUtil.S4) {
+                        CacheUtil.get().setValueLevelSerials(CacheUtil.S4);
+                        double valueChannelTempH = Tools.getLevelCache(CacheUtil.VALUE_CHANNEL_TEMP_H + curCh);
+                        double valueChannelTemp = Tools.getLevelCache(CacheUtil.VALUE_CHANNEL_TEMP + curCh);
+                        int i = 1;
+                        ITriggerLine valueLine = VoltageLineManage.getInstance().getVoltageLine(VoltageLineManage.VoltageLineType_Value4);
+                        ITriggerLine valueLine1 = VoltageLineManage.getInstance().getVoltageLine(VoltageLineManage.VoltageLineType_Value1);
+                        ITriggerLine valueLine2 = VoltageLineManage.getInstance().getVoltageLine(VoltageLineManage.VoltageLineType_Value2);
+                        ITriggerLine valueLine3 = VoltageLineManage.getInstance().getVoltageLine(VoltageLineManage.VoltageLineType_Value3);
+                        boolean s1M429 = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS + CacheUtil.S1) == CacheUtil.M429;
+                        boolean s2M429 = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS + CacheUtil.S2) == CacheUtil.M429;
+                        boolean s3M429 = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS + CacheUtil.S3) == CacheUtil.M429;
+                        int levelType = MsgWaveToLevel.LEVELTYPE_VALUE4;
+                        if (CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS + CacheUtil.S4) == CacheUtil.M429) {
+                            valueLine.setShowMode(ITriggerLine.ShowMode_Two);
+                            if (s1M429) {
+                                valueLine1.setShowMode(ITriggerLine.ShowMode_Two);
+                            } else {
+                                valueLine1.setShowMode(ITriggerLine.ShowMode_One);
+                            }
+                            if (s2M429) {
+                                valueLine2.setShowMode(ITriggerLine.ShowMode_Two);
+                            } else {
+                                valueLine2.setShowMode(ITriggerLine.ShowMode_One);
+                            }
+                            if (s3M429) {
+                                valueLine3.setShowMode(ITriggerLine.ShowMode_Two);
+                            } else {
+                                valueLine3.setShowMode(ITriggerLine.ShowMode_One);
+                            }
+
+                            if (iWave.getLineNameID() == valueLine.getChannelId()) {
+                                if (s1M429) {
+                                    if(valueLine1.getChannelId() == curCh) {
+                                        valueLine1.setOtherY(ITriggerLine.VoltageLine_High, getPositionY(curCh) - valueChannelTempH);
+                                        valueLine1.setOtherY(ITriggerLine.VoltageLine_Low, getPositionY(curCh) - valueChannelTemp);
+                                    }
+                                } else {
+                                    valueLine1.setOtherY(curCh, getPositionY(curCh) - valueChannelTemp);
+                                }
+                                if (s2M429) {
+                                    if(valueLine2.getChannelId() == curCh) {
+                                        valueLine2.setOtherY(ITriggerLine.VoltageLine_High, getPositionY(curCh) - valueChannelTempH);
+                                        valueLine2.setOtherY(ITriggerLine.VoltageLine_Low, getPositionY(curCh) - valueChannelTemp);
+                                    }
+                                } else {
+                                    valueLine2.setOtherY(curCh, getPositionY(curCh) - valueChannelTemp);
+                                }
+                                if (s3M429) {
+                                    if(valueLine3.getChannelId() == curCh) {
+                                        valueLine3.setOtherY(ITriggerLine.VoltageLine_High, getPositionY(curCh) - valueChannelTempH);
+                                        valueLine3.setOtherY(ITriggerLine.VoltageLine_Low, getPositionY(curCh) - valueChannelTemp);
+                                    }
+                                } else {
+                                    valueLine3.setOtherY(curCh, getPositionY(curCh) - valueChannelTemp);
+                                }
+
+                                valueLine.setOtherY(ITriggerLine.VoltageLine_High, getPositionY(curCh) - valueChannelTempH);
+                                valueLine.setOtherY(ITriggerLine.VoltageLine_Low, getPositionY(curCh) - valueChannelTemp);
+                                Tools.putLevelCache(CacheUtil.VALUE_CHANNEL_H + curCh,
+                                        getPositionY(curCh) - valueLine.getOtherY(ITriggerLine.VoltageLine_High));
+                                Tools.putLevelCache(CacheUtil.VALUE_CHANNEL + curCh,
+                                        getPositionY(curCh) - valueLine.getOtherY(ITriggerLine.VoltageLine_Low));
+                                sendMsgWaveToLevel(levelType, curCh);
+                            }
+                        } else {
+                            valueLine.setShowMode(ITriggerLine.ShowMode_One);
+                            if (s1M429) {
+                                if(valueLine1.getChannelId() == curCh) {
+                                    valueLine1.setOtherY(ITriggerLine.VoltageLine_High, getPositionY(curCh) - valueChannelTempH);
+                                    valueLine1.setOtherY(ITriggerLine.VoltageLine_Low, getPositionY(curCh) - valueChannelTemp);
+                                }
+                            } else {
+                                valueLine1.setOtherY(curCh, getPositionY(curCh) - valueChannelTemp);
+                            }
+                            if (s2M429) {
+                                if(valueLine2.getChannelId() == curCh) {
+                                    valueLine2.setOtherY(ITriggerLine.VoltageLine_High, getPositionY(curCh) - valueChannelTempH);
+                                    valueLine2.setOtherY(ITriggerLine.VoltageLine_Low, getPositionY(curCh) - valueChannelTemp);
+                                }
+                            } else {
+                                valueLine2.setOtherY(curCh, getPositionY(curCh) - valueChannelTemp);
+                            }
+                            if (s3M429) {
+                                if(valueLine3.getChannelId() == curCh) {
+                                    valueLine3.setOtherY(ITriggerLine.VoltageLine_High, getPositionY(curCh) - valueChannelTempH);
+                                    valueLine3.setOtherY(ITriggerLine.VoltageLine_Low, getPositionY(curCh) - valueChannelTemp);
+                                }
+                            } else {
+                                valueLine3.setOtherY(curCh, getPositionY(curCh) - valueChannelTemp);
+                            }
+                            valueLine.setOtherY(curCh, getPositionY(curCh) - valueChannelTemp);
+                            Tools.putLevelCache(CacheUtil.VALUE_CHANNEL + curCh,
+                                   getPositionY(curCh) - valueLine.getOtherY(curCh));
+                            sendMsgWaveToLevel(levelType, curCh);
+                        }
+                        CacheUtil.get().setValueLevelSerials(0);
+                    }
+
+                    if (CacheUtil.get().getBoolean(CacheUtil.MAIN_RIGHT_SERIAL + CacheUtil.S1)
+                            || CacheUtil.get().getBoolean(CacheUtil.MAIN_RIGHT_SERIAL + CacheUtil.S2)
+                            || CacheUtil.get().getBoolean(CacheUtil.MAIN_RIGHT_SERIAL + CacheUtil.S3)
+                            || CacheUtil.get().getBoolean(CacheUtil.MAIN_RIGHT_SERIAL + CacheUtil.S4)
+                    ) {
+                        if (!isFromEventBus) {
+                            changeSerialTrigVol_channel(curCh - 1);
+                        }
+                    }
+                    break;
+            }
+        }
+    };
+
+
+
+    public void setRefOffset(int chIndex) {
+        RefChannel refChannel = (RefChannel) ChannelFactory.getRefChannel(TChan.toFpgaChNo(chIndex));
+        if (refChannel==null) return;
+        double leftPos = Tools.getChannelPositionUI(chIndex); //541 实际像素位置
+        int zoomHeight = (int) (ScopeBase.getNewHeight() * 0.75);
+        double pos = (Tools.isZoom() ? zoomHeight : 1.0 * ScopeBase.getNewHeight()) / 2 - leftPos;//-1
+        String unit = ChannelFactory.getProbeType(TChan.toFpgaChNo(chIndex));;
+        int startPos = ScopeBase.getHeight() - zoomHeight;
+        leftPos = Tools.isZoom() ? (leftPos + startPos) : leftPos;
+        startPos = Tools.isZoom() ? startPos : 0;
+        String number = TBookUtil.getFourFromD_Trim0(pos * refChannel.getVerticalPerPix());
+        switch (chIndex) {
+            case TChan.R1:
+                if (ref1Master == null) {
+                    ref1Master = (MainRightLayoutItemChannelMaster) mainViewGroup.findViewById(R.id.ref1Master);
+                }
+                ref1Master.setLeftPosition(number + unit);
+                break;
+            case TChan.R2:
+                if (ref2Master == null) {
+                    ref2Master = (MainRightLayoutItemChannelMaster) mainViewGroup.findViewById(R.id.ref2Master);
+                }
+                ref2Master.setLeftPosition(number + unit);
+                break;
+            case TChan.R3:
+                if (ref3Master == null) {
+                    ref3Master = (MainRightLayoutItemChannelMaster) mainViewGroup.findViewById(R.id.ref3Master);
+                }
+                ref3Master.setLeftPosition(number + unit);
+                break;
+            case TChan.R4:
+                if (ref4Master == null) {
+                    ref4Master = (MainRightLayoutItemChannelMaster) mainViewGroup.findViewById(R.id.ref4Master);
+                }
+                ref4Master.setLeftPosition(number + unit);
+                break;
+            case TChan.R5:
+                if (ref5Master == null) {
+                    ref5Master = (MainRightLayoutItemChannelMaster) mainViewGroup.findViewById(R.id.ref5Master);
+                }
+                ref5Master.setLeftPosition(number + unit);
+                break;
+            case TChan.R6:
+                if (ref6Master == null) {
+                    ref6Master = (MainRightLayoutItemChannelMaster) mainViewGroup.findViewById(R.id.ref6Master);
+                }
+                ref6Master.setLeftPosition(number + unit);
+                break;
+            case TChan.R7:
+                if (ref7Master == null) {
+                    ref7Master = (MainRightLayoutItemChannelMaster) mainViewGroup.findViewById(R.id.ref7Master);
+                }
+                ref7Master.setLeftPosition(number + unit);
+                break;
+            case TChan.R8:
+                if (ref8Master == null) {
+                    ref8Master = (MainRightLayoutItemChannelMaster) mainViewGroup.findViewById(R.id.ref8Master);
+                }
+                ref8Master.setLeftPosition(number + unit);
+                break;
+        }
+    }
+
+    public void setOffset(int chIndex) {
+        Channel channel = ChannelFactory.getDynamicChannel(chIndex - 1);
+        if (channel==null) return;
+        double leftPos = Tools.getChannelPositionUI(chIndex); //541 实际像素位置
+        int zoomHeight = (int) (ScopeBase.getNewHeight() * 0.75);
+        double pos = (Tools.isZoom() ? zoomHeight : 1.0 * ScopeBase.getNewHeight()) / 2 - leftPos;//-1
+        String unit = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_CH_PROBE_TYPE + chIndex) == 0 ? "V" : "A";
+//        layoutBranch.setOffset(TBookUtil.getFourFromD_Trim0(pos * channel.getVerticalPerPix()) + unit);
+        int startPos = ScopeBase.getHeight() - zoomHeight;
+        leftPos = Tools.isZoom() ? (leftPos + startPos) : leftPos;
+        startPos = Tools.isZoom() ? startPos : 0;
+        String number = TBookUtil.getFourFromD_Trim0(pos * channel.getVerticalPerPix());
+//        RxBus.getInstance().post(RxEnum.MSG_CHANNEL_SLIP_POSITION,number+unit+";"+chIndex);
+        leftPositionView.setData(chIndex - 1, leftPos
+                , number
+                , unit, startPos);
+        if (GlobalVar.get().getChannelsCount()==GlobalVar.CHANNEL_COUNT_8){
+            if (ch1Master == null || ch2Master == null || ch3Master == null || ch4Master == null
+                    || ch5Master == null || ch6Master == null || ch7Master == null || ch8Master == null) {
+                ch1Master = (MainRightLayoutItemChannelMaster) mainViewGroup.findViewById(R.id.rightCh1MasterEight);
+                ch2Master = (MainRightLayoutItemChannelMaster) mainViewGroup.findViewById(R.id.rightCh2MasterEight);
+                ch3Master = (MainRightLayoutItemChannelMaster) mainViewGroup.findViewById(R.id.rightCh3MasterEight);
+                ch4Master = (MainRightLayoutItemChannelMaster) mainViewGroup.findViewById(R.id.rightCh4MasterEight);
+                ch5Master = (MainRightLayoutItemChannelMaster) mainViewGroup.findViewById(R.id.rightCh5MasterEight);
+                ch6Master = (MainRightLayoutItemChannelMaster) mainViewGroup.findViewById(R.id.rightCh6MasterEight);
+                ch7Master = (MainRightLayoutItemChannelMaster) mainViewGroup.findViewById(R.id.rightCh7MasterEight);
+                ch8Master = (MainRightLayoutItemChannelMaster) mainViewGroup.findViewById(R.id.rightCh8MasterEight);
+            }
+            switch (chIndex){
+                case TChan.Ch1:ch1Master.setLeftPosition(number+unit); break;
+                case TChan.Ch2:ch2Master.setLeftPosition(number+unit); break;
+                case TChan.Ch3:ch3Master.setLeftPosition(number+unit); break;
+                case TChan.Ch4:ch4Master.setLeftPosition(number+unit); break;
+                case TChan.Ch5:ch5Master.setLeftPosition(number+unit); break;
+                case TChan.Ch6:ch6Master.setLeftPosition(number+unit); break;
+                case TChan.Ch7:ch7Master.setLeftPosition(number+unit); break;
+                case TChan.Ch8:ch8Master.setLeftPosition(number+unit); break;
+            }
+        }else if (GlobalVar.get().getChannelsCount() == GlobalVar.CHANNEL_COUNT_4) {
+            if (ch1Master == null || ch2Master == null || ch3Master == null || ch4Master == null) {
+                ch1Master = (MainRightLayoutItemChannelMaster) mainViewGroup.findViewById(R.id.rightCh1Master);
+                ch2Master = (MainRightLayoutItemChannelMaster) mainViewGroup.findViewById(R.id.rightCh2Master);
+                ch3Master = (MainRightLayoutItemChannelMaster) mainViewGroup.findViewById(R.id.rightCh3Master);
+                ch4Master = (MainRightLayoutItemChannelMaster) mainViewGroup.findViewById(R.id.rightCh4Master);
+            }
+            if (chIndex == TChan.Ch1) {
+                ch1Master.setLeftPosition(number + unit);
+            } else if (chIndex == TChan.Ch2) {
+                ch2Master.setLeftPosition(number + unit);
+            } else if (chIndex == TChan.Ch3) {
+                ch3Master.setLeftPosition(number + unit);
+            } else if (chIndex == TChan.Ch4) {
+                ch4Master.setLeftPosition(number + unit);
+            }
+        } else {
+            if (ch1Master == null || ch2Master == null) {
+                ch1Master = (MainRightLayoutItemChannelMaster) mainViewGroup.findViewById(R.id.rightCh1MasterDouble);
+                ch2Master = (MainRightLayoutItemChannelMaster) mainViewGroup.findViewById(R.id.rightCh2MasterDouble);
+            }
+            if (chIndex == TChan.Ch1) {
+                ch1Master.setLeftPosition(number + unit);
+            } else if (chIndex == TChan.Ch2) {
+                ch2Master.setLeftPosition(number + unit);
+            }
+        }
+    }
+
+    public void setMathOffset(int mathIndex) {
+        if (!ChannelFactory.isMathCh(TChan.toFpgaChNo(mathIndex))) return;
+        MathChannel mathChannel = ChannelFactory.getMathChannel(TChan.toFpgaChNo(mathIndex));
+        double pos;
+        switch (CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_MATH_TYPE + mathIndex)) {
+            case CacheUtil.MATHTYPE_DW:
+                pos = CacheUtil.get().getDouble(CacheUtil.MAIN_WAVE_MATH_DW_Y_POSITION + mathIndex);
+                break;
+            case CacheUtil.MATHTYPE_FFT:
+                if (CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_MATH_FFT_TYPE_ID + mathIndex) == 0) {
+                    pos = CacheUtil.get().getDouble(CacheUtil.MAIN_WAVE_MATH_FFT_RMS_Y_POSITION + mathIndex);
+                } else {
+                    pos = CacheUtil.get().getDouble(CacheUtil.MAIN_WAVE_MATH_FFT_DB_Y_POSITION + mathIndex);
+                }
+                break;
+            case CacheUtil.MATHTYPE_AXB:
+                pos = CacheUtil.get().getDouble(CacheUtil.MAIN_WAVE_MATH_AXB_Y_POSITION + mathIndex);
+                break;
+            default:
+                pos = CacheUtil.get().getDouble(CacheUtil.MAIN_WAVE_MATH_AM_Y_POSITION + mathIndex);
+                break;
+        }
+        pos = GlobalVar.get().getMainWave().y / 2 - pos;
+        String unit = ChannelFactory.getProbeType(TChan.toFpgaChNo(mathIndex));
+        String number = TBookUtil.getFourFromD_Trim0(pos * mathChannel.getADVerticalPerPix());
+
+        switch (mathIndex) {
+            case TChan.Math1:
+                if (math1Master == null) {
+                    math1Master = (MainRightLayoutItemChannelMaster) mainViewGroup.findViewById(R.id.math1Master);
+                }
+                math1Master.setLeftPosition(number + unit);
+                break;
+            case TChan.Math2:
+                if (math2Master == null) {
+                    math2Master = (MainRightLayoutItemChannelMaster) mainViewGroup.findViewById(R.id.math2Master);
+                }
+                math2Master.setLeftPosition(number + unit);
+                break;
+            case TChan.Math3:
+                if (math3Master == null) {
+                    math3Master = (MainRightLayoutItemChannelMaster) mainViewGroup.findViewById(R.id.math3Master);
+                }
+                math3Master.setLeftPosition(number + unit);
+                break;
+            case TChan.Math4:
+                if (math4Master == null) {
+                    math4Master = (MainRightLayoutItemChannelMaster) mainViewGroup.findViewById(R.id.math4Master);
+                }
+                math4Master.setLeftPosition(number + unit);
+                break;
+            case TChan.Math5:
+                if (math5Master == null) {
+                    math5Master = (MainRightLayoutItemChannelMaster) mainViewGroup.findViewById(R.id.math5Master);
+                }
+                math5Master.setLeftPosition(number + unit);
+                break;
+            case TChan.Math6:
+                if (math6Master == null) {
+                    math6Master = (MainRightLayoutItemChannelMaster) mainViewGroup.findViewById(R.id.math6Master);
+                }
+                math6Master.setLeftPosition(number + unit);
+                break;
+            case TChan.Math7:
+                if (math7Master == null) {
+                    math7Master = (MainRightLayoutItemChannelMaster) mainViewGroup.findViewById(R.id.math7Master);
+                }
+                math7Master.setLeftPosition(number + unit);
+                break;
+            case TChan.Math8:
+                if (math8Master == null) {
+                    math8Master = (MainRightLayoutItemChannelMaster) mainViewGroup.findViewById(R.id.math8Master);
+                }
+                math8Master.setLeftPosition(number + unit);
+                break;
+        }
+    }
+
+    private void setRefOffset(MainRightLayoutItemChannelBranch layoutBranch, int refIndex) {
+        Log.d(Tag.Debug, String.format("WaveManage.setRefOffset: %d",refIndex ));
+        RefChannel channel = ChannelFactory.getRefChannel(refIndex);
+        double pos = CacheUtil.get().getDouble(CacheUtil.MAIN_WAVE_REF_Y_POSITION + (TChan.toUiChNo(refIndex) ));
+        pos = GlobalVar.get().getMainWave().y / 2 - pos;
+        String unit = ChannelFactory.getProbeType(refIndex);
+        layoutBranch.setMathRefOffset(TBookUtil.getFourFromD_Trim0(pos * channel.getVerticalPerPix()) + unit);
+    }
+
+    private void changeSerialTrigVol_channel(int chIdx) { //这里chIdx=IWave.ch1~ch4
+        if (isCurChannelEquals(CacheUtil.S1, chIdx)) {
+            if (ChannelFactory.isChOpen(ChannelFactory.S1)) {
+                CacheUtil.get().setValueLevelSerials(CacheUtil.S1);
+            } else {
+                return;
+            }
+        } else if (isCurChannelEquals(CacheUtil.S2, chIdx)) {
+            if (ChannelFactory.isChOpen(ChannelFactory.S2)) {
+                CacheUtil.get().setValueLevelSerials(CacheUtil.S2);
+            } else {
+                return;
+            }
+        } else if (isCurChannelEquals(CacheUtil.S3, chIdx)) {
+            if (ChannelFactory.isChOpen(ChannelFactory.S3)) {
+                CacheUtil.get().setValueLevelSerials(CacheUtil.S3);
+            } else {
+                return;
+            }
+        } else if (isCurChannelEquals(CacheUtil.S4, chIdx)) {
+            if (ChannelFactory.isChOpen(ChannelFactory.S4)) {
+                CacheUtil.get().setValueLevelSerials(CacheUtil.S4);
+            } else {
+                return;
+            }
+        }
+        int src = TChan.toFpgaChNo(chIdx);
+        Channel channel = ChannelFactory.getDynamicChannel(src);
+        if (channel != null) {
+            double vol1 = Tools.getYTLevelCache(CacheUtil.VALUE_CHANNEL + chIdx);
+            if (isM429(chIdx)) {
+                channel.setBusSecondaryLevel(vol1);
+            } else {
+                channel.setBusPrimaryLevel(vol1);
+            }
+//            Logger.i(TAG, "bus: ch" + (src - ChannelFactory.CH1 + 1) + "=" + vol1);
+            double vol2 = Tools.getYTLevelCache(CacheUtil.VALUE_CHANNEL_H + chIdx);
+            if (isM429(chIdx)) {
+                channel.setBusPrimaryLevel(vol2);
+            } else {
+                channel.setBusSecondaryLevel(vol2);
+            }
+//            Logger.i(TAG, "bus: ch" + (src - ChannelFactory.CH1 + 1) + " second=" + vol2);
+        }
+        CacheUtil.get().setValueLevelSerials(0);
+    }
+
+    private boolean isM429(int chIdx) {//这里chIdx=IWave.ch1~ch4
+        return (CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS + CacheUtil.S1) == RightLayoutSerials.SERIALS_M429
+                && CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS_M429_SOURCE + CacheUtil.S1) == chIdx - 1)
+                ||
+                (CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS + CacheUtil.S2) == RightLayoutSerials.SERIALS_M429
+                        && CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS_M429_SOURCE + CacheUtil.S2) == chIdx - 1)
+                ||
+                (CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS + CacheUtil.S3) == RightLayoutSerials.SERIALS_M429
+                        && CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS_M429_SOURCE + CacheUtil.S3) == chIdx - 1)
+                ||
+                (CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS + CacheUtil.S4) == RightLayoutSerials.SERIALS_M429
+                        && CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS_M429_SOURCE + CacheUtil.S4) == chIdx - 1)
+                ;
+    }
+
+    private boolean isCurChannelEquals(int serialsNumber, int tCh) {
+        int busType = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS + serialsNumber);
+        switch (busType) {
+            case CacheUtil.UART: {
+                int ch = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS_UART_RX + serialsNumber);
+                return ch == tCh;
+            }
+            case CacheUtil.LIN: {
+                int ch = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS_LIN_SOURCE + serialsNumber);
+                return ch == tCh;
+            }
+            case CacheUtil.CAN: {
+                int ch = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS_CAN_SOURCE + serialsNumber);
+                return ch == tCh;
+            }
+            case CacheUtil.SPI: {
+                int chClk = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS_SPI_CLK + serialsNumber);
+                int chData = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS_SPI_DATA + serialsNumber);
+                int chCs = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS_SPI_CS + serialsNumber);
+                boolean csSwitch = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_SERIALS_SPI_CSSWITCH + serialsNumber);
+                return tCh == chClk || tCh == chData || (csSwitch && tCh == chCs);
+            }
+            case CacheUtil.I2C: {
+                int chSda = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS_I2C_SDA + serialsNumber);
+                int chScl = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS_I2C_SCL + serialsNumber);
+                return tCh == chSda || tCh == chScl;
+            }
+            case CacheUtil.M429: {
+                int ch = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS_M429_SOURCE + serialsNumber);
+                return ch == tCh;
+            }
+            case CacheUtil.M1553B: {
+                int ch = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_SERIALS_M1553B_SOURCE + serialsNumber);
+                return ch == tCh;
+            }
+        }
+        return false;
+    }
+
+    MsgWaveToLevel msgWaveToLevel = new MsgWaveToLevel(MsgWaveToLevel.LEVELTYPE_TRIGGER, TChan.Ch1);
+
+    private void sendMsgWaveToLevel(int levelType, int ch) {
+        msgWaveToLevel.setLevelType(levelType);
+        msgWaveToLevel.setCurCh(ch);
+        RxBus.getInstance().post(RxEnum.WAVE_TO_LEVEL, msgWaveToLevel);
+    }
+
+    private IWave.OnSelectChangeEvent onSelectChangeEvent = new IWave.OnSelectChangeEvent() {
+        @Override
+        public void OnSelectChange(IWave iWave, boolean isSelect) {
+            CursorManage.getInstance().curChannelMove();
+        }
+    };
+
+    private static final int MSG_TRIGGERLINE_VISIABLE = 1;
+    private static final int MSG_TRIGGERLINE_GONE = 2;
+    private static final int MSG_VALUELINE1_VISIABLE = 3;
+    private static final int MSG_VALUELINE1_GONE = 4;
+    private static final int MSG_VALUELINE2_VISIABLE = 5;
+    private static final int MSG_VALUELINE2_GONE = 6;
+    private Handler handler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            switch (msg.what) {
+                case MSG_TRIGGERLINE_VISIABLE:
+                    if (handler.hasMessages(MSG_TRIGGERLINE_GONE)) {
+                        handler.removeMessages(MSG_TRIGGERLINE_GONE);
+                    }
+                    handler.sendEmptyMessageDelayed(MSG_TRIGGERLINE_GONE, 100);
+                    break;
+                case MSG_TRIGGERLINE_GONE:
+                    VoltageLineManage.getInstance().getVoltageLine(VoltageLineManage.VoltageLineType_Trigger).setVisibleLine(false);
+                    break;
+                case MSG_VALUELINE1_VISIABLE:
+                    if (handler.hasMessages(MSG_VALUELINE1_GONE)) {
+                        handler.removeMessages(MSG_VALUELINE1_GONE);
+                    }
+                    handler.sendEmptyMessageDelayed(MSG_VALUELINE1_GONE, 100);
+                    break;
+                case MSG_VALUELINE1_GONE:
+                    VoltageLineManage.getInstance().getVoltageLine(VoltageLineManage.VoltageLineType_Value1).setVisibleLine(false);
+                    break;
+                case MSG_VALUELINE2_VISIABLE:
+                    if (handler.hasMessages(MSG_VALUELINE2_GONE)) {
+                        handler.removeMessages(MSG_VALUELINE2_GONE);
+                    }
+                    handler.sendEmptyMessageDelayed(MSG_VALUELINE2_GONE, 100);
+                    break;
+                case MSG_VALUELINE2_GONE:
+                    VoltageLineManage.getInstance().getVoltageLine(VoltageLineManage.VoltageLineType_Value2).setVisibleLine(false);
+                    break;
+            }
+        }
+    };
+
+    //region interface IWorkMode
+    @Override
+    public void switchWorkMode(@WorkMode int workMode) {
+        switch (workMode) {
+            case IWorkMode.WorkMode_XY:
+                waveManage_xy.switchWorkMode(workMode);
+                break;
+            case IWorkMode.WorkMode_YT:
+            case IWorkMode.WorkMode_YTZOOM:
+                waveManage_yt.switchWorkMode(workMode);
+                break;
+        }
+    }
+
+    //endregion
+
+    //region interface IWaveManage
+
+    @Override
+    public void draw(ICanvasGL canvas) {
+        switch (WorkModeManage.getInstance().getmWorkMode()) {
+            case IWorkMode.WorkMode_XY:
+                waveManage_xy.draw(canvas);
+                break;
+            case IWorkMode.WorkMode_YT:
+            case IWorkMode.WorkMode_YTZOOM:
+                waveManage_yt.draw(canvas);
+                break;
+        }
+    }
+
+    @Override
+    public void setVisible(int ChNo, boolean visible) {
+        switch (WorkModeManage.getInstance().getmWorkMode()) {
+            case IWorkMode.WorkMode_XY:
+                waveManage_xy.setVisible(ChNo, visible);
+                waveManage_yt.setVisible(ChNo, visible);
+                break;
+            case IWorkMode.WorkMode_YT:
+            case IWorkMode.WorkMode_YTZOOM:
+                if (TChan.isSerial(ChNo)) {
+                    SerialBusManage.getInstance().setVisible(ChNo, visible);
+                } else {
+                    waveManage_yt.setVisible(ChNo, visible);
+                }
+
+                break;
+        }
+    }
+
+    public void setChannelLabel(int ChNo, String label) {
+        switch (WorkModeManage.getInstance().getmWorkMode()) {
+            case IWorkMode.WorkMode_XY:
+                break;
+            case IWorkMode.WorkMode_YT:
+            case IWorkMode.WorkMode_YTZOOM:
+                waveManage_yt.setChannelLabel(ChNo, label);
+                break;
+        }
+    }
+
+    public String getChannelLabel(int chNo) {
+        String label = "";
+        switch (WorkModeManage.getInstance().getmWorkMode()) {
+            case IWorkMode.WorkMode_XY:
+                break;
+            case IWorkMode.WorkMode_YT:
+            case IWorkMode.WorkMode_YTZOOM:
+                label = waveManage_yt.getChannelLabel(chNo);
+                break;
+        }
+        return label;
+    }
+
+    @Override
+    public void setOffsetY(int offsetY) {
+        switch (WorkModeManage.getInstance().getmWorkMode()) {
+            case IWorkMode.WorkMode_XY:
+                waveManage_xy.setOffsetY(offsetY);
+                break;
+            case IWorkMode.WorkMode_YT:
+            case IWorkMode.WorkMode_YTZOOM:
+                CursorManage.getInstance().setCursorTrace(true);
+                waveManage_yt.setOffsetY(offsetY);
+                CursorManage.setCursorByScaleTrace();
+                CursorManage.getInstance().setCursorTrace(false);
+                break;
+        }
+    }
+
+    @Override
+    public void setPositionY(int chNo, double positionY) {
+        switch (WorkModeManage.getInstance().getmWorkMode()) {
+            case IWorkMode.WorkMode_XY:
+                waveManage_xy.setPositionY(chNo, positionY);
+                break;
+            case IWorkMode.WorkMode_YT:
+            case IWorkMode.WorkMode_YTZOOM:
+                waveManage_yt.setPositionY(chNo, positionY);
+                break;
+        }
+    }
+
+    public void setPositionYFromEventBus(int chNo, double positionY) {
+        CursorManage.getInstance().setCursorTrace(true);
+        switch (WorkModeManage.getInstance().getmWorkMode()) {
+            case IWorkMode.WorkMode_XY:
+//bug 0009447                waveManage_xy.setPositionYFromEventBus(chNo, positionY);
+                break;
+            case IWorkMode.WorkMode_YT:
+            case IWorkMode.WorkMode_YTZOOM:
+                waveManage_yt.setPositionYFromEventBus(chNo, positionY);
+                break;
+        }
+        //CursorManage.setCursorByScaleTrace();
+        CursorManage.getInstance().setCursorTrace(false);
+//        Log.d(Tag.Debug, String.format("WaveManage.setPositionYFromEventBus: %s,pos:%s",chNo,positionY ));
+    }
+
+    /**
+     * @param chNo {@link IWave IWave.Ch1 - IWave.Ch4}
+     * @return
+     */
+    @Override
+    public double getPositionY(int chNo) {
+        switch (WorkModeManage.getInstance().getmWorkMode()) {
+            case IWorkMode.WorkMode_XY:
+                return waveManage_xy.getPositionY(chNo);
+            case IWorkMode.WorkMode_YT:
+            case IWorkMode.WorkMode_YTZOOM:
+                return waveManage_yt.getPositionY(chNo);
+        }
+        return 0;
+    }
+
+
+    public double getUIPositionY(int chNo) {
+        switch (WorkModeManage.getInstance().getmWorkMode()) {
+            case IWorkMode.WorkMode_XY:
+                return waveManage_xy.getPositionY(chNo);
+            case IWorkMode.WorkMode_YT:
+            case IWorkMode.WorkMode_YTZOOM:
+                return waveManage_yt.getUIPositionY(chNo);
+        }
+        return 0;
+    }
+
+
+    /**
+     * 获得除了xy模式以外的模式下的通道位置
+     */
+    public double getPositionYButWorkModeXY(int chNo) {
+        return waveManage_yt.getPositionY(chNo);
+    }
+
+    public double getMainUIPositionY(int chNo) {
+        switch (WorkModeManage.getInstance().getmWorkMode()) {
+            case IWorkMode.WorkMode_XY:
+                return waveManage_xy.getPositionY(chNo);
+            case IWorkMode.WorkMode_YT:
+                return waveManage_yt.getPositionY(chNo);
+            case IWorkMode.WorkMode_YTZOOM:
+                return waveManage_yt.getPositionY(chNo) * GlobalVar.get().toYTCoef();
+        }
+        return 0;
+    }
+
+    @Override
+    public void setCenterChY(int chNo) {
+        switch (WorkModeManage.getInstance().getmWorkMode()) {
+            case IWorkMode.WorkMode_XY:
+                waveManage_xy.setCenterChY(chNo);
+                break;
+            case IWorkMode.WorkMode_YT:
+            case IWorkMode.WorkMode_YTZOOM:
+                if (TChan.isSerial(chNo)) {
+
+                } else {
+                    CursorManage.getInstance().setCursorTrace(true);
+                    waveManage_yt.setCenterChY(chNo);
+                    CursorManage.setCursorByScaleTrace();
+                    CursorManage.getInstance().setCursorTrace(false);
+                }
+                break;
+        }
+    }
+
+    @Override
+    public void setSelectCursor(int chNO) {
+        switch (WorkModeManage.getInstance().getmWorkMode()) {
+            case IWorkMode.WorkMode_XY:
+                waveManage_xy.setSelectCursor(chNO);
+                waveManage_yt.setSelectCursor(chNO);
+                break;
+            case IWorkMode.WorkMode_YT:
+            case IWorkMode.WorkMode_YTZOOM:
+                if (chNO==this.getCurCh()) {
+                    CursorManage.getInstance().setCursorTrace(true);
+                }
+                SerialBusManage.getInstance().setSelectCursor(chNO);
+                waveManage_yt.setSelectCursor(chNO);
+                CursorManage.getInstance().setCursorTrace(false);
+                break;
+        }
+    }
+
+    @Override
+    public int selectCursor(int x, int y) {
+        switch (WorkModeManage.getInstance().getmWorkMode()) {
+            case IWorkMode.WorkMode_XY:
+                return waveManage_xy.selectCursor(x, y);
+
+            case IWorkMode.WorkMode_YT:
+            case IWorkMode.WorkMode_YTZOOM: {
+
+                int curCh = getCurCh();
+                int chNo = SerialBusManage.getInstance().selectCursor(x, y);
+                if (chNo < 0) {
+                    CursorManage.getInstance().setCursorTrace(false);
+                    chNo = waveManage_yt.selectCursor(x, y,curCh);
+                    if (chNo < 0) {
+                        CursorManage.getInstance().setCursorTrace(true);
+                        setSelectCursor(curCh);
+                        chNo = curCh;
+                    }
+                } else {
+                    if (curCh==chNo){
+                        CursorManage.getInstance().setCursorTrace(true);
+                    }
+                    waveManage_yt.setSelectCursor(chNo);
+                }
+//                CursorManage.setCursorByScaleTrace();
+                CursorManage.getInstance().setCursorTrace(false);
+                //Logger.i(TAG, "chNo:" + chNo+",curChNo:"+getCurCh());
+                return chNo;
+            }
+
+        }
+        return -1;
+    }
+
+    @Override
+    public void movePix(int px) {
+        switch (WorkModeManage.getInstance().getmWorkMode()) {
+            case IWorkMode.WorkMode_XY:
+                waveManage_xy.movePix(px);
+                break;
+            case IWorkMode.WorkMode_YT:
+            case IWorkMode.WorkMode_YTZOOM: {
+                int curCh = waveManage_yt.getCurCh();
+                if (curCh < 0) {
+                    SerialBusManage.getInstance().movePix(px);
+                } else {
+                    waveManage_yt.movePix(px);
+                }
+
+                break;
+            }
+        }
+    }
+
+    @Override
+    public int getCurCh() {
+        switch (WorkModeManage.getInstance().getmWorkMode()) {
+            case IWorkMode.WorkMode_XY:
+                return waveManage_xy.getCurCh();
+            case IWorkMode.WorkMode_YT:
+            case IWorkMode.WorkMode_YTZOOM: {
+                int curCh = waveManage_yt.getCurCh();
+                if (curCh < 0) {
+                    curCh = SerialBusManage.getInstance().isSelected();
+                }
+                return curCh;
+            }
+        }
+        return -1;
+    }
+
+    public boolean isLabelContains(int x , int y) {
+        switch (WorkModeManage.getInstance().getmWorkMode()) {
+            case IWorkMode.WorkMode_XY:
+                return false;
+            case IWorkMode.WorkMode_YT:
+            case IWorkMode.WorkMode_YTZOOM:
+            default:
+                return waveManage_yt.isLabelContains(x, y);
+
+        }
+    }
+
+    //endregion
+}

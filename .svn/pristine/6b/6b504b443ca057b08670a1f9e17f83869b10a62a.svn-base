@@ -1,0 +1,35 @@
+package com.micsig.tbook.scope.Bus;
+
+import com.micsig.tbook.scope.Action.FPGAMessage;
+import com.micsig.tbook.scope.Action.XAction;
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+
+/**
+ * Created by zhuzh on 2018-5-30.
+ */
+
+public class BusAction extends XAction {
+    IBus bus;
+    public BusAction(IBus bus){
+        this.bus = bus;
+    }
+    public void busChange(){
+        sendFpgaMsg(0, (FPGAMessage.FPGA_CMD_BUS_S1) << (bus.getBusIdx() - ChannelFactory.S1));
+        sendEvent(EventFactory.EVENT_BUS_PARAM);
+    }
+    public void chSampleChange(){
+
+        sendEvent(EventFactory.EVENT_BUS_CH_CHANGE);
+        sendChSample();
+        busChange();
+    }
+    public void busTypeChange(){
+        sendFpgaMsg(0, FPGAMessage.FPGA_CMD_BUS_TYPE);
+    }
+    @Override
+    public void sendEvent(int event){
+        sendEvent(new EventBase(event,bus));
+    }
+}

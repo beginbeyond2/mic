@@ -1,0 +1,53 @@
+package com.micsig.tbook.scope.math;
+
+public class MathExprError {
+    /*   mode
+         e_unknown = 0, Unknown Error
+         e_syntax  = 1, Syntax Error
+         e_token   = 2, Token Error
+         e_numeric = 4, Numeric Error
+         e_symtab  = 5, Symbol Error
+         e_lexer   = 6, Lexer Error
+         e_helper  = 7 Helper Error
+
+     */
+    private int position;
+    private int mode;
+    private String value;
+    private boolean success;
+    private String diagnostic;
+    public MathExprError(){
+
+    }
+    public MathExprError(boolean success,int mode,int position,String value,String diagnostic){
+        this.mode = mode;
+        this.position = position;
+        this.value = value;
+        this.success = success;
+        this.diagnostic = diagnostic;
+    }
+
+    public boolean isSuccess() {
+        return success;
+    }
+
+    public int getPosition() {
+        return position;
+    }
+    public int getMode() {
+        return mode;
+    }
+    public String getValue() {
+        return value;
+    }
+    public String getDiagnostic() {
+        return diagnostic;
+    }
+
+    @Override
+    public String toString() {
+        return "success:" + success + ",mode:" + mode
+                + ",position:" + position + ",value:"
+                + value + ",diagnostic:" + diagnostic;
+    }
+}

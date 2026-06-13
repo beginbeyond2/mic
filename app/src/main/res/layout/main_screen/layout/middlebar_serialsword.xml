@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.micsig.tbook.tbookscope.main.maincenter.serialsword.MainLayoutCenterSerialsWord xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/layoutSerialsWord"
+    android:layout_width="@dimen/mainCenterWidth"
+    android:layout_height="1040px"
+    android:layout_x="0px"
+    android:background="@drawable/bg_popwindow_serials"
+    android:padding="1px"
+    android:elevation="40px"
+    android:outlineSpotShadowColor="@android:color/transparent"
+    android:outlineAmbientShadowColor="@android:color/transparent"
+    android:translationZ="40px"
+    android:clickable="true"
+    android:visibility="gone">
+
+</com.micsig.tbook.tbookscope.main.maincenter.serialsword.MainLayoutCenterSerialsWord>

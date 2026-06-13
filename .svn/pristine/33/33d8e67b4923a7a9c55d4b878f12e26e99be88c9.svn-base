@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!--<TextView-->
+        <!--android:id="@+id/first"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="match_parent"-->
+        <!--android:background="@android:color/holo_blue_bright"-->
+        <!--android:gravity="center"-->
+        <!--android:text="FirstLayout"-->
+        <!--android:textColor="@android:color/holo_red_light"-->
+        <!--android:textSize="30sp" />-->
+
+    <!--<pl.droidsonroids.gif.GifImageView-->
+        <!--android:id="@+id/gifView"-->
+        <!--android:layout_width="50px"-->
+        <!--android:layout_height="50px"-->
+        <!--android:layout_alignParentBottom="true"-->
+        <!--android:layout_margin="10px"-->
+        <!--android:src="@raw/loading" />-->
+    <!--<com.micsig.tbook.tbookscope.first.SplashScreenSurfaceView-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="match_parent"-->
+        <!--android:layout_alignParentBottom="true"-->
+        <!--android:layout_margin="1px"-->
+        <!--/>-->
+</RelativeLayout>

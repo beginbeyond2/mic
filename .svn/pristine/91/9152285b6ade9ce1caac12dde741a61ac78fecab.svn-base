@@ -1,0 +1,158 @@
+package com.micsig.tbook.scope.Calibrate;
+
+import android.util.Log;
+
+
+/**
+ * Created by xuj on 2018/7/19.
+ * 误差趋近算法，要求系数（设置值）为整数
+ */
+
+public class Wucha {
+    private int wuChaCnt;//状态机
+    private float volStep;//每次步进值
+    private float stdVol;//标准值
+    private boolean zero_or_coef;//=1,零点类别的校准，=0，系数类别的校准
+    private int direct;//变化方向
+    private float bestVol;//最佳计算值跟踪
+    private float bestVol_rcd[]=new float[2];//最佳值时的输入和标准记录
+    private int bakCoef;//最佳设置值备份
+    private int lastCoef;//上次的设置值
+    private int limt_min;//设置值最小值
+    private int limt_max;//设置值最大值
+    private boolean finished;
+    private final String TAG="calibrate:Wucha";
+
+    public Wucha() {
+        reStart();
+    }
+
+    public Wucha(float _volStep, float _stdVol, boolean _zero_or_coef) {
+        this();
+        volStep =_volStep;
+        stdVol = _stdVol;
+        zero_or_coef = _zero_or_coef;
+    }
+
+    public void reStart() {
+        wuChaCnt = 0;
+        bakCoef = 255;
+        bestVol = 255;
+        finished = false;
+    }
+
+    public int process(float nowVol, int lastSet) {
+        //printf("lastSet=%d\n",lastSet);
+        int value = lastSet;
+        float fx1 = nowVol - stdVol;
+        if(Math.abs(fx1) < Math.abs(bestVol))
+        {//跟踪最佳值
+            bestVol = fx1;
+            bakCoef = lastSet;
+            bestVol_rcd[0] = stdVol;
+            bestVol_rcd[1] = nowVol;
+            //printf("bestvol=%f,%f\n",bestVol_rcd[0],bestVol_rcd[1]);
+        }
+        float fx=fx1;
+        if(!zero_or_coef)
+            fx /= stdVol;
+
+        int ix = (int)(fx/volStep);
+        //mprintf("fx=%f,step=%f,ix=%d\n",fx1,volStep,ix);
+
+        //test
+//    value = lastSet+kk;
+//    if(value > limt_max)
+//        value = limt_min;
+//    else if(value < limt_min)
+//        value = limt_max;
+//    return value;
+
+        if(wuChaCnt==0)
+        {
+            if(fx > 0)
+                direct = 0;
+            else
+                direct = -1;
+            wuChaCnt = 1;
+        }
+        //-------
+        if(wuChaCnt == 1 || wuChaCnt == 2)//注意，这里不是else if
+        {//大幅度调节期
+            int direct1;
+            if(fx > 0)
+                direct1 = 0;
+            else
+                direct1 = -1;
+
+            value -= ix;
+            //mprintf("value=%d\n",value);
+            if(value > limt_max)
+                value = limt_max;
+            else if(value < limt_min)
+                value = limt_min;
+
+            //mPrintf("direct=%d,direct1=%d\n",direct,direct1);
+
+            boolean done=false;
+            if(direct1 != direct || value == lastSet)
+                done = true;
+
+            if(wuChaCnt == 1)
+            {
+                if(done)
+                {
+                    wuChaCnt = 2;
+                    lastCoef = lastSet;
+                    //mPrintf("lastCoef=%d\n",lastCoef);
+                    direct = direct1;
+                }
+            }
+            else if(done)//注意时else if，目前是direct需要翻转两次，1次有可能跨度太大
+            {
+                //从上次位置开始调节
+                value = lastCoef;
+                //次数调节到direct为止
+                direct = 3+Math.abs(value-lastSet);
+                direct += 3;//至少再来3次
+                wuChaCnt = 3;
+                Log.i(TAG,"need count "+(direct-2)+" chi to finised");
+            }
+        }
+        else//小幅度调节期
+        {
+            int k=volStep < 0 ? -1 : 1;
+            if(nowVol > stdVol) value -= k;
+            else value += k;
+            if(value > limt_max)
+                value = limt_max;
+            else if(value < limt_min)
+                value = limt_min;
+            if(++wuChaCnt > direct)
+            {//完成调节
+                if(!finished)
+                {
+                    finished = true;
+                    Log.i(TAG, "\t==== Hit the best vol: "+bestVol+"---"+bakCoef+" ====");
+                }
+            }
+        }
+
+        // mprintf("value=%d\n", value);
+        return value;
+    }
+
+    void setVolStep(float _volStep){volStep = _volStep;}
+    void setZero_or_coef(){zero_or_coef = false;}
+    void setZero_or_coef(boolean _zero_or_coef){zero_or_coef = _zero_or_coef;}
+    void setStdVol(float _stdVol) {stdVol = _stdVol;}
+    void setLimtVol(int min, int max){limt_min=min;limt_max=max;}
+
+    //nowVol：计算出的平均值
+    //lastSet：上次的设置值
+    //返回处理后的设置值
+    boolean isFinished(){return finished;}
+    int getBestSetVol(){return bakCoef;}
+    float getBestCalVol(){return bestVol;}
+    float[] getBestCalVol_rcd(){return bestVol_rcd;}
+}

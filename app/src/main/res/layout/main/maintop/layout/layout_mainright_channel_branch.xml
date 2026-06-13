@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/bgBranch"
+    android:layout_width="63px"
+    android:layout_height="63px">
+<!--    android:background="@drawable/ic_rectangle_5_data_ch1_have"-->
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/layoutBranch"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingLeft="2px"
+        android:paddingRight="2px"
+        android:paddingBottom="2px">
+
+        <TextView
+            android:id="@+id/channelText"
+            android:layout_width="25px"
+            android:layout_height="wrap_content"
+            android:paddingStart="3px"
+            android:paddingBottom="1px"
+            android:text="1"
+            android:textColor="@color/colorCh1"
+            android:textSize="14px"
+            android:maxLines="1"
+            app:layout_constraintBottom_toTopOf="@+id/Imped"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/invert"
+            android:layout_width="10px"
+            android:layout_height="1px"
+            android:layout_marginEnd="12px"
+            android:background="@android:color/white"
+            android:layout_marginBottom="2px"
+            app:layout_constraintEnd_toEndOf="@+id/channelText"
+            app:layout_constraintStart_toStartOf="@+id/channelText"
+            app:layout_constraintBottom_toBottomOf="@+id/channelText" />
+
+        <TextView
+            android:id="@+id/bandWidth"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="20"
+            android:textSize="14px"
+            android:maxLines="1"
+            app:layout_constraintBottom_toBottomOf="@+id/channelText"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/channelText" />
+
+        <ImageView
+            android:id="@+id/couple"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:scaleType="center"
+            android:src="@drawable/coupling_dc"
+            android:layout_marginEnd="25px"
+            app:layout_constraintBottom_toBottomOf="@+id/channelText"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/channelText" />
+
+        <TextView
+            android:id="@+id/Imped"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="50Ω"
+            android:textSize="14px"
+            android:maxLines="1"
+            app:layout_constraintBottom_toTopOf="@+id/offset"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/channelText" />
+
+        <TextView
+            android:id="@+id/probeDetailText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="1mX"
+            android:textSize="14px"
+            android:maxLines="1"
+            app:layout_constraintBottom_toBottomOf="@+id/Imped"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/Imped" />
+
+        <TextView
+            android:id="@+id/offset"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="1.0002mV"
+            android:textSize="13px"
+            android:maxLines="1"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/Imped" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <TextView
+        android:id="@+id/textBranch"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:text="1"
+        android:textSize="18px"
+        android:textColor="@color/colorCh1"/>
+
+    <Button
+        android:id="@+id/btnBranch"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@null" />
+</androidx.constraintlayout.widget.ConstraintLayout>

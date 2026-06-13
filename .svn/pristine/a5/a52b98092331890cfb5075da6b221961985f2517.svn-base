@@ -1,0 +1,26 @@
+package com.micsig.tbook.scope.fpga;
+
+/**
+ * Created by zhuzh on 2018/3/21.
+ */
+
+public class FPGAReg_DISP_PLACE_SL extends FPGAReg {
+    public FPGAReg_DISP_PLACE_SL(){
+        super(FPGAReg.FPGA_DISP_PLACE_SL,12);
+    }
+
+
+    public void setNumsPerLie(int val){
+        setVal(0,val);
+    }
+    public void setDaoShuLieNum(int val){
+        setVal(1,val);
+    }
+    public void setNumCouY(int val){
+        setVal(2,0,15,val);
+    }
+    public void setNeedCouY(int val){
+        setVal(2,15,1,val);
+    }
+
+}

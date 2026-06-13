@@ -1,0 +1,570 @@
+package com.micsig.tbook.scope.Calibrate;
+
+import android.os.SystemClock;
+import android.util.Log;
+
+import com.micsig.base.Utils;
+import com.micsig.tbook.hardware.Hardware;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.fpga.FPGACommand;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+
+public abstract class HW implements IHW {
+
+    private static final String TAG = "HW";
+    protected static final long SHIFTREG_INIT_VAL = 0xCDCDCDCDCDCDCDCDL;
+    protected static final long SHIFTREG_INIT_VAL_MHO10008 = 0xFFFFFFFFFFFFFFFFL;
+    protected int fpgaNums = 2;
+
+
+    public HW(int fpgaNums){
+        this.fpgaNums = fpgaNums;
+        bakCofitBuf = ByteBuffer.allocate(getMaxCofitSize() + 1024);
+    }
+
+    public void sendShiftRegister(long val){
+        Hardware.getInstance().sendShiftRegister( val, 64);
+    }
+    public void setChPgaGain(int []val){
+        FPGACommand cmd = FPGACommand.getInstance();
+        for(int i=0;i<fpgaNums;i++){
+            cmd.SendAD8370Data(i, Arrays.copyOfRange(val,i*4,4 + i * 4));
+        }
+    }
+    @Override
+    public void ChPowerEnable(boolean bEnable) {
+
+    }
+
+
+    protected void usleep(int us){
+        try {
+            Thread.sleep(us/1000,(us % 1000)*1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    //校准部分---------------------------------------------------------------------------------------------
+    protected static final String FACTORY_CALIBRATE_NAME = "factoryCalibrateData";
+    protected static final String USER_CALIBRATE_NAME = "userCalibrateData";
+
+    private static final int FACTORY_CALIBRATE_ADDR = 0x5600;
+
+    private final int CODE_CH_CNT=0x12E0_5500;//低8位必须为0
+
+    public static final int CODE_VER_1 = 1;
+    public static final int CODE_VER_2 = 2;
+    public static final int CODE_VER_3 = 3;
+    public static final int CODE_VER = CODE_VER_3 ;
+
+    private final int CODE_VER_MASK = 0x001F_0000;
+    private volatile int code_ver = 0;
+
+    public int getVer(){
+        return code_ver;
+    }
+    public void setVer(int v){
+        code_ver = v;
+    }
+
+
+    private int getCalibrateAddr(final String fileName){
+        if(FACTORY_CALIBRATE_NAME.equals(fileName)){
+            return getFactoryCalibrateAddr();
+        }else if(USER_CALIBRATE_NAME.equals(fileName)){
+            return getUserCalibrateAddr();
+        }
+        return getFactoryCalibrateAddr();
+    }
+
+    protected int getFactoryCalibrateAddr(){
+        return FACTORY_CALIBRATE_ADDR;
+    }
+    protected abstract int getMaxCofitSize();
+
+    protected int getUserCalibrateAddr(){
+        return getFactoryCalibrateAddr() + getMaxCofitSize();
+    }
+
+    protected int getCalibrateStateAddr(){
+        return getUserCalibrateAddr() + getMaxCofitSize();
+    }
+    protected abstract int getUseFlashMax();
+    protected abstract int getFlashMax();
+
+
+    protected int write(int addr,byte[] data){
+        Hardware hw = Hardware.getInstance();
+        int r = hw.writeE2PROM(addr,data);
+        if(r <= 0){
+            Log.e(TAG,"save writeE2PROM : " + Integer.toHexString(addr));
+        }
+        return r;
+    }
+
+    protected int read(int addr,byte[] data){
+        Hardware hw = Hardware.getInstance();
+        int r = hw.readE2PROM(addr,data);
+        if(r <= 0){
+            Log.e(TAG,"save readE2PROM : " + Integer.toHexString(addr));
+        }
+        return r;
+    }
+
+    private int getChNumCode(int chCnt){
+        int v = getVer();
+        if(v == 0){
+            v = CODE_VER;
+        }
+        return (CODE_CH_CNT + (v << 16)) + chCnt;
+    }
+    protected int readCalibrateParam(final String fileName) {
+
+        int xlen = 0;
+        int maxCofitSize = getMaxCofitSize();
+        byte[] bytes = new byte[maxCofitSize];
+        xlen = read(getCalibrateAddr(fileName),bytes);
+
+        if(xlen > 0 && bytes != null) {
+            ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
+            byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+
+            int len = bytes.length;
+            if (len >= maxCofitSize) {
+                /*
+                 * 读取校准数据，排列顺序如下：
+                 * short crc；
+                 * int len；
+                 * int 通道数的识别码
+                 * 校准数据
+                 */
+                short crc = byteBuffer.getShort(0);
+                int dataLen = byteBuffer.getInt(2);
+                int chNumCode = byteBuffer.getInt(6);
+                if(Utils.CRC16(byteBuffer.array(), 2, len - 2) == crc
+                        && dataLen == len){
+                    int n = Scope.getInstance().getChNum();
+                    code_ver = (chNumCode & CODE_VER_MASK) >> 16;
+                    if((chNumCode & (~CODE_VER_MASK))
+                            == (getChNumCode(n) & (~CODE_VER_MASK))){
+                        int idx = ByteBuffer2cofit(byteBuffer, 10);
+                        Log.i(TAG, "完成校准数据文件的读取: " + fileName + ",idx:" + idx + ",Ver:" + code_ver);
+                        return 0;
+                    }else{
+                        Log.i(TAG, "完成校准数据文件的读取: " + fileName + ",chNumCode:" + chNumCode + ",Ver:" + code_ver);
+                    }
+                }else{
+                    Log.e(TAG,"wavelen:" + dataLen + ",crc:" +crc);
+                }
+            }
+        }
+
+        Log.e(TAG, "read "+" error!!," +xlen);
+        return 1;
+    }
+    private synchronized boolean saveCalibrateParam(final String fileName)
+    {
+        int maxCofitSize = getMaxCofitSize();
+        ByteBuffer byteBuffer=ByteBuffer.allocate(maxCofitSize);
+        byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+
+        /*
+         * 存储校准数据，排列顺序如下：
+         * short crc；
+         * int len；
+         * int 通道数的识别码
+         * 校准数据
+         */
+        byteBuffer.putInt(2, byteBuffer.limit());
+        byteBuffer.putInt(6, getChNumCode(Scope.getInstance().getChNum()));
+
+        int idx = cofit2ByteBuffer(byteBuffer, 10,true);
+
+        short crc16 = Utils.CRC16(byteBuffer.array(), 2, byteBuffer.limit()-2);
+        byteBuffer.putShort(0, crc16);
+
+        long s = SystemClock.elapsedRealtime();
+        int xlen = write(getCalibrateAddr(fileName),byteBuffer.array());
+
+        if(xlen > 0){
+            Log.i(TAG,"完成校准数据文件的存储: "+fileName + ",idx:" + idx + ",s:" + (SystemClock.elapsedRealtime() - s));
+            return true;
+        }else {
+            Log.e(TAG,"saveCalibrateParam");
+            return false;
+        }
+
+    }
+
+    @Override
+    public int loadCalibration(){
+        int error = readCalibrateParam(USER_CALIBRATE_NAME);
+        if(error != 0){
+            Log.e(TAG,"read user calibrate param fail,error namber="+error);
+            error = readCalibrateParam(FACTORY_CALIBRATE_NAME);
+            if(error != 0){
+                Log.e(TAG,"read factory calibrate param fail,error namber="+error);
+                defaultVal(); //读取失败恢复默认校准系数
+                clearCalibrationState();
+                return -1; //读取用户校准信息和系统校准信息均失败，恢复默认设置；
+            }
+            Log.i(TAG,"read factory calibrate param succesful");
+            return 1;//读取用户校准信息失败，但读取系统校准信息成功；
+        }
+        Log.i(TAG,"read User calibrate param succesful");
+        return 0;//读取成功
+    }
+    @Override
+    public boolean saveCalibration(){
+        return saveFactoryCalibration() && saveUserCalibration();
+    }
+    @Override
+    public boolean saveFactoryCalibration(){
+        return saveCalibrateParam(FACTORY_CALIBRATE_NAME);
+    }
+    @Override
+    public boolean saveUserCalibration(){
+        return saveCalibrateParam(USER_CALIBRATE_NAME);
+    }
+
+    @Override
+    public void backUpCabteRegister(){
+        cofit2ByteBuffer(bakCofitBuf, 0);
+    }
+    @Override
+    public void restoreCabteRegister(){
+        ByteBuffer2cofit(bakCofitBuf, 0);
+    }
+
+    private ByteBuffer bakCofitBuf;
+
+    protected abstract void defaultVal();
+
+    protected abstract int ByteBuffer2cofit(ByteBuffer byteBuffer, int idx);
+
+    protected int cofit2ByteBuffer(ByteBuffer byteBuffer, int idx){
+        return cofit2ByteBuffer(byteBuffer,idx,false);
+    }
+
+    protected abstract int cofit2ByteBuffer(ByteBuffer byteBuffer, int idx,boolean bSave);
+    protected int getShortCoef1(short []cofitArray, ByteBuffer buf, int idx){
+        buf.position(idx);
+        for(int i=0;i<cofitArray.length;i++) {
+            cofitArray[i] = buf.getShort();
+        }
+        return buf.position();
+    }
+    protected int getShortCoef2(short [][]cofitArray, ByteBuffer buf, int idx){
+        buf.position(idx);
+        for(int i=0;i<cofitArray.length;i++) {
+            for (int j = 0; j < cofitArray[i].length; j++) {
+                cofitArray[i][j] = buf.getShort();
+            }
+        }
+        return buf.position();
+    }
+    protected int getShortCoef3(short [][][]cofitArray, ByteBuffer buf, int idx){
+        buf.position(idx);
+        for(int i=0;i<cofitArray.length;i++) {
+            for (int j = 0; j < cofitArray[i].length; j++) {
+                for (int k = 0; k < cofitArray[i][j].length; k++) {
+                    cofitArray[i][j][k] = buf.getShort();
+                }
+            }
+        }
+        return buf.position();
+    }
+    protected int getFloatCoef1(float []cofitArray, ByteBuffer buf, int idx){
+        buf.position(idx);
+        for(int i=0;i<cofitArray.length;i++) {
+            cofitArray[i] = buf.getFloat();
+        }
+        return buf.position();
+    }
+    protected int getFloatCoef2(float [][]cofitArray, ByteBuffer buf, int idx){
+        buf.position(idx);
+        for(int i=0;i<cofitArray.length;i++) {
+            for (int j = 0; j < cofitArray[i].length; j++) {
+                cofitArray[i][j] = buf.getFloat();
+            }
+        }
+        return buf.position();
+    }
+    protected int getFloatCoef3(float [][][]cofitArray, ByteBuffer buf, int idx){
+        buf.position(idx);
+        for(int i=0;i<cofitArray.length;i++) {
+            for (int j = 0; j < cofitArray[i].length; j++) {
+                for (int k = 0; k < cofitArray[i][j].length; k++) {
+                    cofitArray[i][j][k] = buf.getFloat();
+                }
+            }
+        }
+        return buf.position();
+    }
+    protected int getFloatCoef4(float [][][][]cofitArray, ByteBuffer buf, int idx){
+        buf.position(idx);
+        for(int i=0;i<cofitArray.length;i++) {
+            for (int j = 0; j < cofitArray[i].length; j++) {
+                for (int k = 0; k < cofitArray[i][j].length; k++) {
+                    for(int l=0;l<cofitArray[i][j][k].length;l++) {
+                        cofitArray[i][j][k][l] = buf.getFloat();
+                    }
+                }
+            }
+        }
+        return buf.position();
+    }
+    protected int getShortCoef4(short [][][][]cofitArray, ByteBuffer buf, int idx){
+        buf.position(idx);
+        for(int i=0;i<cofitArray.length;i++) {
+            for (int j = 0; j < cofitArray[i].length; j++) {
+                for (int k = 0; k < cofitArray[i][j].length; k++) {
+                    for (int l = 0; l < cofitArray[i][j][k].length; l++) {
+                        cofitArray[i][j][k][l] = buf.getShort();
+                    }
+                }
+            }
+        }
+        return buf.position();
+    }
+    protected int getByteCoef1(byte []cofitArray, ByteBuffer buf, int idx){
+        buf.position(idx);
+        for(int i=0;i<cofitArray.length;i++) {
+            cofitArray[i] = buf.get();
+        }
+        return buf.position();
+    }
+    protected int getByteCoef2(byte [][]cofitArray, ByteBuffer buf, int idx){
+        buf.position(idx);
+        for(int i=0;i<cofitArray.length;i++) {
+            for (int j = 0; j < cofitArray[i].length; j++) {
+                cofitArray[i][j] = buf.get();
+            }
+        }
+        return buf.position();
+    }
+    protected int setShortCoef1(short []cofitArray, ByteBuffer buf, int idx){
+        buf.position(idx);
+        for(int i=0;i<cofitArray.length;i++) {
+            buf.putShort(cofitArray[i]);
+        }
+        return buf.position();
+    }
+    protected int setShortCoef2(short [][]cofitArray, ByteBuffer buf, int idx){
+        buf.position(idx);
+        for(int i=0;i<cofitArray.length;i++) {
+            for (int j = 0; j < cofitArray[i].length; j++) {
+                buf.putShort(cofitArray[i][j]);
+            }
+        }
+        return buf.position();
+    }
+    protected int setShortCoef3(short [][][]cofitArray, ByteBuffer buf, int idx){
+        buf.position(idx);
+        for(int i=0;i<cofitArray.length;i++) {
+            for (int j = 0; j < cofitArray[i].length; j++) {
+                for (int k = 0; k < cofitArray[i][j].length; k++) {
+                    buf.putShort(cofitArray[i][j][k]);
+                }
+            }
+        }
+        return buf.position();
+    }
+    protected int setFloatCoef1(float []cofitArray, ByteBuffer buf, int idx){
+        buf.position(idx);
+        for(int i=0;i<cofitArray.length;i++) {
+            buf.putFloat(cofitArray[i]);
+        }
+        return buf.position();
+    }
+    protected int setFloatCoef2(float [][]cofitArray, ByteBuffer buf, int idx){
+        buf.position(idx);
+        for(int i=0;i<cofitArray.length;i++) {
+            for (int j = 0; j < cofitArray[i].length; j++) {
+                buf.putFloat(cofitArray[i][j]);
+            }
+        }
+        return buf.position();
+    }
+    protected int setFloatCoef3(float [][][]cofitArray, ByteBuffer buf, int idx){
+        buf.position(idx);
+        for(int i=0;i<cofitArray.length;i++) {
+            for (int j = 0; j < cofitArray[i].length; j++) {
+                for (int k = 0; k < cofitArray[i][j].length; k++) {
+                    buf.putFloat(cofitArray[i][j][k]);
+                }
+            }
+        }
+        return buf.position();
+    }
+    protected int setFloatCoef4(float [][][][]cofitArray, ByteBuffer buf, int idx){
+        buf.position(idx);
+        for(int i=0;i<cofitArray.length;i++) {
+            for (int j = 0; j < cofitArray[i].length; j++) {
+                for (int k = 0; k < cofitArray[i][j].length; k++) {
+                    for(int l=0;l < cofitArray[i][j][k].length;l ++) {
+                        buf.putFloat(cofitArray[i][j][k][l]);
+                    }
+                }
+            }
+        }
+        return buf.position();
+    }
+    protected int setShortCoef4(short [][][][]cofitArray, ByteBuffer buf, int idx){
+        buf.position(idx);
+        for(int i=0;i<cofitArray.length;i++) {
+            for (int j = 0; j < cofitArray[i].length; j++) {
+                for (int k = 0; k < cofitArray[i][j].length; k++) {
+                    for(int l=0;l < cofitArray[i][j][k].length;l ++) {
+                        buf.putShort(cofitArray[i][j][k][l]);
+                    }
+                }
+            }
+        }
+        return buf.position();
+    }
+    protected int setByteCoef1(byte []cofitArray, ByteBuffer buf, int idx){
+        buf.position(idx);
+        for(int i=0;i<cofitArray.length;i++) {
+            buf.put(cofitArray[i]);
+        }
+        return buf.position();
+    }
+    protected int setByteCoef2(byte [][]cofitArray, ByteBuffer buf, int idx){
+        buf.position(idx);
+        for(int i=0;i<cofitArray.length;i++) {
+            for (int j = 0; j < cofitArray[i].length; j++) {
+                buf.put(cofitArray[i][j]);
+            }
+        }
+        return buf.position();
+    }
+    protected int setIntCoef1(int [] cofitArray,ByteBuffer buf,int idx){
+        buf.position(idx);
+        for(int i=0;i<cofitArray.length;i++){
+            buf.putInt(cofitArray[i]);
+        }
+        return buf.position();
+    }
+
+    protected int setIntCoef3(int [][][]cofitArray, ByteBuffer buf, int idx){
+        buf.position(idx);
+        for(int i=0;i<cofitArray.length;i++) {
+            for (int j = 0; j < cofitArray[i].length; j++) {
+                for (int k = 0; k < cofitArray[i][j].length; k++) {
+                    buf.putInt(cofitArray[i][j][k]);
+                }
+            }
+        }
+        return buf.position();
+    }
+    protected int getIntCoef3(int [][][]cofitArray, ByteBuffer buf, int idx){
+        buf.position(idx);
+        for(int i=0;i<cofitArray.length;i++) {
+            for (int j = 0; j < cofitArray[i].length; j++) {
+                for (int k = 0; k < cofitArray[i][j].length; k++) {
+                    cofitArray[i][j][k] = buf.getInt();
+                }
+            }
+        }
+        return buf.position();
+    }
+    protected int getIntCoef1(int []cofitArray, ByteBuffer buf, int idx){
+        buf.position(idx);
+        for(int i=0;i<cofitArray.length;i++) {
+            cofitArray[i] = buf.getInt();
+        }
+        return buf.position();
+    }
+
+    protected int setString(String str,ByteBuffer buf,int idx){
+        buf.position(idx);
+        byte[] bytes = str.getBytes(StandardCharsets.US_ASCII);
+        if(bytes != null) {
+            buf.putInt(0x20250617);
+            buf.putInt(bytes.length);
+            buf.put(bytes);
+        }
+        return buf.position();
+    }
+    protected int getString(StringBuilder sb,ByteBuffer buf,int idx){
+        buf.position(idx);
+        if(0x20250617 == buf.getInt()) {
+            int l = buf.getInt();
+            if (l > 0 && l < 128) {
+                byte[] bytes = new byte[l];
+                buf.get(bytes);
+                sb.append(new String(bytes, StandardCharsets.US_ASCII));
+            }
+        }
+        return buf.position();
+    }
+
+
+    public static final int RATIO_DANG_1 = 0;
+    public static final int RATIO_DANG_2 = RATIO_DANG_1 + 1;
+    public static final int RATIO_DANG_3 = RATIO_DANG_2 + 1;
+    public static final int RATIO_DANG_4 = RATIO_DANG_3 + 1;
+
+
+    protected String getNowTime(){
+        Date now = new Date();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        return sdf.format(now);
+    }
+
+
+    public abstract void defaultVal_coefChannel(int ch,int dang,int resistanceType);
+
+    public abstract double calc_coefChannel(int chIdx,double scaleVal,int idx);
+
+    public abstract void calc_pga_gain(int cnt,int chIdx,int resistanceType,double scaleVal,int []result);
+
+    public abstract void calc_pga_fs_gain(int chIdx,double scaleVal,int []result);
+
+    public abstract float getChannelCoef(int chIdx,int dang,int idx);
+    public abstract void setChannelCoef(int chIdx,int dang,int idx,float val);
+
+    public abstract void setChannelZero(int chIdx,int dwIdx,int pga,float val);
+
+    public abstract float getChannelZero(int chIdx,int dwIdx,int pga);
+
+    public abstract int getChCapacitanceHigh(int chIdx,int dang);
+
+    public abstract void setChCapacitanceHigh(int chIdx,int dang ,int val);
+    public abstract void setAdOffset(int chIdx,int chMode,int adIdx,int val);
+    public abstract int getAdOffset(int chIdx,int chMode,int adIdx);
+    public abstract void setChGain(int chIdx,int resistanceType,int vIdx,int chMode,int adIdx,int val);
+    public abstract int getChGain(int chIdx,int resistanceType,int vIdx,int chMode,int adIdx);
+
+    public abstract double getVerticalRange(int resistanceType,int dang);
+    public abstract int getRatioIdx2Dang(int resistanceType,int idx);
+    public abstract int getRatioIdx(int resistanceType,double v);
+    public abstract double vol_ChannelCoef_defaultEx(int chIdx,int dangwei,int pgaVal);
+    public abstract double vol_ChannelCoef_default(int resistanceType,int dang);
+    public abstract void calcGain(int flag);
+    public abstract void calcPgaSetp(int flag);
+    public String getCabteTime(){
+        return cabteTime;
+    }
+    protected String cabteTime="";
+
+    protected List<String> calibrateItems = new ArrayList<>();
+    protected void addItemAll(List<String> list){
+        calibrateItems.addAll(list);
+    }
+    @Override
+    public List<String> getCalibrationItems(){
+        return calibrateItems;
+    }
+}

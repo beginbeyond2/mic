@@ -1,0 +1,503 @@
+package com.micsig.tbook.scope.math;
+
+import android.os.SystemClock;
+import android.util.Log;
+
+import com.micsig.base.DoubleUtil;
+import com.micsig.base.FilterThread;
+import com.micsig.base.Logger;
+import com.micsig.tbook.hardware.HardwareProduct;
+import com.micsig.tbook.scope.Calibrate.HwConfig;
+import com.micsig.tbook.scope.Data.IDataBuffer;
+import com.micsig.tbook.scope.Data.ImageParam;
+import com.micsig.tbook.scope.Data.WaveData;
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.channel.Channel;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.channel.IChannel;
+import com.micsig.tbook.scope.channel.MathChannel;
+import com.micsig.tbook.scope.horizontal.HorizontalAxis;
+import com.micsig.tbook.scope.horizontal.HorizontalAxisMath;
+import com.micsig.tbook.scope.measure.Measure;
+import com.micsig.tbook.scope.surface.SlideFinger;
+import com.micsig.tbook.scope.surface.SurfaceDataRecv;
+import com.micsig.tbook.scope.surface.SurfaceNative;
+import com.micsig.tbook.scope.surface.SurfacePreview;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Observable;
+import java.util.Observer;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+/**
+ * Created by zhuzh on 2018-4-13.
+ */
+
+public class MathService extends FilterThread implements Observer {
+    private static final String TAG = "MathService";
+    private static volatile MathService instance = null;
+    private ImageParam [] mathParam = new ImageParam[ChannelFactory.MATH_CNT];
+    private SurfaceNative [] surfaceNative = new SurfaceNative[ChannelFactory.MATH_CNT];
+    public static MathService getInstance() {
+        if (instance == null) {
+            synchronized (MathService.class) {
+                if (instance == null ) {
+                    instance = new MathService();
+                }
+            }
+        }
+        return instance;
+    }
+    ExecutorService fixedThreadPool = Executors.newFixedThreadPool(ChannelFactory.MATH_CNT);
+
+    private MathService() {
+        super(TAG);
+        for(int i=0;i<surfaceLock.length;i++){
+            surfaceLock[i] = new Object();
+        }
+        InitMathParam();
+        this.setRunnable(new Runnable() {
+            @Override
+            public void run() {
+                List<Callable<Boolean>> list = new ArrayList<>();
+                ChannelFactory.forEachMath(mathChannel -> {
+                    list.add(()->{
+                        if(mathChannel.isOpen()) {
+                            if (MathCalc(mathChannel)) {
+                                drawMath(mathChannel);
+                            } else {
+                                if(!SlideFinger.getInstance().isSlide()) {
+                                    clearMath(mathChannel);
+                                }
+                            }
+                        }
+                        return true;
+                    });
+                });
+                try {
+                    List<Future<Boolean>>futures = fixedThreadPool.invokeAll(list);
+//                    futures.forEach( future->{
+//                    });
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        setBeforeRun(false);
+        this.setDelayMillis(40);
+
+        EventFactory.addEventObserver(EventFactory.EVENT_MATH_VPOS,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_CH_WAVE_UPDATE,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_SURFACE_CREATED,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_SURFACE_DESTROYED,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_MATH_REFRESH,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_DISPLAY_CCT,this);
+    }
+
+    private void InitMathParam(){
+        for(int i=0;i<mathParam.length;i++) {
+            mathParam[i] = new ImageParam();
+            mathParam[i].setPerPixelByte(4);
+            mathParam[i].setBackgroundColor(0);
+            mathParam[i].setForegroundColor(0xFF0000FF);
+            mathParam[i].setWidth(ScopeBase.getWidth());
+            mathParam[i].setHeight(ScopeBase.getHeight());
+            mathParam[i].setXOffset(0);
+            mathParam[i].setYOffset(0);
+        }
+    }
+
+    private void drawMath(MathChannel mathChannel){
+        if(mathChannel.isOpen()){
+            int idx = mathChannel.getChId() - ChannelFactory.MATH1;
+            ImageParam imageParam = mathParam[idx];
+            imageParam.setForegroundColor(mathChannel.getForegroundColor());
+            imageParam.setVerticalPerPix(ScopeBase.changeAccuracy(mathChannel.getADVerticalPerPix()  * ScopeBase.getToUICoff()));
+            // horizontal
+            if(mathChannel.getMathType() == MathWave.MATH_FFTWAVE) {
+                //转化为绝对坐标
+                HorizontalAxisMath horizontalAxisFFT=mathChannel.getHorizontalAxisMathFFT();
+                imageParam.setXOffset((int)(-horizontalAxisFFT.getXPosOfView()));
+                imageParam.setTimeScaleVal(horizontalAxisFFT.fftXScaleIdVal());
+
+            } else {
+                imageParam.setXOffset(0);
+                imageParam.setTimeScaleVal(HorizontalAxis.getInstance().getTimeScaleIdVal());
+            }
+            // vertical
+            if(Scope.getInstance().isZoom()) {
+                imageParam.setYOffset((int) Math.round(mathChannel.getPos() * ScopeBase.getZoomHeight()/ScopeBase.getHeight()));
+                imageParam.setHeight(ScopeBase.getZoomHeight());
+            } else {
+                imageParam.setYOffset((int) Math.round(mathChannel.getPos()));
+                imageParam.setHeight(ScopeBase.getHeight());
+            }
+            IDataBuffer dataBuffer = mathChannel.obtain();
+            if(dataBuffer != null) {
+                boolean bCursorEnable = false;
+                if (mathChannel.getMathType() == MathWave.MATH_FFTWAVE) {
+                    WaveData wd = (WaveData) dataBuffer;
+                    int len = wd.getWaveLength();
+
+                    wd.setTimeScaleVal(wd.getSampRate() * (len - 1) / 2 / len / ScopeBase.getHorizonGridCnt());
+
+                    wd.setXPos(0);
+                    wd.setStartX(ScopeBase.getWidth() / 2);//归零参数，方便计算
+                    wd.setEndX(ScopeBase.getWidth() / 2 + ScopeBase.getWidth() - 1);//头尾长度控制在标准屏长度width
+
+                    MathFFTWave mathFFTWave = mathChannel.getMathFFTWave();
+                    if(mathFFTWave.getFFTType() == MathFFTWave.FFT_TYPE_DB){
+                        imageParam.setVerticalPerPix(ScopeBase.changeAccuracy(wd.getVScaleVal()*mathChannel.getADVerticalPerPix() * ScopeBase.getToUICoff()*1e4));
+                    }
+                    Measure measure = mathChannel.getMeasure();
+                    if(measure.isMeasureItemEnable(Measure.MeasureType.MEASURE_CURSOR_X1)
+                            ||measure.isMeasureItemEnable(Measure.MeasureType.MEASURE_CURSOR_X2)) {
+                        imageParam.setCursor(measure.getCursorX1(), measure.getCursorX2());
+                        bCursorEnable = true;
+                    }
+                }
+                synchronized (surfaceLock[idx]) {
+
+                    if (surfaceNative[idx] != null) {
+                        if(mathChannel.getMathType() == getCalcMathType(mathChannel.getChId() - ChannelFactory.MATH1)) {
+                            if(!SlideFinger.getInstance().isSlide()) {
+                                imageParam.setStartX(((WaveData)dataBuffer).getStartX());
+                                imageParam.setEndX(((WaveData)dataBuffer).getEndX());
+                                surfaceNative[idx].drawSurface(dataBuffer.getByteBuffer(), imageParam.getDirectBuffer());
+                                if(bCursorEnable){
+                                    mathChannel.setCursorValue(imageParam.getCursorX1Value(),imageParam.getCursorX2Value());
+                                    mathChannel.setCursorValid(imageParam.isCursorX1Valid(), imageParam.isCursorX2Valid());
+                                    if(ChannelFactory.getChActivate() == mathChannel.getChId()) {
+                                        EventFactory.sendEvent(EventFactory.EVENT_MATH_MEASURE_UPDATE);
+                                    }
+                                }else{
+                                    mathChannel.setCursorValid(false,false);
+                                }
+                            }
+                        }
+                    }
+                }
+                mathChannel.recycle(dataBuffer);
+            }
+        }
+    }
+
+    public void clearMath(MathChannel mathChannel) {
+        if (mathChannel.isOpen()
+                && !Scope.getInstance().isRun()) {
+            int idx = mathChannel.getChId() - ChannelFactory.MATH1;
+            synchronized (surfaceLock[idx]){
+                if(surfaceNative[idx] != null){
+                    surfaceNative[idx].clearSurface();
+                }
+            }
+        }
+    }
+    private final Object []surfaceLock = new Object[ChannelFactory.MATH_CNT];
+    private final int [] calcMathType = new int[ChannelFactory.MATH_CNT];
+    private void setCalcMathType(int idx,int mathType){
+        this.calcMathType[idx] = mathType;
+    }
+    private int getCalcMathType(int idx){
+        return this.calcMathType[idx];
+    }
+
+    private double sampleRate = 0;
+    private boolean MathCalc(MathChannel mathChannel){
+        boolean bMathCalc = false;
+        boolean bSlide = SlideFinger.getInstance().isSlide();
+        int idx = mathChannel.getChId() - ChannelFactory.MATH1;
+        if(mathChannel.isOpen() && !bSlide){
+
+            if(mathChannel.getMathType() != getCalcMathType(idx)
+                    || !DoubleUtil.FuzzyCompare(sampleRate , mathChannel.getSampleRate())){;
+                EventFactory.sendEvent(new EventBase(EventFactory.EVENT_AFTERGLOW_MATH_CLEAR),true,500);
+                setCalcMathType(idx,mathChannel.getMathType());
+                sampleRate = mathChannel.getSampleRate();
+            }
+
+            switch (getCalcMathType(idx)){
+                case MathWave.MATH_DUALWAVE:
+                    bMathCalc = MathDualWaveCalc(mathChannel);
+                    break;
+                case MathWave.MATH_FFTWAVE:
+                    bMathCalc = MathFFTWaveCalc(mathChannel);
+                    break;
+                case MathWave.MATH_EXPR:
+                    bMathCalc = MathExprWaveCalc(mathChannel);
+                    break;
+            }
+            if(getCalcMathType(idx) != mathChannel.getMathType()){
+                bMathCalc = false;
+            }
+        }
+        if(bMathCalc){
+            mathChannel.setWaveValid(true);
+            EventFactory.sendEvent(new EventBase(EventFactory.EVENT_MATH_WAVE_UPDATE, mathChannel.getChId()));
+        }
+        return bMathCalc;
+    }
+    private void serialzationChannel(MathChannel mathChannel,WaveData dstWave,
+                                     IDataBuffer [] ch){
+        IDataBuffer src = null;
+        for(int i=0;i<ch.length;i++){
+            if(ch[i] != null){
+                src = ch[i];
+                break;
+            }
+        }
+        if(src != null) {
+            serialzationChannel(mathChannel,dstWave, (WaveData) src, (WaveData) src);
+        }
+    }
+
+    private void serialzationChannel(MathChannel mathChannel,WaveData dstWave, WaveData src1, WaveData src2) {
+
+        WaveData src = src1;
+        if (src.getWaveLength() > src2.getWaveLength())
+            src = src2;
+        dstWave.setTimeScaleVal(src.getTimeScaleVal());
+        dstWave.setXPos(src.getXPos());
+        dstWave.setYPosition(mathChannel.getPos());
+        dstWave.setStartX(src.getStartX());
+        dstWave.setEndX(src.getEndX());
+        mathChannel.setWaveLen(src.getWaveLength());
+        double _vScale = src.getVScaleVal();
+        double vPrePix = ScopeBase.changeAccuracy(mathChannel.getADVerticalPerPix() * ScopeBase.getToUICoff());
+        double wavFactor = HwConfig.getInstance().getWavFactor();
+        int mathType = mathChannel.getMathType();
+        int waveType = WaveData.DYNAMIC_WAVE;
+        switch (mathType){
+            case MathWave.MATH_DUALWAVE:
+            case MathWave.MATH_EXPR:
+                _vScale = mathChannel.getVScaleVal();
+                vPrePix *= wavFactor;
+                break;
+            case MathWave.MATH_FFTWAVE:
+                if(mathChannel.getMathFFTWave().getFFTType() == MathFFTWave.FFT_TYPE_DB){
+                    vPrePix = _vScale = mathChannel.getVScaleVal();
+                }else {
+                    vPrePix = src.getVerticalPerPix();
+                }
+                waveType = WaveData.FFT_WAVE;
+                break;
+        }
+
+        dstWave.setVScaleVal(_vScale);
+        dstWave.setVerticalPerPix(vPrePix);
+        dstWave.setChIdx(mathChannel.getChId());
+        dstWave.setSampRate(src.getSampRate());
+        dstWave.setSampRate2display(src.getSampRate2display());
+        dstWave.setWaveType(waveType);
+        dstWave.setProbeType(mathChannel.getProbeType());
+        dstWave.setProbeStr(mathChannel.getProbeStr());
+        dstWave.setProbeRate(1.0);
+        dstWave.setBinType( WaveData.WAVE_BIN);
+        dstWave.setPlaceVal(0);
+        dstWave.setSegmentNums(1);
+        dstWave.setSegmentLen(dstWave.getWaveLength());
+        dstWave.setVerticalPerGridPixels(ScopeBase.getVerticalPerGridPixels());
+    }
+
+    private boolean MathDualWaveCalc(MathChannel mathChannel ){
+        boolean bMathCalc = false;
+        Scope scope = Scope.getInstance();
+        MathDualWave mathDualWave = mathChannel.getMathDualWave();
+        IChannel src1 = ChannelFactory.getDynamicChannel(mathDualWave.getSource1());
+        IChannel src2 = ChannelFactory.getDynamicChannel(mathDualWave.getSource2());
+
+        if(src1 != null &&  src2 != null){
+            if(scope.isChannelInSample(src1.getChId())
+                    && scope.isChannelInSample(src2.getChId())) {
+                IDataBuffer dstBuffer = mathChannel.dequeue();
+                if (dstBuffer != null) {
+                    IDataBuffer srcBuffer1 = src1.obtain();
+                    if (srcBuffer1 != null) {
+                        IDataBuffer srcBuffer2 = src2.obtain();
+                        if (srcBuffer2 != null) {
+                            serialzationChannel(mathChannel,(WaveData) dstBuffer, (WaveData) srcBuffer1, (WaveData) srcBuffer2);
+                            bMathCalc = MathNative.CalcDual(mathDualWave.getOperator(),
+                                    dstBuffer.getByteBuffer(),
+                                    srcBuffer1.getByteBuffer(),
+                                    srcBuffer2.getByteBuffer());
+                            src2.recycle(srcBuffer2);
+                        }
+                        src1.recycle(srcBuffer1);
+                    }
+                    mathChannel.enqueue(dstBuffer);
+                }
+            }
+        }
+        return bMathCalc;
+    }
+
+
+    private boolean MathFFTWaveCalc(MathChannel mathChannel ){
+        int mathIdx = mathChannel.getMathChIdx();
+        boolean bMathCalc = false;
+        Scope scope = Scope.getInstance();
+        MathFFTWave mathFFTWave = mathChannel.getMathFFTWave();
+        IChannel src = ChannelFactory.getDynamicChannel(mathFFTWave.getSource());
+        if(src != null
+                && scope.isChannelInSample(src.getChId())){
+            IDataBuffer dstBuffer = mathChannel.dequeue();
+
+            if(dstBuffer != null ){
+                WaveData srcBuffer = (WaveData) src.obtain();
+                if(srcBuffer != null){
+                    MathNative.setVAd(mathIdx,srcBuffer.getVerticalPerPix());
+                    bMathCalc = MathNative.CalcFFT(mathIdx,mathFFTWave.getFFTType(),
+                            mathFFTWave.getFFTWindow(),
+                            dstBuffer.getByteBuffer(),
+                            srcBuffer.getByteBuffer());
+                    //放CalcFFT后面
+                    serialzationChannel(mathChannel,(WaveData)dstBuffer,(WaveData)srcBuffer,(WaveData)srcBuffer);
+                    WaveData waveData = (WaveData)srcBuffer;
+                    mathChannel.setFFTDCVal(mathFFTWave.getFFTDCVal((double)waveData.getVerticalPerPix()));
+                    mathChannel.setFFTMaxVal(mathFFTWave.getFFTMaxVal((double)waveData.getVerticalPerPix()));
+                    mathChannel.setFFTMaxFreq((double)(mathFFTWave.getFFTMaxIdx() *
+                            mathChannel.getSampleRate()/MathNative.CalFFTPointNum(waveData.getWaveLength())));
+                    src.recycle(srcBuffer);
+                }
+                mathChannel.enqueue(dstBuffer);
+            }
+        }
+        return bMathCalc;
+    }
+
+    private  String [] exprString = { ")",")",")",")",")",")",")",")",")",")"};
+
+    private boolean MathExprWaveCalc(MathChannel mathChannel){
+        int mathIdx = mathChannel.getMathChIdx();
+        boolean bMathCalc = false;
+        boolean bExprChange = false;
+        Scope scope = Scope.getInstance();
+        MathExprWave mathExprWave = mathChannel.getMathExprWave();
+        String exprString = mathExprWave.getExprString();
+        bExprChange = mathExprWave.isExprChange();
+        if(!this.exprString[mathIdx].equals(exprString)){
+
+            if(MathNative.setCalcExpr(mathIdx,exprString)){
+                this.exprString[mathIdx] = exprString;
+                bExprChange = true;
+            }else{
+                return false;
+            }
+        }
+
+
+        Channel [] chArray = new Channel[ChannelFactory.CH_CNT];
+        IDataBuffer[] chBuffer = new IDataBuffer[ChannelFactory.CH_CNT];
+        ByteBuffer[] chBufArray = new ByteBuffer[ChannelFactory.CH_CNT];
+        boolean bSample = false;
+        int maxIdx = ChannelFactory.getMaxChIdx();
+        for(int i = ChannelFactory.CH1;i < maxIdx;i++){
+            chArray[i] = null;
+            chBuffer[i] = null;
+            chBufArray[i] = null;
+            if(scope.isChannelInSample(i)){
+                chArray[i] = ChannelFactory.getDynamicChannel(i);
+                chBuffer[i] = chArray[i].obtain();
+                if(chBuffer[i] != null)
+                    bSample = true;
+                chBufArray[i] = chBuffer[i] == null ? null : chBuffer[i].getByteBuffer();
+            }
+        }
+
+        double t = HorizontalAxis.getInstance().getTimeScaleIdVal();
+
+        if(bSample){
+            double val = 0;
+            IDataBuffer dstBuffer = mathChannel.dequeue();
+            if(dstBuffer != null) {
+                serialzationChannel(mathChannel,(WaveData) dstBuffer, chBuffer);
+                val = MathNative.CalcExpr(mathIdx,dstBuffer.getByteBuffer(),
+                        chBufArray, t,
+                        mathExprWave.getVar1(), mathExprWave.getVar2()
+                );
+                mathChannel.enqueue(dstBuffer);
+            }
+            bMathCalc = true;
+
+            if(bExprChange){
+                mathChannel.setMaxVal(val);
+                mathExprWave.setExprChange(false);
+            }
+        }
+
+        for(int i = ChannelFactory.CH1;i<maxIdx;i++){
+            if(chBuffer[i] != null){
+                chArray[i].recycle(chBuffer[i]);
+                chBuffer[i] = null;
+            }
+        }
+        return bMathCalc;
+    }
+
+
+    public void MathRefresh(){
+        if(ChannelFactory.isMathEnable()){
+            run();
+        }
+    }
+    @Override
+    public void update(Observable observable, Object data) {
+        EventBase eventBase = (EventBase)data;
+        switch (eventBase.getId()){
+            case EventFactory.EVENT_MATH_VPOS:
+            case EventFactory.EVENT_CH_WAVE_UPDATE:
+            case EventFactory.EVENT_MATH_REFRESH:
+            case EventFactory.EVENT_DISPLAY_CCT:
+                if(!SlideFinger.getInstance().isSlide()) {
+                    MathRefresh();
+                }
+                break;
+            case EventFactory.EVENT_SURFACE_CREATED: {
+                SurfaceDataRecv surface = (SurfaceDataRecv) eventBase.getData();
+                if (surface != null) {
+
+                        ChannelFactory.forEachMath(mathChannel -> {
+                            int idx = mathChannel.getChId() - ChannelFactory.MATH1;
+                            synchronized (surfaceLock[idx]) {
+                                surfaceNative[idx] = surface.getSurfaceNative(SurfacePreview.LAYER_MATH1 + idx);
+                                surfaceNative[idx].acquireSurface(ScopeBase.getWidth(), ScopeBase.getHeight());
+                                surfaceNative[idx].clearSurface();
+                            }
+                        });
+
+
+                }
+            }
+                break;
+            case EventFactory.EVENT_SURFACE_DESTROYED: {
+                SurfaceDataRecv surface = (SurfaceDataRecv) eventBase.getData();
+                if (surface != null) {
+                    ChannelFactory.forEachMath(mathChannel -> {
+                        int idx = mathChannel.getChId() - ChannelFactory.MATH1;
+                        synchronized (surfaceLock[idx]) {
+                            if (surfaceNative[idx] != null) {
+                                surfaceNative[idx].releaseSurface();
+                                surfaceNative[idx] = null;
+                            }
+                        }
+                    });
+                }
+            }
+                break;
+        }
+
+    }
+
+    public static void forceMathRefresh(){
+        getInstance().MathRefresh();
+    }
+}

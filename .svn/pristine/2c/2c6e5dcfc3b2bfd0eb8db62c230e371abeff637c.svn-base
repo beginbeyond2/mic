@@ -1,0 +1,135 @@
+package com.micsig.tbook.scope.Trigger;
+
+import com.micsig.tbook.scope.channel.ChannelFactory;
+
+import java.util.concurrent.atomic.AtomicInteger;
+
+/**
+ * Created by zhuzh on 2018-6-1.
+ */
+
+public class TriggerLogic extends Trigger {
+
+    public static final int LOGIC_LOW = 1;
+    public static final int LOGIC_HIGH = 0;
+    public static final int LOGIC_NONE = 2;
+
+    public static final int LOGIC_AND = 0;
+    public static final int LOGIC_OR = 1;
+    public static final int LOGIC_NAND  = 2;
+    public static final int LOGIC_NOR = 3;
+
+
+    public static final int LOGIC_RELATION_LESSER = TRIGGER_RELATION_LESS_THAN; //小于
+    public static final int LOGIC_RELATION_GREATER = TRIGGER_RELATION_MORE_THAN ; //大于
+    public static final int LOGIC_RELATION_EQUAL = TRIGGER_RELATION_EQUAL; //等于
+    public static final int LOGIC_RELATION_NOT_EQUAL = TRIGGER_RELATION_NOT_EQUAL; //不等于
+    public static final int LOGIC_RELATION_TRUE = TRIGGER_RELATION_TRUE; //变到真值时触发
+    public static final int LOGIC_RELATION_FALSE = TRIGGER_RELATION_FALSE; //变到假值时触发
+
+
+    private int logic = LOGIC_AND;
+    private int condition = LOGIC_RELATION_LESSER;
+    private long logicTime = 8;
+    private long timeHigh = 8;
+    private long timeLow = 8;
+    private int [] logicValids = new int[ChannelFactory.CH_CNT]; //分别对应于ch1~ch4的逻辑电平极性配置
+
+    public TriggerLogic() {
+        super(Trigger.TRIG_TYPE_LOGIC);
+        InitTriggerSrc();
+    }
+
+    public int getLogic() {
+        return logic;
+    }
+
+    public void setLogic(int logic) {
+        this.logic = logic;
+        triggerParamChange();
+    }
+
+    public long getTimeHigh() {
+        return timeHigh;
+    }
+
+    public void setTimeHigh(long timeHigh) {
+        this.timeHigh = timeHigh;
+        triggerParamChange();
+    }
+
+    public long getTimeLow() {
+        return timeLow;
+    }
+
+    public void setTimeLow(long timeLow) {
+        this.timeLow = timeLow;
+        triggerParamChange();
+    }
+
+    public int getCondition() {
+        return condition;
+    }
+
+    public void setCondition(int condition) {
+        this.condition = condition;
+        triggerParamChange();
+    }
+
+    public long getLogicTime() {
+        return logicTime;
+    }
+
+    public void setLogicTime(long logicTime) {
+        this.logicTime = logicTime;
+        triggerParamChange();
+    }
+
+    public int getLogicValid(int chIdx) {
+        if(ChannelFactory.isDynamicCh(chIdx)){
+            return logicValids[chIdx];
+        }
+        return LOGIC_NONE;
+    }
+
+    public void setLogicValids(int chIdx,int logicValid) {
+        if(ChannelFactory.isDynamicCh(chIdx)) {
+            this.logicValids[chIdx] = logicValid;
+            InitTriggerSrc(); //每次改变需要重新配置触发源
+            triggerParamChange();
+        }
+    }
+
+    //Triger.triggerSource[4]: 4个触发源位置并非和通道一一对应，当逻辑触发只有2个源时，则只用triggerSource[0]和triggerSource[1]；
+    private void InitTriggerSrc(){
+        int idx = 0;
+        int maxIdx = ChannelFactory.getMaxChIdx();
+        for(int i=ChannelFactory.CH1;i<maxIdx;i++){
+            if(logicValids[i] != LOGIC_NONE){
+                setTriggerSource(idx++,i);
+            }
+        }
+        for(int i=idx; i<maxIdx;i++){
+            setTriggerSource(i,-1);
+        }
+    }
+
+    @Override
+    public int getTriggerSourceCnt() {
+
+        AtomicInteger cnt = new AtomicInteger();
+        ChannelFactory.forEachCh((channel)->{
+            int i = channel.getChId();
+            if(logicValids[i] != LOGIC_NONE){
+                cnt.getAndIncrement();
+            }
+        });
+
+        return cnt.get();
+    }
+
+    @Override
+    protected boolean isMultitriggerSource() {
+        return true;
+    }
+}

@@ -1,0 +1,268 @@
+package com.micsig.tbook.scope.surface;
+
+
+import android.graphics.Color;
+import android.graphics.SurfaceTexture;
+import android.opengl.GLES11Ext;
+import android.opengl.GLES20;
+import android.os.Handler;
+import android.util.Log;
+
+import androidx.annotation.Nullable;
+
+import com.chillingvan.canvasgl.CanvasGL;
+import com.chillingvan.canvasgl.ICanvasGL;
+import com.chillingvan.canvasgl.ITextureRefresh;
+import com.chillingvan.canvasgl.glcanvas.BasicTexture;
+import com.chillingvan.canvasgl.glcanvas.RawTexture;
+import com.chillingvan.canvasgl.glview.texture.GLViewRenderer;
+import com.chillingvan.canvasgl.glview.texture.gles.EglContextWrapper;
+import com.chillingvan.canvasgl.glview.texture.gles.GLThread;
+import com.chillingvan.canvasgl.util.Loggers;
+import com.micsig.tbook.scope.ScopeBase;
+
+
+/**
+ * Created by zhuzh on 2018-4-2.
+ */
+
+public abstract class SurfaceTextureRenderer implements GLViewRenderer, ITextureRefresh {
+    @Override
+    public void onRefresh() {
+        this.requestRender();
+    }
+    private static final String TAG = "SurfaceTextureRenderer";
+    public static final int FORMAT_RGBA_8888 = 1;
+    public static final int FORMAT_BGRA_8888 = 5;
+
+
+
+    protected final GLThread mGLThread;
+    private int width;
+    private int height;
+    private int format = FORMAT_BGRA_8888;
+    protected ICanvasGL mCanvas;
+
+    private BasicTexture outsideSharedTexture;
+    private SurfaceTexture outsideSharedSurfaceTexture;
+
+    public interface OnSurfaceTextureSet {
+        void onSet(int idx,SurfaceTexture surfaceTexture, RawTexture surfaceTextureRelatedTexture);
+    }
+    private OnSurfaceTextureSet onSurfaceTextureSet;
+    protected SurfaceTexture []producedSurfaceTexture;
+    protected RawTexture []producedRawTexture;
+    private Handler handler;
+    private boolean isStart;
+    private int producedTextureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
+    private int backgroundColor = Color.TRANSPARENT;
+
+
+
+
+    public SurfaceTextureRenderer(int format,Object surface) {
+        this(0, 0, EglContextWrapper.EGL_NO_CONTEXT_WRAPPER, format,surface,1);
+    }
+
+    public SurfaceTextureRenderer(int width, int height,int format, Object surface,int nums) {
+        this(width, height, EglContextWrapper.EGL_NO_CONTEXT_WRAPPER,format,surface,nums);
+    }
+
+    public SurfaceTextureRenderer(int width, int height, EglContextWrapper sharedEglContext,int format, Object surface,int nums) {
+        this.width = width;
+        this.height = height;
+        this.format = format;
+
+        producedSurfaceTexture = new SurfaceTexture[nums];
+        producedRawTexture = new RawTexture[nums];
+
+        mGLThread = new GLThread.Builder().setRenderMode(getRenderMode())
+                .setSharedEglContext(sharedEglContext)
+                .setEGLConfigChooser(8,8,8,8,16,2)
+                .setSurface(surface)
+                .setRenderer(this).createGLThread();
+        handler = new Handler();
+    }
+
+
+   public EglContextWrapper getEglContext(){
+        return mGLThread.getEglContext();
+   }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+    public int getFormat() {
+        return format;
+    }
+
+    /**
+     * If it is used, it must be called before start() called.
+     * @param producedTextureTarget GLES20.GL_TEXTURE_2D or GLES11Ext.GL_TEXTURE_EXTERNAL_OES
+     */
+    public void setProducedTextureTarget(int producedTextureTarget) {
+        this.producedTextureTarget = producedTextureTarget;
+    }
+
+    /**
+     * If it is used, it must be called before start() called.
+     */
+    public void setOnCreateGLContextListener(GLThread.OnCreateGLContextListener onCreateGLContextListener) {
+        mGLThread.setOnCreateGLContextListener(onCreateGLContextListener);
+    }
+
+
+    /**
+     * If it is used, it must be called before start() called.
+     */
+    public void setOnSurfaceTextureSet(OnSurfaceTextureSet onSurfaceTextureSet) {
+        this.onSurfaceTextureSet = onSurfaceTextureSet;
+    }
+
+    public void setSharedTexture(BasicTexture outsideTexture, @Nullable SurfaceTexture outsideSurfaceTexture) {
+        this.outsideSharedTexture = outsideTexture;
+        this.outsideSharedSurfaceTexture = outsideSurfaceTexture;
+    }
+
+    public void setSize(int width, int height) {
+        this.width = width;
+        this.height = height;
+        if (isStart) {
+            mGLThread.onWindowResize(width, height);
+        }
+    }
+
+    public void setBackgroundColor(int backgroundColor) {
+        this.backgroundColor = backgroundColor;
+    }
+
+    public void start() {
+        mGLThread.start();
+        mGLThread.surfaceCreated();
+        mGLThread.onWindowResize(width, height);
+        mGLThread.requestRenderAndWait();
+        isStart = true;
+    }
+
+    public void onResume() {
+        if(mGLThread != null) {
+            mGLThread.onResume();
+        }
+    }
+
+    public void onPause() {
+        if(mGLThread != null) {
+            mGLThread.onPause();
+        }
+    }
+
+    public void end() {
+        if (mGLThread != null) {
+            mGLThread.requestExitAndWait();
+        }
+
+        for(int i=0;i<producedRawTexture.length;i++){
+            if(producedRawTexture[i] != null){
+                producedRawTexture[i].recycle();
+                producedRawTexture[i] = null;
+            }
+        }
+
+        for(int i=0;i<producedSurfaceTexture.length;i++){
+            if(producedSurfaceTexture[i] != null){
+                producedSurfaceTexture[i].release();
+                producedSurfaceTexture[i] = null;
+            }
+        }
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        try {
+            end();
+        } finally {
+            super.finalize();
+        }
+    }
+
+
+    @Override
+    public void onSurfaceCreated() {
+        Loggers.d("OffScreenCanvas", "onSurfaceCreated: ");
+        mCanvas = new CanvasGL(this);
+    }
+
+    @Override
+    public void onSurfaceChanged(int width, int height) {
+        //Loggers.d("OffScreenCanvas", "onSurfaceChanged: ");
+        Log.d(TAG, "onSurfaceChanged() called with: width = [" + width + "], height = [" + height + "]");
+
+        mCanvas.setSize(width, height);
+        for(int i=0;i<producedRawTexture.length;i++){
+              if (producedRawTexture[i] == null) {
+                    producedRawTexture[i] = new RawTexture(width, ScopeBase.getHeight(), false, producedTextureTarget);
+                    if (!producedRawTexture[i].isLoaded()) {
+                        producedRawTexture[i].prepare(mCanvas.getGlCanvas());
+                    }
+                    producedSurfaceTexture [i]= new SurfaceTexture(producedRawTexture[i].getId());
+                  int finalI = i;
+                  handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (onSurfaceTextureSet != null) {
+                              onSurfaceTextureSet.onSet(finalI,producedSurfaceTexture[finalI], producedRawTexture[finalI]);
+                            }
+                        }
+                    });
+              } else {
+                  producedRawTexture[i].setSize(width, ScopeBase.getHeight());
+              }
+        }
+  }
+
+    public abstract void updateTexImage();
+
+    @Override
+    public void onDrawFrame() {
+        mCanvas.clearBuffer(backgroundColor);
+        if (producedTextureTarget != GLES20.GL_TEXTURE_2D){
+            for(SurfaceTexture surfaceTexture:producedSurfaceTexture){
+                surfaceTexture.updateTexImage();
+            }
+        }
+        updateTexImage();
+        onGLDraw(mCanvas, producedSurfaceTexture, producedRawTexture, outsideSharedSurfaceTexture, outsideSharedTexture);
+    }
+    protected int getRenderMode() {
+        return GLThread.RENDERMODE_WHEN_DIRTY;
+    }
+
+    protected abstract void onGLDraw(ICanvasGL canvas, SurfaceTexture []producedSurfaceTexture, RawTexture []producedRawTexture, @Nullable SurfaceTexture outsideSharedSurfaceTexture, @Nullable BasicTexture outsideSharedTexture);
+
+    public void queueEvent(Runnable r) {
+        if(isStart) {
+            if (mGLThread == null) {
+                return;
+            }
+            mGLThread.queueEvent(r);
+        }
+    }
+
+    public void requestRender() {
+        if (isStart && mGLThread != null) {
+            mGLThread.requestRender();
+        }
+    }
+
+    public void requestRenderAndWait() {
+        if(isStart) {
+            if (mGLThread != null) {
+                mGLThread.requestRenderAndWait();
+            }
+        }
+    }
+}

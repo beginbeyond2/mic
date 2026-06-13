@@ -1,0 +1,22 @@
+package com.micsig.tbook.scope.fpga;
+
+
+public class FPGAReg_FanSpeed extends FPGAReg{
+    private FPGAReg recvReg;
+    public FPGAReg_FanSpeed() {
+        super(FPGAReg.FPGA_FAN_SPEED, 4,true);
+        recvReg = new FPGAReg(FPGA_FAN_SPEED,4);
+    }
+    public FPGAReg getRecvReg(){
+        return recvReg;
+    }
+
+
+    public int getFanSpeed(int [] fans){
+        int v = recvReg.getVal();
+        fans[0] = 30 * (v & 0xFFFF);
+        fans[1] = 30 * ((v>>>16) & 0xFFFF);
+        return fans[0];
+    }
+
+}

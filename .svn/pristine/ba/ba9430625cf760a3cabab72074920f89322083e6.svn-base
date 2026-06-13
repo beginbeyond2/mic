@@ -1,0 +1,382 @@
+package com.micsig.tbook.tbookscope.main.maincenter;
+
+import android.content.Context;
+import android.text.TextUtils;
+import android.util.AttributeSet;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.RelativeLayout;
+
+import androidx.annotation.Nullable;
+
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.Data.WaveData;
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.channel.RefChannel;
+import com.micsig.tbook.scope.horizontal.HorizontalAxis;
+import com.micsig.tbook.scope.horizontal.HorizontalAxisMath;
+import com.micsig.tbook.scope.horizontal.HorizontalAxisRef;
+import com.micsig.tbook.tbookscope.MainViewGroup;
+import com.micsig.tbook.tbookscope.R;
+import com.micsig.tbook.tbookscope.rxjava.RxBus;
+import com.micsig.tbook.tbookscope.rxjava.RxEnum;
+import com.micsig.tbook.tbookscope.tools.Tools;
+import com.micsig.tbook.tbookscope.util.CacheUtil;
+import com.micsig.tbook.ui.MTimeBaseSelector;
+import com.micsig.tbook.ui.util.TBookUtil;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Observable;
+import java.util.Observer;
+
+/**
+ * Created by yangj on 2017/12/15.
+ */
+
+public class MainLayoutCenterTimeBase extends RelativeLayout {
+    private static final String TAG = "MainLayoutCenterTimeBase";
+    private Context context;
+    private List<TimeBaseScale> list;
+    private RelativeLayout recyclerLayout;
+    private MainAdapterCenterTimeBase adapter;
+    private OnClickItemListener onClickItemListener;
+    private MTimeBaseSelector mTimeBaseSelector;
+
+    private ViewGroup rootViewGroup;
+
+    public interface OnClickItemListener {
+        void onClickItem(TimeBaseScale scale);
+    }
+
+    public void setOnClickItemListener(OnClickItemListener onClickItemListener) {
+        this.onClickItemListener = onClickItemListener;
+    }
+
+    public MainLayoutCenterTimeBase(Context context) {
+        this(context, null);
+    }
+
+    public MainLayoutCenterTimeBase(Context context, @Nullable AttributeSet attrs) {
+        this(context, attrs, 0);
+    }
+
+    public MainLayoutCenterTimeBase(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
+        this.context = context;
+        initView();
+        EventFactory.addEventObserver(EventFactory.EVENT_TIME_SCALE_LIST, xAxis);
+    }
+
+    private void initView() {
+        rootViewGroup= (ViewGroup) inflate(context, R.layout.layout_maincenter_timebase, this);
+
+        findViewById(R.id.outView).setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                hide();
+            }
+        });
+        recyclerLayout = (RelativeLayout) findViewById(R.id.recyclerLayout);
+
+        mTimeBaseSelector = new MTimeBaseSelector(context);
+        mTimeBaseSelector.setOnClickEvent(onClickEvent);
+        recyclerLayout.addView(mTimeBaseSelector);
+
+//        RecyclerView recyclerView = (RecyclerView) findViewById(R.id.timeBaseRecyclerView);
+//        RecyclerView.LayoutManager layoutManager = new GridLayoutManager(context, 9);
+//        recyclerView.setLayoutManager(layoutManager);
+        list = new ArrayList<TimeBaseScale>();
+//        adapter = new MainAdapterCenterTimeBase(context, list);
+//        adapter.setOnClickListener(onClickListener);
+//        recyclerView.setAdapter(adapter);
+        setList();
+        generateChannelList();
+        setViewLocation();
+        hide();
+    }
+
+    private void setList() {
+        if (list == null) return;
+        List<String> sList = new ArrayList<>();
+        for (int i = 0; i < list.size(); i++) {
+            sList.add(list.get(i).getScale());
+        }
+        mTimeBaseSelector.initDataUI(sList);
+    }
+
+    private void setViewLocation() {
+//        AbsoluteLayout.LayoutParams layoutParams = (LayoutParams) recyclerLayout.getLayoutParams();
+//        if (list.size() <= 9) {
+//            layoutParams.y = 395 + 50 * 3;
+//        } else if (list.size() <= 18) {
+//            layoutParams.y = 395 + 50 * 2;
+//        } else if (list.size() <= 27) {
+//            layoutParams.y = 395 + 50;
+//        } else if (list.size() <= 36) {
+//            layoutParams.y = 395;
+//        } else if (list.size() <= 45) {
+//            layoutParams.y = 395 - 50;
+//        } else if (list.size() <= 54) {
+//            layoutParams.y = 395 - 50 * 2;
+//        }
+//        layoutParams.x = 50;
+//        recyclerLayout.setLayoutParams(layoutParams);
+        RelativeLayout.LayoutParams layoutParams = (LayoutParams) recyclerLayout.getLayoutParams();
+        layoutParams.leftMargin = (int) getResources().getDimension(R.dimen.leftBarWidth);
+        //bug：0010708
+        int offset = 4;
+        if (ScopeBase.getNewHeight() == 1000) {
+            offset = 6;
+        }
+        layoutParams.bottomMargin = (int) getResources().getDimension(R.dimen.mainBottomHeight) + offset;
+        recyclerLayout.setLayoutParams(layoutParams);
+    }
+
+    public List<TimeBaseScale> generateChannelList() {
+        list.clear();
+        List<Double> axis = HorizontalAxis.getInstance().getxAxis();
+        for (int i = 0; i < axis.size(); i++) {
+            String s = TBookUtil.getMFromDouble(axis.get(i));
+            if (TextUtils.isEmpty(s)) continue;
+            list.add(new TimeBaseScale(i, s + "s"));
+        }
+//        adapter.notifyDataSetChanged();
+        setList();
+        setViewLocation();
+        return list;
+    }
+
+    public List<TimeBaseScale> generateMathFFTWaveList(int chIdx) {
+        list.clear();
+        HorizontalAxisMath horizontalAxisMath = ChannelFactory.getMathChannel(chIdx).getHorizontalAxisMathFFT();
+        List<Double> xAxisList = horizontalAxisMath.getxAxis();
+
+        String tail = "Hz";
+        if (!xAxisList.isEmpty()) {
+            for (int i = 0; i < xAxisList.size(); i++) {
+                if (i < horizontalAxisMath.getMinScaleId()  || i > horizontalAxisMath.getMaxScaleId()) continue;
+                String s = TBookUtil.getMFromDouble(xAxisList.get(i));
+                if (TextUtils.isEmpty(s)) continue;
+                list.add(new TimeBaseScale(i, s + tail));
+            }
+        }
+//        adapter.notifyDataSetChanged();
+        setList();
+        setViewLocation();
+        return list;
+    }
+
+    public List<TimeBaseScale> onlyGenerateChannelList() {
+        List<TimeBaseScale> list = new ArrayList<TimeBaseScale>();
+        List<Double> axis = HorizontalAxis.getInstance().getxAxis();
+        for (int i = 0; i < axis.size(); i++) {
+            String s = TBookUtil.getMFromDouble(axis.get(i));
+            if (TextUtils.isEmpty(s)) continue;
+            list.add(new TimeBaseScale(i, s + "s"));
+        }
+        return list;
+    }
+
+
+    public List<TimeBaseScale> onlyGenerateRefChannelList(RefChannel refChannel) {
+        List<TimeBaseScale> list = new ArrayList<TimeBaseScale>();
+        if (refChannel == null) {
+            refChannel = (RefChannel) ChannelFactory.getInstance().getTopRefChannel();
+        }
+        HorizontalAxisRef horizontalAxisRef = refChannel.getHorizontalAxisRef();
+        List<Double> xAxisList = horizontalAxisRef.getxAxis();
+        String tail = "s";
+        if (horizontalAxisRef.getRefType() == HorizontalAxisRef.REFTYPE_MATHFFT) {
+            tail = "Hz";
+        }
+        if (!xAxisList.isEmpty()) {
+            for (int i = 0; i < xAxisList.size(); i++) {
+                String s = TBookUtil.getMFromDouble(xAxisList.get(i));
+                if (TextUtils.isEmpty(s)) continue;
+                list.add(new TimeBaseScale(i, s + tail));
+            }
+        }
+        return list;
+    }
+
+
+    public List<TimeBaseScale> generateRefChannelList(RefChannel refChannel) {
+        list.clear();
+        if(refChannel == null){
+            refChannel = (RefChannel) ChannelFactory.getInstance().getTopRefChannel();
+        }
+//        RefChannel refChannel = (RefChannel) ChannelFactory.getInstance().getTopRefChannel();
+        HorizontalAxisRef horizontalAxisRef = refChannel.getHorizontalAxisRef();
+        List<Double> xAxisList = horizontalAxisRef.getxAxis();
+        String tail = "s";
+        if (horizontalAxisRef.getRefType() == HorizontalAxisRef.REFTYPE_MATHFFT) {
+            tail = "Hz";
+        }
+        if (!xAxisList.isEmpty()) {
+            for (int i = 0; i < xAxisList.size(); i++) {
+                String s = TBookUtil.getMFromDouble(xAxisList.get(i));
+                if (TextUtils.isEmpty(s)) continue;
+                list.add(new TimeBaseScale(i, s + tail));
+            }
+        }
+//        adapter.notifyDataSetChanged();
+        setList();
+        setViewLocation();
+        return list;
+    }
+
+    public List<TimeBaseScale> getList() {
+        int chIdx = ChannelFactory.getChActivate();
+        int timeBaseIndex = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_USERSET_REF_TIMEBASE);
+        if (timeBaseIndex == 0) {//跟随模拟通道
+            if (ChannelFactory.isRefCh(chIdx)) {
+                RefChannel refChannel = ChannelFactory.getRefChannel(chIdx);
+                if (refChannel.getRefType() == WaveData.FFT_WAVE) {
+                    return generateRefChannelList(refChannel);
+                } else {
+                    return generateChannelList();
+                }
+            }
+            if (ChannelFactory.isMath_FFT_Ch(chIdx)) {
+                return generateMathFFTWaveList(chIdx);
+            } else {
+                return generateChannelList();
+            }
+        } else {
+            if (ChannelFactory.isRefCh(chIdx)) {
+                return generateRefChannelList(null);
+            } else if (ChannelFactory.isMath_FFT_Ch(chIdx)) {
+                return generateMathFFTWaveList(chIdx);
+            } else { //数学双波形的时基档位和基础通常是一样的
+                return generateChannelList();
+            }
+        }
+    }
+
+    public List<TimeBaseScale> getList1(){
+        return list;
+    }
+
+    public int getNormalIndex(String scale) {
+        scale = scale.replace(" ","");
+        scale = scale.replace( "u","μ");
+
+        List<TimeBaseScale> scaleList = generateChannelList();
+        for (int i = 0; i < scaleList.size(); i++) {
+            String str = scaleList.get(i).getScale();
+            str = str.replace(" ","");
+            if (str.equals(scale)) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    public int getMathFFTIndex(String scale) {
+        int chIdx = ChannelFactory.getChActivate();
+        if (ChannelFactory.isMath_FFT_Ch(chIdx)) {
+            List<TimeBaseScale> scaleList = generateMathFFTWaveList(chIdx);
+            for (int i = 0; i < scaleList.size(); i++) {
+                if (scaleList.get(i).getScale().equals(scale)) {
+                    return i;
+                }
+            }
+        }
+        return 0;
+    }
+
+    public int getRefIndex(RefChannel refChannel,String scale) {
+        List<TimeBaseScale> scaleList = generateRefChannelList(refChannel);
+        for (int i = 0; i < scaleList.size(); i++) {
+            if (scaleList.get(i).getScale().equals(scale)) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+
+    /*
+    public List<TimeBaseScale> getList(int ch) {
+        ch += ChannelFactory.CH1- IWave.Ch1;
+        if (ChannelFactory.isRefCh(ch)) {
+            return generateRefChannelList();
+        } else if (ChannelFactory.isMath_FFT_Ch(ch)
+                || ChannelFactory.isMath_DUALWAVE_Ch(ch)) {
+            return generateMathWaveList();
+        } else {
+            return generateChannelList();
+        }
+    }
+    */
+
+
+    public void show() {
+
+        setVisibility(VISIBLE);
+        RxBus.getInstance().post(RxEnum.DIALOG_OPEN, MainViewGroup.DIALOG_CENTERTIMEBASE);
+        Tools.PrintControlsLocation("MainLayoutCenterTimeBase",rootViewGroup);
+    }
+
+    public void show(String s) {
+        mTimeBaseSelector.setSelectItems(s);
+        setVisibility(VISIBLE);
+        RxBus.getInstance().post(RxEnum.DIALOG_OPEN, MainViewGroup.DIALOG_CENTERTIMEBASE);
+    }
+
+    public void hide() {
+        setVisibility(GONE);
+        RxBus.getInstance().post(RxEnum.DIALOG_CLOSE, MainViewGroup.DIALOG_CENTERTIMEBASE);
+    }
+
+    private MTimeBaseSelector.OnClickEvent onClickEvent = new MTimeBaseSelector.OnClickEvent() {
+        @Override
+        public void onTouchDown(int index, String value) {
+            if (onClickItemListener != null) {
+                onClickItemListener.onClickItem(new TimeBaseScale(index, value));
+            }
+        }
+
+        @Override
+        public void onTouchUp(int index, String value) {
+            hide();
+        }
+
+        @Override
+        public void onItemChange(int index, String value) {
+            if (onClickItemListener != null) {
+                onClickItemListener.onClickItem(new TimeBaseScale(index, value));
+            }
+        }
+    };
+    private MainAdapterCenterTimeBase.OnClickListener onClickListener = new MainAdapterCenterTimeBase.OnClickListener() {
+        @Override
+        public void onClick(TimeBaseScale scale) {
+            hide();
+            if (onClickItemListener != null) {
+                onClickItemListener.onClickItem(scale);
+            }
+        }
+    };
+
+    private Observer xAxis = new Observer() {
+        @Override
+        public void update(Observable observable, Object data) {
+            EventBase eventBase = (EventBase) data;
+            if (eventBase.getId() == EventFactory.EVENT_TIME_SCALE_LIST) {
+                MainLayoutCenterTimeBase.this.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        CacheUtil.get().putMap(CacheUtil.MAIN_WAVE_TIMEBASE_MIN,String.valueOf(HorizontalAxis.getMinGear()));
+                        CacheUtil.get().putMap(CacheUtil.MAIN_WAVE_TIMEBASE_MAX,String.valueOf(HorizontalAxis.getMaxGear()));
+                        getList();
+                    }
+                });
+            }
+        }
+    };
+}

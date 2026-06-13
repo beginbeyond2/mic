@@ -1,0 +1,382 @@
+package com.micsig.tbook.scope.Auto;
+
+import android.util.Log;
+
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.Bus.ARINC429Bus;
+import com.micsig.tbook.scope.Bus.CanBus;
+import com.micsig.tbook.scope.Bus.I2CBus;
+import com.micsig.tbook.scope.Bus.IBus;
+import com.micsig.tbook.scope.Bus.LinBus;
+import com.micsig.tbook.scope.Bus.MILSTD1553BBus;
+import com.micsig.tbook.scope.Bus.SpiBus;
+import com.micsig.tbook.scope.Bus.UartBus;
+import com.micsig.tbook.scope.Calibrate.HwConfig;
+import com.micsig.tbook.scope.Display.Display;
+import com.micsig.tbook.scope.Sample.MemDepthFactory;
+import com.micsig.tbook.scope.Sample.Sample;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.Trigger.Trigger;
+import com.micsig.tbook.scope.Trigger.TriggerCommon;
+import com.micsig.tbook.scope.Trigger.TriggerFactory;
+import com.micsig.tbook.scope.channel.Channel;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.channel.SerialChannel;
+import com.micsig.tbook.scope.fpga.FPGA_Status;
+import com.micsig.tbook.scope.horizontal.HorizontalAxis;
+import com.micsig.tbook.scope.measure.Measure;
+import com.micsig.tbook.scope.vertical.VerticalAxis;
+
+import java.util.Arrays;
+
+/**
+ * Created by zhuzh on 2018-7-3.
+ */
+
+public class SerialBusAutoAtion extends AutoAtion  {
+    AutoChannel [] autoChannels = new AutoChannel[ChannelFactory.CH_CNT];
+    private int state = 0;
+    private int auto_cnt = 0;
+    public SerialBusAutoAtion(Auto auto) {
+        super(auto);
+        ChannelFactory.forEachCh((channel -> autoChannels[channel.getChId()] = new AutoChannel(auto,channel)));
+    }
+
+    @Override
+    public void onModifyVertical(int chIdx) {
+        if(ChannelFactory.isDynamicCh(chIdx)){
+            autoChannels[chIdx].modifyVertical();
+        }
+    }
+
+    @Override
+    public void onModifyTimebase() {
+        Trigger trigger = TriggerFactory.getTriggerObj();
+        int chIdx = trigger.getTriggerSource();
+        if(ChannelFactory.isDynamicCh(chIdx)){
+            autoChannels[chIdx].modifyTimebase();
+        }
+    }
+
+    @Override
+    public void onModifyLevel() {
+        Trigger trigger = TriggerFactory.getTriggerObj();
+        int chIdx = trigger.getTriggerSource();
+        if(ChannelFactory.isDynamicCh(chIdx)){
+            autoChannels[chIdx].modifyLevel();
+        }
+    }
+
+
+    @Override
+    public boolean onAtion(FPGA_Status fpgaStatus) {
+        boolean bRet = false;
+        if(fpgaStatus.getAuto(0).isVaild()){
+
+            bRet = autoWork(fpgaStatus);
+
+            switch (state){
+                case 1:
+                    if(!bRet){
+                        auto_cnt = 0;
+                        state = 2;
+                        break;
+                    }
+                case 0:
+//                    if(auto.isAutoRangeEnable()){
+//                        state = 1;
+//                    }else
+                    {
+                        if(++auto_cnt >5) {
+                            dealTiny();
+                            state = 1;
+                        }
+                    }
+                    break;
+                case 2:
+                    if(++auto_cnt > 5) {
+//                        if(!auto.isAutoRangeEnable())
+                        state = 3;
+                        auto_cnt = 0;
+                    }
+                    break;
+            }
+        }
+        return state == 3;
+    }
+    boolean autoWork(FPGA_Status fpgaStatus){
+
+        boolean [] bRet = new boolean[ChannelFactory.CH_CNT];
+        Arrays.fill(bRet,true);
+        Scope scope = Scope.getInstance();
+        boolean [] sel = new boolean[ChannelFactory.CH_CNT];
+        int cnt = scope.getChannelSampOnCnt(true,sel);
+        int idx = 0;
+        int k = ChannelFactory.CH_CNT / cnt;
+        int maxChIdx = ChannelFactory.getMaxChIdx();
+        HwConfig hwConfig = HwConfig.getInstance();
+        int nums = hwConfig.getAdcMaxChNums();
+        int mm = ChannelFactory.CH_CNT / hwConfig.getFpgaNums();
+        for(int i=0;i<maxChIdx;i++){
+            if(sel[i]){
+                if(cnt <= 2){
+                    idx = ((i % mm) / nums) * nums + (i / mm) * mm;
+                }
+                FPGA_Status.FpgaAuto fpgaAuto = null;
+                fpgaAuto = fpgaStatus.getAuto(idx);
+                bRet[i] = autoChannels[i].autoWork(
+                        fpgaAuto.getMinVal(),
+                        fpgaAuto.getMaxVal(),
+                        fpgaAuto.getCycle()
+                        ,true
+                );
+                idx += k;
+            }
+        }
+
+        for (boolean v:bRet){
+            if(!v){
+                return false;
+            }
+        }
+        return true;
+
+    }
+
+
+    boolean isBusChannel(int chIdx){
+        boolean bUse = false;
+        SerialChannel serialChannel = null;
+        int maxIdx = ChannelFactory.getMaxSerialIdx();
+        for(int i=ChannelFactory.S1;i<maxIdx;i++){
+            serialChannel = ChannelFactory.getSerialChannel(i);
+            if(serialChannel != null && serialChannel.isOpen() ){
+                bUse = serialChannel.isChInSample(chIdx);
+            }
+//            else{
+//                Log.d("zhuzh","serial i:" + i  + "," + serialChannel.isOpen());
+//            }
+        }
+
+        return bUse;
+    }
+
+    void dealTiny(){
+
+        double MaxPeak = 0;
+        int MaxCh = -1;
+        double val = 0;
+        int cnt = 0;
+        boolean [] off = new boolean[ChannelFactory.CH_CNT];
+        Arrays.fill(off,false);
+        Scope scope = Scope.getInstance();
+        for(int i=0;i<scope.getChNum();i++){
+            if(ChannelFactory.isChOpen(i)){
+                val = autoChannels[i].getPeakVal();
+                if(auto.isAutoChannelEnable()){
+                    boolean isbus = isBusChannel(i);
+                    Log.d("zhuzh","chidx:" + i + ",isbus:" + isbus);
+                    if((!isbus)
+                            && (val < auto.getAutoThresholdLevel())){
+                        off[i] = true;
+                    }else{
+                        cnt++;
+                    }
+                }
+
+                if(auto.getAutoTriggerSource() == 1){
+                    if( val > MaxPeak){
+                        MaxPeak = val;
+                        MaxCh = i;
+                    }
+                }
+            }
+        }
+
+        Trigger trigger = TriggerFactory.getTriggerObj();
+        int chIdx = trigger.getTriggerSource();
+        if(auto.isAutoChannelEnable()) {
+            if (auto.getAutoTriggerSource() == 1) {
+                if (chIdx != MaxCh) {
+                    trigger.setTriggerSource(MaxCh);
+                }
+                off[MaxCh] = false;
+            } else {
+                if (cnt == 0) {
+                    off[chIdx] = false;
+                }
+                if (auto.isAutoChannelEnable()) {
+                    if (off[chIdx]) {
+                        for (int i = 0; i < scope.getChNum(); i++) {
+                            if (!off[i]) {
+                                trigger.setTriggerSource(i);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        boolean bTz = false;
+        if(auto.isAutoChannelEnable()) {
+            for(int i=0;i<scope.getChNum();i++) {
+                if(ChannelFactory.isChOpen(i) && off[i]) {
+                    ChannelFactory.chClose(i);
+                    bTz = true;
+                }
+            }
+        }
+
+        if(bTz) {
+            resetChPos();
+        }
+
+    }
+    private void EnableCalcWavePeriod(int chIdx){
+        Channel channel = ChannelFactory.getDynamicChannel(chIdx);
+        if(channel != null){
+            Measure measure = channel.getMeasure();
+            if(measure != null){
+                measure.MeasureItemEnable(Measure.MeasureType.MEASURE_PERIOD,true);
+            }
+        }
+
+    }
+
+    @Override
+    public void autoPrePared() {
+        Logger.d("Serial autoPrePared");
+        Display display = Display.getInstance();
+        display.setDrawType(Display.DRAWTYPE_LINE);
+        if(display.isZoom()) {
+            display.setZoom(false);
+        }
+        display.setDisplayMode(Display.DISPLAY_YT);
+        display.setHorRef(Display.HORREF_CENTER);
+//        display.setCCT(false);
+
+        Scope scope = Scope.getInstance();
+        Channel channel;
+        for(int i=0;i<scope.getChNum();i++){
+            channel = ChannelFactory.getDynamicChannel(i);
+
+            channel.setBandWidthType(Channel.BANDWIDTH_TYPE_FULL,Channel.getMaxBandWidth());
+
+            channel.setInvert(false);
+            if(channel.getCoupleType() == Channel.COUPLE_TYPE_GND) {
+                channel.setCoupleType(Channel.COUPLE_TYPE_DC);
+            }
+            if(channel.getVerticalMode() == Channel.VERTICAL_MODE_SCREEN_CENTER){
+                channel.setVerticalMode(Channel.VERTICAL_MODE_CH_ZERO);
+            }
+            channel.setVScaleId(VerticalAxis.DANG_50mV);
+            channel.setProbeRate(10);
+            channel.setFineScale(1.0);
+            if(auto.isAutoChannelEnable()
+                    || isBusChannel(i)){
+                if(!ChannelFactory.isChOpen(i)){
+                    ChannelFactory.chOpen(i);
+                }
+            }
+        }
+        TriggerCommon triggerCommon = TriggerFactory.getInstance().getTriggerCommon();
+        triggerCommon.setTriggerMode(TriggerCommon.TM_AUTO);
+        triggerCommon.setTriggerHoldOffTime(200);
+        Sample.getInstance().setSampleType(Sample.SAMPLE_TYPE_NORMAL);
+        MemDepthFactory.getMemDepth().setMemDepthItem(0);
+
+        HorizontalAxis.getInstance().setTimePosOfView(0);
+
+        int baudRate = 0;
+        SerialChannel serialChannel;
+        HorizontalAxis horizontalAxis = HorizontalAxis.getInstance();
+        int maxIdx = ChannelFactory.getMaxSerialIdx();
+        for(int i=ChannelFactory.S1;i<maxIdx;i++){
+            serialChannel = ChannelFactory.getSerialChannel(i);
+            if(serialChannel != null && serialChannel.isOpen()){
+                triggerCommon.setTriggerType(Trigger.TRIG_TYPE_SERIAL1 + i - ChannelFactory.S1);
+                IBus bus = serialChannel.getBus();
+                Logger.d("autoPrePared : busType = " + bus.getBusType());
+                switch (bus.getBusType()){
+                    case IBus.UART:
+                    {
+                        UartBus uartBus = (UartBus)bus;
+                        uartBus.setTriggerType(UartBus.UART_TRIGGER_START_BIT);
+                        baudRate = uartBus.getBaudRate();
+                        break;
+                    }
+                    case IBus.LIN:
+                    {
+                        LinBus linBus = (LinBus) bus;
+                        linBus.setTriggerType(LinBus.LIN_TRIGGER_SYNC_RISING_EDGE);
+                        baudRate = linBus.getBaudRate();
+                        break;
+                    }
+                    case IBus.CAN:
+                    {
+                        CanBus canBus = (CanBus)bus;
+                        canBus.setTriggerType(CanBus.CAN_TRIGGER_FRAME_START);
+                        baudRate = canBus.getBaudRate();
+                        break;
+                    }
+                    case IBus.SPI:
+                    {
+                        SpiBus spiBus = (SpiBus)bus;
+                        spiBus.setTriggerType(SpiBus.SPI_TRIGGER_FRAME_DATA);
+                        spiBus.setTriggerData(0);
+                        spiBus.setTriggerMask(0);
+                        EnableCalcWavePeriod(spiBus.getClkChIdx());
+                        horizontalAxis.setTimeScaleIdOfView(HorizontalAxis.TSI_5uS);
+                        break;
+                    }
+                    case IBus.I2C:
+                    {
+                        I2CBus i2cBus = (I2CBus) bus;
+                        EnableCalcWavePeriod(i2cBus.getSclChIdx());
+                        i2cBus.setTriggerType(I2CBus.I2C_TRIGGER_START_CONDITION);
+                        horizontalAxis.setTimeScaleIdOfView(HorizontalAxis.TSI_100uS);
+                        break;
+                    }
+                    case IBus.ARINC429:
+                    {
+                        ARINC429Bus arinc429Bus = (ARINC429Bus)bus;
+                        arinc429Bus.setTriggerType(ARINC429Bus.ARINC429_TRIGGER_WORD_BEGIN);
+                        baudRate = arinc429Bus.getBaudRate();
+                        break;
+                    }
+                    case IBus.MILSTD1553B:
+                    {
+                        MILSTD1553BBus milstd1553BBus  = (MILSTD1553BBus) bus;
+                        milstd1553BBus.setTriggerType(MILSTD1553BBus.MILSTD1553B_TRIGGER_COMMAND_STATUS_SYNC);
+                        horizontalAxis.setTimeScaleIdOfView(HorizontalAxis.TSI_10uS);
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+
+        if(baudRate > 0) {
+            horizontalAxis.setTimeScaleIdOfView(HorizontalAxis.BaudrateToTimeScale(baudRate));
+        }
+        resetChPos();
+    }
+
+    @Override
+    public void resetChPos() {
+        Channel channel;
+        int offset = ScopeBase.getHeight()/(ChannelFactory.getDynamicChannelOpenCount() * 2);
+        int nums = 0;
+        Scope scope = Scope.getInstance();
+        for(int i=0;i<scope.getChNum();i++) {
+            channel = ChannelFactory.getDynamicChannel(i);
+            if(channel != null && channel.isOpen()){
+                double pos =  (ScopeBase.getHeight() / 2 - offset * (1 + nums * 2)) ;
+                channel.setPos(pos * ScopeBase.getToUICoff());
+                nums++;
+            }
+        }
+    }
+}

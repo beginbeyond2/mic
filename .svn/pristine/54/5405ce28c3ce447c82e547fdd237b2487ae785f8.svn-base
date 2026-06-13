@@ -1,0 +1,136 @@
+package com.micsig.tbook.scope.measure;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+public class MeasureStatics {
+
+    private static final String TAG = "MeasureStatics";
+
+    private final Measure measure;
+
+    private final Map<Integer,MeasureItem> maps = new LinkedHashMap<>();
+
+    public MeasureStatics(Measure measure){
+        this.measure = measure;
+    }
+
+
+    public void setStaticsItemEnable(@Measure.MeasureType.MeasureItemType int measureType,boolean bEnable){
+        synchronized (this){
+            if(maps.containsKey(measureType)){
+                if(!bEnable){
+                    maps.remove(measureType);
+                }
+            }else{
+                if(bEnable) {
+                    maps.put(measureType, new MeasureItem(measure.getChIdx(), measureType));
+                }
+            }
+        }
+    }
+    public void clear(){
+        synchronized (this){
+            maps.clear();
+        }
+    }
+
+    public void reset(){
+        synchronized (this) {
+            for (MeasureItem m:maps.values()
+                 ) {
+                m.reset();
+            }
+        }
+    }
+
+    public MeasureStaticsBean getStatics(@Measure.MeasureType.MeasureItemType int measureType){
+        MeasureStaticsBean measureStaticsBean = null;
+        synchronized (this) {
+            MeasureItem measureItem = maps.get(measureType);
+            if (measureItem != null) {
+                measureStaticsBean = measureItem.getMeasureStaticsBean();
+            }
+        }
+        return measureStaticsBean;
+    }
+
+    public void calcStatics(){
+        synchronized (this) {
+            for (int i = Measure.MeasureType.MEASURE_FIRST; i <= Measure.MeasureType.MEASURE_LAST; i++) {
+                if(maps.containsKey(i)
+                        && measure.isMeasureItemEnable(i)
+                        && measure.isMeasureItemValid(i)){
+                    MeasureItem measureItem = maps.get(i);
+                    if(measureItem != null) {
+                        measureItem.calcStatics(measure.getMeasureItemVal(i));
+                    }
+                }
+            }
+        }
+    }
+
+
+    private static class MeasureItem{
+        private static final int MAX_NUMS = 10000;
+        private final MeasureStaticsBean measureStaticsBean;
+        private final List<Double> list = new ArrayList<>();
+
+
+        public MeasureItem(int chIdx,int measureType){
+            measureStaticsBean = new MeasureStaticsBean(chIdx,measureType);
+        }
+        public void reset(){
+            list.clear();
+            sum = 0;
+            measureStaticsBean.setVal(0);
+            measureStaticsBean.setAverageVal(0);
+            measureStaticsBean.setMaxVal(0);
+            measureStaticsBean.setMinVal(0);
+            measureStaticsBean.setMqdVal(0);
+            measureStaticsBean.setNums(0);
+        }
+        private double sum = 0;
+        private void add(double val){
+            sum += val;
+            list.add(val);
+            if(list.size() > MAX_NUMS){
+                sum -= list.get(0);
+                list.remove(0);
+            }
+        }
+        public MeasureStaticsBean getMeasureStaticsBean(){
+            return measureStaticsBean;
+        }
+        public void calcStatics(double val){
+            add(val);
+
+            int nums = list.size();
+            double min,max, v1,v2,ss;
+            ss = 0;
+            max = min = list.get(0);
+            v1 = sum/nums;
+
+
+            for(int i=0;i<nums;i++){
+                v2 = list.get(i);
+                if(v2 > max){
+                    max = v2;
+                }else if(v2 < min){
+                    min = v2;
+                }
+                v2 -= v1;
+                ss += (v2 * v2);
+            }
+            measureStaticsBean.setVal(val);
+            measureStaticsBean.setAverageVal(v1);
+            measureStaticsBean.setMaxVal(max);
+            measureStaticsBean.setMinVal(min);
+            measureStaticsBean.setMqdVal(Math.sqrt(ss/nums));
+            measureStaticsBean.setNums(nums);
+
+        }
+    }
+}

@@ -1,0 +1,523 @@
+
+#include "scpi_cmd_disp.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include "scpi_cmd_calibrate.h"
+#include "scpi_help.h"
+#include "../../SCPICommandCallBackJava.h"
+#include "../../Log.h"
+
+const char * disp_wav[] = {
+    "DOTS",
+    "VECTors",
+    NULL
+};
+//������Ļ�в��ε���ʾ��ʽ
+scpi_result_t DISP_WAV(scpi_t * context)
+{
+    int param1;
+    if (!SCPI_ParamChoice(context, disp_wav, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Int(context->env,context->param,param1);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+
+//    SCPI_CLOSE_MENU;
+//    MenuWaveformFrame *temp = (MenuWaveformFrame *)gMainWindow->GetMenuFrame_Help(OscilloUi::MI_WAVEFORM);
+//    if(temp)
+//    {
+//        switch(param1)
+//        {
+//        case 0:
+//            temp->ConfigWaveForm(WDM_DOT_MODE,true);
+//            break;
+//        case 1:
+//            temp->ConfigWaveForm(WDM_LINE_MODE,true);
+//            break;
+//        default:
+//            break;
+//        }
+//    }
+    return SCPI_RES_OK;
+}
+
+//��ѯ��Ļ�в��ε���ʾ��ʽ
+scpi_result_t DISP_WAVQ(scpi_t * context)
+{
+//    CDisplayMsg *cdisplaym = CDisplayMsg::Instance();
+//    paramDrawType tmpparamDrawType;
+//    cdisplaym->exec(DP_WAVEFORM_DRAWTYPE,
+//                    &tmpparamDrawType,
+//                    false);
+//    switch(tmpparamDrawType.mode)
+//    {
+//    case WDM_DOT_MODE:
+//        SCPI_ResultString(context,disp_wav[0]);
+//        break;
+//    case WDM_LINE_MODE:
+//        SCPI_ResultString(context,disp_wav[1]);
+//        break;
+//    default:
+//        break;
+//    }
+
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+const char * disp_bg[] = {
+        "Dark",
+        "Light",
+        NULL
+};
+scpi_result_t DISP_BG(scpi_t * context){
+    int param1;
+    if (!SCPI_ParamChoice(context, disp_bg, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Int(context->env,context->param,param1);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+scpi_result_t DISP_BGQ(scpi_t * context){
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+//������Ļ�в�����ʾ������
+scpi_result_t DISP_BRIG(scpi_t * context)
+{
+    int  param1;
+    if (!SCPI_ParamInt(context, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    if (param1<0 || param1>100){
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+
+//    SCPI_CLOSE_MENU;
+//    MenuWaveformFrame *temp = (MenuWaveformFrame *)gMainWindow->GetMenuFrame_Help(MI_WAVEFORM);
+//    temp->onProcessChange(param1);
+    setParam_1Int(context->env,context->param,param1);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+//��ѯ��Ļ�в�����ʾ������
+scpi_result_t DISP_BRIGQ(scpi_t * context)
+{
+//    CDisplayMsg *cdisplaym = CDisplayMsg::Instance();
+//    paramBrightness paramBht;
+//    cdisplaym->exec(DP_WAVEFORM_BRIGHTNESS, &paramBht, false);
+//    SCPI_ResultInt(context,paramBht.value);
+
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+
+const char * disp_grat[] = {
+    "FULL",
+    "GRID",
+    "RETical",
+    "FRAMe",
+    NULL
+};
+//������Ļ��ʾ����������
+scpi_result_t DISP_GRAT(scpi_t * context)
+{
+    int param1;
+    if (!SCPI_ParamChoice(context, disp_grat, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Int(context->env,context->param,param1);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+//    SCPI_CLOSE_MENU;
+//    MenuGraticuleFrame *temp = (MenuGraticuleFrame *)gMainWindow->GetMenuFrame_Help(MI_GRATICULE);
+//    if(temp)
+//    {
+//        switch(param1)
+//        {
+//        case 0:
+//            temp->ConfigGraticule(GET_NONE,true);
+//            break;
+//        case 1:
+//            temp->ConfigGraticule(GFT_GRID_ONLY,true);
+//            break;
+//        case 2:
+//            temp->ConfigGraticule(GFT_RULER_ONLY,true);
+//            break;
+//        case 3:
+//            temp->ConfigGraticule(GET_BOTH,true);
+//            break;
+//        }
+//    }
+    return SCPI_RES_OK;
+}
+
+//��ѯ��Ļ��ʾ����������
+scpi_result_t DISP_GRATQ(scpi_t * context)
+{
+//    CDisplayMsg *cdisplaym = CDisplayMsg::Instance();
+//    paramGrMode tmpparamGrMode;
+//    cdisplaym->exec(DP_GRATICULE_MODE,
+//                    &tmpparamGrMode,
+//                    false);
+//    switch(tmpparamGrMode.mode)
+//    {
+//    case GET_NONE:
+//        SCPI_ResultString(context,disp_grat[0]);
+//        break;
+//    case GFT_GRID_ONLY:
+//        SCPI_ResultString(context,disp_grat[1]);
+//        break;
+//    case GFT_RULER_ONLY:
+//        SCPI_ResultString(context,disp_grat[2]);
+//        break;
+//    case GET_BOTH:
+//        SCPI_ResultString(context,disp_grat[3]);
+//        break;
+//    default:
+//        break;
+//    }
+
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+//������Ļ��������ʾ������
+scpi_result_t DISP_INT(scpi_t * context)
+{
+    int  param1;
+    if (!SCPI_ParamInt(context, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    if(param1 > 100 || param1 < 0) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+//    SCPI_CLOSE_MENU;
+//    MenuGraticuleFrame *temp = (MenuGraticuleFrame *)gMainWindow->GetMenuFrame_Help(MI_GRATICULE);
+//    temp->onProcessChange(param1);
+    setParam_1Int(context->env,context->param,param1);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+//��ѯ��Ļ��������ʾ������
+scpi_result_t DISP_INTQ(scpi_t * context)
+{
+//    CDisplayMsg *cdisplaym = CDisplayMsg::Instance();
+//    paramGrIntensity tmpparamGrIntensity;
+//    cdisplaym->exec(DP_GRATICULE_INTENSITY,
+//                    &tmpparamGrIntensity,
+//                    false);
+//    SCPI_ResultInt(context,tmpparamGrIntensity.value);
+
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+
+const char * disp_pers_mode[] = {
+    "NONE",
+    "AUTO",
+    "NORMal",
+    "INFinite",
+    NULL
+};
+//���������ʾģʽ
+scpi_result_t DISP_PERS_MODE(scpi_t * context)
+{
+   // ERROR_XY_MODE;
+    int param1;
+    if (!SCPI_ParamChoice(context, disp_pers_mode, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Int(context->env,context->param,param1);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+//    SCPI_CLOSE_MENU;
+//    MenuPersistFrame *temp = (MenuPersistFrame *)gMainWindow->GetMenuFrame_Help(MI_PERSIST);
+//    if(temp)
+//    {
+//        switch(param1)
+//        {
+//            case 0:
+//                temp->setPersistMode(MenuPersistFrame::PERSIST_NULL,false);
+//                break;
+//            case 1:
+//                temp->setPersistMode(MenuPersistFrame::PERSIST_AUTO,false);
+//                break;
+//            case 2:
+//                temp->setPersistMode(MenuPersistFrame::PERSIST_500MS,true);
+//                break;
+//            case 3:
+//                temp->setPersistMode(MenuPersistFrame::PERSIST_INFINITE,false);
+//                break;
+//            default:
+//                break;
+//        }
+//    }
+    return SCPI_RES_OK;
+}
+
+//��ѯ�����ʾģʽ
+scpi_result_t DISP_PERS_MODEQ(scpi_t * context)
+{
+//    ERROR_XY_MODEQ;
+//    SCPI_CLOSE_MENU;
+//    MenuPersistFrame *temp = (MenuPersistFrame *)gMainWindow->GetMenuFrame_Help(MI_PERSIST);
+//    MenuPersistFrame::CONFIG_PERSIST mod = temp->getConfig_PersistMode();
+//    switch(mod)
+//    {
+//        case MenuPersistFrame::PERSIST_NULL:
+//            SCPI_ResultString(context,disp_pers_mode[0]);
+//             break;
+//        case MenuPersistFrame::PERSIST_AUTO:
+//            SCPI_ResultString(context,disp_pers_mode[1]);
+//            break;
+//        case MenuPersistFrame::PERSIST_500MS:
+//            SCPI_ResultString(context,disp_pers_mode[2]);
+//            break;
+//        case MenuPersistFrame::PERSIST_INFINITE:
+//            SCPI_ResultString(context,disp_pers_mode[3]);
+//            break;
+//        default:
+//        break;
+//    }
+
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+//���������ͨ��ʾģʽ�����ʱ��
+scpi_result_t DISP_PERS_ADJ(scpi_t * context)
+{
+//    const int paramRange[]={100,200,300,400,500,600,700,800,900,
+//          1000,2000,3000,4000,5000,6000,7000,8000,9000,10000
+//                           };
+//
+//    ERROR_XY_MODE;
+    int  param1;
+    if (!SCPI_ParamInt(context, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+//    bool flag=false;
+//    for(int i=0;i<(int)(sizeof(paramRange)/sizeof(int));i++)
+//    {
+//        if (param1==paramRange[i]){flag=true;break;}
+//    }
+//    if (flag==false){ return SCPI_RES_ERR;    }
+//
+//    MenuPersistFrame *temp = (MenuPersistFrame *)gMainWindow->GetMenuFrame_Help(MI_PERSIST);
+//    MenuPersistFrame::CONFIG_PERSIST mod = temp->getConfig_PersistMode();
+//    if(MenuPersistFrame::PERSIST_500MS != mod)
+//    {
+//        return SCPI_RES_ERR;
+//    }
+//    SCPI_CLOSE_MENU;
+//
+//    QString str = temp->numTimeToString(param1);
+//    if(str.isEmpty())
+//    {
+//        return SCPI_RES_ERR;
+//    }
+//    temp->when_Adjust_choose(str);
+    setParam_1Int(context->env,context->param,param1);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+//��ѯ�����ͨ��ʾģʽ�����ʱ��
+scpi_result_t DISP_PERS_ADJQ(scpi_t * context)
+{
+//    ERROR_XY_MODEQ;
+//    MenuPersistFrame *temp = (MenuPersistFrame *)gMainWindow->GetMenuFrame_Help(MI_PERSIST);
+//    MenuPersistFrame::CONFIG_PERSIST mod = temp->getConfig_PersistMode();
+//    if(MenuPersistFrame::PERSIST_500MS != mod)
+//    {
+//        DEBUG_RETURN("ERROR PERSIST MODE!");
+//        return SCPI_RES_ERR;
+//    }
+//
+//    int tim = temp->getConfig_AdjustTime();
+//    SCPI_ResultInt(context,tim);
+
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+//��������ʾ
+scpi_result_t DISP_PERS_CLE(scpi_t * context)
+{
+//    Q_UNUSED(context);
+//    ERROR_XY_MODE;
+//    SCPI_CLOSE_MENU;
+//    MenuPersistFrame *temp = (MenuPersistFrame *)gMainWindow->GetMenuFrame_Help(MI_PERSIST);
+//    temp->on_btClear_clicked();
+
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+//��������رո�ˢ��
+scpi_result_t DISP_HIGH(scpi_t * context)
+{
+   // ERROR_XY_MODE;
+    bool param1;
+    if (!SCPI_ParamBool(context, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+
+//    MenuBottom *tem=gMainWindow-> GetMenuBottom();
+//    tem->setHeightRefresh(param1);
+    setParam_1Boolean(context->env,context->param,param1);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+
+
+#if 1
+    //Q_UNUSED(context);
+//    SCPI_ResultString(context,"ERROR_NO_SUPPORT!");
+   // return SCPI_RES_ERR;
+#else
+   // ERROR_XY_MODE;
+    bool  param1;
+    if (!SCPI_ParamBool(context, &param1, true)) {
+        return SCPI_RES_ERR;
+    }
+
+//    if((true == gMainWindow->isInHighRefresh() && false == param1)
+//          || (false == gMainWindow->isInHighRefresh() && true == param1))
+//    {
+//        gMainWindow->menuBottomFrame->on_btnHighRefresh_clicked();
+//    }
+    return SCPI_RES_OK;
+#endif
+}
+
+//��ѯ��ˢ�´�������ر�
+scpi_result_t DISP_HIGHQ(scpi_t * context)
+{
+
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+//#if 1
+//    MenuBottom *tem=gMainWindow-> GetMenuBottom();
+//    bool b=tem->getHeightRefreshState();
+//    SCPI_ResultBool(context,b);
+//    //SCPI_ResultString(context,"ERROR_NO_SUPPORT!");
+//    return SCPI_RES_ERR;
+//#else
+//    ERROR_XY_MODE;
+//    SCPI_ResultBool(context,gMainWindow->isInHighRefresh());
+//    return SCPI_RES_OK;
+//#endif
+}
+
+
+const char * disp_horr[] = {
+    "CENTer",
+    "TRIGpos",
+    NULL
+};
+//������Ļˮƽչ������ģʽ
+scpi_result_t DISP_HORR(scpi_t * context)
+{
+    int param1;
+    if (!SCPI_ParamChoice(context, disp_horr, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Int(context->env,context->param,param1);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+//    ERROR_XY_MODE;
+//    SCPI_CLOSE_MENU;
+//    MenuDisplaycommonFrame *temp =
+//            (MenuDisplaycommonFrame *)gMainWindow->GetMenuFrame_Help(MI_DISPLAY);
+//    if(temp)
+//    {
+//        switch(param1)
+//        {
+//            case 0: temp->configHorRef(MenuDisplaycommonFrame::HOR_CENTER, true); break;
+//            case 1: temp->configHorRef(MenuDisplaycommonFrame::HOR_TRIGPOS, true); break;
+//            default: break;
+//        }
+//    }
+    return SCPI_RES_OK;
+}
+
+//��ѯ��Ļˮƽչ������ģʽ
+scpi_result_t DISP_HORRQ(scpi_t * context)
+{
+//    CDisplayMsg *cdisplaym = CDisplayMsg::Instance();
+//    paramHorRef tmpparamHorRef;
+//    cdisplaym->exec(DP_HORREF,
+//                    &tmpparamHorRef,
+//                    false);
+//    switch(tmpparamHorRef.mode)
+//    {
+//    case HOR_CENTER:
+//        SCPI_ResultString(context,disp_horr[0]);
+//        break;
+//    case HOR_TRIGPOS:
+//        SCPI_ResultString(context,disp_horr[1]);
+//        break;
+//    default:
+//        break;
+//    }
+
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+//��������ر�ZOOM
+scpi_result_t DISP_ZOOM(scpi_t * context)
+{
+    //ERROR_XY_MODE;
+    bool  param1;
+    if (!SCPI_ParamBool(context, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Boolean(context->env,context->param,param1);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+//    if(gMainWindow->isInZoomMode() != param1)
+//    {
+//        gMainWindow->menuBottomFrame->on_btnZoom_clicked();
+//    }
+    return SCPI_RES_OK;
+}
+
+//��ѯZOOM��������ر�
+scpi_result_t DISP_ZOOMQ(scpi_t * context)
+{
+//    ERROR_XY_MODE;
+//    SCPI_ResultBool(context,gMainWindow->isInZoomMode());
+
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+scpi_result_t DISP_CCT(scpi_t * context){
+    bool  param1;
+    if (!SCPI_ParamBool(context, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Boolean(context->env,context->param,param1);
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+scpi_result_t DISP_CCTQ(scpi_t * context){
+    dealCallBack(context->env,context->obj,context->param,context->scpi_command_index);
+    return SCPI_RES_OK;
+}

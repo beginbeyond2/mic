@@ -1,0 +1,97 @@
+package com.micsig.tbook.scope.Auto;
+
+/**
+ * Created by zhuzh on 2018-6-29.
+ */
+
+public class Auto {
+    public static int AUTO_TRIGGER_SOURCE_CURRENT = 0;
+    public static int AUTO_TRIGGER_SOURCE_MAX = 1;
+
+    private static class AutoHolder {
+        public static final Auto instance = new Auto();
+    }
+
+    public static Auto getInstance() {
+        return Auto.AutoHolder.instance;
+    }
+
+    private Auto() {
+
+    }
+
+    private boolean autoChannelEnable = true;
+    private double autoThresholdLevel = 0.01;// V
+    private int autoTriggerSource = AUTO_TRIGGER_SOURCE_CURRENT;
+    private boolean autoRangeEnable = false;
+    private boolean autoVerticalEnable = true;
+    private boolean autoHorizontalEnable = true;
+    private boolean autoLevelEnable = true;
+    private boolean autoRun = false;
+
+    public synchronized boolean isAutoChannelEnable() {
+        return autoChannelEnable;
+    }
+
+    public synchronized void setAutoChannelEnable(boolean autoChannelEnable) {
+        this.autoChannelEnable = autoChannelEnable;
+    }
+
+    public synchronized double getAutoThresholdLevel() {
+        return autoThresholdLevel;
+    }
+
+    public  synchronized void setAutoThresholdLevel(double autoThresholdLevel) {
+        this.autoThresholdLevel = autoThresholdLevel;
+    }
+
+    public synchronized int getAutoTriggerSource() {
+        return autoTriggerSource;
+    }
+
+    public synchronized void setAutoTriggerSource(int autoTriggerSource) {
+        this.autoTriggerSource = autoTriggerSource;
+    }
+
+    public synchronized boolean isAutoRangeEnable() {
+        return autoRangeEnable;
+    }
+
+    public synchronized void setAutoRangeEnable(boolean autoRangeEnable) {
+        this.autoRangeEnable = autoRangeEnable;
+    }
+
+    public synchronized boolean isAutoVerticalEnable() {
+        return autoVerticalEnable;
+    }
+
+    public synchronized void setAutoVerticalEnable(boolean autoVerticalEnable) {
+        this.autoVerticalEnable = autoVerticalEnable;
+    }
+
+    public synchronized boolean isAutoHorizontalEnable() {
+        return autoHorizontalEnable;
+    }
+
+    public synchronized void setAutoHorizontalEnable(boolean autoHorizontalEnable) {
+        this.autoHorizontalEnable = autoHorizontalEnable;
+    }
+
+    public synchronized boolean isAutoLevelEnable() {
+        return autoLevelEnable;
+    }
+
+    public synchronized void setAutoLevleEnable(boolean autoLevelEnable) {
+        this.autoLevelEnable = autoLevelEnable;
+    }
+
+    public boolean isAuto() {
+        return AutoService.isAutoEnable();
+    }
+
+    public void setAuto(boolean bAuto) {
+        AutoService.setAuto(bAuto);
+    }
+
+
+}

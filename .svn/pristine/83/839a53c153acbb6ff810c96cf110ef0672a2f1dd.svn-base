@@ -1,0 +1,23 @@
+package com.micsig.tbook.scope.fpga;
+
+/**
+ * Created by zhuzh on 2018-3-22.
+ */
+
+public class FPGAReg_DISP_SERI extends FPGAReg {
+    public FPGAReg_DISP_SERI(){
+        super(FPGA_DISP_SERI,12);
+    }
+    public FPGAReg_DISP_SERI(int addr, int len) {
+        super(addr, len);
+    }
+    public void setCodepos(int val){
+        setVal(0,val);
+    }
+    public void setCodelen(int val){
+        setVal(1,val);
+    }
+    public void setZipparam(int val){
+        setVal(2,val);
+    }
+}

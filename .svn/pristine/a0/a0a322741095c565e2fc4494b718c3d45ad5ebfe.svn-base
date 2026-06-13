@@ -1,0 +1,109 @@
+package com.micsig.tbook.scope.Calibrate;
+
+import java.util.Arrays;
+
+public class ADC_CAE2400 extends ADC {
+    public ADC_CAE2400() {
+
+    }
+    @Override
+    public void Init() {
+    }
+
+
+    int [] fs = {0x9B9B,0x9B9B,0x9B9B,0x9B9B};
+    @Override
+    public void setGain(int fpgaIdx,int adcIdx, int i0_q1, int vol) {
+
+        int idx = fpgaIdx * 2 + adcIdx;
+        if (i0_q1 >= 0 && i0_q1 < 2 && idx < fs.length) {
+            i0_q1 *= 8;
+            int v = 0;
+            synchronized (this) {
+                v = fs[idx] = (fs[idx] & (~(0xFF << i0_q1))) | (vol << i0_q1);
+            }
+            SendADData(fpgaIdx, adcIdx, 0x15D, v);
+        }
+    }
+
+    @Override
+    public void setChannel(int cnt, boolean[] sel) {
+
+        switch (cnt){
+            case 2:
+            case 4:
+                for(int i=0;i<sel.length;i+=2) {
+                    SendADData(i/4,(i % 4) / 2,0x05, 0x429648);
+                    SendADData(i/4,(i % 4) / 2,0x02, sel[i] ? 0 : 1 << 20);
+                }
+                break;
+            case 8:
+            default:
+                for(int i=0;i<2;i++){
+                    for(int j=0;j<2;j++){
+                        SendADData(i, j,0x05, 0x429648 | 1<<18);
+                    }
+                }
+                break;
+        }
+    }
+
+    @Override
+    protected void SendADData(int fpgaIdx, int adIdx, int addr, int val) {
+        super.SendADData(fpgaIdx, adIdx, addr, val);
+    }
+
+
+    @Override
+    public int getSampleChannel(boolean[] sel) {
+        int nums = 0;
+        if ((sel[0] && sel[1])
+                || (sel[2] && sel[3])
+                || (sel[4] && sel[5])
+                || (sel[6] && sel[7])) {
+            Arrays.fill(sel, true);
+            nums = 8;
+        } else {
+            int a1,a2;
+            a1 = a2 = 0;
+            for(int i=0;i<4;i++){
+                if(sel[i]){
+                    a1++;
+                }
+                if(sel[i + 4]){
+                    a2++;
+                }
+            }
+
+            nums = Math.max(a1,a2) < 2 ? 2 : 4;
+
+            if(nums == 4) {
+                for (int i = 0; i < sel.length; i += 2) {
+                    if ((!sel[i]) && (!sel[i + 1])) {
+                        sel[i] = true;
+                    }
+                }
+            }else{
+                if(a1 == 0){
+                    sel[0] = true;
+                }
+                if(a2 == 0){
+                    sel[4] = true;
+                }
+            }
+        }
+
+        return nums;
+    }
+
+    @Override
+    public int getMaxAdInClk() {
+        return 6000;
+    }
+
+    @Override
+    public int getMaxChNums() {
+        return 2;
+    }
+
+}

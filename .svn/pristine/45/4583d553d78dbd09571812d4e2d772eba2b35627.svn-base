@@ -1,0 +1,605 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <RelativeLayout
+        android:id="@+id/chanelLayout"
+        android:layout_width="@dimen/rightSlipChannelWidth"
+        android:layout_height="match_parent"
+        android:background="@color/color_Ch1"
+        android:padding="1px">
+
+        <ScrollView
+            style="@style/scrollViewStyle"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/bgNewRightAllLayout">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:id="@+id/channelVisibleHead"
+                    android:layout_width="69px"
+                    android:layout_height="94px"
+                    android:layout_marginStart="29px"
+                    android:gravity="center|left"
+                    android:text="Ch1"
+                    android:textColor="@color/textColorNewRightViewEnable"
+                    android:textSize="20px" />
+
+                <com.micsig.tbook.ui.MSwitchBox
+                    android:id="@+id/channelVisibleDetail"
+                    android:layout_width="64px"
+                    android:layout_height="wrap_content"
+                    android:layout_alignTop="@+id/channelVisibleHead"
+                    android:layout_alignBottom="@+id/channelVisibleHead"
+                    android:layout_toEndOf="@+id/channelVisibleHead"
+                    app:switchHeight="32px"
+                    app:switchWidth="64px" />
+
+                <TextView
+                    android:id="@+id/invertHead"
+                    android:layout_width="69px"
+                    android:layout_height="94px"
+                    android:layout_below="@+id/channelVisibleHead"
+                    android:layout_marginStart="29px"
+                    android:gravity="center|left"
+                    android:text="@string/channelInvertHead"
+                    android:textColor="@color/textColorNewRightViewEnable"
+                    android:textSize="20px" />
+
+                <com.micsig.tbook.ui.MSwitchBox
+                    android:id="@+id/invertDetail"
+                    android:layout_width="64px"
+                    android:layout_height="wrap_content"
+                    android:layout_alignTop="@+id/invertHead"
+                    android:layout_alignBottom="@+id/invertHead"
+                    android:layout_toEndOf="@+id/invertHead"
+                    app:switchHeight="32px"
+                    app:switchWidth="64px" />
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="88px"
+                    android:layout_height="174px"
+                    android:layout_alignTop="@+id/channelVisibleHead"
+                    android:layout_alignBottom="@id/invertHead"
+                    android:layout_alignParentEnd="true"
+                    android:layout_marginTop="8px"
+                    android:layout_marginEnd="29px"
+                    android:layout_marginBottom="8px">
+
+                    <ImageView
+                        android:id="@+id/img_back_src"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:src="@drawable/svg_right_chx_button_88x174" />
+
+                    <ImageView
+                        android:id="@+id/img_invert_light"
+                        android:layout_width="25px"
+                        android:layout_height="wrap_content"
+                        android:layout_centerHorizontal="true"
+                        android:layout_marginTop="15px"
+                        android:src="@drawable/ic_bg_ch1_light"
+
+                        app:layout_constraintLeft_toLeftOf="parent"
+                        app:layout_constraintRight_toRightOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <Button
+                        android:id="@+id/btnTop"
+                        android:layout_width="match_parent"
+                        android:layout_height="87px"
+                        android:background="@null"
+                        app:layout_constraintLeft_toLeftOf="parent"
+                        app:layout_constraintRight_toRightOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <Button
+                        android:id="@+id/btnBottom"
+                        android:layout_width="match_parent"
+                        android:layout_height="87px"
+                        android:background="@null"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintLeft_toLeftOf="parent"
+                        app:layout_constraintRight_toRightOf="parent" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                <View
+                    android:id="@+id/divider"
+                    android:layout_width="match_parent"
+                    android:layout_height="1px"
+                    android:layout_below="@id/invertHead"
+                    android:layout_marginStart="15px"
+                    android:layout_marginEnd="15px"
+                    android:background="@drawable/divider_measure_common" />
+
+                <TextView
+                    android:id="@+id/chCoupleHead"
+                    style="@style/rightHeadText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/divider"
+                    android:layout_marginStart="29px"
+                    android:layout_marginTop="5px"
+                    android:text="@string/channelCouple" />
+
+                <com.micsig.tbook.ui.rightslipmenu.RightViewSelect
+                    android:id="@+id/ch1Couple"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/chCoupleHead"
+                    android:layout_marginStart="22px"
+                    android:layout_marginTop="5px"
+                    android:layout_marginEnd="22px"
+                    app:array="@array/channelCouple"
+                    app:arrayOrientation="horizontalEachRow3"
+                    app:itemHeight="54px"
+                    app:itemMargin="7px"
+                    app:itemWidth="108px" />
+
+                <View
+                    android:id="@+id/divider2"
+                    android:layout_width="match_parent"
+                    android:layout_height="1px"
+                    android:layout_below="@id/ch1Couple"
+                    android:layout_marginStart="15px"
+                    android:layout_marginTop="3px"
+                    android:layout_marginEnd="15px"
+                    android:background="@drawable/divider_measure_common" />
+
+                <!--mdp700layout-->
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/mdp700layout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/divider2"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/mdp700ProbeLabel"
+                        style="@style/rightHeadText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="29px"
+                        android:layout_marginTop="10px"
+                        android:layout_marginBottom="10px"
+                        android:text="@string/channelProbeType"
+                        app:layout_constraintLeft_toLeftOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <TextView
+                        android:id="@+id/mdp700Model"
+                        style="@style/textStyle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginRight="29px"
+                        android:text="Model:mdp700"
+                        app:layout_constraintRight_toRightOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <com.micsig.tbook.ui.rightslipmenu.RightViewSelect
+                        android:id="@+id/mdp700ProbeSelect"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="29px"
+                        android:layout_marginTop="12px"
+                        app:array="@array/channelProbeType"
+                        app:arrayOrientation="horizontalEachRow2"
+                        app:itemHalfCornerEach="each_108_54"
+                        app:itemHeight="54px"
+                        app:itemStartAndEndBgHalfCorner="true"
+                        app:itemWidth="108px"
+                        app:layout_constraintLeft_toLeftOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/mdp700ProbeLabel" />
+
+                    <Button
+                        android:id="@+id/mdp700Info"
+                        style="@style/buttonStyle"
+                        android:layout_width="108px"
+                        android:layout_height="54px"
+                        android:layout_marginRight="30px"
+                        android:gravity="center"
+                        android:text="@string/Information"
+                        app:layout_constraintBottom_toBottomOf="@id/mdp700ProbeSelect"
+                        app:layout_constraintRight_toRightOf="parent"
+                        app:layout_constraintTop_toTopOf="@id/mdp700ProbeSelect" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+                <!--commonLayout-->
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/commonLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/divider2">
+
+                    <TextView
+                        android:id="@+id/chProbeTypeHead"
+                        style="@style/rightHeadText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="29px"
+                        android:layout_marginTop="10px"
+                        android:layout_marginBottom="10px"
+                        android:text="@string/channelProbeType"
+                        app:layout_constraintLeft_toLeftOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <com.micsig.tbook.ui.rightslipmenu.RightViewSelect
+                        android:id="@+id/ch1ProbeType"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="29px"
+                        android:layout_marginTop="10px"
+                        android:layout_marginEnd="0px"
+                        app:array="@array/channelProbeType"
+                        app:arrayOrientation="horizontalEachRow2"
+                        app:itemHalfCornerEach="each_108_54"
+                        app:itemHeight="54px"
+                        app:itemStartAndEndBgHalfCorner="true"
+                        app:itemWidth="108px"
+                        app:layout_constraintLeft_toLeftOf="parent"
+                        app:layout_constraintTop_toBottomOf="@id/chProbeTypeHead" />
+
+                    <TextView
+                        android:id="@+id/probeMultiple"
+                        style="@style/editTextStyle"
+                        android:layout_width="108px"
+                        android:layout_height="54px"
+                        android:layout_marginEnd="30px"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:text="@string/channelProbeMultiple"
+                        app:layout_constraintRight_toRightOf="parent"
+                        app:layout_constraintTop_toTopOf="@id/ch1ProbeType" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+                <!--msp500Layout-->
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/msp500Layout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/divider2"
+                    android:visibility="gone">
+
+                    <TextView
+                        style="@style/rightHeadText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="29px"
+                        android:layout_marginTop="10px"
+                        android:layout_marginBottom="10px"
+                        android:text="@string/channelProbeType"
+                        app:layout_constraintLeft_toLeftOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <TextView
+                        android:id="@+id/probeTypeModel"
+                        style="@style/textStyle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="0px"
+                        android:layout_marginEnd="29px"
+                        android:text="Model:DP750"
+                        android:textColor="@color/textColor"
+                        app:layout_constraintRight_toRightOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <TextView
+                        android:id="@+id/probeTypeSN"
+                        style="@style/textStyle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="-5px"
+                        android:layout_marginEnd="29px"
+                        android:text="SN:A300200100"
+                        app:layout_constraintRight_toRightOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/probeTypeModel"
+
+                        />
+
+                    <TextView
+                        android:id="@+id/probeTypeX"
+                        style="@style/editTextStyle"
+                        android:layout_width="216px"
+                        android:layout_height="54px"
+                        android:layout_marginStart="29px"
+                        android:gravity="center"
+                        android:text="10X"
+                        app:layout_constraintLeft_toLeftOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/probeTypeSN" />
+
+                    <TextView
+                        android:id="@+id/probeTypeCall"
+                        style="@style/buttonStyle"
+                        android:layout_width="108px"
+                        android:layout_height="54px"
+                        android:layout_alignTop="@+id/probeTypeX"
+                        android:layout_marginEnd="29px"
+                        android:gravity="center"
+                        android:text="@string/probe_calibration"
+                        app:layout_constraintRight_toRightOf="parent"
+                        app:layout_constraintTop_toBottomOf="@id/probeTypeSN" />
+                </androidx.constraintlayout.widget.ConstraintLayout>
+                <!--mrcpLayout-->
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/mrcpLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/divider2"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/mrcpProbeType"
+                        style="@style/rightHeadText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="29px"
+                        android:layout_marginTop="17px"
+                        android:text="@string/channelProbeType"
+                        app:layout_constraintLeft_toLeftOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <TextView
+                        android:id="@+id/mrcpMode"
+                        style="@style/textStyle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginRight="29px"
+                        app:layout_constraintRight_toRightOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+
+                        />
+
+                    <TextView
+                        android:id="@+id/mrcpProbeTypeX"
+                        style="@style/editTextStyle"
+                        android:layout_width="230px"
+                        android:layout_height="54px"
+                        android:layout_marginStart="29px"
+                        android:layout_marginTop="14px"
+                        android:gravity="center"
+                        android:text="10X"
+                        app:layout_constraintLeft_toLeftOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/mrcpProbeType" />
+
+                    <TextView
+                        android:id="@+id/mrcpProbeTypeCall"
+                        style="@style/buttonStyle"
+                        android:layout_width="108px"
+                        android:layout_height="54px"
+                        android:layout_marginEnd="29px"
+                        android:gravity="center"
+                        android:text="@string/Information"
+                        app:layout_constraintBottom_toBottomOf="@id/mrcpProbeTypeX"
+                        app:layout_constraintRight_toRightOf="parent"
+                        app:layout_constraintTop_toTopOf="@id/mrcpProbeTypeX" />
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+                <View
+                    android:id="@+id/divider3"
+                    android:layout_width="match_parent"
+                    android:layout_height="1px"
+                    android:layout_below="@id/divider2"
+                    android:layout_marginStart="15px"
+                    android:layout_marginTop="120px"
+                    android:layout_marginEnd="15px"
+                    android:background="@drawable/divider_measure_common" />
+
+                <TextView
+                    android:id="@+id/chBandWidthHead"
+                    style="@style/rightHeadText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/divider3"
+                    android:layout_marginStart="29px"
+                    android:layout_marginTop="5px"
+                    android:text="@string/channelBandWidth" />
+
+                <com.micsig.tbook.ui.rightslipmenu.RightViewSelect
+                    android:id="@+id/bandWidth"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/chBandWidthHead"
+                    android:layout_marginStart="22px"
+                    android:layout_marginTop="3px"
+                    android:layout_marginEnd="11px"
+                    app:array="@array/channelBandWidth"
+                    app:arrayOrientation="horizontalEachRow3"
+                    app:itemHeight="54px"
+                    app:itemMargin="7px"
+                    app:itemWidth="108px" />
+
+                <TextView
+                    android:id="@+id/bandWidthEdit"
+                    style="@style/editTextStyle"
+                    android:layout_width="106px"
+                    android:layout_height="54px"
+                    android:layout_alignEnd="@+id/bandWidth"
+                    android:layout_alignBottom="@id/bandWidth"
+                    android:layout_marginEnd="8px"
+                    android:layout_marginBottom="7px"
+                    android:background="@drawable/shape_frame_bg_black"
+                    android:gravity="center"
+                    android:textColor="@color/textColor" />
+
+                <View
+                    android:id="@+id/divider4"
+                    android:layout_width="match_parent"
+                    android:layout_height="1px"
+                    android:layout_below="@id/bandWidth"
+                    android:layout_marginStart="15px"
+                    android:layout_marginTop="3px"
+                    android:layout_marginEnd="15px"
+                    android:background="@drawable/divider_measure_common" />
+
+                <TextView
+                    android:id="@+id/chImpedTitle"
+                    style="@style/rightHeadText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/divider4"
+                    android:layout_alignTop="@+id/chImpedDetail"
+                    android:layout_alignBottom="@+id/chImpedDetail"
+                    android:layout_marginStart="29px"
+                    android:text="@string/channelImped" />
+
+                <com.micsig.tbook.ui.rightslipmenu.RightViewSelect
+                    android:id="@+id/chImpedDetail"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/divider4"
+                    android:layout_alignParentEnd="true"
+                    android:layout_marginTop="10px"
+                    android:layout_marginEnd="33px"
+                    app:array="@array/channelImped"
+                    app:arrayOrientation="horizontalEachRow2"
+                    app:itemHalfCornerEach="each_108_54"
+                    app:itemHeight="54px"
+                    app:itemStartAndEndBgHalfCorner="true"
+                    app:itemWidth="108px" />
+
+                <View
+                    android:id="@+id/divider5"
+                    android:layout_width="match_parent"
+                    android:layout_height="1px"
+                    android:layout_below="@id/chImpedDetail"
+                    android:layout_marginStart="15px"
+                    android:layout_marginTop="10px"
+                    android:layout_marginEnd="15px"
+                    android:background="@drawable/divider_measure_common" />
+
+                <TextView
+                    android:id="@+id/chVerticalBaseHead"
+                    style="@style/rightHeadText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/divider5"
+                    android:layout_alignTop="@+id/chVerticalBaseDetail"
+                    android:layout_alignBottom="@+id/chVerticalBaseDetail"
+                    android:layout_marginStart="29px"
+                    android:gravity="center_vertical"
+                    android:text="@string/mathVertical" />
+
+                <com.micsig.tbook.ui.rightslipmenu.RightViewSelect
+                    android:id="@+id/chVerticalBaseDetail"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/divider5"
+                    android:layout_alignParentEnd="true"
+                    android:layout_marginStart="0px"
+                    android:layout_marginTop="10px"
+                    android:layout_marginEnd="33px"
+                    app:array="@array/mathVertical"
+                    app:arrayOrientation="horizontalEachRow2"
+                    app:itemHalfCornerEach="each_120_60"
+                    app:itemHeight="54px"
+                    app:itemStartAndEndBgHalfCorner="true"
+                    app:itemWidth="108px" />
+
+                <View
+                    android:id="@+id/divider6"
+                    android:layout_width="match_parent"
+                    android:layout_height="1px"
+                    android:layout_below="@id/chVerticalBaseDetail"
+                    android:layout_marginStart="15px"
+                    android:layout_marginTop="0px"
+                    android:layout_marginEnd="15px"
+                    android:background="@drawable/divider_measure_common"
+                    android:visibility="gone" />
+
+                <com.micsig.tbook.ui.top.view.TopViewEdit
+                    android:id="@+id/chLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="54px"
+                    android:layout_below="@+id/divider6"
+                    android:layout_marginStart="19px"
+                    android:layout_marginTop="10px"
+                    android:layout_marginEnd="29px"
+                    app:editCenter="true"
+                    app:editWidth="230px"
+                    app:head="@string/channelLabel"
+                    app:headTextSize="20px"
+                    app:headWidth="125px" />
+
+                <View
+                    android:id="@+id/divider7"
+                    android:layout_width="match_parent"
+                    android:layout_height="1px"
+                    android:layout_below="@id/chLabel"
+                    android:layout_marginStart="15px"
+                    android:layout_marginEnd="15px"
+                    android:background="@drawable/divider_measure_common"
+                    android:visibility="gone" />
+
+                <com.micsig.tbook.ui.top.view.TopViewEdit
+                    android:id="@+id/chDelay"
+                    android:layout_width="wrap_content"
+                    android:layout_height="54px"
+                    android:layout_below="@+id/divider7"
+                    android:layout_marginStart="19px"
+                    android:layout_marginTop="10px"
+                    android:layout_marginEnd="29px"
+                    app:editCenter="true"
+                    app:editWidth="230px"
+                    app:head="@string/channelDelay"
+                    app:headTextSize="20px"
+                    app:headWidth="125px" />
+
+                <View
+                    android:id="@+id/divider8"
+                    android:layout_width="match_parent"
+                    android:layout_height="1px"
+                    android:layout_below="@id/chDelay"
+                    android:layout_marginStart="10px"
+                    android:layout_marginEnd="10px"
+                    android:background="@drawable/divider_measure_common"
+                    android:visibility="gone" />
+
+                <com.micsig.tbook.ui.top.view.TopViewEdit
+                    android:id="@+id/chOffset"
+                    android:layout_width="wrap_content"
+                    android:layout_height="54px"
+                    android:layout_below="@+id/divider8"
+                    android:layout_marginStart="19px"
+                    android:layout_marginTop="10px"
+                    android:layout_marginEnd="29px"
+                    app:editCenter="true"
+                    app:editWidth="230px"
+                    app:head="@string/channelPosition"
+                    app:headTextSize="20px"
+                    app:headWidth="125px" />
+
+                <com.micsig.tbook.ui.top.view.TopViewEdit
+                    android:id="@+id/chFineExtent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="54px"
+                    android:layout_below="@+id/chOffset"
+                    android:layout_marginStart="19px"
+                    android:layout_marginTop="10px"
+                    android:layout_marginBottom="5px"
+                    app:editCenter="true"
+                    app:editWidth="140px"
+                    app:head="@string/channelFineExtent"
+                    app:headPlace="left"
+                    app:headWidth="125px" />
+
+                <com.micsig.tbook.ui.MSwitchBox
+                    android:id="@+id/chFineSwitch"
+                    android:layout_width="64px"
+                    android:layout_height="32px"
+                    android:layout_alignTop="@id/chFineExtent"
+                    android:layout_alignBottom="@+id/chFineExtent"
+                    android:layout_alignParentEnd="true"
+                    android:layout_marginEnd="29px"
+                    app:switchHeight="32px"
+                    app:switchWidth="64px" />
+
+            </RelativeLayout>
+        </ScrollView>
+    </RelativeLayout>
+</merge>

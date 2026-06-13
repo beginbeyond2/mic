@@ -1,0 +1,271 @@
+package com.micsig.tbook.scope.vertical;
+
+import android.util.Log;
+
+import com.micsig.tbook.scope.Calibrate.HwConfig;
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.probe.BaseProbe;
+
+/**
+ * Created by zhuzh on 2018/3/15.
+ */
+
+public class VerticalAxis {
+    public static final int DANG_NONE = -1;
+    public static final int DANG_MIN = 0;
+    public static final int DANG_250uV = DANG_MIN;
+    public static final int DANG_500uV = DANG_250uV + 1;
+    public static final int DANG_1mV   = DANG_500uV + 1;
+    public static final int DANG_2mV   = DANG_1mV + 1;
+    public static final int DANG_5mV   = DANG_2mV + 1;
+    public static final int DANG_10mV  = DANG_5mV + 1;
+    public static final int DANG_20mV  = DANG_10mV + 1;
+    public static final int DANG_50mV  = DANG_20mV + 1;
+    public static final int DANG_100mV = DANG_50mV + 1;
+    public static final int DANG_200mV = DANG_100mV + 1;
+    public static final int DANG_500mV = DANG_200mV + 1;
+    public static final int DANG_1V    = DANG_500mV + 1;
+    public static final int DANG_2V    = DANG_1V + 1;
+    public static final int DANG_5V    = DANG_2V + 1;
+    public static final int DANG_10V   = DANG_5V + 1;
+    public static final int DANG_MAX = DANG_10V;
+    public static final int DANG_CNT = DANG_MAX - DANG_MIN + 1;
+
+    public static final int PROBE_TYPE_VOL = 0;
+    public static final int PROBE_TYPE_CUR = 1;
+    public static final int PROBE_TYPE_VA = 2;
+    public static final int PROBE_TYPE_AV = 3;
+    public static final int PROBE_TYPE_W = 4;
+    public static final int PROBE_TYPE_DB = 5;
+    public static final int PROBE_TYPE_WENHAO = 6;
+    public static final int PROBE_TYPE_VV= 7;
+    public static final int PROBE_TYPE_AA= 8;
+    public static final int PROBE_TYPE_VTOV = 9;
+    public static final int PROBE_TYPE_ATOA = 10;
+    public static final int PROBE_TYPE_EMPTY = 11;
+    public static final int PROBE_TYPE_CUSTOM = 12;
+    public static final int PROBE_TYPE_MIN = PROBE_TYPE_VOL;
+    public static final int PROBE_TYPE_MAX = PROBE_TYPE_CUSTOM;
+    public static final int PROBE_TYPE_CNT = PROBE_TYPE_MAX-PROBE_TYPE_MIN+1;
+    private static int minGear = DANG_MIN;
+    private static int maxGear = DANG_MAX;
+    public static boolean isValidScaleId(int scaleId){
+        //return (scaleId >= minGear && scaleId <= maxGear);
+        return (scaleId >= DANG_MIN && scaleId <= DANG_MAX); //在其他的场合，如校准时，需要用到所有档位
+    }
+    public static boolean isValidScaleIdExt(int scaleId){
+        return (scaleId >= minGear && scaleId <= maxGear);
+    }
+
+    private int scaleId = DANG_1V;
+    private double fineScale = 1.0;
+    private int ProbeType = PROBE_TYPE_VOL;//探针类型
+    private String probeStr = "V";
+    private double ProbeRate = 1.0;//探针倍数
+
+
+    private BaseProbe probe = null;
+    public synchronized void setProbe(BaseProbe baseProbe){
+        probe = baseProbe;
+        bAutoProbe = probe != null;
+
+
+    }
+    public synchronized BaseProbe getProbe(){
+        return probe;
+    }
+
+    public VerticalAxis(){
+
+    }
+
+    public static double clampMin(double v,int resistanceType){
+        double digitV = HwConfig.getInstance().getDigitDang(resistanceType);
+        return Math.max(v,digitV);
+    }
+
+    public VerticalAxis(int scaleId,double fine,int probeType,double probeRate){
+        this.scaleId = scaleId;
+        this.fineScale = fine;
+        this.ProbeType = probeType;
+        this.ProbeRate = probeRate;
+    }
+
+    public synchronized void setScaleId(int scaleId){
+        if(isValidScaleId(scaleId))
+            this.scaleId = scaleId;
+    }
+    public synchronized void setFineScale(double fine) {
+        fineScale = fine;
+    }
+
+    public synchronized int getScaleId(){
+        return scaleId;
+    }
+    public double getScaleIdVal(){
+        return getScaleIdVal(scaleId);
+    }
+    public synchronized double getFineScale() { return fineScale;}
+
+    public double getScaleVal(){
+        return getScaleIdVal() * getFineScale() * getProbeRate();
+    }
+
+    public int getProbeType() {
+        if(probe != null){
+            return probe.getProbeType();
+        }
+        return ProbeType;
+    }
+    private volatile boolean bAutoProbe = false;
+    public synchronized boolean isAutoProbe(){
+        return bAutoProbe;
+    }
+
+
+    public void setProbeType(int probeType) {
+        ProbeType = probeType;
+    }
+    public void setProbeStr(String probeStr){
+        this.probeStr = probeStr;
+    }
+    public String getProbeStr(){
+        return this.probeStr;
+    }
+    public double getProbeRate() {//探针倍数
+        if(probe != null){
+            return probe.getProbeRate();
+        }
+        return ProbeRate;
+    }
+
+    public synchronized void setProbeRate(double probeRate) {
+        if(probe != null){
+            probe.setProbeRate(probeRate);
+        } else {
+            ProbeRate = probeRate;
+        }
+    }
+
+    public  double getScaleIdVal(int scaleId){
+        return getScaleIdValById(scaleId);
+    }
+    private  boolean isValidScaleId(int scaleId,double scaleIdVal){
+        double val = getScaleIdVal(scaleId);
+        if(scaleIdVal>(val-val/10) && scaleIdVal<(val+val/10)){
+            return  true;
+        }
+        return false;
+    }
+
+
+    public static int getMinGear() {
+        return minGear;
+    }
+
+    public static void setMinGear(int gear) {
+        minGear = gear;
+    }
+
+    public static int getMaxGear() {
+        return maxGear;
+    }
+
+    public static void setMaxGear(int gear) {
+        maxGear = gear;
+    }
+
+    public  int getScaleId(double scaleIdVal){
+        for(int i=minGear;i<=maxGear;i++){
+            if(isValidScaleId(i,scaleIdVal)){
+                return i;
+            }
+        }
+        return -1;
+    }
+
+
+
+    public static double getScaleIdValById(int scaleId){
+        switch (scaleId){
+            case DANG_250uV:
+                return 250e-6;
+            case DANG_500uV:
+                return 500e-6;
+            case DANG_1mV:
+                return 1e-3;
+            case DANG_2mV:
+                return 2e-3;
+            case DANG_5mV:
+                return 5e-3;
+            case DANG_10mV:
+                return 10e-3;
+            case DANG_20mV:
+                return 20e-3;
+            case DANG_50mV:
+                return 50e-3;
+            case DANG_100mV:
+                return 100e-3;
+            case DANG_200mV:
+                return 200e-3;
+            case DANG_500mV:
+                return 500e-3;
+            case DANG_1V:
+                return 1;
+            case DANG_2V:
+                return 2;
+            case DANG_5V:
+                return 5;
+            case DANG_10V:
+            default:
+                return 10;
+        }
+    }
+
+    private static  boolean isValidScaleIdByValue(int scaleId,double scaleIdVal){
+        double val = getScaleIdValById(scaleId);
+        if(scaleIdVal>(val-val/10) && scaleIdVal<(val+val/10)){
+            return  true;
+        }
+        return false;
+    }
+
+    private static int findNearScale(int scaleId, double scaleIdVal) {
+        double valLeft = getScaleIdValById(scaleId);
+        double valRight = getScaleIdValById(scaleId + 1);
+        if (valLeft <= scaleIdVal && valRight >= scaleIdVal && Math.abs(valLeft - scaleIdVal) <= Math.abs(valRight - scaleIdVal)) {
+            return scaleId;
+        } else if (valLeft <= scaleIdVal && valRight >= scaleIdVal && Math.abs(valLeft - scaleIdVal) >= Math.abs(valRight - scaleIdVal)) {
+            return scaleId + 1;
+        } else {
+            return -1;
+        }
+    }
+
+
+    public static int getScaleIdByValue(double scaleIdVal) {
+        for (int i = minGear; i <= maxGear; i++) {
+            if (i < maxGear && findNearScale(i, scaleIdVal) != -1) {
+                return findNearScale(i, scaleIdVal);
+            } else if (isValidScaleIdByValue(i, scaleIdVal)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+
+    @Override
+    public String toString() {
+        return "VerticalAxis{" +
+                "scaleId=" + scaleId +
+                ", fineScale=" + fineScale +
+                ", ProbeType=" + ProbeType +
+                ", probeStr='" + probeStr + '\'' +
+                ", ProbeRate=" + ProbeRate +
+                ", probe=" + probe +
+                ", bAutoProbe=" + bAutoProbe +
+                '}';
+    }
+}

@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+<LinearLayout android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:layout_width="1200dp">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <RadioGroup
+            android:id="@+id/testChannelsjz"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingBottom="@dimen/mainTopCenterRadioGroupPadding"
+            android:paddingEnd="@dimen/mainTopCenterRadioGroupPadding"
+            android:paddingTop="@dimen/mainTopCenterRadioGroupPadding">
+
+            <RadioButton
+                android:id="@+id/testChannelsCh1jz"
+                android:layout_width="@dimen/mainTopCenterRadioButtonWidth"
+                android:layout_height="@dimen/mainTopCenterRadioButtonHeight"
+                android:layout_marginStart="@dimen/mainTopCenterRadioButtonPaddingLeft"
+                android:background="@drawable/bg_radio_button_ch"
+                android:button="@null"
+                android:checked="true"
+                android:gravity="center"
+                android:text="@string/mainCenterRadioButtonCh1"
+                android:textColor="@color/colorCh1"
+                android:textSize="@dimen/mainTopCenterRadioButtonTextSize"
+                android:textStyle="bold" />
+
+            <RadioButton
+                android:id="@+id/testChannelsCh2jz"
+                android:layout_width="@dimen/mainTopCenterRadioButtonWidth"
+                android:layout_height="@dimen/mainTopCenterRadioButtonHeight"
+                android:layout_marginStart="@dimen/mainTopCenterRadioButtonPaddingLeft"
+                android:background="@drawable/bg_radio_button_ch"
+                android:button="@null"
+                android:gravity="center"
+                android:text="@string/mainCenterRadioButtonCh2"
+                android:textColor="@color/colorCh2"
+                android:textSize="@dimen/mainTopCenterRadioButtonTextSize"
+                android:textStyle="bold" />
+
+            <RadioButton
+                android:id="@+id/testChannelsCh3jz"
+                android:layout_width="@dimen/mainTopCenterRadioButtonWidth"
+                android:layout_height="@dimen/mainTopCenterRadioButtonHeight"
+                android:layout_marginStart="@dimen/mainTopCenterRadioButtonPaddingLeft"
+                android:background="@drawable/bg_radio_button_ch"
+                android:button="@null"
+                android:gravity="center"
+                android:text="@string/mainCenterRadioButtonCh3"
+                android:textColor="@color/colorCh3"
+                android:textSize="@dimen/mainTopCenterRadioButtonTextSize"
+                android:textStyle="bold" />
+
+            <RadioButton
+                android:id="@+id/testChannelsCh4jz"
+                android:layout_width="@dimen/mainTopCenterRadioButtonWidth"
+                android:layout_height="@dimen/mainTopCenterRadioButtonHeight"
+                android:layout_marginStart="@dimen/mainTopCenterRadioButtonPaddingLeft"
+                android:background="@drawable/bg_radio_button_ch"
+                android:button="@null"
+                android:gravity="center"
+                android:text="@string/mainCenterRadioButtonCh4"
+                android:textColor="@color/colorCh4"
+                android:textSize="@dimen/mainTopCenterRadioButtonTextSize"
+                android:textStyle="bold" />
+            <RadioButton
+                android:id="@+id/testChannelsCh5jz"
+                android:layout_width="@dimen/mainTopCenterRadioButtonWidth"
+                android:layout_height="@dimen/mainTopCenterRadioButtonHeight"
+                android:layout_marginStart="@dimen/mainTopCenterRadioButtonPaddingLeft"
+                android:background="@drawable/bg_radio_button_ch"
+                android:button="@null"
+                android:gravity="center"
+                android:text="@string/mainCenterRadioButtonCh5"
+                android:textColor="@color/colorCh5"
+                android:textSize="@dimen/mainTopCenterRadioButtonTextSize"
+                android:textStyle="bold" />
+
+            <RadioButton
+                android:id="@+id/testChannelsCh6jz"
+                android:layout_width="@dimen/mainTopCenterRadioButtonWidth"
+                android:layout_height="@dimen/mainTopCenterRadioButtonHeight"
+                android:layout_marginStart="@dimen/mainTopCenterRadioButtonPaddingLeft"
+                android:background="@drawable/bg_radio_button_ch"
+                android:button="@null"
+                android:gravity="center"
+                android:text="@string/mainCenterRadioButtonCh6"
+                android:textColor="@color/colorCh6"
+                android:textSize="@dimen/mainTopCenterRadioButtonTextSize"
+                android:textStyle="bold" />
+
+            <RadioButton
+                android:id="@+id/testChannelsCh7jz"
+                android:layout_width="@dimen/mainTopCenterRadioButtonWidth"
+                android:layout_height="@dimen/mainTopCenterRadioButtonHeight"
+                android:layout_marginStart="@dimen/mainTopCenterRadioButtonPaddingLeft"
+                android:background="@drawable/bg_radio_button_ch"
+                android:button="@null"
+                android:gravity="center"
+                android:text="@string/mainCenterRadioButtonCh7"
+                android:textColor="@color/colorCh7"
+                android:textSize="@dimen/mainTopCenterRadioButtonTextSize"
+                android:textStyle="bold" />
+
+            <RadioButton
+                android:id="@+id/testChannelsCh8jz"
+                android:layout_width="@dimen/mainTopCenterRadioButtonWidth"
+                android:layout_height="@dimen/mainTopCenterRadioButtonHeight"
+                android:layout_marginStart="@dimen/mainTopCenterRadioButtonPaddingLeft"
+                android:background="@drawable/bg_radio_button_ch"
+                android:button="@null"
+                android:gravity="center"
+                android:text="@string/mainCenterRadioButtonCh8"
+                android:textColor="@color/colorCh8"
+                android:textSize="@dimen/mainTopCenterRadioButtonTextSize"
+                android:textStyle="bold" />
+
+        </RadioGroup>
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="存储数据"
+            android:id="@+id/btnSavejz"
+            android:layout_gravity="center"
+            />
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="载入数据"
+            android:id="@+id/btnLoadjz"
+            android:layout_gravity="center"
+            />
+        <RadioGroup
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:orientation="horizontal"
+            >
+            <RadioButton
+                android:id="@+id/adGainjz"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="AD Gain"
+                android:checked="true"
+                />
+            <RadioButton
+                android:id="@+id/adOffsetjz"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="AD Offset"
+                />
+
+        </RadioGroup>
+        <CheckBox
+            android:id="@+id/adDebug"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:text="调式模式"
+            android:visibility="gone"
+            />
+
+
+    </LinearLayout>
+
+
+
+
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            >
+            <TextView
+                android:id="@+id/tvadfsA"
+                android:layout_width="70dp"
+                android:gravity="center"
+                android:layout_height="wrap_content"
+                android:text="A:0x800"/>
+
+            <SeekBar
+                android:id="@+id/adfsseekBarA"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:min="0"
+                android:max="4095"
+                android:progress="2048"
+                android:layout_weight="1"
+                android:gravity="center"/>
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            >
+            <TextView
+                android:id="@+id/tvadfsB"
+                android:layout_width="70dp"
+                android:gravity="center"
+                android:layout_height="wrap_content"
+                android:text="B:0x800"/>
+
+            <SeekBar
+                android:id="@+id/adfsseekBarB"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:min="0"
+                android:max="4095"
+                android:progress="2048"
+                android:layout_weight="1"
+                android:gravity="center"/>
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            >
+            <TextView
+                android:id="@+id/tvadfsC"
+                android:layout_width="70dp"
+                android:gravity="center"
+                android:layout_height="wrap_content"
+                android:text="C:0x800"/>
+
+            <SeekBar
+                android:id="@+id/adfsseekBarC"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:min="0"
+                android:max="4095"
+                android:progress="2048"
+                android:layout_weight="1"
+                android:gravity="center"/>
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            >
+            <TextView
+                android:id="@+id/tvadfsD"
+                android:layout_width="70dp"
+                android:gravity="center"
+                android:layout_height="wrap_content"
+                android:text="D:0x800"/>
+
+            <SeekBar
+                android:id="@+id/adfsseekBarD"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:min="0"
+                android:max="4095"
+                android:progress="2048"
+                android:layout_weight="1"
+                android:gravity="center"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            >
+            <TextView
+                android:id="@+id/tvPGA"
+                android:layout_width="70dp"
+                android:gravity="center"
+                android:layout_height="wrap_content"
+                android:text="P:0x800"/>
+
+            <SeekBar
+                android:id="@+id/pgaseekBarA"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:min="0"
+                android:max="32"
+                android:progress="16"
+                android:layout_weight="1"
+                android:gravity="center"/>
+        </LinearLayout>
+
+    </LinearLayout>
+    <TextView
+        android:textColor="@color/red"
+        android:text="单通道调(A,B,C,D),两通道调(A,B),四通道调(A),是对应每个AD. \n AD1 (Ch1,Ch2,Ch3,Ch4),AD2 (Ch5,Ch6,Ch7,Ch8)"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:layout_gravity="center"/>
+</LinearLayout>
+
+</merge>

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AbsoluteLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:ui="http://schemas.android.com/apk/res-auto"
+    android:layout_width="75px"
+    android:layout_height="200px"
+    android:layout_x="0px"
+    android:layout_y="0px"
+    android:id="@+id/rightSlipMenuBar_math_source1"
+
+    >
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Source1"
+        />
+
+    <com.micsig.tbook.ui.MButton_CheckBox
+        android:id="@+id/math_Ch1"
+        android:layout_x="0px"
+        android:layout_y="0px"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Ch1"
+        android:textColor="#ffffff"
+        android:textSize="16px"
+        ui:checkedBitmap="@drawable/channelmath_button_checked"
+        ui:unCheckedBitmap="@drawable/channelmath_button_unchecked"
+        ui:text_x="15px"
+        ui:text_y="15px"
+        />
+
+    <com.micsig.tbook.ui.MButton_CheckBox
+        android:id="@+id/math_Ch2"
+        android:layout_x="0px"
+        android:layout_y="50px"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Ch2"
+        android:textColor="#ffffff"
+        android:textSize="16px"
+        ui:checkedBitmap="@drawable/channelmath_button_checked"
+        ui:unCheckedBitmap="@drawable/channelmath_button_unchecked"
+        ui:text_x="0px"
+        ui:text_y="15px"
+        />
+    <com.micsig.tbook.ui.MButton_CheckBox
+        android:id="@+id/math_Ch3"
+        android:layout_x="0px"
+        android:layout_y="100px"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Ch3"
+        android:textColor="#ffffff"
+        android:textSize="16px"
+        ui:checkedBitmap="@drawable/channelmath_button_checked"
+        ui:unCheckedBitmap="@drawable/channelmath_button_unchecked"
+        ui:text_x="0px"
+        ui:text_y="15px"
+        />
+
+    <com.micsig.tbook.ui.MButton_CheckBox
+        android:id="@+id/math_Ch4"
+        android:layout_x="0px"
+        android:layout_y="55px"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Ch4"
+        android:textColor="#ffffff"
+        android:textSize="16px"
+        ui:checkedBitmap="@drawable/channelmath_button_checked"
+        ui:unCheckedBitmap="@drawable/channelmath_button_unchecked"
+        ui:text_x="15px"
+        ui:text_y="15px"
+        />
+
+
+</AbsoluteLayout>

@@ -1,0 +1,65 @@
+package com.micsig.tbook.scope.Action;
+
+import com.micsig.tbook.scope.Event.EventFactory;
+
+/**
+ * Created by xuj on 2018/9/4.
+ * 用于去刷新界面元素
+ */
+
+public class UiMessage {
+
+    private final String TAG="UiMessage";
+    //界面存储深度和采样率的刷新
+    public static final int UI_MESSAGE_DEPTH_SAMPFRE = 1<<0;
+    //界面波形示例图的刷新
+    public static final int UI_MESSAGE_SIMPLE_WIN_DIS = 1<<1;
+    //timeScale被修改
+    public static final int UI_MESSAGE_TIME_SCALE_CHANGE = 1<<2;
+    //进入zoom
+    public static final int UI_MESSAGE_ZOOM_ENTER = 1<<3;
+
+    private int ui_action=0;
+    private int mNum=0;
+
+    public UiMessage(){
+        clr_Cmd();
+    }
+
+    public void add(int arg){
+        ui_action |= arg;
+        mNum++;
+    }
+
+    public boolean isDelayRun(){
+        return (ui_action != 0 && mNum == 1);
+    }
+
+    public void run(){
+        if((ui_action & UI_MESSAGE_DEPTH_SAMPFRE) != 0){
+//            if(Scope.getInstance().isRun()) {
+                EventFactory.sendEvent(EventFactory.EVENT_UI_DEPTH_SAMPFRE_REFLASH);
+//            }
+            //Logger.i(TAG, "send UI_MESSAGE_DEPTH_SAMPFRE");
+        }
+        if((ui_action & UI_MESSAGE_SIMPLE_WIN_DIS) != 0){
+            EventFactory.sendEvent(EventFactory.EVENT_UI_SAMPLE_GRAPH);
+            //Logger.i(TAG, "send UI_MESSAGE_SIMPLE_WIN_DIS");
+        }
+        if((ui_action & UI_MESSAGE_TIME_SCALE_CHANGE) != 0){
+            EventFactory.sendEvent(EventFactory.EVENT_TIME_SCALE);
+            //Logger.i(TAG, "send UI_MESSAGE_TIME_SCALE_CHANGE");
+        }
+        if((ui_action & UI_MESSAGE_ZOOM_ENTER) != 0){
+            EventFactory.sendEvent(EventFactory.EVENT_DISPLAY_ZOOM_ENTER);
+            //Logger.i(TAG, "send UI_MESSAGE_ZOOM_ENTER");
+        }
+        clr_Cmd();
+    }
+
+    private void clr_Cmd(){
+        ui_action = 0;
+        mNum = 0;
+    }
+
+}

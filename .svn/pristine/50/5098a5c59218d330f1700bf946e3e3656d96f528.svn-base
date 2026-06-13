@@ -1,0 +1,38 @@
+package com.micsig.tbook.scope.probe;
+
+
+import androidx.annotation.NonNull;
+
+public class ProbeUpgradeInfo {
+
+    public static final int UPGRADE_BEGIN = 0;
+    public static final int UPGRADE_DATA = 1;
+    public static final int UPGRADE_END = 2;
+    private int chIdx;
+    private int state;
+    private int progress;
+    public ProbeUpgradeInfo(int chIdx,int state,int progress){
+
+        this.chIdx = chIdx;
+        this.state = state;
+        this.progress = progress;
+    }
+
+    public synchronized int getChIdx() {
+        return chIdx;
+    }
+
+    public synchronized int getState() {
+        return state;
+    }
+
+    public synchronized int getProgress() {
+        return progress;
+    }
+
+    @NonNull
+    @Override
+    public String toString() {
+        return "chIdx:" + chIdx + ",sate:" + state + ",progress:" + progress;
+    }
+}

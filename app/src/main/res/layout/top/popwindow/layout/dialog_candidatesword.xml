@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <TextView
+        android:id="@+id/word"
+        style="@style/textStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="35px"
+        android:layout_margin="5px"
+        android:gravity="center_vertical"
+        android:paddingStart="10px"
+        android:textColor="@color/textColorNewTopTitleUnSelect" />
+
+    <Button
+        android:id="@+id/nextView"
+        style="@style/textStyle"
+        android:layout_width="35px"
+        android:layout_height="35px"
+        android:layout_alignParentEnd="true"
+        android:layout_below="@id/word"
+        android:background="@drawable/selector_rightslip_button"
+        android:gravity="center"
+        android:text=">>"
+        android:textColor="@color/textColorNewTopTitleUnSelect"
+        android:textStyle="bold" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/choiceRecyclerView"
+        android:layout_width="wrap_content"
+        android:layout_height="55px"
+        android:layout_alignParentStart="true"
+        android:layout_below="@id/word"
+        android:layout_marginBottom="5px"
+        android:layout_toStartOf="@id/nextView"
+        android:focusable="true"
+        android:focusableInTouchMode="true" />
+</merge>

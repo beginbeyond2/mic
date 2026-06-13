@@ -1,0 +1,35 @@
+package com.micsig.tbook.scope.Sample;
+
+import com.micsig.tbook.scope.Action.FPGAMessage;
+import com.micsig.tbook.scope.Action.UiMessage;
+import com.micsig.tbook.scope.Action.XAction;
+import com.micsig.tbook.scope.Event.EventFactory;
+
+
+public class SegmentSampleAction extends XAction {
+    private SegmentSample segmentSample;
+
+    public SegmentSampleAction(SegmentSample segmentSample){
+        this.segmentSample = segmentSample;
+    }
+    public void SegmentEnable(){
+        sendFpgaMsg(FPGAMessage.FPGA_CMD_SAMP_ZUN_DEPTH|FPGAMessage.FPGA_CMD_SAMP_PLACE
+                |FPGAMessage.FPGA_CMD_COUY|FPGAMessage.FPGA_CMD_DIS | FPGAMessage.FPGA_CMD_DIS_MODE
+                |FPGAMessage.FPGA_CMD_SAMP_MODE
+                |FPGAMessage.FPGA_CMD_SEGMENT
+                |FPGAMessage.FPGA_CMD_DIS);
+        sendSegment(segmentSample.isSegmentEnable());
+
+        sendUiMsg(UiMessage.UI_MESSAGE_DEPTH_SAMPFRE);
+        sendUiMsg(UiMessage.UI_MESSAGE_SIMPLE_WIN_DIS);
+        segmentChange();
+    }
+
+    public void segmentChange(){
+        sendFpgaMsg(FPGAMessage.FPGA_CMD_SEGMENT|FPGAMessage.FPGA_CMD_DIS);
+    }
+    public void segmentFrames(){
+        sendEvent(EventFactory.EVENT_SEGMENT_FRAMES);
+    }
+
+}

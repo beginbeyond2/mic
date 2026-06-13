@@ -1,0 +1,881 @@
+package com.micsig.tbook.scope.channel;
+
+import android.os.SystemClock;
+import android.util.Log;
+
+import com.micsig.base.DoubleUtil;
+import com.micsig.base.Logger;
+import com.micsig.tbook.hardware.HardwareProduct;
+import com.micsig.tbook.scope.Data.DataFactory;
+import com.micsig.tbook.scope.Data.IDataBuffer;
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.ScopeFrozen;
+import com.micsig.tbook.scope.Trigger.TriggerLevel;
+import com.micsig.tbook.scope.probe.BaseProbe;
+import com.micsig.tbook.scope.vertical.VerticalAxis;
+
+/**
+ * Created by zhuzh on 2018/3/13.
+ */
+
+public class Channel extends BaseChannel {
+    private static final String TAG = "Channel";
+
+    public static final int COUPLE_TYPE_GND = 0;
+    public static final int COUPLE_TYPE_DC = 1;
+    public static final int COUPLE_TYPE_AC = 2;
+
+
+    //这个posFix和pos略有不同，主要在小档位时会有差异。这是因为硬件的精度有限，导致需要用posFix来补充。posFix
+    //为硬件的实际通道位置，而pos为界面上体现的通道位置。
+    private volatile double posFix = 0;
+
+    public static final int BANDWIDTH_TYPE_FULL = 0;
+    public static final int BANDWIDTH_TYPE_300M = 1;
+    public static final int BANDWIDTH_TYPE_200M = 2;
+    public static final int BANDWIDTH_TYPE_20M = 3;
+    public static final int BANDWIDTH_TYPE_HIGHPASS = 4;
+    public static final int BANDWIDTH_TYPE_LOWPASS = 5;
+
+    public static final int RESISTANCE_1M = 0;
+    public static final int RESISTANCE_50 = 1;
+
+
+
+    private boolean bInvert = false;//反相
+    private int CoupleType = COUPLE_TYPE_DC;//耦合方式
+    private volatile int resistanceType = RESISTANCE_1M;
+    private int BandWidthType = BANDWIDTH_TYPE_FULL;//带宽类型
+
+    public static final long MAX_BANDWIDTH = HardwareProduct.isMHO38V1()
+            || HardwareProduct.isMHO28V1()  ? 500*1000*1000L : 1000*1000*1000L;
+    private double [] BandWidth = {MAX_BANDWIDTH,300e6,200e6,20e6,1.0,1.0}; //带宽
+
+    private volatile int vMin = -350;
+    private volatile int vMax = 350;
+
+    private int placeVal = 0;
+
+    private double adPix = 1;
+    private double busPrimaryLevel = 0;
+    private double busSecondaryLevel = 0;
+
+    private int m;
+    private int n;
+    //private int bc;
+    private volatile boolean bSample = false;
+
+    private TriggerLevel [] triggerLevels = new TriggerLevel[TriggerLevel.TRIGGER_LEVEL_MAX];
+    private VerticalAxis verticalAxis;
+    private ChannelAction channelAction;
+
+
+    public void setProbe(BaseProbe baseProbe){
+        if (null==baseProbe && verticalAxis.getProbe()!=null){
+            EventFactory.sendEvent(new EventBase(EventFactory.EVENT_PROBE_UNPLUG,getChId()),true);
+        }else if (null!=baseProbe && verticalAxis.getProbe()==null) {
+            EventFactory.sendEvent(new EventBase(EventFactory.EVENT_PROBE_PLUG,getChId()), true);
+        }
+        verticalAxis.setProbe(baseProbe);
+        channelAction.probeChange();
+    }
+
+    public BaseProbe getProbe(){
+        return verticalAxis.getProbe();
+    }
+
+    public Channel(int idx) {
+        super(idx,"CH" + (idx + 1));
+        verticalAxis = new VerticalAxis();
+        channelAction = new ChannelAction(this);
+        for(int i=TriggerLevel.TRIGGER_LEVEL_NORMAL;i<TriggerLevel.TRIGGER_LEVEL_MAX;i++){
+            triggerLevels[i] = new TriggerLevel(i);
+        }
+        for (int i=0;i<channelZeroPos.length;i++){
+            channelZeroPos[i] = 0;
+        }
+        setBuffer(DataFactory.allocateBufferQueue(false));
+    }
+
+    public TriggerLevel getTriggerLevel(int triggerLevelType){
+        if(TriggerLevel.isTriggerLevelVaild(triggerLevelType))
+            return triggerLevels[triggerLevelType];
+        return null;
+    }
+
+    public int getVMin() {
+        return vMin;
+    }
+
+    public int getVMax() {
+        return vMax;
+    }
+
+    public void setVRange(int min, int max) {
+        vMin = min;
+        vMax = max;
+    }
+    public void checkPos(){
+        setChOffsetVal(chOffsetVal * getProbeRate());
+        if(getVerticalMode() == VERTICAL_MODE_CH_ZERO){
+            setPos(getPosUI());
+        }
+    }
+
+
+//    public void setPos(double pos) {
+//        setPos(pos,false);
+//    }
+
+    public void setPos(double pos, boolean delay) {//这里传递过来的是 正负偏移量的像素值
+        pos = pos * ScopeBase.getToFPGACoff();//转换成1000对应的偏移量
+        double v = getZero() + getChOffset() * ScopeBase.getToFPGACoff() + pos;
+        if (v >= vMin && v <= vMax) {
+            super.setPos(pos);
+        }
+        channelAction.pos((int) Math.round(getPos()), delay);
+    }
+
+    public void setPos(double pos){
+        pos = pos * ScopeBase.getToFPGACoff();
+        double zero = getZero() + getChOffset() * ScopeBase.getToFPGACoff();
+        if(pos + zero < vMin){
+            pos = vMin - zero;
+        }else if(pos + zero > vMax){
+            pos = vMax - zero;
+        }
+        super.setPos(pos);
+        channelAction.pos((int) Math.round(getPos()),false);
+    }
+
+    public double getMoveZeroVal(){
+        return  (double)getZero()/ScopeBase.getVerticalPerGridPixels();
+    }
+
+    public void setZero(int pos){
+        if (DoubleUtil.FuzzyCompare(getFineScale(),1.0)) {
+            if (Math.abs(pos) <= ScopeBase.getHeight() / 2) {
+                boolean bMoveZero = false;
+                synchronized (this) {
+                    int vScaleId = this.getVScaleId();
+                    if(channelZeroPos[vScaleId]  != pos) {
+                        channelZeroPos[this.getVScaleId()] = pos;
+                        bMoveZero = true;
+                    }
+                }
+                if(bMoveZero) {
+                    channelAction.movezero();
+                }
+            }
+        }
+    }
+
+    public synchronized void setZero(int vDang,int pos){
+
+        channelZeroPos[vDang] = pos;
+    }
+    public boolean isFineExtent(){
+        return !DoubleUtil.FuzzyCompare(getFineScale(),1.0);
+    }
+    public synchronized int getZero(){
+        if (DoubleUtil.FuzzyCompare(getFineScale(),1.0)) {
+            return channelZeroPos[this.getVScaleId()];
+        }else{
+            return 0;
+        }
+    }
+
+
+
+    public void setPosFix(double pos){
+        synchronized (this) {
+            this.posFix = pos;
+        }
+    }
+
+    private int [] channelZeroPos = new int[VerticalAxis.DANG_CNT];
+
+    private volatile double chOffsetVal = 0;
+    public void setChOffsetVal(double val){
+        double v = getChOffset(val/getProbeRate());//计算出设置的偏移量 等于 多少个像素
+        this.chOffsetVal = v * getADVerticalPerPix()/getProbeRate();//根据像素个数、档位、探针倍数 计算出实际的偏移值
+        Log.d(TAG, "setChOffsetVal() called with: val = [" + val + "]" + " ,Pix= " + v + " ,chOffsetVal= " + chOffsetVal);
+        channelAction.pos((int) Math.round(getPos()),false);
+        channelAction.offsetChange();
+    }
+
+    private double getChOffset(double val){ //实际对应的偏移像素
+        double v = val * getProbeRate() / getADVerticalPerPix() * ScopeBase.getToFPGACoff();
+        if(v < vMin){
+            v = vMin;
+        }else if(v > vMax){
+            v = vMax;
+        }
+        return v * ScopeBase.getToUICoff();
+    }
+
+    public double getChOffset(){//偏移量 实际的偏移像素
+        return getChOffset(this.chOffsetVal);
+    }
+
+    public double getChOffsetVal(){// 偏移的幅值
+        return getChOffset() * getADVerticalPerPix();
+    }
+
+
+    public double getPosFix(){
+        synchronized (this) {
+            return posFix;
+        }
+    }
+
+    public void setSample(boolean bSample) {
+        if (bSample) {
+            if (!isSample()) {
+                channelAction.openSample();
+            }
+        } else {
+            if (isSample()) {
+                channelAction.closeSample();
+            }
+        }
+        this.bSample = bSample;
+        // Logger.d("Channel","Ch" + (getChId()+1) + ", Sample = " + bSample);
+    }
+
+    public boolean isSample() {
+        return this.bSample;
+    }
+
+
+    int delay = 0;
+
+    //ps 为单位
+    public int getDelay(){
+        return delay;
+    }
+
+    //ps 为单位
+    //public static final int MAX_DELAY_PS = 100*1000;//100ns
+    public static final int MAX_DELAY_PS = 500*1000;//100ns
+    public void setDelay(int delay){
+        if(-MAX_DELAY_PS <= delay && delay <= MAX_DELAY_PS) {
+            this.delay = delay;
+            channelAction.changeDelay();
+        }else{
+            throw new IllegalArgumentException();
+        }
+    }
+
+    @Override
+    public void open() {
+        setOpen(true);
+        channelAction.open();
+    }
+
+    @Override
+    public void close() {
+        setOpen(false);
+        channelAction.close();
+    }
+
+    @Override
+    public void activate() {
+        if (isOpen()) {
+            channelAction.active();
+        }
+    }
+
+
+    public synchronized boolean isInvert() {
+        return bInvert;
+    }
+
+    public void setInvert(boolean bInvert) {
+        synchronized (this) {
+            this.bInvert = bInvert;
+        }
+        channelAction.InvertChange();
+    }
+
+    public int getCoupleType() {
+        return CoupleType;
+    }
+
+    public void setCoupleType(int coupleType) {
+        CoupleType = coupleType;
+        channelAction.CoupleTypeChange();
+    }
+
+    public boolean isAutoProbe(){
+        return verticalAxis.isAutoProbe();
+    }
+
+    public int getProbeType() {
+        return verticalAxis.getProbeType();
+    }
+
+    public void setProbeType(int probeType) {
+        verticalAxis.setProbeType(probeType);
+        channelAction.ProbeRateChange();
+    }
+
+    public void setProbeStr(String probeStr){
+        verticalAxis.setProbeStr(probeStr);
+    }
+
+    public String getProbeStr(){
+        return verticalAxis.getProbeStr();
+    }
+
+    public double getProbeRate() {
+        return verticalAxis.getProbeRate();
+    }
+
+    public void setProbeRate(double probeRate) {
+        verticalAxis.setProbeRate(probeRate);
+        channelAction.ProbeRateChange();
+    }
+    public void setProbeDaVal(int val){
+        BaseProbe baseProbe = getProbe();
+        if(baseProbe != null && baseProbe.isDa()){
+            baseProbe.setDaValue(val);
+        }
+    }
+    public void changeProbeDa(){
+        channelAction.changeProbeDa();
+    }
+
+    public int getBandWidthType() {
+        return getBandWidthType(BandWidthType);
+    }
+
+    public int getBandWidthType(int BandWidthType){
+        int bwType = BandWidthType;
+        if(BandWidthType == BANDWIDTH_TYPE_FULL) {
+            double bw = getBandWidth(BANDWIDTH_TYPE_FULL);
+            for(int i=0;i<BANDWIDTH_TYPE_20M;i++){
+                if(bw > (BandWidth[i] - 10)){
+                    bwType = i;
+                    break;
+                }
+            }
+        }
+        return bwType;
+    }
+
+    public void bandWidthTypeChange(){
+        channelAction.BandWidthTypeChange();
+    }
+    public void setBandWidthType(int bandWidthType,double bandWidth) {
+        if(bandWidthType == BANDWIDTH_TYPE_FULL){
+            if(bandWidth < getMaxBandWidth()){
+                bandWidthType = BANDWIDTH_TYPE_LOWPASS;
+            }
+        }
+        if(bandWidthType == BANDWIDTH_TYPE_FULL){
+            bandWidth = maxBandWidth;
+        }
+        BandWidthType = bandWidthType;
+        BandWidth[BandWidthType] = bandWidth;
+        channelAction.BandWidthTypeChange();
+    }
+
+    public double getBandWidth(int BandWidthType){
+        double bw = BandWidth[BandWidthType];
+        if(bw > maxBandWidth){
+            bw = maxBandWidth;
+        }
+        return bw;
+    }
+    public double getBandWidth() {
+        return getBandWidth(BandWidthType);
+    }
+
+    public static double maxBandWidth = 70e6;
+    public static void setMaxBandWidth(double bandWidth){
+        maxBandWidth = bandWidth;
+    }
+    public static double getMaxBandWidth(){
+        return maxBandWidth;
+    }
+
+    public int getMinGear() {
+        return VerticalAxis.getMinGear();
+    }
+
+    public int getMaxGear() {
+        return getResistanceType() == RESISTANCE_50 ?
+                HardwareProduct.isMHO68V1() ?
+                        (isEnable_50O_700mV() ? VerticalAxis.DANG_1V : VerticalAxis.DANG_500mV):
+                        VerticalAxis.DANG_1V
+                :
+                VerticalAxis.getMaxGear();
+    }
+
+    boolean bEnable_50O_700mV = false;
+    public synchronized void set50O_700mV(boolean bEnable_50O_700mV){
+        this.bEnable_50O_700mV = bEnable_50O_700mV;
+    }
+    public synchronized boolean isEnable_50O_700mV(){
+        return bEnable_50O_700mV;
+    }
+
+
+    int scaleIdBak = -1;
+    private volatile long  resistanceTS = 0;
+    public long getResistanceTS(){
+        return resistanceTS;
+    }
+    public void setResistanceType(int resistanceType) {
+        if(resistanceType == RESISTANCE_50){
+            resistanceTS = SystemClock.elapsedRealtime();
+        }else{
+            resistanceTS = 0;
+        }
+        synchronized (this) {
+            this.resistanceType = resistanceType;
+        }
+        channelAction.ResistanceTypeChange();
+        if(!isValidScaleIdExt(verticalAxis.getScaleId())){
+            scaleIdBak = verticalAxis.getScaleId();
+//            setVScaleId(VerticalAxis.DANG_1V, 1.0,true, false);
+            if(isEnable_50O_700mV()){
+                setVScaleId(VerticalAxis.DANG_1V, 0.7,true, false);
+            }else{
+                setVScaleId(
+                        HardwareProduct.isMHO68V1() ? VerticalAxis.DANG_500mV : VerticalAxis.DANG_1V
+                        , 1.0,true, false);
+            }
+        }else{
+            if(resistanceType == RESISTANCE_1M && scaleIdBak != verticalAxis.getScaleId()){
+                setVScaleId(scaleIdBak, 1.0,true, true);
+            }
+        }
+    }
+
+    public synchronized int getResistanceType() {
+
+        return resistanceType;
+    }
+
+    public double getVScaleVal() {//档位，对应每格的幅值
+        return verticalAxis.getScaleVal();
+    }
+    public double getVScaleIdVal() {
+        return verticalAxis.getScaleIdVal();
+    }
+    public double getVScaleIdVal(int scaleId) {
+        return verticalAxis.getScaleIdVal(scaleId);
+    }
+    public int getVScaleId(double val) {
+        return verticalAxis.getScaleId(val);
+    }
+    public int getVScaleId() {
+        return verticalAxis.getScaleId();
+    }
+    public double getFineScale() { return verticalAxis.getFineScale();}
+
+    private void setVScaleId(int scaleId,double fine,boolean bUser, boolean initScaleBak){
+        if (VerticalAxis.isValidScaleId(scaleId)
+                && isVScaleIdValid(scaleId)) {
+
+            if(getResistanceType() == RESISTANCE_50
+                    && isEnable_50O_700mV()){
+                if(scaleId >= VerticalAxis.DANG_1V){
+                    scaleId = VerticalAxis.DANG_1V;
+                    if(fine >= 0.7){
+                        fine = 0.7;
+                    }
+                }
+            }
+
+            verticalAxis.setFineScale(fine);
+            verticalAxis.setScaleId(scaleId);
+            channelAction.vScaleIdChange();
+            super.setVScaleId(scaleId);
+            if (initScaleBak && isValidScaleIdExt(verticalAxis.getScaleId())) {
+                scaleIdBak = -1;
+            }
+            if(bUser){
+                channelAction.vScaleIdUserChange();
+            }
+
+            if(isAutoProbe()){
+                BaseProbe baseProbe = getProbe();
+                if(baseProbe != null){
+                    baseProbe.setVScaleVal(getVScaleVal());
+                }
+            }
+        }
+    }
+
+    public void setVScaleId(int scaleId,double fine,boolean bUser){
+        setVScaleId(scaleId, fine,bUser, true);
+    }
+    public void setVScaleId(int scaleId,boolean bUser) {
+        setVScaleId(scaleId,1.0,bUser);
+    }
+    public void setVScaleId(int scaleId,double fine) {
+        setVScaleId(scaleId,fine,false);
+    }
+
+    public void setVScaleId(int scaleId) {
+        setVScaleId(scaleId,1.0,false);
+    }
+
+
+    private boolean isValidScaleIdExt(int vScaleId){
+        return (vScaleId >= getMinGear() && vScaleId <= getMaxGear());
+    }
+
+    @Override
+    public boolean isVScaleIdValid(int vScaleId) {
+        if(VerticalAxis.isValidScaleIdExt(vScaleId) && isValidScaleIdExt(vScaleId)){
+            if(getVerticalMode() == VERTICAL_MODE_SCREEN_CENTER){
+                double vScaleVal = getVScaleIdVal(vScaleId) * getFineScale();
+                double val = centerVal / vScaleVal;
+                int max = Scope.vSpanOfView(getResistanceType(),vScaleVal);
+                return (val <= max) && (val >= -max);
+            }else{
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+
+    //输入任意档位自动转换精细档位
+    public void setVScaleVal(double scaleVal){
+        scaleVal /= verticalAxis.getProbeRate();
+
+        int scaleId = VerticalAxis.getMinGear();
+        double val = VerticalAxis.getScaleIdValById(scaleId);
+        if(scaleVal < val){
+            scaleVal = val;
+        }
+
+        for(int i=VerticalAxis.getMinGear();i<=VerticalAxis.getMaxGear();i++){
+            val= VerticalAxis.getScaleIdValById(i);
+            scaleId = i;
+            if(scaleVal <= val || DoubleUtil.FuzzyCompare(scaleVal,val)){
+                break;
+            }
+        }
+        if(scaleId == VerticalAxis.getMaxGear()
+                && scaleVal > VerticalAxis.getScaleIdValById(VerticalAxis.getMaxGear()) ){
+            scaleVal = val;
+        }
+
+        setVScaleId(scaleId,scaleVal/val);
+    }
+
+    public int calcVScaleId(int dang,int val){
+        int i = 0;
+        for(i=VerticalAxis.getMinGear();i<=VerticalAxis.getMaxGear();i++){
+            if(i >= dang){
+                i += val;
+                if(i < 0){
+                    i = 0;
+                }else if(i >= VerticalAxis.getMaxGear()){
+                    i = VerticalAxis.getMaxGear();
+                }
+                break;
+            }
+        }
+        return i;
+    }
+
+    public int calcVScaleId(int val){
+        int scaleId = getVScaleId();
+        double vScaleVal = getVScaleVal()/getProbeRate();
+        if(val > 0){
+            vScaleVal += vScaleVal * 0.01;
+            int i = VerticalAxis.getMinGear();
+            for(i=VerticalAxis.getMinGear();i<=VerticalAxis.getMaxGear();i++){
+                if(VerticalAxis.getScaleIdValById(i) > vScaleVal){
+                    scaleId = i;
+                    break;
+                }
+            }
+            if(i >= VerticalAxis.getMaxGear()){
+                scaleId = VerticalAxis.getMaxGear();
+            }
+        }else{
+            vScaleVal -= vScaleVal * 0.01;
+            int i=VerticalAxis.getMaxGear();
+            for(i=VerticalAxis.getMaxGear();i>=VerticalAxis.getMinGear();i--){
+                if(VerticalAxis.getScaleIdValById(i) < vScaleVal){
+                    scaleId = i;
+                    break;
+                }
+            }
+            if(i <= VerticalAxis.getMinGear()){
+                scaleId = VerticalAxis.getMinGear();
+            }
+        }
+
+        return scaleId;
+    }
+
+    public void setFineScale(double fineScale) {
+        verticalAxis.setFineScale(fineScale);
+        channelAction.vFineChange();
+    }
+
+    @Override
+    public double getVerticalPerPix(){//获取垂直方向每个像素 对应的 幅值 只包含固定精细挡位，根据switch选择
+        double val = getVScaleVal();
+        double h = ScopeBase.getVerticalPerGridPixels() * ScopeBase.getToUICoff();
+        if(Scope.getInstance().isZoom()){
+            h = ScopeBase.getZoomVerticalPerGridPixels() * ScopeBase.getToUICoff();
+        }
+        return val/h;
+    }
+
+    public double getADVerticalPerPix(){//获取每个像素 对应的幅值
+        double val = getVScaleVal();
+        double h = ScopeBase.getVerticalPerGridPixels() * ScopeBase.getToUICoff();
+        return val/h;
+    }
+
+    @Override
+    public double getSampleRate() {
+        return Scope.getInstance().getSampleRate();
+    }
+
+    @Override
+    public double getSampleRate2display(){
+        return getSampleRate();
+    }
+
+    public double getVerticalPerPix(int scaleId){
+        double val = verticalAxis.getScaleIdVal(scaleId) * getProbeRate();
+        double h = ScopeBase.getVerticalPerGridPixels() * ScopeBase.getToUICoff();
+        if(Scope.getInstance().isZoom()){
+            h = ScopeBase.getZoomVerticalPerGridPixels() * ScopeBase.getToUICoff();
+        }
+        return val/h;
+    }
+
+
+    public void setAdPix(double val){
+        adPix = val;
+    }
+    public double getAdPix(){
+        return adPix;
+    }
+    public void setBusPrimaryLevel(double busPrimaryLevel){
+
+        this.busPrimaryLevel = busPrimaryLevel;
+        channelAction.busLevelChange();
+    }
+    public double getBusPrimaryLevel(){
+        return busPrimaryLevel;
+    }
+    public void setBusSecondaryLevel(double busSecondaryLevel){
+        this.busSecondaryLevel = busSecondaryLevel;
+        channelAction.busLevelChange();
+
+    }
+    public double getBusSecondaryLevel(){
+        return busSecondaryLevel;
+    }
+
+    public void setM(int val){
+        m = val;
+    }
+    public void setN(int val){
+        n = val;
+    }
+
+
+    public int getM(){
+        return m;
+    }
+    public int getN(){
+        return n;
+    }
+
+    public synchronized void setPlaceVal(int val){
+        placeVal = val;
+    }
+
+    public synchronized int getPlaceVal(){
+        return placeVal;
+    }
+
+    private double minVal = 0;
+    private double maxVal = 0;
+    private double pkpkVal = 0;
+
+    public synchronized double getMinVal() {
+        return minVal;
+    }
+
+    public synchronized double getMaxVal() {
+        return maxVal;
+    }
+    public synchronized double getPKPKVal(){
+        return pkpkVal;
+    }
+    public  void setMaxMinVal(double maxVal,double minVal,boolean bRun) {
+        double v = 0;
+        if(bRun){
+            v = getADVerticalPerPix() * ScopeBase.getToFPGACoff();
+        }else{
+            v = ScopeFrozen.getInstance().getChVertical(getChId()).getScaleVal()/(ScopeBase.getVerticalPerGridPixels());
+        }
+        synchronized (this) {
+            maxVal = (maxVal * 256 + m) * n / 65536 + placeVal;
+            minVal = (minVal * 256 + m) * n / 65536 + placeVal;
+
+            if (bRun) {
+                maxVal_bak = maxVal;
+                minVal_bak = minVal;
+            } else {
+
+                if (maxVal > maxVal_bak) maxVal = maxVal_bak;
+                if (minVal < minVal_bak) minVal = minVal_bak;
+            }
+
+            this.maxVal = maxVal * v;
+            this.minVal = minVal * v;
+            this.pkpkVal = this.maxVal - this.minVal;
+        }
+
+    }
+
+    double maxVal_bak = Double.MIN_VALUE;
+    double minVal_bak = Double.MAX_VALUE;
+    public  void setMaxMinVal16Bit(double maxVal, double minVal,boolean bRun) {
+        double v = 0;
+        synchronized (this) {
+            maxVal += 512 - c;
+            minVal += 512 - c;
+        }
+
+        if(bRun){
+            v = getVScaleVal()/ScopeBase.getVerticalPerGridPixels();
+            maxVal = maxVal / getYFactor() - getPos();
+            minVal = minVal / getYFactor() - getPos();
+        }else{
+            ScopeFrozen scopeFrozen = ScopeFrozen.getInstance();
+            v = scopeFrozen.getChVertical(getChId()).getScaleVal()/(ScopeBase.getVerticalPerGridPixels());
+            maxVal = maxVal / getYFactor() - scopeFrozen.getChPos(getChId());
+            minVal = minVal / getYFactor() - scopeFrozen.getChPos(getChId());
+        }
+
+        synchronized (this) {
+            this.maxVal = maxVal * v;
+            this.minVal = minVal * v;
+            this.pkpkVal = this.maxVal - this.minVal;
+        }
+    }
+
+    public double getHalfWaveAmpInPix() {
+        //notice: this value not contain ChannelZero
+        waitWave();
+        return (getMaxVal() + getMinVal()) / 2 / getADVerticalPerPix();
+    }
+
+    private volatile boolean needWave = true;
+    public void setNeedWave(boolean needWave){
+        this.needWave = needWave;
+        if(!needWave){
+            super.setWaveValid(false);
+        }
+    }
+
+    @Override
+    public IDataBuffer obtain() {
+        if(isWaveValid()) {
+            return super.obtain();
+        }
+        return null;
+    }
+
+    public boolean isNeedWave(){
+        return this.needWave || getMeasure().isEnable();
+    }
+
+    @Override
+    public void setWaveValid(boolean bWaveValid) {
+
+        if(bWaitWave){
+            Logger.d(TAG,"setWaveValid :" + bWaveValid);
+            synchronized (this) {
+                this.notify();
+            }
+        }
+        super.setWaveValid(bWaveValid);
+    }
+
+    volatile boolean bWaitWave = false;
+    public void waitWave(){
+        if(!isNeedWave()) {
+            synchronized (this) {
+                bWaitWave = true;
+                boolean needWave_bak = this.needWave;
+                this.needWave = true;
+                channelAction.getWave();
+                Logger.d(TAG,"getwave,needWave_bak:" + needWave_bak);
+                try {
+                    this.wait(2000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                bWaitWave = false;
+                needWave = needWave_bak;
+            }
+        }
+    }
+
+    @Override
+    public boolean save(String pathName) {
+        this.waitWave();
+        return super.save(pathName);
+    }
+
+    @Override
+    public boolean saveCSV(String pathName) {
+        this.waitWave();
+        return super.saveCSV(pathName);
+    }
+
+
+    private double YFactor = 1;
+    public synchronized void setYFactor(double yFactor){
+        this.YFactor = yFactor;
+    }
+    public synchronized double getYFactor(){
+        return YFactor;
+    }
+
+    public double ZPos = 0;
+    public synchronized void setZPos(double pos){
+        this.ZPos = pos;
+    }
+    public synchronized double getZPos(){
+        return this.ZPos;
+    }
+
+    public int YPos = 0;
+    public synchronized void setYPos(int pos){
+        this.YPos = pos;
+    }
+    public synchronized int getYPos(){
+        return this.YPos;
+    }
+    public int a,b,c;
+
+    public synchronized void setABC(int a,int b,int c){
+        this.a = a;
+        this.b = b;
+        this.c = c;
+    }
+}

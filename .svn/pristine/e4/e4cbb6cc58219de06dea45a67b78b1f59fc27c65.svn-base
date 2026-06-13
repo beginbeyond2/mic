@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AbsoluteLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <View
+        android:id="@+id/outView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <View
+        android:layout_width="819px"
+        android:layout_height="907px"
+        android:layout_x="982px"
+        android:layout_y="217px"
+        android:background="@color/color_Enable" />
+
+    <RelativeLayout
+        android:layout_width="532px"
+        android:layout_height="wrap_content"
+        android:layout_x="1268px"
+        android:layout_y="700px"
+        android:background="@drawable/shape_frame_bg_black"
+        android:padding="8px">
+
+        <com.micsig.tbook.ui.rightslipmenu.RightViewSelect
+            android:id="@+id/multiple"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14px"
+            app:array="@array/mathFftPersistValue"
+            app:arrayOrientation="horizontalEachRow4"
+            app:itemHeight="54px"
+            app:itemMargin="7px"
+            app:itemWidth="108px" />
+    </RelativeLayout>
+</AbsoluteLayout>

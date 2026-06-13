@@ -1,0 +1,506 @@
+package com.micsig.tbook.scope.channel;
+
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.Action.UiMessage;
+import com.micsig.tbook.scope.Data.DataFactory;
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.ScopeMessage;
+import com.micsig.tbook.scope.horizontal.HorizontalAxisMath;
+import com.micsig.tbook.scope.math.MathDualWave;
+import com.micsig.tbook.scope.math.MathExprWave;
+import com.micsig.tbook.scope.math.MathFFTWave;
+import com.micsig.tbook.scope.math.MathWave;
+
+/**
+ * Created by zhuzh on 2018/3/14.
+ */
+
+public class MathChannel extends BaseChannel {
+    private static final String TAG = "MathChannel";
+    private volatile int MathType = MathWave.MATH_EXPR;
+    private MathWave[] mathWave = new MathWave[MathWave.MATH_TYPE_MAX];
+
+    private double sampleRate = 0;
+    private double chaZhiNum = 1;
+    private int waveLen = 0;
+    private HorizontalAxisMath horizontalAxisMath;
+
+    public MathChannel(int chIdx) {
+        super(chIdx,"MATH" + (chIdx - ChannelFactory.MATH1 + 1) );
+        horizontalAxisMath = new HorizontalAxisMath(this);
+        mathWave[MathWave.MATH_DUALWAVE] = new MathDualWave(this);
+        mathWave[MathWave.MATH_FFTWAVE] = new MathFFTWave(this);
+        mathWave[MathWave.MATH_EXPR] = new MathExprWave(this);
+        setBuffer(DataFactory.allocateBufferQueue(false));
+    }
+    public boolean isChInSample(int chIdx){
+        if(MathWave.isMathTypeVaild(MathType)){
+            return mathWave[MathType].isChInSample(chIdx);
+        }
+        return  false;
+    }
+    public boolean isFFTDb(){
+        if (MathType==MathWave.MATH_FFTWAVE){
+            MathFFTWave fft= ((MathFFTWave)mathWave[MathType]);
+            return fft.isTypeDb();
+        }
+        return false;
+    }
+    @Override
+    public void setPos(double pos) {
+        pos = pos * ScopeBase.getToFPGACoff();
+        super.setPos(pos);
+        sendEvent(EventFactory.EVENT_MATH_VPOS, true);
+        sendEvent(EventFactory.EVENT_AFTERGLOW_MATH_CLEAR,true);
+    }
+
+//    @Override
+//    protected void setPos(double pos) {
+//        pos = pos * ScopeBase.getToFPGACoff();
+//        super.setPos(pos);
+//        sendEvent(EventFactory.EVENT_MATH_VPOS, true);
+//        sendEvent(EventFactory.EVENT_AFTERGLOW_MATH_CLEAR,true);
+//    }
+
+    @Override
+    public void open() {
+        setOpen(true);
+        chSampleChange();
+        if (MathType == MathWave.MATH_FFTWAVE)
+            horizontalAxisMath.genFFT_Axis(true);
+        sendEvent(EventFactory.EVENT_MATH_VPOS);
+        sendEvent(EventFactory.EVENT_CHANNEL_OPEN, true);
+
+    }
+
+    @Override
+    public void close() {
+        setOpen(false);
+        chSampleChange();
+        sendEvent(EventFactory.EVENT_MATH_VPOS);
+        sendEvent(EventFactory.EVENT_CHANNEL_CLOSE);
+    }
+
+    public void sendEvent(int eventId){
+        EventFactory.sendEvent(new EventBase(eventId, getChId()), false);
+    }
+    public void sendEvent(int eventId,boolean async){
+        EventFactory.sendEvent(new EventBase(eventId, getChId(), getChId()), async);
+    }
+
+    @Override
+    public void activate() {
+
+        if (MathType == MathWave.MATH_FFTWAVE) {
+            setMathType(MathWave.MATH_FFTWAVE);
+        }
+        sendEvent(EventFactory.EVENT_CHANNEL_ACTIVE);
+
+        ScopeMessage.getInstance().sendUiMsg(UiMessage.UI_MESSAGE_DEPTH_SAMPFRE);
+        ScopeMessage.getInstance().sendUiMsg(UiMessage.UI_MESSAGE_SIMPLE_WIN_DIS);
+        sendEvent(EventFactory.EVENT_AFTERGLOW_MATH);
+    }
+
+    private int colorValue = 0xFF0000FF;
+
+    public void setForegroundColor(int colorValue) {
+        this.colorValue = (colorValue & 0xFF000000)
+                | ((colorValue & 0xFF) << 16)
+                | ((colorValue & 0xFF00))
+                | ((colorValue & 0xFF0000) >> 16);
+    }
+
+    public int getForegroundColor() {
+        return colorValue;
+    }
+
+    public int getMathType() {
+        synchronized (this) {
+            return MathType;
+        }
+    }
+
+    public void setMathType(int mathType) {
+
+        if (MathWave.isMathTypeVaild(mathType)) {
+            synchronized (this) {
+                MathType = mathType;
+            }
+            if (mathType == MathWave.MATH_FFTWAVE)
+                horizontalAxisMath.genFFT_Axis();
+            chSampleChange();
+
+            mathVChange();
+            sendEvent(EventFactory.EVENT_MATH_SOURCE,true);
+        }
+    }
+
+    public void mathVChange() {
+        sendEvent(EventFactory.EVENT_CHANNEL_OPEN, true);
+        sendEvent(EventFactory.EVENT_AFTERGLOW_MATH);
+        sendEvent(EventFactory.EVENT_AFTERGLOW_MATH_CLEAR);
+    }
+
+
+    public MathWave getMathWave() {
+        synchronized (this) {
+            return mathWave[MathType];
+        }
+    }
+
+    public MathDualWave getMathDualWave() {
+        return (MathDualWave) (mathWave[MathWave.MATH_DUALWAVE]);
+    }
+
+    public MathFFTWave getMathFFTWave() {
+        return (MathFFTWave) (mathWave[MathWave.MATH_FFTWAVE]);
+    }
+
+    public MathExprWave getMathExprWave() {
+        return (MathExprWave) (mathWave[MathWave.MATH_EXPR]);
+    }
+
+    public MathWave getMathWave(int mathType) {
+        if (MathWave.isMathTypeVaild(mathType)) {
+            return mathWave[mathType];
+        }
+        return null;
+    }
+
+
+    public int getProbeType() {
+        return getMathWave().getProbeType();
+    }
+
+    public void setProbeType(int probeType) {
+        getMathWave().setProbeType(probeType);
+    }
+
+    public String getProbeStr() {
+        return getMathWave().getProbeStr();
+    }
+
+    public void setProbeStr(String probeStr) {
+        getMathWave().setProbeStr(probeStr);
+    }
+
+    public double getVScaleVal() {
+        return getMathWave().getVScaleVal();
+    }
+
+    public int generateProbeType() {
+        return getMathWave().generateProbeType();
+    }
+
+    public double getVScaleIdVal(int scaleId) {
+        int isInRms = 0;
+        if (getMathType() == MathWave.MATH_FFTWAVE) {
+            isInRms = (getMathFFTWave().getFFTType());
+        }
+        return getVScaleIdVal(scaleId, getMathType(), isInRms);
+    }
+
+    public double getVScaleIdVal(int scaleId, int mathType, int isInRms) {
+
+        if (mathType == MathWave.MATH_FFTWAVE) {
+            return getMathFFTWave().getVScaleIdVal(scaleId, isInRms);
+        } else {
+            return getMathWave().getVScaleIdVal(scaleId);
+        }
+    }
+
+    public double getVScaleIdVal() {
+        return getMathWave().getVScaleIdVal();
+    }
+
+    public int getVScaleId(double val, int mathType, int isInRms) {
+        if (mathType == MathWave.MATH_FFTWAVE) {
+            return getMathFFTWave().getVScaleId(val, isInRms);
+        } else {
+            return getMathWave().getVScaleId(val);
+        }
+    }
+
+    public int getVScaleId(double val, int mathType) {
+        return getVScaleId(val, mathType, getMathFFTWave().getFFTType());
+    }
+
+    public int getVScaleId(double val) {
+        return getVScaleId(val, getMathType());
+    }
+
+    public int getVScaleId() {
+
+        return getMathWave().getVScaleId();
+
+    }
+
+    public int getVScaleIdMax(int mathType) {
+        return getMathWave(mathType).getVScaleIdMax();
+    }
+
+    public int getVScaleIdMax() {
+        return getVScaleIdMax(getMathType());
+    }
+
+    public int getVScaleIdMin(int mathType) {
+        return getMathWave(mathType).getVScaleIdMin();
+    }
+
+    public int getVScaleIdMin() {
+        return getVScaleIdMin(getMathType());
+    }
+
+    public double getFineScale() {
+        return getMathWave().getFineScale();
+
+    }
+
+    public void setVScaleId(int scaleId) {
+
+        setVScaleId(scaleId,1.0);
+    }
+
+    private void setVScaleId(int scaleId,double fine){
+        getMathWave().setVScaleId(scaleId);
+        setFineScale(fine);
+        super.setVScaleId(scaleId);
+        sendEvent(EventFactory.EVENT_CHANNEL_VSCALE, true);
+        sendEvent(EventFactory.EVENT_AFTERGLOW_MATH_CLEAR);
+    }
+    public int calcVScaleId(int val){
+        int scaleId = getVScaleId();
+        double fineVal = getFineScale();
+        if(val > 0){
+            if(fineVal >= 1.0){
+                scaleId += val;
+            }
+        }else if(val < 0){
+            if(fineVal <= 1.0){
+                scaleId += val;
+            }
+        }
+        return scaleId;
+    }
+    @Override
+    public boolean isVScaleIdValid(int vScaleId) {
+
+        if (vScaleId <= getVScaleIdMax() && vScaleId >= getVScaleIdMin()) {
+            double max = Integer.MAX_VALUE;
+            if (getVerticalMode() == VERTICAL_MODE_SCREEN_CENTER) {
+                double val = centerVal / getVScaleIdVal(vScaleId);
+                return (val < max) && (val > -max);
+            } else {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void setVScaleVal(double scaleIdVal) {
+        int scaleId = getVScaleIdMin();
+        int m = getVScaleIdMax();
+        double v1 = getVScaleIdVal(scaleId);
+        double v2 = getVScaleIdVal(m);
+        if(scaleIdVal < v1){
+            scaleIdVal = v1;
+        }else if(scaleIdVal > v2){
+            scaleIdVal = v2;
+        }
+        for(int i= scaleId;i < m;i++){
+            v1 = getVScaleIdVal(i);
+            v2 = getVScaleIdVal(i + 1);
+            if(scaleIdVal>=v1 && scaleIdVal<=v2){
+                if(Math.abs(scaleIdVal-v1) < Math.abs(scaleIdVal-v2)){
+                    scaleId = i;
+                }else{
+                    scaleId = i + 1;
+                }
+                break;
+            }
+        }
+        setVScaleId(scaleId,1.0);
+    }
+
+    public HorizontalAxisMath getHorizontalAxisMathFFT() {
+        return horizontalAxisMath;
+    }
+
+    public void setFineScale(double fineScale) {
+        getMathWave().setFineScale(fineScale);
+    }
+
+    @Override
+    public double getVerticalPerPix() {
+        double val = getVScaleVal();
+        double h =  ScopeBase.getVerticalPerGridPixels() * ScopeBase.getToUICoff();
+        if (Scope.getInstance().isZoom()) {
+            h = ScopeBase.getZoomVerticalPerGridPixels() * ScopeBase.getToUICoff();
+        }
+        return val / h;
+    }
+
+    public double getADVerticalPerPix() {//AD每像素对应幅值
+        double val = getVScaleVal();
+        double h =  ScopeBase.getVerticalPerGridPixels() * ScopeBase.getToUICoff();
+
+        return val / h;
+    }
+
+    @Override
+    public double getSampleRate() {
+        return sampleRate * chaZhiNum;
+    }
+
+    @Override
+    public double getSampleRate2display() {
+        return sampleRate;
+    }
+
+    public synchronized int getWaveLen() {
+        return waveLen;
+    }
+
+    public void setWaveLen(int len) {
+        if (waveLen != len) {
+            ScopeMessage.getInstance().sendUiMsg(UiMessage.UI_MESSAGE_DEPTH_SAMPFRE);
+        }
+        synchronized (this) {
+            waveLen = len;
+        }
+    }
+
+    public void setSampleRate(double sampleRate, int chaZhiNum) {
+        if (this.sampleRate != sampleRate || this.chaZhiNum != chaZhiNum) {
+            this.sampleRate = sampleRate;
+            this.chaZhiNum = chaZhiNum;
+
+            if (MathType == MathWave.MATH_FFTWAVE) {
+                //采样率变化，发出通知
+                horizontalAxisMath.genFFT_Axis();
+                horizontalAxisMath.correctXPose();
+
+                //ScopeMessage.getInstance().sendUiMsg(UiMessage.UI_MESSAGE_DEPTH_SAMPFRE);
+            }
+        }
+    }
+
+    public void chSampleChange() {
+        ScopeMessage.getInstance().sendChSample();
+        ScopeMessage.getInstance().sendUiMsg(UiMessage.UI_MESSAGE_DEPTH_SAMPFRE);
+    }
+
+    private long GetRange(int pointNum, double freqSolution, double tgtFreqScale) {
+        Logger.i(TAG, "freq:" + freqSolution + " tgtScale:" + tgtFreqScale + " pointNum:" + pointNum);
+        return (long) (pointNum / 2 * ScopeBase.getHorizonPerGridPixels() * freqSolution / tgtFreqScale);
+    }
+
+    public void correctTimePose() {
+//        double radio=refTimeScaleVal_original/refTimeScaleVal;
+//        if(refXPos < 0) {
+//            //左移
+//            int leftMosPix=refXEnd-ScopeBase.getWidth()/2;
+//            leftMosPix *= radio;
+//            if(-refXPos > leftMosPix){
+//                refXPos = -leftMosPix;
+//            }
+//        } else {
+//            //右移
+//            int rightMosPix=ScopeBase.getWidth()/2-refXStart;
+//            rightMosPix *= radio;
+//            if(refXPos > rightMosPix){
+//                refXPos = rightMosPix;
+//            }
+//        }
+    }
+
+    private double fftDCVal = 0;
+    private double fftMaxVal = 0;
+    private double fftMaxFreq = 0;
+
+    public void setFFTDCVal(double fftDCVal) {
+        this.fftDCVal = fftDCVal;
+    }
+
+    public void setFFTMaxVal(double fftMaxVal) {
+        this.fftMaxVal = fftMaxVal;
+    }
+
+    public void setFFTMaxFreq(double fftMaxFreq) {
+        this.fftMaxFreq = fftMaxFreq;
+    }
+
+    public double getFFTDCVal() {
+        return fftDCVal;
+    }
+
+    public double getFFTMaxVal() {
+        return fftMaxVal;
+    }
+
+    public double getFFTMaxIdxFreq() {
+        return fftMaxFreq;
+    }
+//    if (getMathType() == MathWave.MATH_DUALWAVE) return -1;
+//        return getFFTMaxIdx()*getSampleRate()/MathNative.CalFFTPointNum(getWaveLen());
+
+    public void forceRefresh() {
+        sendEvent(EventFactory.EVENT_MATH_REFRESH);
+    }
+
+    public void setMaxVal(double val) {
+        int id = getMathExprWave().maxVal2VScaleId(val / (ScopeBase.getVerticalGridCnt() / 2 - 1));
+        if (isVScaleIdValid(id)) {
+            setVScaleId(id);
+        } else {
+            Logger.d(TAG, "isVScaleIdValid id" + id + ",");
+        }
+    }
+
+    public boolean isDifferential() {
+        boolean bRet = false;
+        if (getMathType() == MathWave.MATH_EXPR) {
+            String exprString = getMathExprWave().getExprString();
+            for (int i = 0; i < ChannelFactory.getChNums(); i++) {
+                if (exprString.contains("diff(ch" + (i + 1) + ")")) {
+                    bRet = true;
+                    break;
+                }
+            }
+        }
+        return bRet;
+    }
+
+    public int getMathChIdx(){
+        return getChId() - ChannelFactory.MATH1;
+    }
+
+
+    private double x1Val,x2Val;
+    private boolean bX1Valid = false;
+    private boolean bX2Valid = false;
+
+    public synchronized void setCursorValue(double x1Val,double x2Val){
+        this.x1Val = x1Val;
+        this.x2Val = x2Val;
+    }
+    public synchronized void setCursorValid(boolean bX1Valid,boolean bX2Valid){
+        this.bX1Valid = bX1Valid;
+        this.bX2Valid = bX2Valid;
+    }
+    public synchronized double getCursorX1Value(){
+        return x1Val;
+    }
+    public synchronized double getCursorX2Value(){
+        return x2Val;
+    }
+    public synchronized boolean isCursorX1Valid(){
+        return bX1Valid;
+    }
+    public synchronized boolean isCursorX2Valid(){
+        return bX2Valid;
+    }
+}

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@drawable/boarder"
+    >
+
+    <TextView
+        android:id="@+id/title_general_title_recyview_btn_mlh"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingVertical="18dp"
+        android:text="@string/test_text_mlh"
+        android:gravity="center"
+        android:background="@color/black_mlh"
+        android:layout_marginTop="1px"
+        android:textColor="@color/folder_text_color"
+        android:layout_marginBottom="1px"
+        android:layout_marginStart="1px"
+        android:layout_marginEnd="1px"
+        android:textSize="16sp" />
+
+    <View
+        android:id="@+id/split_title_recycleView"
+        android:layout_width="match_parent"
+        android:layout_height="1px"
+        android:layout_below="@+id/title_general_title_recyview_btn_mlh"
+        android:background="@color/frame_color" />
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/split_title_recycleView"
+        >
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyview_general_title_recyview_btn_mlh"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/transparent_mlh"
+            />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:visibility="gone"
+            android:layout_below="@id/recyview_general_title_recyview_btn_mlh">
+
+            <TextView
+                android:id="@+id/cancel_general_title_recyview_btn_mlh"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:paddingVertical="15dp"
+                android:textColor="@color/folder_text_color"
+                android:text="@string/test_text_mlh"
+                android:gravity="center"
+                android:background="@color/title_balck" />
+
+            <View
+                android:layout_width="0.5dp"
+                android:layout_height="match_parent"
+                android:background="@color/frame_color" />
+
+            <TextView
+                android:id="@+id/confirm_general_title_recyview_btn_mlh"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:paddingVertical="15dp"
+                android:text="@string/test_text_mlh"
+                android:textColor="@color/folder_text_color"
+                android:gravity="center"
+                android:background="@color/title_balck" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+
+</RelativeLayout>
+
+
+
+

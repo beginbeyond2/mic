@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_checked="true" android:state_enabled="false">
+        <shape>
+            <solid android:color="@color/bgcolorRadioUnEnable" />
+            <corners android:radius="4px" />
+        </shape>
+    </item>
+    <item android:state_checked="true">
+        <shape>
+            <corners android:radius="4px" />
+            <solid android:color="@color/bgcolorRadioSelect" />
+        </shape>
+    </item>
+    <item>
+        <shape>
+            <corners android:radius="4px" />
+            <solid android:color="@color/bgcolorRadioUnSelect" />
+        </shape>
+    </item>
+</selector>

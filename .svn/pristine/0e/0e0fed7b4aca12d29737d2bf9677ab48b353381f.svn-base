@@ -1,0 +1,39 @@
+package com.micsig.tbook.tbookscope.wavezone.wave;
+
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+
+import com.chillingvan.canvasgl.ICanvasGL;
+
+/**
+ * Created by liwb on 2017/5/19.
+ */
+
+public interface IWaveShowManage {
+
+    /***
+     * 选择的第几个通道
+     * @return  -1 没有选择任何通道  反之：返回通道号
+     */
+    int isSelected();
+
+    /***
+     * 设置波形在Y轴的偏移坐标
+     * @param offsetY
+     */
+    void setOffsetY(int offsetY);
+
+    /***
+     * 绘制到波形区
+     * @param canvas
+     */
+    void draw(Canvas canvas);
+
+    void draw(ICanvasGL canvas);
+
+    /***
+     * 返回波形图
+     * @return ch1~ch4为一张图，数学，参考各有各的波形图，共6张
+     */
+//    Bitmap getWavesBitmap();
+}

@@ -1,0 +1,201 @@
+package com.micsig.tbook.scope.Sample;
+
+
+import androidx.annotation.IntDef;
+
+import com.micsig.tbook.scope.ScopeMessage;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+
+/**
+ * Created by zhuzh on 2018/3/13.
+ */
+
+public class Sample {
+    private static volatile Sample instance = null;
+
+    public static Sample getInstance() {
+        if (instance == null) {
+            synchronized (Sample.class) {
+                if (instance == null ) {
+                    instance = new Sample();
+                }
+            }
+        }
+        return instance;
+    }
+    @IntDef({SAMPLE_TYPE_NORMAL,SAMPLE_TYPE_PEAK,SAMPLE_TYPE_AVERAGE,SAMPLE_TYPE_ENVEL})
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface SAMPLE_TYPE {}
+    public static final int SAMPLE_TYPE_NORMAL = 0;
+    public static final int SAMPLE_TYPE_PEAK = 1;
+    public static final int SAMPLE_TYPE_AVERAGE = 2;
+    public static final int SAMPLE_TYPE_ENVEL = 3;
+    public static final int SAMPLE_TYPE_MAX = 4;
+
+    private volatile boolean bSingle = false;
+    private volatile boolean bTriggerInOut = false; //false out
+    private volatile boolean bClkInOut = false; //false out
+    private int SampleType = SAMPLE_TYPE_NORMAL;
+    private int [] SampleNum = new int[SAMPLE_TYPE_MAX];
+
+    private int roolFrameRate = 40;
+
+    public int getRoolFrameRate() {
+        return roolFrameRate;
+    }
+
+    public  void setRoolFrameRate(int roolFrameRate) {
+        synchronized (this) {
+            this.roolFrameRate = roolFrameRate;
+        }
+        sampleAction.SampleTypeChange();
+    }
+
+    private SampleAction sampleAction;
+
+    private Sample(){
+
+        for(int i=0;i<SAMPLE_TYPE_MAX;i++){
+            SampleNum[i] = 0;
+        }
+        sampleAction = new SampleAction(this);
+    }
+    public int getSampleMemDepth(){
+        return MemDepthFactory.getSampleMemDepth();
+    }
+    public int getSampleMemDepth(int chCnt){
+        return MemDepthFactory.getSampleMemDepth(chCnt);
+    }
+
+
+    public void setTriggerInOut(boolean bIn){
+        synchronized (this){
+            this.bTriggerInOut = bIn;
+        }
+        sampleAction.SampleTypeChange();
+    }
+    public void setClkInOut(boolean bIn){
+        synchronized (this) {
+            this.bClkInOut = bIn;
+        }
+        sampleAction.SampleTypeChange();
+    }
+
+    public synchronized boolean isTriggerInOut(){
+        return this.bTriggerInOut;
+    }
+    public synchronized boolean isClkInOut(){
+        return this.bClkInOut;
+    }
+
+
+    public void setSampleType(@SAMPLE_TYPE int sampleType){
+        if(isValidSampleType(sampleType)) {
+            this.SampleType = sampleType;
+            sampleAction.SampleTypeChange();
+        }
+    }
+
+    public int getSampleType(){
+        return SampleType;
+    }
+    public void setSingle(boolean bSingle){
+        synchronized (this) {
+            this.bSingle = bSingle;
+        }
+        if(bSingle) {
+            sendSampleState(SAMPLE_RUN);
+            sampleAction.SampleSingle();
+        }
+    }
+    public synchronized boolean isSingle(){
+        return bSingle;
+    }
+    public  void setRunSample(boolean bRunSample){
+        sendSampleState(bRunSample ? SAMPLE_RUN : SAMPLE_STOP);
+        sampleAction.SampleRunChange();
+    }
+    public synchronized boolean isRunSample(){
+        return sampleState != SAMPLE_STOP ;
+    }
+    public void frozenSample(){
+        frozenSample(SAMPLE_STOP);
+    }
+    public void frozenSample(int sampleState){
+        synchronized (this) {
+            this.sampleState = sampleState;
+            sampleAction.frozenChange();
+        }
+    }
+    public int getSampleNum(){
+        return SampleNum[SampleType];
+    }
+    public int getSampleNum(@SAMPLE_TYPE int sampleType){
+        if(isValidSampleType(sampleType)) {
+            return SampleNum[sampleType];
+        }
+        return 0;
+    }
+
+    public void setSampleNum(@SAMPLE_TYPE int sampleType,int sampleNum){
+        if(isValidSampleType(sampleType)) {
+            SampleNum[sampleType] = sampleNum;
+            sampleAction.SampleTypeChange();
+        }
+    }
+    public void setSampleNum(int sampleNum){
+        SampleNum[SampleType] = sampleNum;
+        sampleAction.SampleTypeChange();
+    }
+
+    private boolean isValidSampleType(@SAMPLE_TYPE int sampleType){
+        return (sampleType >=SAMPLE_TYPE_NORMAL && sampleType <= SAMPLE_TYPE_MAX);
+    }
+
+
+    public static final int SAMPLE_STOP = 0;
+    public static final int SAMPLE_RUN = 1;
+    public static final int SAMPLE_TRANSIENT = 2;
+
+    public static final int SAMPLE_TRANSIENT_DIAPLAY = 3;
+    public static final int SAMPLE_TRANSIENT_RUN = 4;
+
+
+
+    private int sampleState = SAMPLE_STOP;
+    public synchronized void setSampleState(int state){
+        if(sampleState != SAMPLE_STOP){
+            this.sampleState = state;
+        }else {
+            if(state == SAMPLE_RUN){
+                this.sampleState = SAMPLE_RUN;
+            }
+        }
+        this.notifyAll();
+    }
+
+    public synchronized boolean sendSampleState(int state){
+        //Log.d("zhuzh", "sendSampleState() called with: state = [" + state + "]");
+        boolean bRet = true;
+        bRet = ScopeMessage.getInstance().setSampleState(state);
+        if(bRet) {
+            try {
+                this.wait(3000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                bRet = false;
+            }
+        }
+        return bRet;
+    }
+
+    public synchronized int getSampleState(){
+        return this.sampleState;
+    }
+
+    public synchronized boolean isTransient(){
+        return sampleState == SAMPLE_TRANSIENT;
+    }
+}

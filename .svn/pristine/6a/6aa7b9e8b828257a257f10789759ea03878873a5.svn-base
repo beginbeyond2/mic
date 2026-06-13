@@ -1,0 +1,13 @@
+package com.micsig.tbook.scope.fpga;
+
+public class FPGAReg_CH_DISPLAY_POS extends FPGAReg{
+    public FPGAReg_CH_DISPLAY_POS() {
+        super(FPGA_CH_DSIPLAY_POS, 16);
+    }
+    public void setVolm(int idx,int val){
+        setVal(idx,0,18,val);
+    }
+    public void setVoln(int idx,int val){
+        setVal(idx,18,11,val);
+    }
+}

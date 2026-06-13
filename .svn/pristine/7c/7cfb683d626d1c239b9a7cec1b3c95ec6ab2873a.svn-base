@@ -1,0 +1,234 @@
+package com.micsig.tbook.scope.surface;
+
+import android.content.Context;
+import android.hardware.OtherManager;
+import android.os.ParcelFileDescriptor;
+import android.util.Log;
+
+import com.micsig.tbook.hardware.Hardware;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.OutputStreamWriter;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+
+public class XDmaDevManage extends HwDevice{
+
+    private static final String TAG = "XDmaDeviceManage";
+
+    private final static String [] FPGA_STATUS1 = {
+            "/sys/devices/platform/fe150000.pcie/fpga", "/sys/devices/platform/fe160000.pcie/fpga"
+    };
+
+    private final static String [] XDMA_REMOVE1 = {
+            "/sys/bus/pci/devices/0000:00:00.0/remove","/sys/bus/pci/devices/0001:10:00.0/remove"
+    };
+
+    private final static String [] XDMA_REMOVE2 = {
+            "/sys/bus/pci/devices/0000:01:00.0/remove","/sys/bus/pci/devices/0001:11:00.0/remove"
+    };
+
+    private final static String [] XDMA_TIMEOUT = {
+            "/sys/module/xdma/parameters/c2h_timeout",
+            "/sys/module/xdma/parameters/h2c_timeout"
+    };
+
+    private final static String [] OS_PERFORMANCE = {
+            "/sys/devices/system/cpu/cpufreq/policy0/scaling_governor",
+            "/sys/class/devfreq/dmc/governor"
+    };
+
+    private static XDmaDevManage instance = null;
+    public static XDmaDevManage getInstance(){return instance;}
+    boolean bOpen = false;
+    private final XDmaDevice [] xDmaDevices;
+    public XDmaDevManage(Context context,int nums) {
+        super(context);
+        devCnt = nums;
+        xDmaDevices = new XDmaDevice[nums];
+        for(int i=0;i<xDmaDevices.length;i++){
+            xDmaDevices[i] = new XDmaDevice(context,i,
+                FPGA_STATUS1[i],XDMA_REMOVE1[i], XDMA_REMOVE2[i]
+            );
+        }
+        for (String s : XDMA_TIMEOUT) {
+            xDmaDevices[0].setStatus(s,"2");
+        }
+
+        for (String s : OS_PERFORMANCE) {
+            xDmaDevices[0].setStatus(s,"performance");
+        }
+
+        instance = this;
+    }
+
+
+    @Override
+    public boolean openDevice() {
+        Log.d(TAG, "openDevice() called");
+        boolean bret = true;
+        for(XDmaDevice dev:xDmaDevices){
+            if(!dev.openFpga()){
+                bret = false;
+                break;
+            }
+        }
+
+        if(bret) {
+            String s = OtherManager.getString("xdma.first");
+            if("xdma_run".equals(s)) {
+                xDmaDevices[0].setStatus("/sys/bus/pci/rescan");
+            }else{
+                OtherManager.setString("xdma.first","xdma_run");
+            }
+            for (XDmaDevice dev : xDmaDevices) {
+                if (!dev.openDevice()) {
+                    bret = false;
+                    break;
+                }
+            }
+        }
+
+        if(!bret){
+            closeDevice();
+            closeFpga();
+        }
+
+        ms_sleep(100);
+        synchronized (this) {
+            bOpen = bret;
+        }
+        return bOpen;
+    }
+
+    @Override
+    public void closeDevice() {
+        synchronized (this) {
+            bOpen = false;
+        }
+        for(XDmaDevice dev:xDmaDevices){
+            dev.closeDevice();
+        }
+        ms_sleep(100);
+        for(XDmaDevice dev:xDmaDevices){
+            dev.closeFpga();
+        }
+    }
+
+    @Override
+    public ByteBuffer lockBuffer(int idx) {
+        if(isOpen()) {
+            return xDmaDevices[idx].lockBuffer(idx);
+        }
+        return null;
+    }
+
+    @Override
+    public void unlockBuffer(int idx) {
+        xDmaDevices[idx].unlockBuffer(idx);
+    }
+
+    @Override
+    public void clear() {
+        for(XDmaDevice dev:xDmaDevices){
+            dev.clear();
+        }
+    }
+
+    @Override
+    public ByteBuffer getBarBuffer(int idx) {
+        if(idx >= 0 && idx < xDmaDevices.length) {
+            return xDmaDevices[idx].getBarBuffer(idx);
+        }
+        return null;
+    }
+
+    @Override
+    public boolean store(RandomAccessFile randomAccessFile) {
+        synchronized (this) {
+            progressVal = 1;
+            for (XDmaDevice dev : xDmaDevices) {
+                if (!dev.store(randomAccessFile)) {
+                    return false;
+                }
+                progressVal = 49;
+            }
+            progressVal = 99;
+        }
+        return true;
+    }
+
+    @Override
+    public boolean restore(RandomAccessFile randomAccessFile) {
+        synchronized (this) {
+            progressVal = 1;
+            for (XDmaDevice dev : xDmaDevices) {
+                if (!dev.restore(randomAccessFile)) {
+                    return false;
+                }
+                progressVal = 49;
+            }
+            progressVal = 99;
+        }
+        return true;
+    }
+
+    @Override
+    public void stop() {
+        for (XDmaDevice dev : xDmaDevices){
+            dev.stop();
+        }
+    }
+
+    private volatile int progressVal = 0;
+    @Override
+    public int getSaveRecoveryProgress() {
+        if(progressVal < 99){
+            int idx = progressVal/49;
+            return idx * 49 + xDmaDevices[idx].getSaveRecoveryProgress()/2;
+        }
+        return progressVal;
+    }
+
+    @Override
+    public boolean isOpen() {
+        synchronized (this) {
+            return bOpen;
+        }
+    }
+
+    @Override
+    public void resume() {
+        for (XDmaDevice dev : xDmaDevices) {
+            dev.resume();
+        }
+        openDevice();
+    }
+
+    @Override
+    public void suspend() {
+
+        this.closeDevice();
+        for(XDmaDevice dev:xDmaDevices){
+            dev.suspend();
+        }
+
+        Hardware hardware = Hardware.getInstance();
+        hardware.powerFpgaOff();
+        ms_sleep(200);
+        hardware.powerFpgaOn();
+    }
+    @Override
+    public boolean isAsyncOpen() {
+        return true;
+    }
+
+    @Override
+    public synchronized void setSurfaceNative(int idx, SurfaceNative surfaceNative) {
+       xDmaDevices[idx].setSurfaceNative(surfaceNative);
+    }
+}

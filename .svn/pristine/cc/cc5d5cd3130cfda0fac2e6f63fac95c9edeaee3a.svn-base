@@ -1,0 +1,30 @@
+package com.micsig.tbook.scope.fpga;
+
+/**
+ * Created by zhuzh on 2018-4-8.
+ */
+
+public class FPGAReg_CY_BUCONG extends FPGAReg {
+    public FPGAReg_CY_BUCONG() {
+        super(FPGA_CY_BUCONG, 4);
+    }
+
+    public void setCyType12(int val){
+        setVal(0,4,val);
+    }
+    public int getCyType12(){
+        return getVal() & 0x0F;
+    }
+    public void setAdSleep12(int val){
+        setVal(4,1,val);
+    }
+    public void setMaxAdClk(int val){
+        setVal(5,1,val);
+    }
+    public void setCyType34(int val){
+        setVal(8,4,val);
+    }
+    public void setAdSleep34(int val){
+        setVal(12,1,val);
+    }
+}

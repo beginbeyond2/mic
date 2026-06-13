@@ -1,0 +1,19 @@
+package com.micsig.tbook.scope.fpga;
+
+/**
+ * Created by zhuzh on 2018-4-8.
+ */
+
+public class FPGAReg_NUM_CY12 extends FPGAReg {
+    public FPGAReg_NUM_CY12() {
+        super(FPGA_NUM_CY12, 8);
+    }
+
+    public void setVol12(int val){
+        setVal(0,val);
+    }
+
+    public void setVol34(int val){
+        setVal(1,val);
+    }
+}

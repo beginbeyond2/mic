@@ -1,0 +1,23 @@
+package com.micsig.tbook.scope.fpga;
+
+
+import com.micsig.tbook.hardware.HardwareProduct;
+
+public class FPGAReg_TEMPERATURE extends FPGAReg{
+    private FPGAReg recvReg;
+    public FPGAReg_TEMPERATURE() {
+        super(FPGAReg.FPGA_TEMPERATURE, 4,true);
+        recvReg = new FPGAReg(FPGA_TEMPERATURE,4);
+    }
+    public FPGAReg getRecvReg(){
+        return recvReg;
+    }
+
+
+    public int getTemperature(){
+        double val = recvReg.getVal();
+        val = val * 502.9098 / 1024 - 273.8195;
+        return (int)Math.round(val);
+    }
+
+}

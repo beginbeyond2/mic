@@ -1,0 +1,69 @@
+package com.micsig.tbook.scope.Sample;
+
+import com.micsig.tbook.hardware.HardwareProduct;
+import com.micsig.tbook.scope.Action.FPGAMessage;
+import com.micsig.tbook.scope.Action.HardwareMessage;
+import com.micsig.tbook.scope.Action.UiMessage;
+import com.micsig.tbook.scope.Action.XAction;
+import com.micsig.tbook.scope.Event.EventFactory;
+
+/**
+ * Created by zhuzh on 2018/3/15.
+ */
+
+public class SampleAction extends XAction {
+    private Sample sample;
+    private int bakMemDepth = 0;
+    public SampleAction(Sample sample){
+        this.sample = sample;
+    }
+    public void SampleTypeChange(){
+
+        switch (sample.getSampleType()){
+            case Sample.SAMPLE_TYPE_AVERAGE:
+            case Sample.SAMPLE_TYPE_ENVEL: {
+                int m = MemDepthFactory.getDefaultMemDepthEx();
+                if (MemDepthFactory.getMemDepthSet() > m) {
+                    bakMemDepth = MemDepthFactory.getMemDepthSet();
+                    MemDepthFactory.forceMemDepth(m);
+                }
+            }
+                break;
+            default:
+                if(bakMemDepth > 0){
+                    MemDepthFactory.forceMemDepth(bakMemDepth);
+                }
+                bakMemDepth = 0;
+                break;
+        }
+        sendFpgaMsg(FPGAMessage.FPGA_CMD_SAMP_MODE|FPGAMessage.FPGA_CMD_PJBL_NUM | FPGAMessage.FPGA_CMD_SAMP_PLACE);
+        sendUiMsg(UiMessage.UI_MESSAGE_DEPTH_SAMPFRE);
+        sendEvent(EventFactory.EVENT_SAMPLE_TYPE);
+    }
+
+    public void frozenChange(){
+        sendFpgaMsg(FPGAMessage.FPGA_CMD_RUN_STOP);
+    }
+    public void SampleRunChange(){
+        SampleRunChange(0);
+    }
+    public void SampleRunChange(int arg){
+        if(sample.isRunSample()){
+            sendChSample();
+            sendHwMsg(HardwareMessage.HARD_ID_OFFSET_CH1
+                    |HardwareMessage.HARD_ID_CH_vSCALE_CH1
+                    |HardwareMessage.HARD_ID_CH_COUP_CH1);
+        }
+        sendFpgaMsg(FPGAMessage.FPGA_CMD_RUN_STOP|arg);
+        sendEvent(EventFactory.EVENT_SCOPE_STATE);
+        sendUiMsg(UiMessage.UI_MESSAGE_DEPTH_SAMPFRE);
+        sendUiMsg(UiMessage.UI_MESSAGE_SIMPLE_WIN_DIS);
+    }
+    public void SampleSingle(){
+        SampleRunChange(FPGAMessage.FPGA_CMD_SINGLE);
+        sendEvent(EventFactory.EVENT_SCOPE_SINGLE,true);
+    }
+
+
+
+}

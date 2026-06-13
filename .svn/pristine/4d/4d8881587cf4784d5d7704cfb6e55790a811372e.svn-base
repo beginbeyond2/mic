@@ -1,0 +1,763 @@
+package com.micsig.tbook.tbookscope.wavezone;
+
+import static com.micsig.tbook.tbookscope.structdata.ExternalKeysCommand.MCUTOARM_SCREENCAPTURE;
+
+import android.content.Context;
+import android.graphics.Color;
+import android.os.Handler;
+import android.os.Message;
+import android.os.SystemClock;
+import android.util.Log;
+import android.view.MotionEvent;
+import android.view.ViewGroup;
+import android.widget.TextView;
+
+import com.chillingvan.canvasgl.ICanvasGL;
+import com.chillingvan.canvasgl.glview.texture.GLTextureView;
+import com.micsig.base.DoubleUtil;
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.channel.Channel;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.surface.SlideFinger;
+import com.micsig.tbook.tbookscope.GlobalVar;
+import com.micsig.tbook.tbookscope.MainViewGroup;
+import com.micsig.tbook.tbookscope.R;
+import com.micsig.tbook.tbookscope.util.DToast;
+import com.micsig.tbook.ui.wavezone.IChan;
+import com.micsig.tbook.tbookscope.middleware.MiddleMain;
+import com.micsig.tbook.tbookscope.middleware.command.Command;
+import com.micsig.tbook.tbookscope.rxjava.RxBus;
+import com.micsig.tbook.tbookscope.rxjava.RxEnum;
+import com.micsig.tbook.tbookscope.tools.Tools;
+import com.micsig.tbook.tbookscope.util.CacheUtil;
+import com.micsig.tbook.tbookscope.wavezone.bean.YTZoomMsgDisplay;
+import com.micsig.tbook.tbookscope.wavezone.display.CursorManage;
+import com.micsig.tbook.tbookscope.wavezone.display.RulerManage;
+import com.micsig.tbook.tbookscope.wavezone.display.WaveGridManage;
+import com.micsig.tbook.tbookscope.wavezone.measure.MeasureManage;
+import com.micsig.tbook.tbookscope.wavezone.trigger.TriggerTimebase;
+import com.micsig.tbook.tbookscope.wavezone.trigger.VoltageLineManage;
+import com.micsig.tbook.tbookscope.wavezone.wave.SerialBusManage;
+import com.micsig.tbook.tbookscope.wavezone.wave.WaveManage;
+import com.micsig.tbook.ui.util.TBookUtil;
+import com.micsig.tbook.ui.wavezone.IWave;
+import com.micsig.tbook.ui.wavezone.TChan;
+
+/**
+ * Created by liwb on 2017/6/9.
+ */
+
+public class WaveZoneDisplay_YT extends GLTextureView implements IWorkMode {
+    private static final String TAG = "WaveZoneDisplay_YT";
+
+    private Context context;
+    private ViewGroup mainViewGroup;
+    private WaveZoneDisplay_YTZoom waveZoneDisplayYtZoom;
+    private boolean isForceRefresh = false;
+
+    public void setWaveZoneDisplayYtZoom(WaveZoneDisplay_YTZoom waveZoneDisplayYtZoom) {
+        this.waveZoneDisplayYtZoom = waveZoneDisplayYtZoom;
+    }
+
+    public WaveZoneDisplay_YTZoom getWaveZoneDisplayYtZoom() {
+        return waveZoneDisplayYtZoom;
+    }
+
+    private long startTime, endTime, dt;
+    private Handler handler;
+
+    public WaveZoneDisplay_YT(Context context, ViewGroup mainViewGroup) {
+        super(context);
+        this.context = context;
+        this.mainViewGroup = mainViewGroup;
+        //this.setZOrderOnTop(true);
+        this.setBackgroundColor(Color.TRANSPARENT);
+        this.setOpaque(false);
+
+        startTime = System.currentTimeMillis();
+
+        handler = new Handler() {
+            @Override
+            public void handleMessage(Message msg) {
+                int w = WorkModeManage.getInstance().getmWorkMode();
+                switch (msg.what) {
+                    case 0:
+                        WorkModeManage.getInstance().switchWorkMode(w);
+                        break;
+                    case 1:
+                        break;
+                }
+
+                // super.handleMessage(msg);
+            }
+        };
+    }
+
+    //region IWorkMode interface
+    private
+    @WorkMode
+    int mWorkMode = IWorkMode.WorkMode_YT;
+
+    @Override
+    public void switchWorkMode(@WorkMode int workMode) {
+        synchronized (this) {
+            //if (mWorkMode == workMode) return;
+
+            this.mWorkMode = workMode;
+            //WorkModeManage.get().setmWorkMode(workMode);
+            WorkModeManage.getInstance().setWorkModeManageState(WorkModeManage.WorkModeManage_BeginSwitchMode);
+            RulerManage.getIns().switchWorkMode(workMode);
+            CursorManage.getInstance().switchWorkMode(workMode);
+            VoltageLineManage.getInstance().switchWorkMode(workMode);
+            WaveManage.get().switchWorkMode(workMode);
+            SerialBusManage.getInstance().switchWorkMode(workMode);
+            MeasureManage.getInstance().switchWorkMode(workMode);
+
+            WaveGridManage.getInstance().switchWorkMode(workMode);
+
+            WorkModeManage.getInstance().setWorkModeManageState(WorkModeManage.WorkModeManage_Ready);
+        }
+    }
+
+    //endregion
+
+    /**
+     * 强制绘制
+     */
+    public void forceDrawGlCanvas() {
+        queueEvent(new Runnable() {
+            @Override
+            public void run() {
+                synchronized (WaveZoneDisplay_YT.this) {
+                    WaveZoneDisplay_YT.this.mCanvas.clearBuffer();
+                    WaveGridManage.getInstance().draw(WaveZoneDisplay_YT.this.mCanvas);
+                    CursorManage.getInstance().draw(WaveZoneDisplay_YT.this.mCanvas);
+                    MeasureManage.getInstance().draw(WaveZoneDisplay_YT.this.mCanvas);
+                    TriggerTimebase.getInstance().draw(WaveZoneDisplay_YT.this.mCanvas);
+                    VoltageLineManage.getInstance().draw(WaveZoneDisplay_YT.this.mCanvas);
+                    WaveManage.get().draw(WaveZoneDisplay_YT.this.mCanvas);
+                    SerialBusManage.getInstance().draw(WaveZoneDisplay_YT.this.mCanvas);
+                }
+            }
+        });
+    }
+
+    /**
+     * 强制清屏
+     */
+    public void forceClearGlCanvas() {
+        this.isForceRefresh = true;
+        queueEvent(new Runnable() {
+            @Override
+            public void run() {
+                synchronized (this) {
+                    WaveZoneDisplay_YT.this.mCanvas.clearBuffer(Color.TRANSPARENT);
+                }
+            }
+        });
+    }
+
+    @Override
+    protected void init() {
+        super.init();
+    }
+
+    @Override
+    protected void onGLDraw(ICanvasGL canvas) {
+        if (this.isForceRefresh) {
+            mCanvas.clearBuffer(Color.TRANSPARENT);
+            this.isForceRefresh = false;
+            return;
+        }
+
+        //判断
+        synchronized (this) {
+
+            //绘制
+            WaveGridManage.getInstance().draw(IWorkMode.WorkMode_YT, canvas);
+            RulerManage.getIns().draw(canvas);
+            CursorManage.getInstance().draw(canvas);
+            MeasureManage.getInstance().draw(canvas);
+            TriggerTimebase.getInstance().draw(canvas);
+
+            VoltageLineManage.getInstance().draw(canvas);
+            SerialBusManage.getInstance().draw(canvas);
+            WaveManage.get().draw(canvas);
+        }
+
+        CacheUtil.get().setLoadMenuState(CacheUtil.LOAD_WaveZoneDisplayManage, true);
+    }
+
+    //region onTouchEvent变量
+    int index = -1;    //线号
+    int oldX, oldY;    //上一个点的坐标
+    boolean isSelectLabel = false;
+    boolean needShowTValueTip = false;
+
+    //向一个方向滑动后，向另一个方向滑动就不管用。
+    int slideDirection = -1; // -1 为没有点击 1，左右，2上下
+    int downX, downY;
+
+    private final static int MOVESIZE = 20;
+    public final static int MOVE_LEFTRIGHT = 1;
+    public final static int MOVE_UPDOWN = 2;
+
+    private TextView btnFineText;
+
+    //多点触摸的记录
+
+    //endregion
+    private long ClickTS = 0;
+    private int X = 0;
+    private int Y = 0;
+
+    private void doubleClick(int x, int y) {
+        Logger.i(TAG, "doubleClick x= " + x + " ,y= " + y);
+        if (TChan.isSerial(index)) {
+            return;
+        }
+        long ts = SystemClock.elapsedRealtime();
+
+        if ((ts - ClickTS) < 400) {
+            if (Math.abs(x - X) < 50 && Math.abs(y - Y) < 50) {
+                Scope.getInstance().doubleClicked(x);
+            }
+            ClickTS = 0;
+        } else {
+            ClickTS = ts;
+        }
+        this.X = x;
+        this.Y = y;
+    }
+
+
+
+    SlideFinger slideFinger = SlideFinger.getInstance();
+    DoubleFinger doubleFinger = new DoubleFinger(new DoubleFinger.DoubleFingerlistener() {
+        @Override
+        public void onHorizontalSlide(double val) {
+
+            int v = (int) DoubleUtil.floor(val);
+            if(slideDirection == -1){
+                slideDirection = MOVE_LEFTRIGHT;
+                RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, slideDirection);
+                if (TChan.isCursor6(index)==false) {
+                    RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, TChan.TriggerTime);
+                } else {
+                    RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, index);
+                }
+            }
+
+            if(slideDirection == MOVE_LEFTRIGHT) {
+
+                switch (index) {
+                    case TChan.Cursor_col_1:
+                    case TChan.Cursor_col_2:
+                    case TChan.Cursor_col_3:
+                    case TChan.Cursor_row_1:
+                    case TChan.Cursor_row_2:
+                    case TChan.Cursor_row_3:
+                        CursorManage.getInstance().moveSelectCursor(v, 0);
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, index);
+                        break;
+                    default:
+                        TriggerTimebase.getInstance().setOffsetX(v);
+                        double times = Tools.PixToTimebase((int) TriggerTimebase.getInstance().getX());
+                        TChan.foreachMath(mathChan -> { //TODO 数学多通道 ？
+                            int mathIndex = TChan.toFpgaChNo(mathChan);
+                            Command.get().getMath_base().Offset(mathIndex, times, false);
+                            Command.get().getMath_fft().Offset(mathIndex, times, false);
+                            Command.get().getMath_axb().Offset(mathIndex, times, false);
+                            Command.get().getMath_advanced().Offset(mathIndex, times, false);
+                        });
+                        break;
+                }
+            }
+        }
+
+        @Override
+        public void onHorizontalZoom(double y, double v) {
+
+        }
+
+        @Override
+        public void onVerticalSlide(double val) {
+            int v = (int) DoubleUtil.floor(val);
+            if(slideDirection == -1){
+                slideDirection = MOVE_UPDOWN;
+                RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, slideDirection);
+                if (TChan.isCursor6(index)==false) {
+                    RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, TChan.Ch1);
+                } else {
+                    RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, index);
+                }
+            }
+            if(slideDirection == MOVE_UPDOWN){
+                switch (index) {
+                    case TChan.Cursor_col_1:
+                    case TChan.Cursor_col_2:
+                    case TChan.Cursor_col_3:
+                    case TChan.Cursor_row_1:
+                    case TChan.Cursor_row_2:
+                    case TChan.Cursor_row_3:
+                        CursorManage.getInstance().moveSelectCursor(0, v);
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, index);
+                        break;
+                    default:
+                        if (TChan.isSerial(index)) {
+                            SerialBusManage.getInstance().setOffsetY(v);
+                        } else {
+                            WaveManage.get().setOffsetY(v);
+                        }
+                        break;
+                }
+            }
+        }
+
+        @Override
+        public void onVerticalZoom(double y, double v) {
+            Scope.getInstance().Vfine(y,v);
+        }
+
+        @Override
+        public void onBegin() {
+            Scope.getInstance().Sfine();
+        }
+
+        @Override
+        public void onEnd() {
+            Scope.getInstance().Efine();
+        }
+    });
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if(event.getAction() == MotionEvent.ACTION_DOWN) {
+            Log.d(TAG, "onTouchEvent() called with: event = [" + event + "]");
+        }
+        if (((MainViewGroup) mainViewGroup).isEnableWaveOption()==false) {
+            return true;
+        }
+        if(doubleFinger.onDoubleFinger(event)){
+
+            return true;
+        }
+//        MeasureManage.getInstance().getMeasureItem().dealCursorItem(event);
+        int x = (int) event.getX();
+        int y = (int) event.getY();
+        int selectCh=WaveManage.get().getCurCh();
+        switch (event.getAction() & MotionEvent.ACTION_MASK) {
+            case MotionEvent.ACTION_DOWN: {
+                //初始化 变量
+
+                downX = oldX = (int) event.getX();
+                downY = oldY = (int) event.getY();
+                slideDirection = -1;
+                slideFinger.setSlideDirection(slideDirection);
+                slideFinger.fingerDownXY(event.getX(),event.getY());
+                //  2023-9-7 光标选中功能是否屏蔽 根据主菜单光标选中项
+                index = CursorManage.getInstance().selectCursor(x, y);
+                if (index >= 0) {
+
+                    CursorManage.getInstance().setSelectCursor(index);
+                    CursorManage.getInstance().setSelectHighColor(index);
+                    if (TChan.isCursorRow2(index)) {
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, MOVE_UPDOWN);
+                    } else {
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, MOVE_LEFTRIGHT);
+                    }
+
+                } else if (!Command.get().getMenu().ChannelSelectorQ() && (index = WaveManage.get().selectCursor(x, y)) >= 0) {
+                    if (selectCh!=WaveManage.get().getCurCh()) {
+                        this.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                CursorManage.getInstance().setCursorTrace(true);
+                                WaveManage.get().setSelectCursor(index);
+                                CursorManage.getInstance().setCursorTrace(false);
+                                ChannelFactory.setRefActive(index - 1);
+//                            RxBus.getInstance().post(RxEnum.MAINCENTER_CHANNEL_SELECT, new MainCenterMsgChannels(index));
+                                MiddleMain.getIns().getChanSelectorManage().setActivityChannel(IChan.toIChan(index - 1));
+                                RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, MOVE_UPDOWN);
+                            }
+                        }, 1);
+                    }
+                } else if (Command.get().getMenu().ChannelSelectorQ()) {
+                    index = ChannelFactory.getInstance().getChActivate() + 1;
+                    WaveManage.get().setSelectCursor(index);
+                    ChannelFactory.setRefActive(index - 1);
+//                    RxBus.getInstance().post(RxEnum.MAINCENTER_CHANNEL_SELECT, new MainCenterMsgChannels(index));
+                    MiddleMain.getIns().getChanSelectorManage().setActivityChannel(IChan.toIChan(index-1));
+                    RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, MOVE_UPDOWN);
+                }
+                RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, index);
+                isSelectLabel = WaveManage.get().isLabelContains((int) event.getX(), (int) event.getY());
+                if (MeasureManage.getInstance().isCursorTValueTrace()) {
+                    needShowTValueTip = true;
+                }
+             }
+            break;
+            case MotionEvent.ACTION_MOVE: {
+
+                if (isSelectLabel) {
+                    slideFinger.fingerMoveLabel(event.getX(), event.getY());
+                } else {
+                    if (slideDirection == -1) {
+                        int dValueY = Math.abs((int) event.getY() - downY);
+                        int dValueX = Math.abs((int) event.getX() - downX);
+
+                        if (dValueY > MOVESIZE && (dValueY > dValueX)) {
+                            slideDirection = MOVE_UPDOWN;
+                            RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, slideDirection);
+                            if (!TChan.isCursor6(index)) {
+                                RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, TChan.Ch1);
+                            } else {
+                                RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, index);
+                            }
+                            slideFinger.setChIdx(index - 1);
+                            slideFinger.setSlideDirection(slideDirection);
+                            slideFinger.fingerDownXY(oldX, oldY);
+                        } else if (dValueX > MOVESIZE && (dValueX > dValueY)) {
+                            slideDirection = MOVE_LEFTRIGHT;
+                            RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, slideDirection);
+                            if (!TChan.isCursor6(index)) {
+                                RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, TChan.TriggerTime);
+                            } else {
+                                RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, index);
+                            }
+                            slideFinger.setChIdx(index - 1);
+                            slideFinger.setSlideDirection(slideDirection);
+                            slideFinger.fingerDownXY(oldX, oldY);
+                        }
+
+                    }
+                    slideFinger.fingerMoveXY(event.getX(), event.getY());
+
+                    boolean fine = TBookUtil.isFine();
+                    int numFine = TBookUtil.getNumFine();
+
+                    if (event.getPointerCount() == 2) {
+                        dealCursor(slideDirection);
+                    }
+                    isCursor(index);
+                    switch (index) {
+                        case TChan.Cursor_col_1:
+                        case TChan.Cursor_col_2:
+                            if (!MeasureManage.getInstance().isCursorTValueTrace()) {
+                                cursorSingleMove(fine, numFine, event);
+                                RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, index);
+                            } else {
+                                if (needShowTValueTip) {
+                                    DToast.get().show(context.getResources().getString(R.string.measure_tvalue_trace));
+                                    needShowTValueTip = false;
+                                }
+                            }
+                            break;
+                        case TChan.Cursor_row_1:
+                        case TChan.Cursor_row_2:
+                            cursorSingleMove(fine, numFine, event);
+                            RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, index);
+                            break;
+                        case TChan.Cursor_col_3:
+                        case TChan.Cursor_col_4: {
+                            if (slideDirection == -1) break;
+                            if (!MeasureManage.getInstance().isCursorTValueTrace()) {
+                                if ((slideDirection == MOVE_UPDOWN && (index == TChan.Cursor_col_4 || index == TChan.SingleRect))
+                                        || (slideDirection == MOVE_LEFTRIGHT && (index == TChan.Cursor_row_4 || index == TChan.SingleRect))) {
+                                    int offsetX = oldX - (int) event.getX();
+                                    int offsetY = oldY - (int) event.getY();
+                                    CursorManage.getInstance().MoveLabel(offsetX, offsetY);
+                                } else {
+                                    cursorLinkMove(fine, numFine, event, index);
+                                    RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, index);
+                                }
+                            } else {
+                                if (needShowTValueTip) {
+                                    DToast.get().show(context.getResources().getString(R.string.measure_tvalue_trace));
+                                    needShowTValueTip = false;
+                                }
+                            }
+                            oldX = (int) event.getX();
+                            oldY = (int) event.getY();
+                        }
+                        break;
+                        case TChan.Cursor_row_3:
+                        case TChan.Cursor_row_4:
+                        case TChan.Cursor_all:
+                        case TChan.SingleRect:{
+                            if (slideDirection == -1) break;
+                            if ((slideDirection == MOVE_UPDOWN && (index == TChan.Cursor_col_4 || index == TChan.SingleRect))
+                                    || (slideDirection == MOVE_LEFTRIGHT && (index == TChan.Cursor_row_4 || index == TChan.SingleRect))) {
+                                int offsetX = oldX - (int) event.getX();
+                                int offsetY = oldY - (int) event.getY();
+                                CursorManage.getInstance().MoveLabel(offsetX, offsetY);
+                            } else {
+                                cursorLinkMove(fine, numFine, event, index);
+                                RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, index);
+                            }
+                            oldX = (int) event.getX();
+                            oldY = (int) event.getY();
+                        }
+                        break;
+
+
+                        default: {
+                            int offsetX = oldX - (int) event.getX();
+                            int offsetY = oldY - (int) event.getY();
+                            if (slideDirection == MOVE_LEFTRIGHT) {
+                                if (fine) {
+                                    offsetX = offsetX / numFine;
+                                }
+
+                                TriggerTimebase.getInstance().setOffsetX(offsetX);
+
+                                double times = Tools.PixToTimebase((int) TriggerTimebase.getInstance().getX());
+                                TChan.foreachMath(mathChan -> { //TODO 数学多通道 ？
+                                    int mathIndex = TChan.toFpgaChNo(mathChan);
+                                    Command.get().getMath_base().Offset(mathIndex, times, false);
+                                    Command.get().getMath_fft().Offset(mathIndex, times, false);
+                                    Command.get().getMath_axb().Offset(mathIndex, times, false);
+                                    Command.get().getMath_advanced().Offset(mathIndex, times, false);
+                                });
+                                //zoom的界面也跟着移动
+                            } else if (slideDirection == MOVE_UPDOWN) {
+                                if (fine) {
+                                    if (TChan.isSerial(index)) {
+                                        SerialBusManage.getInstance().setOffsetY(offsetY / numFine);
+                                    } else {
+                                        WaveManage.get().setOffsetY(offsetY / numFine);
+                                    }
+                                } else {
+                                    if (TChan.isSerial(index)) {
+                                        SerialBusManage.getInstance().setOffsetY(offsetY);
+                                    } else {
+                                        int channelIndex = TChan.toFpgaChNo(index);
+                                        Channel channel = ChannelFactory.getDynamicChannel(channelIndex);
+                                        if (GlobalVar.get().isEnableChannelZero()) {
+
+                                            channel.setZero(channel.getZero() + offsetY);
+                                            CacheUtil.get().putMap(CacheUtil.MAIN_WAVE_CH_Y_ZERO_POSITION + (channel.getChId() + 1) + channel.getVScaleId(), String.valueOf(channel.getZero()));
+                                            //channel.setPos(channel.getChannelZeroPos() + offsetY);
+                                            if (btnFineText == null) {
+                                                btnFineText = (TextView) mainViewGroup.findViewById(R.id.fineText);
+                                            }
+                                            btnFineText.setText(TBookUtil.getD4FromD(channel.getMoveZeroVal()));
+                                        } else {
+                                            WaveManage.get().setOffsetY(offsetY);
+//                                            WaveManage.get().setPositionY(channelIndex,offsetY);
+                                        }
+                                    }
+                                }
+                            }
+                            if (fine) {
+                                if (Math.abs(offsetX) > numFine) {
+                                    oldX = (int) event.getX();
+                                }
+                            } else {
+                                oldX = (int) event.getX();
+                            }
+                            if (fine) {
+                                if (Math.abs(offsetY) > numFine) {
+                                    oldY = (int) event.getY();
+                                }
+                            } else {
+                                oldY = (int) event.getY();
+                            }
+                        }
+                    }
+                    break;
+                }
+
+            }
+            break;
+            case MotionEvent.ACTION_UP:
+                if (!isSelectLabel) {
+                    switch (index) {
+                        case TChan.Cursor_col_1:
+                        case TChan.Cursor_col_2:
+                        case TChan.Cursor_col_3:
+                        case TChan.Cursor_row_1:
+                        case TChan.Cursor_row_2:
+                        case TChan.Cursor_row_3:
+                        case TChan.Cursor_col_4:
+                        case TChan.Cursor_row_4:
+                        case TChan.Cursor_all:
+                            CursorManage.getInstance().moveFinish();
+                            break;
+                    }
+                    if (event.getActionIndex() == 0 && slideDirection == -1) {
+                        doubleClick(x, y);
+                    }
+                    slideFinger.fingerUp(event.getX(), event.getY());
+                    slideDirection = -1;
+                    slideFinger.setSlideDirection(slideDirection);
+                }
+                isSelectLabel = false;
+                break;
+            case MotionEvent.ACTION_POINTER_DOWN:
+
+                downX = oldX = (int) event.getX(0);
+                downY = oldY = (int) event.getY(0);
+                break;
+            case MotionEvent.ACTION_POINTER_UP:
+
+                int id = event.getActionIndex();
+                if (id == 0) {
+                    downX = oldX = (int) event.getX(1);
+                    downY = oldY = (int) event.getY(1);
+                } else {
+                    downX = oldX = (int) event.getX(0);
+                    downY = oldY = (int) event.getY(0);
+                }
+
+                if (TChan.isCursor4(index)) {
+                    CursorManage.getInstance().setSelectCursor(index);
+                    if (TChan.isCursorRow2(index)) {
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, MOVE_UPDOWN);
+                    } else {
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, MOVE_LEFTRIGHT);
+                    }
+                } else if (index == TChan.Cursor_col_3 || index == TChan.Cursor_row_3) {
+                    CursorManage.getInstance().setCursorTracking(index);
+                    if (index == TChan.Cursor_row_3) {
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, MOVE_UPDOWN);
+                    } else {
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, MOVE_LEFTRIGHT);
+                    }
+                }
+                if(event.getActionIndex() == 0 && slideDirection == -1) {
+                    doubleClick(x, y);
+                }
+                break;
+        }
+        if(event.getAction() == MotionEvent.ACTION_DOWN) {
+            Log.d(TAG, "onTouchEvent() called with: event = [" + event + "] end");
+        }
+        return true;
+        //return super.onTouchEvent(event);
+    }
+
+    //补丁：按键
+    private boolean isCursor(int index){
+        if (TChan.isCursor8(index) ||  index== TChan.Cursor_all){
+            CacheUtil.get().setLastObjectIsCursor(true);
+            return true;
+        }
+        CacheUtil.get().setLastObjectIsCursor(false);
+        return false;
+    }
+
+    //光标单体滑动
+    private void cursorSingleMove(boolean fine,int numFine,MotionEvent event){
+        int offsetX = oldX - (int) event.getX();
+        int offsetY = oldY - (int) event.getY();
+        if (fine) {
+            if (Math.abs(offsetX) > numFine) {
+                CursorManage.getInstance().moveSelectCursor(offsetX / numFine, offsetY / numFine);
+                oldX = (int) event.getX();
+            }
+            if (Math.abs(offsetY) > numFine) {
+                CursorManage.getInstance().moveSelectCursor(offsetX / numFine, offsetY / numFine);
+                oldY = (int) event.getY();
+            }
+        } else {
+            CursorManage.getInstance().moveSelectCursor(offsetX, offsetY);
+            oldX = (int) event.getX();
+            oldY = (int) event.getY();
+        }
+    }
+    //光标联动滑动
+    private void cursorLinkMove(boolean fine,int numFine,MotionEvent event,int cursorIdx){
+        int offsetX = oldX - (int) event.getX();
+        int offsetY = oldY - (int) event.getY();
+        if (fine) {
+            if (Math.abs(offsetX) > numFine) {
+                CursorManage.getInstance().moveMultiSelectCursor(offsetX / numFine, offsetY / numFine,cursorIdx);
+                oldX = (int) event.getX();
+            }
+            if (Math.abs(offsetY) > numFine) {
+                CursorManage.getInstance().moveMultiSelectCursor(offsetX / numFine, offsetY / numFine,cursorIdx);
+                oldY = (int) event.getY();
+            }
+        } else {
+            CursorManage.getInstance().moveMultiSelectCursor(offsetX, offsetY,cursorIdx);
+            oldX = (int) event.getX();
+            oldY = (int) event.getY();
+        }
+    }
+
+    /**
+     * ZOOM界面是否打开。
+     *
+     * @param event
+     * @return 三个状态。-1： 不处理，0：显示 1：不显示 other::处理动画
+     */
+    private int isShowZoom(MotionEvent event) {
+        if (3 == event.getPointerCount()) {
+            int tem = (int) event.getY(2) - downY;
+            if (tem > 100) {
+                return 0;
+            } else if (tem < -100) {
+                return 1;
+            } else {
+                return tem;
+            }
+        }
+        return -1;
+    }
+
+    private boolean dealCursor( int slideDirection) {
+
+        if (slideDirection == MOVE_LEFTRIGHT) {
+            int i = CursorManage.getInstance().getCurrSelectCursor();
+            if (i > 0 && CursorManage.getInstance().getColVisible()) {
+                index = TChan.Cursor_col_3;
+                CursorManage.getInstance().setCursorTracking(index);
+                return true;
+            }
+        } else if (slideDirection == MOVE_UPDOWN) {
+            int i = CursorManage.getInstance().getCurrSelectCursor();
+            if (i > 0 && CursorManage.getInstance().getRowVisible()) {
+                index = TChan.Cursor_row_3;
+                CursorManage.getInstance().setCursorTracking(index);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    //处理ZOOM
+    private boolean dealZoom(MotionEvent event) {
+        int state = isShowZoom(event);
+        if (state == 0) {
+            Logger.i("more touch zoom state:" + state);
+//            WorkModeManage.getInstance().setmWorkMode(IWorkMode.WorkMode_YTZOOM);
+            RxBus.getInstance().post(RxEnum.WAVEZONE_DISPLAY_YTZOOM, new YTZoomMsgDisplay(true));
+            return true;
+        } else if (state == 1) {
+            Logger.i("more touch zoom state:" + state);
+            RxBus.getInstance().post(RxEnum.WAVEZONE_DISPLAY_YTZOOM, new YTZoomMsgDisplay(false));
+//            WorkModeManage.getInstance().setmWorkMode(IWorkMode.WorkMode_YT);
+            return true;
+        } else if (state > 1 && state <= 100) {
+            Logger.i("more touch zoom state:" + state);
+            return true;
+        } else if (state >= -100 && state < -1) {
+            Logger.i("more touch zoom state:" + state);
+            return true;
+        }
+        return false;
+    }
+
+    private boolean dealScreenCapture(MotionEvent event) {
+        if (4 == event.getPointerCount()) {
+            int tem = Math.abs((int) event.getY(2) - downY);
+            if (tem > 100) {
+                RxBus.getInstance().post(RxEnum.MCUTOARM, MCUTOARM_SCREENCAPTURE);
+                return true;
+            }
+        }
+        return false;
+    }
+}

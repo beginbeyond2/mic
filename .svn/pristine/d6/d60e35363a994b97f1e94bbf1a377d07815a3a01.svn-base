@@ -1,0 +1,272 @@
+package com.micsig.tbook.scope.channel;
+
+
+import com.micsig.base.FilterThread;
+import com.micsig.tbook.scope.Action.FPGAMessage;
+import com.micsig.tbook.scope.Action.HardwareMessage;
+import com.micsig.tbook.scope.Action.UiMessage;
+import com.micsig.tbook.scope.Action.XAction;
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+
+
+/**
+ * Created by zhuzh on 2018/3/14.
+ */
+
+public class ChannelAction extends XAction {
+
+    private static final String TAG = "ChannelAction";
+    private Channel channel;
+    private FilterThread filterThread;
+    private volatile boolean busLevelChange = false;
+    private volatile boolean chPosChange = false;
+    private volatile boolean zeroChange = false;
+
+    public ChannelAction(Channel channel){
+        this.channel = channel;
+        filterThread = new FilterThread(TAG);
+        filterThread.setDelayMillis(110);//调试得到的值 不要动
+        filterThread.setRunnable(new Runnable() {
+            @Override
+            public void run() {
+                if(busLevelChange){
+                    synchronized (filterThread) {
+                        busLevelChange = false;
+                    }
+                    sendFpgaMsg(0,FPGAMessage.FPGA_CMD_BUS_LEVEL);
+                }
+                if(chPosChange) {
+                    synchronized (filterThread) {
+                        chPosChange = false;
+                    }
+                    posChange();
+                }
+                if(zeroChange){
+                    synchronized (filterThread) {
+                        zeroChange = false;
+                    }
+                    posChange();
+                }
+
+            }
+        });
+    }
+
+    public void open(){
+        sendChSample();
+        openSample();
+        sendEvent(EventFactory.EVENT_CHANNEL_OPEN,true);
+    }
+    public void changeDelay(){
+        sendEvent(EventFactory.EVENT_CHANNEL_DELAY);
+        openSample();
+    }
+    public void openSample(){
+        ChannelChangeHw();
+        ChannelChange();
+    }
+    public void closeSample(){
+        sendHwMsg(HardwareMessage.HARD_ID_CH_vSCALE_CH1);
+        ChannelChange();
+    }
+    private void ChannelChangeHw(){
+        int idx = channel.getChId();
+        sendHwMsg(HardwareMessage.HARD_ID_CH_COUP_CH1 <<(idx));
+        sendHwMsg(HardwareMessage.HARD_ID_OFFSET_CH1 <<(idx));
+        sendHwMsg(HardwareMessage.HARD_ID_CH_vSCALE_CH1 <<(idx));
+    }
+    private void ChannelChange(){
+        sendFpgaMsg(FPGAMessage.FPGA_CMD_DIS_MODE
+                        | FPGAMessage.FPGA_CMD_Y_PLACE
+                        | FPGAMessage.FPGA_CMD_CH_OFFSET
+                        | FPGAMessage.FPGA_CMD_SAMP_MODE
+                        | FPGAMessage.FPGA_CMD_COUY
+                        | FPGAMessage.FPGA_CMD_DIS_PIX
+                        | FPGAMessage.FPGA_CMD_AD_CH_CHANGE
+                        | FPGAMessage.FPGA_CMD_SAMP_ZUN_DEPTH
+                        | FPGAMessage.FPGA_CMD_SAMP_PLACE
+                        | FPGAMessage.FPGA_CMD_DIS
+                        | FPGAMessage.FPGA_CMD_TRIG_LEVEL
+                        | FPGAMessage.FPGA_CMD_TRIG
+                , FPGAMessage.FPGA_CMD_EXT_CHAZHI_COEF
+                        | FPGAMessage.FPGA_CMD_EXT_AD_ZERO
+                        | FPGAMessage.FPGA_CMD_EXT_AD_COEF
+                        | FPGAMessage.FPGA_CMD_BUS_TYPE);
+    }
+
+    public void active(){
+        sendEvent(EventFactory.EVENT_CHANNEL_ACTIVE);
+        sendUiMsg(UiMessage.UI_MESSAGE_DEPTH_SAMPFRE);
+        sendUiMsg(UiMessage.UI_MESSAGE_SIMPLE_WIN_DIS);
+    }
+    public void probeChange(){
+        sendEvent(EventFactory.EVENT_PROBE_EVENT,true);
+        sendEvent(EventFactory.EVENT_CHANNEL_VSCALE,true);
+    }
+
+    private void posChange(){
+
+        int idx = channel.getChId();
+
+        sendHwMsg(HardwareMessage.HARD_ID_OFFSET_CH1 <<(idx));
+        sendFpgaMsg(FPGAMessage.FPGA_CMD_DIS_PIX_ch1<<(idx)
+                | FPGAMessage.FPGA_CMD_TRIG_LEVEL
+                | FPGAMessage.FPGA_CMD_Y_PLACE
+                | FPGAMessage.FPGA_CMD_CH_OFFSET
+                | FPGAMessage.FPGA_CMD_DIS,FPGAMessage.FPGA_CMD_BUS_LEVEL
+        );
+    }
+    public void movezero(){
+        synchronized (filterThread){
+            zeroChange = true;
+            filterThread.run();
+        }
+
+        sendEvent(EventFactory.EVENT_CHANNEL_ZERO,true);
+    }
+
+    public void offsetChange(){
+        sendEvent(EventFactory.EVENT_CHANNEL_OFFSET,true);
+    }
+    int bakpos = Integer.MAX_VALUE;
+    public void pos(int pos,boolean delay){
+        if(delay){
+            synchronized (filterThread) {
+                if(pos != bakpos) {
+                    bakpos = pos;
+                    chPosChange = true;
+                    filterThread.run();
+                }
+            }
+        }
+        else{
+            bakpos = pos;
+            posChange();
+        }
+        //给界面的不需要延时处理
+        sendEvent(EventFactory.EVENT_CHANNEL_POS,true);
+    }
+
+    public void close(){
+
+        sendChSample();
+        closeSample();
+        sendEvent(EventFactory.EVENT_CHANNEL_CLOSE,true);
+    }
+    public void vScaleIdUserChange(){
+        sendEvent(EventFactory.EVENT_CHANNEL_VSCALE_USER);
+    }
+    public void vScaleChange(){
+        int idx = channel.getChId();
+        sendHwMsg(HardwareMessage.HARD_ID_OFFSET_CH1 << (idx));
+        sendHwMsg(HardwareMessage.HARD_ID_CH_vSCALE_CH1 << (idx));
+
+        sendFpgaMsg(FPGAMessage.FPGA_CMD_DIS_PIX_ch1<<(idx)
+                        | FPGAMessage.FPGA_CMD_TRIG_HUICHA
+                        | FPGAMessage.FPGA_CMD_TRIG_LEVEL
+                        | FPGAMessage.FPGA_CMD_Y_PLACE
+                        | FPGAMessage.FPGA_CMD_CH_OFFSET
+                        | FPGAMessage.FPGA_CMD_SAMP_MODE
+                        | FPGAMessage.FPGA_CMD_DIS,
+
+                FPGAMessage.FPGA_CMD_EXT_AD_ZERO
+                        | (FPGAMessage.FPGA_CMD_EXT_vScale_CHANGE_CH1<<idx)
+        );
+    }
+    public void vFineChange(){
+        int idx = channel.getChId();
+        sendFpgaMsg(FPGAMessage.FPGA_CMD_DIS_PIX_ch1<<(idx)
+                        | FPGAMessage.FPGA_CMD_TRIG_HUICHA
+                        | FPGAMessage.FPGA_CMD_TRIG_LEVEL
+                        | FPGAMessage.FPGA_CMD_Y_PLACE
+                        | FPGAMessage.FPGA_CMD_CH_OFFSET
+                        | FPGAMessage.FPGA_CMD_SAMP_MODE
+                        | FPGAMessage.FPGA_CMD_DIS,
+                FPGAMessage.FPGA_CMD_EXT_AD_ZERO
+                        | (FPGAMessage.FPGA_CMD_EXT_vScale_CHANGE_CH1<<idx)
+        );
+        sendEvent(EventFactory.EVENT_CHANNEL_VSCALE,true);
+    }
+    public void vScaleIdChange(){
+        vScaleChange();
+        sendEvent(EventFactory.EVENT_CHANNEL_VSCALE);
+        sendEvent(EventFactory.EVENT_CHANNEL_ZERO,true);
+        sendEvent(EventFactory.EVENT_CHANNEL_VSCALE_USER,true);
+    }
+
+    public void InvertChange(){
+        int idx = channel.getChId();
+        sendHwMsg(HardwareMessage.HARD_ID_OFFSET_CH1 <<(idx));
+        sendFpgaMsg(FPGAMessage.FPGA_CMD_SAMP_MODE | FPGAMessage.FPGA_CMD_Y_PLACE | FPGAMessage.FPGA_CMD_DIS);
+        sendEvent(EventFactory.EVENT_CHANNEL_INVERT);
+    }
+
+    public void CoupleTypeChange(){
+        int idx = channel.getChId();
+        sendHwMsg(HardwareMessage.HARD_ID_CH_COUP_CH1 <<(idx));
+        sendFpgaMsg(FPGAMessage.FPGA_CMD_SAMP_MODE);
+        sendEvent(EventFactory.EVENT_CHANNEL_COUPLE);
+    }
+
+    public void ResistanceTypeChange(){
+        
+        int idx = channel.getChId();
+        sendHwMsg(HardwareMessage.HARD_ID_CH_vSCALE_CH1 <<(idx)|HardwareMessage.HARD_ID_OFFSET_CH1 <<(idx));
+
+        sendFpgaMsg(FPGAMessage.FPGA_CMD_DIS_PIX_ch1<<(idx)
+                        | FPGAMessage.FPGA_CMD_TRIG_HUICHA
+                        | FPGAMessage.FPGA_CMD_TRIG_LEVEL
+                        | FPGAMessage.FPGA_CMD_Y_PLACE
+                        | FPGAMessage.FPGA_CMD_CH_OFFSET
+                        | FPGAMessage.FPGA_CMD_SAMP_MODE
+                        | FPGAMessage.FPGA_CMD_DIS,
+
+                FPGAMessage.FPGA_CMD_EXT_AD_ZERO|FPGAMessage.FPGA_CMD_EXT_AD_COEF
+                        |FPGAMessage.FPGA_CMD_EXT_RESISTANCE| (FPGAMessage.FPGA_CMD_EXT_vScale_CHANGE_CH1<<idx)
+        );
+        sendEvent(EventFactory.EVENT_CHANNEL_RESISTANCETYPE,true);
+    }
+
+    public void ProbeRateChange(){
+        sendEvent(EventFactory.EVENT_CHANNEL_VSCALE,true);
+        posChange();
+    }
+    public void changeProbeDa(){
+        sendFpgaMsg(0,FPGAMessage.FPGA_CMD_EXT_PROBE_DA);
+    }
+
+    public void BandWidthTypeChange(){
+        int idx = channel.getChId();
+        sendFpgaMsg(0,FPGAMessage.FPGA_CMD_EXT_AD_COEF);
+        sendEvent(EventFactory.EVENT_CHANNEL_BANDWIDTH);
+    }
+    public void BandWidthChange(){
+        sendFpgaMsg(0,FPGAMessage.FPGA_CMD_EXT_AD_COEF);
+        sendEvent(EventFactory.EVENT_CHANNEL_BANDWIDTH);
+    }
+
+    public void busLevelChange(){
+        synchronized (filterThread) {
+            busLevelChange = true;
+        }
+        filterThread.run();
+        //sendFpgaMsg(0,FPGAMessage.FPGA_CMD_BUS_LEVEL);
+       sendEvent(EventFactory.EVENT_BUS_LEVEL);
+    }
+    public void getWave(){
+        sendEvent(EventFactory.EVENT_CHANNEL_GET_WAVE,true);
+    }
+
+    @Override
+    public void sendEvent(int event){
+        sendEvent(event,false);
+    }
+    public void sendEvent(int event,boolean async){
+        sendEvent(event,async,0);
+    }
+    public void sendEvent(int event,boolean async,long ms){
+        int idx = channel.getChId();
+        sendEvent(new EventBase(event,idx),async,ms);
+    }
+}

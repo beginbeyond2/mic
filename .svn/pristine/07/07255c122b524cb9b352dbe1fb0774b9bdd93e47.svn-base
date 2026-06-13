@@ -1,0 +1,959 @@
+package com.micsig.tbook.tbookscope;
+
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.drawable.Drawable;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
+import android.os.MessageQueue;
+import android.util.Log;
+import android.view.InputDevice;
+import android.view.KeyEvent;
+import android.view.MotionEvent;
+import android.view.PointerIcon;
+import android.view.TextureView;
+import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.micsig.base.keyevent.KeyEventUtil;
+import com.micsig.base.Logger;
+import com.micsig.tbook.hardware.HwManager;
+import com.micsig.tbook.scope.Data.AutoSave;
+import com.micsig.tbook.scope.Data.SaveBin;
+import com.micsig.tbook.scope.Display.Display;
+import com.micsig.tbook.scope.Display.DisplayAction;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.ScopeMessage;
+import com.micsig.tbook.scope.channel.Channel;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.channel.MathChannel;
+import com.micsig.tbook.scope.channel.RefChannel;
+import com.micsig.tbook.scope.horizontal.HorizontalAxis;
+import com.micsig.tbook.scope.surface.PreviewTextureView;
+import com.micsig.tbook.scope.vertical.VerticalAxis;
+import com.micsig.tbook.tbookscope.broadcastreceiver.BroadcastManager;
+import com.micsig.tbook.tbookscope.main.StatusBar;
+import com.micsig.tbook.tbookscope.main.dialog.DialogManage;
+import com.micsig.tbook.tbookscope.main.dialog.DialogOkCancel;
+import com.micsig.tbook.tbookscope.main.mainbottom.MainHolderBottom;
+import com.micsig.tbook.tbookscope.main.mainbottom.MainHolderBottomQuick;
+import com.micsig.tbook.tbookscope.main.mainbottom.MainBottomOtherChannels;
+import com.micsig.tbook.tbookscope.main.maincenter.MainHolderLeftMenu;
+import com.micsig.tbook.tbookscope.main.maincenter.MainLeftMsgMenuRunStop;
+import com.micsig.tbook.tbookscope.main.mainright.MainHolderRightChannels;
+import com.micsig.tbook.tbookscope.main.mainright.MainHolderTriggerLevel;
+import com.micsig.tbook.tbookscope.middleware.command.Command;
+import com.micsig.tbook.tbookscope.middleware.command.CommandMsgToUI;
+import com.micsig.tbook.tbookscope.middleware.command.Command_Display;
+import com.micsig.tbook.tbookscope.rxjava.RxBus;
+import com.micsig.tbook.tbookscope.rxjava.RxBusRegister;
+import com.micsig.tbook.tbookscope.rxjava.RxEnum;
+import com.micsig.tbook.tbookscope.scpi.SCPICommandDeal;
+import com.micsig.tbook.tbookscope.services.ExternalKeys.client.ExternalKeysOnBindService;
+import com.micsig.tbook.tbookscope.services.ExternalKeys.client.ExternalKeysProtocol;
+import com.micsig.tbook.tbookscope.services.ExternalKeys.multifunctionKnob.ExternalKeysManager;
+import com.micsig.tbook.tbookscope.services.SCPI.client.ScpiOnBindService;
+import com.micsig.tbook.tbookscope.struct.ExternalKeysMsg_ToMCU;
+import com.micsig.tbook.tbookscope.structdata.ExternalKeysCommand;
+import com.micsig.tbook.tbookscope.structdata.ExternalKeysUI;
+import com.micsig.tbook.tbookscope.tools.FileUtils;
+import com.micsig.tbook.tbookscope.tools.PlaySound;
+import com.micsig.tbook.tbookscope.tools.RecoveryManage;
+import com.micsig.tbook.tbookscope.tools.SaveManage;
+import com.micsig.tbook.tbookscope.tools.ScreenControls;
+import com.micsig.tbook.tbookscope.tools.Tools;
+import com.micsig.tbook.tbookscope.top.popwindow.TopLayoutPopWindow;
+import com.micsig.tbook.tbookscope.util.App;
+import com.micsig.tbook.tbookscope.util.CacheUtil;
+import com.micsig.tbook.tbookscope.util.DToast;
+import com.micsig.tbook.tbookscope.wavezone.IWorkMode;
+import com.micsig.tbook.tbookscope.wavezone.WorkModeManage;
+import com.micsig.tbook.tbookscope.wavezone.bean.YTZoomMsgDisplay;
+import com.micsig.tbook.tbookscope.wavezone.display.CursorManage;
+import com.micsig.tbook.tbookscope.wavezone.display.RulerManage;
+import com.micsig.tbook.tbookscope.wavezone.display.WaveGridManage;
+import com.micsig.tbook.tbookscope.wavezone.measure.MeasureManage;
+import com.micsig.tbook.tbookscope.wavezone.trigger.TriggerTimebase;
+import com.micsig.tbook.tbookscope.wavezone.trigger.VoltageLineManage;
+import com.micsig.tbook.tbookscope.wavezone.wave.SerialBusManage;
+import com.micsig.tbook.tbookscope.wavezone.wave.WaveManage;
+import com.micsig.tbook.ui.MTriggerStateBar;
+import com.micsig.tbook.ui.MTriggerTime;
+import com.micsig.tbook.ui.util.StrUtil;
+import com.micsig.tbook.ui.util.TBookUtil;
+import com.micsig.tbook.ui.util.svg.SvgNodeInfo;
+import com.micsig.tbook.ui.wavezone.TChan;
+import com.molihuan.pathselector.utils.BundleUtil;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+
+public class MainActivity extends AppCompatActivity {
+    private static final String TAG = "MainActivity";
+
+    public static final int MSG_SPLASH = 0xaa;
+    public static final int MSG_REDRAWREF = 0x01;
+    public static final int MSG_REFRESH_WAVE = 0x02;
+    public static final int MSG_SAVE_PICTURE = 0x03;
+
+    public static final int DISABLE_EXPAND = 0x00010000;
+    public static final int DISABLE_NONE = 0x00000000;
+
+    private static final int KEYCODE_RUNSTOP = 121;
+    private static final int KEYCODE_SINGLE = 0;
+    private static final int KEYCODE_AUTO = 131;
+    private static final int KEYCODE_HALF = 132;
+    private static final int KEYCODE_MEASURE = 82;
+    private static final int KEYCODE_TRIGGER = 122;
+    private static final int KEYCODE_HOME = 4;
+
+    private MTriggerStateBar detail;
+    private MTriggerTime slider;
+    private MainViewGroup mainViewGroup;
+    private RxBusRegister rxBusRegister = null;
+    private MainHolderBottom mainHolderBottom;
+//    private MainTopLayoutLeft mainTopLayoutLeft;
+    private StatusBar statusBar;
+
+    private TopLayoutPopWindow topSlipMenuBar_Quick;
+
+    private PreviewTextureView previewTextureView;
+    //test 波形区以后要做YT XY ZOOM三个模式
+    // private WaveZoneDisplay_YT waveZoneDisplay_yt;
+    // private WaveZoneDisplay_XY waveZoneDisplay_xy;
+
+    private ExternalKeysOnBindService keyService;
+    private ScpiOnBindService scpiService;
+
+    private Scope mScope;
+    private MainHandler mainHandler = new MainHandler();
+    private TextureView tv;
+
+    private void setPointerIcon() {
+        Drawable drawable = getDrawable(R.drawable.pointer_icon);
+        Bitmap bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+        drawable.draw(canvas);
+        float v = App.get().getResources().getDimension(R.dimen.dp_1);
+        PointerIcon pointerIcon = PointerIcon.create(bitmap, v, v);
+        getWindow().getDecorView().setPointerIcon(pointerIcon);
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+
+
+        mScope = Scope.getInstance();
+        mScope.getChNum();
+        mScope.getHwVersion();
+        rxBusRegister = new RxBusRegister();
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        Window window = getWindow();
+
+
+        window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        WindowManager.LayoutParams params = window.getAttributes();
+        params.systemUiVisibility = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE;
+        window.setAttributes(params);
+        super.onCreate(savedInstanceState);
+
+
+
+        mainViewGroup = new MainViewGroup(MainActivity.this);
+        setContentView(mainViewGroup);
+
+
+        /// 外部按键服务 测试
+        keyService = new ExternalKeysOnBindService(MainActivity.this, mainViewGroup);
+        keyService.bind();
+        keyService.isExistServices();
+        keyService.setDealKeys(true);
+        scpiService = new ScpiOnBindService(MainActivity.this, mainViewGroup);
+        scpiService.bind();
+
+
+        initSington();
+
+
+        window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE
+                | View.SYSTEM_UI_FLAG_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
+
+
+        WorkModeManage.getInstance().initWaveZoneDisplay(MainActivity.this, mainViewGroup);
+
+        getWindow().getDecorView();
+//        ExternalKeysTreeManage.get().setMainViewGroup(mainViewGroup);
+        ExternalKeysUI.getInstance().setMainViewGroup(mainViewGroup);
+        ExternalKeysCommand.get().init(this, mainViewGroup);
+        initParam();
+        loadParam(savedInstanceState);
+        setPointerIcon();
+
+
+        //测试 内存
+        //ActivityManager.getLargeMemoryClass();
+        Runtime rt = Runtime.getRuntime();
+        long maxMemory = rt.maxMemory();
+        Log.i("maxMemory:", Long.toString(maxMemory / (1024 * 1024)));
+
+
+        //测试 内存复制
+        //TestBuffer buffer=new TestBuffer();
+        //buffer.beginCopy();
+        //测试 解密
+
+
+        //声音初始�???
+        //PlaySound.get();
+        PlaySound.getInstance().playStartUp();
+        //绘制波形
+        tv = (TextureView) findViewById(R.id.textureView);
+        tv.setRotationX(180);
+        previewTextureView = new PreviewTextureView(getBaseContext(), tv);
+        WaveManage.get().setWaveTextureView(previewTextureView);
+
+        //测试使用第三方自定义�???
+        // com.library.testlib.Test.println("123");
+
+        //测试屏幕�??
+//        ScreenControls.get().lockScreen();
+//        ScreenControls.get().unLockScreen();
+        //  ScreenControls.get().lockShowProgress().setProgressValue(20);
+
+        detail = (MTriggerStateBar) findViewById(R.id.maintopright_detail);
+        slider = (MTriggerTime) findViewById(R.id.slider);
+//        mainTopLayoutLeft=findViewById(R.id.mainTopLayoutLeft);
+//        mainTopLayoutLeft.setBroadcastReceiver(MainActivity.this);
+        statusBar=new StatusBar(MainActivity.this);
+        statusBar.setBroadcastReceiver(MainActivity.this);
+        Log.d(TAG, "onCreate()  called with: end");
+
+        int [] point = {0,0};
+        tv.getLocationInWindow(point);
+        previewTextureViewX = point[0];
+
+//        TChan.foreachMath1ToR8(chan -> {
+//            String selectColor = CacheUtil.get().getString(CacheUtil.MAIN_CHANNEL_COLOR + chan);
+//            SvgNodeInfo.setChannelColor(chan, selectColor);//改变颜色值
+//            RxBus.getInstance().post(RxEnum.MQ_MSG_CHANNEL_SELECT_COLOR, chan + ";" + selectColor);//发消息通知颜色值改变了
+//        });
+    }
+    int previewTextureViewX = 0;
+    private MainHolderBottomQuick mMainHolderBottomQuick;
+    private void loadParam(Bundle savedInstanceState) {
+        mainViewGroup.initLayout();
+//        ViewStub channel4 = (ViewStub) findViewById(R.id.menu_right_channel_number4_viewStub);
+//        ViewStub channel2 = (ViewStub) findViewById(R.id.menu_right_channel_number2_viewStub);
+//        if (GlobalVar.get().getChannelsCount() == GlobalVar.CHANNEL_COUNT_2) {
+//            if (channel2 != null) {
+//                channel2.inflate();
+//            }
+//        } else {//channelNumber == 4
+//            if (channel4 != null) {
+//                channel4.inflate();
+//            }
+//        }
+        new MainHolderTriggerLevel(mainViewGroup);
+        mMainHolderBottomQuick = new MainHolderBottomQuick(mainViewGroup, savedInstanceState);
+        mMainHolderBottomQuick.setMainActivity(MainActivity.this);
+        mainHolderBottom = new MainHolderBottom(mainViewGroup, MainActivity.this);
+        new MainHolderRightChannels(mainViewGroup);
+        new MainHolderLeftMenu(mainViewGroup);
+        new MainBottomOtherChannels(mainViewGroup);
+        topSlipMenuBar_Quick = (TopLayoutPopWindow) mainViewGroup.findViewById(R.id.topSlipMenuBar_Quick);
+        topSlipMenuBar_Quick.setSavedInstanceState(savedInstanceState);
+
+
+        Looper.myQueue().addIdleHandler(new MessageQueue.IdleHandler() {
+            @Override
+            public boolean queueIdle() {
+                Logger.i(TAG,"loadparam");
+                try {
+                    //preMainLoadCahceProcess();
+                    mScope.enableCommand(false);
+                    mScope.setRun(true);
+                    CacheUtil.get().getCacheMap();
+                    CacheUtil.get().startUp();
+                    //CacheUtil.get().checkCacheParam();
+                    updateMainLoadCaheProcess(false);
+
+
+                }catch (Exception e){
+                    //跑到这里界面 一致在loading 下面是补救措施。
+                    e.printStackTrace();
+
+                    CacheUtil.get().clearCacheMap();
+                    CacheUtil.get().clearOtherMap();
+                    updateMainLoadCaheProcess(false);
+                }finally {
+                    findViewById(R.id.loading).setVisibility(View.GONE);
+                }
+                return false;
+            }
+        });
+
+    }
+
+    public MainViewGroup getMainViewGroup() {
+        return mainViewGroup;
+    }
+
+    ///单例初始�??
+    private void initSington() {
+        DToast.get().init(this);
+        ScreenControls.getInstance().init(mainViewGroup, this, new ScreenControls.IScreenLockListener() {
+            @Override
+            public void onLockScreen(boolean bLockScreen) {
+                sendAutoSave(bLockScreen);
+            }
+        });
+
+
+        RecoveryManage.getIns().init(this);
+        PlaySound.getInstance().init();
+        RxBus.getInstance().init();
+        WorkModeManage.getInstance().init();
+        SerialBusManage.getInstance().init();
+
+        TriggerTimebase.getInstance().init();
+        VoltageLineManage.getInstance().init();
+        MeasureManage.getInstance().init();
+        CursorManage.getInstance().init();
+        WaveGridManage.getInstance().init();
+        RulerManage.getIns().init();
+        Command.get().init();
+        SCPICommandDeal.getInstance().init(scpiService);
+        WaveManage.get().init(mainViewGroup);
+        ExternalKeysManager.get().init(mainViewGroup);
+        ExternalKeysProtocol.init();
+        SaveManage.getInstance().init(this);
+//        ChannelFactory.getInstance().init(this);
+        initMathRef();
+        //RenderScriptGaussianBlur.getInstance().init(this);
+        PlaySound.getInstance().init();
+        DialogManage.getIns().init(this);
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        boolean r = super.dispatchTouchEvent(ev);
+        if(ev.getAction() == MotionEvent.ACTION_UP){
+            if(mainViewGroup.isUserTouch()){
+                mainViewGroup.setUserTouch(false);
+            }
+        }
+        return r;
+    }
+
+    @Override
+    public boolean onGenericMotionEvent(MotionEvent event){
+
+        if (0 != (event.getSource() & InputDevice.SOURCE_CLASS_POINTER)) {
+
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_SCROLL:
+                    AutoSave autoSave = AutoSave.getInstance();
+                    if(autoSave.isRun() && autoSave.isSaving()){
+                        break;
+                    }
+                    autoSave.setUserInput(true);
+                    int x = Math.round(event.getX() - previewTextureViewX);
+                    if(x > 0 &&  x < ScopeBase.getWidth()) {
+                        mScope.horizontalAxisScale(x
+                                , event.getAxisValue(MotionEvent.AXIS_VSCROLL) > 0 ? 1 : -1);
+                    }
+
+
+//                    int chIdx = ChannelFactory.getChActivate();
+//                    if(ChannelFactory.isDynamicCh(chIdx)) {
+//                        HorizontalAxis horizontalAxis = HorizontalAxis.getInstance();
+//
+//                        int scaleId = (int) (horizontalAxis.getTimeScaleIdOfView() + val + 0.01f);
+//                        if (HorizontalAxis.getMinGear() > scaleId) {
+//                            scaleId = HorizontalAxis.getMinGear();
+//                        } else if (HorizontalAxis.getMaxGear() < scaleId) {
+//                            scaleId = HorizontalAxis.getMaxGear();
+//                        }
+//                        horizontalAxis.setTimeScaleIdOfView(scaleId);
+//                    }else if(ChannelFactory.isRefCh(chIdx)){
+//                        RefChannel refChannel = ChannelFactory.getRefChannel(chIdx);
+//                        HorizontalAxisRef ref = refChannel.getHorizontalAxisRef();
+//
+//                    }
+
+
+
+                    //mScope.doubleClicked();
+                    return true;
+            }
+        }
+        return super.onGenericMotionEvent(event);
+    }
+
+    public void initMathRef() {
+        int[] refColors = SvgNodeInfo.getRefColorsInt();
+        int[] mathColors = SvgNodeInfo.getMathColorsInt();
+        ChannelFactory.initRef(refColors);
+        ChannelFactory.initMath(mathColors);
+    }
+
+    public void changeColor(int chIndex) {
+        initMathRef();
+        ChannelFactory.getInstance().changeChannelColor(chIndex);
+    }
+
+
+    private void initParam() {
+        CacheUtil.get().putMapInForce(CacheUtil.MAIN_LEFT_RUNSTOP, String.valueOf(true));
+    }
+
+    //region  activity overload
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Log.d(TAG, "onStart() called");
+
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        Log.d(TAG, "onRestart() called");
+
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+//        CacheUtil.get().checkCacheParam();
+//        RxBus.getInstance().post(RxEnum.MAIN_LOAD_CACHE, new LoadCache());
+    }
+
+    public void setScreenshotParam() {
+        Intent i = new Intent("android.intent.action.setScreenshotParam");
+        i.putExtra("timestamp", CacheUtil.get().getBoolean(CacheUtil.TOP_SLIP_USERSET_TIMESTAMP));
+        i.putExtra("invert", CacheUtil.get().getBoolean(CacheUtil.TOP_SLIP_USERSET_SCREENINVERT));
+        i.putExtra("filePath", CacheUtil.get().getOtherString(CacheUtil.TOP_SLIP_SAVE_PICTURE_PATH_CURRENT));
+        i.putExtra("fileName", getPictureName());
+        sendBroadcast(i);
+    }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.d(TAG, "activity onResume");
+
+
+
+        mScope.resume();
+//        loadParam();
+        WorkModeManage.getInstance().onResume();
+//        if (waveZoneDisplay_yt != null) {
+//            waveZoneDisplay_yt.onResume();
+//        }
+        App.setDropDownBoxVisiable(this,false);
+
+        HwManager.setString("im.emoji", "0");
+
+
+        keyService.setDealKeys(true);
+        boolean runStop = CacheUtil.get().getBoolean(CacheUtil.MAIN_LEFT_RUNSTOP);
+
+        if (!runStop) {
+            drawRefresh = 0;
+            mainHandler.sendEmptyMessageDelayed(MSG_REFRESH_WAVE, 1000);
+        }
+        if(!App.isMainActivity()) {
+            closeSplashActivity();
+        }
+
+        RxBus.getInstance().post(RxEnum.EXTERNALKEY_TOMCU, new ExternalKeysMsg_ToMCU(ExternalKeysMsg_ToMCU.TYPE_ZOOM,
+                CacheUtil.get().getBoolean(CacheUtil.MAIN_BOTTOM_SLIP_ZOOM)? ExternalKeysMsg_ToMCU.STATE_LED_ON : ExternalKeysMsg_ToMCU.STATE_LED_OFF) );
+
+        RxBus.getInstance().post(RxEnum.EXTERNALKEY_TOMCU, new ExternalKeysMsg_ToMCU(ExternalKeysMsg_ToMCU.TYPE_RUNSTOP,
+                CacheUtil.get().getBoolean(CacheUtil.MAIN_LEFT_RUNSTOP) ? ExternalKeysMsg_ToMCU.STATE_LED_GREEN : ExternalKeysMsg_ToMCU.STATE_LED_RED));
+
+        mainHandler.sendEmptyMessageDelayed(MSG_REDRAWREF, 200);
+
+        //刷新U盘图标状态
+//        mainTopLayoutLeft.refreshUdiskIcon();
+        statusBar.refreshUdiskIcon();
+        App.setMainActivityAlive(true);
+        App.setMainActivity(this);
+
+//        changeWaveArea();
+    }
+
+    private void changeWaveArea() {
+        //先找出来测量项的多少
+        String channelStrings = CacheUtil.get().getString(CacheUtil.TOP_SLIP_MEASURE_SELECT_LIST_CHANNEL);
+        Logger.d(TAG, "measureItem channelStrings= " + channelStrings);
+        ArrayList<String> channelList = StrUtil.getListFromString(channelStrings, CacheUtil.MEASURE_SELECT_LIST_SLIP);
+        int measureCount = channelList.size();
+        String measureStr;
+        if (measureCount == 0) {//没有测量项
+            measureStr = false + CommandMsgToUI.PARAM_SPLIT + 0;
+        } else if (measureCount <= 10) {//一行测量项
+            measureStr = true + CommandMsgToUI.PARAM_SPLIT + 1;
+        } else {//两行测量项
+            measureStr = true + CommandMsgToUI.PARAM_SPLIT + 11;
+        }
+        Logger.d(TAG, "measureItem measureStr= " + measureStr);
+        RxBus.getInstance().post(RxEnum.MQ_MSG_MEASURE_ITEM_COUNT, measureStr);
+    }
+
+
+    private void closeSplashActivity() {
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Thread.currentThread().setName("Main_CloseSplashActivity");
+
+                CacheUtil.get().setLoadMenuState(CacheUtil.LOAD_WaveZoneDisplayManage, false);
+                int count = 0;
+                while (CacheUtil.get().isLoadParamComplete() == false && count++ < 100) {
+                    Tools.sleep(100);
+                }
+
+
+                //mMainHolderBottomQuick.initMediaProjection();
+                //设置timeBasePos位置
+                TriggerTimebase.getInstance().setCache();
+                Tools.sleep(1000);
+                if(!mainHandler.hasMessages(MSG_SPLASH)) {
+                    mainHandler.sendEmptyMessage(MSG_SPLASH);
+                }
+                Tools.sleep(100);
+                Logger.i(TAG, "loadComplete sendemptyMessage:" );
+                mScope.enableCommand(true);
+
+
+                int chIdx = ChannelFactory.getChActivate();
+                if(ChannelFactory.isMathCh(chIdx)){
+                    MathChannel mathChannel = ChannelFactory.getMathChannel(chIdx);
+                    mathChannel.activate();;
+                }
+            }
+        }).start();
+
+    }
+
+    @Override
+    protected void onPause() {
+        Log.d(TAG, "MainActivity onPause!");
+        super.onPause();
+
+        SaveBin.getInstance().stop();
+
+        CacheUtil.get().putMap(CacheUtil.MAIN_RECOVERY_CHANNEL_SELECT + "-1", String.valueOf(ChannelFactory.getChActivate()), true);
+        WorkModeManage.getInstance().onPause();
+//        if (waveZoneDisplay_yt != null) {
+//            waveZoneDisplay_yt.onPause();
+//        }
+        SplashDialog.get().closeDialog();
+
+        App.setDropDownBoxVisiable(this,true);
+        keyService.setDealKeys(false);
+        mScope.pause();
+        CacheUtil.get().pause();
+
+        HwManager.setString("im.emoji", "1");
+    }
+
+    @Override
+    protected void onStop() {
+        Log.i(TAG, "onStop");
+        super.onStop();
+        RxBus.getInstance().post(RxEnum.ACTIVITY_ACTIVITYONSTOP, new ActivityMsgOnStop());
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+//        super.onSaveInstanceState(outState);
+        long bundleSize = BundleUtil.getBundleSize(outState);
+        Log.w("MainActivity", "getBundleSize= " + bundleSize);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        ActivityMsgResult result = new ActivityMsgResult(requestCode, resultCode, data);
+        RxBus.getInstance().post(RxEnum.ACTIVITY_ACTIVITYRESULT, result);
+    }
+
+    @Override
+    protected void onDestroy() {
+        Log.d(TAG, "onDestory");
+        mScope.standby();
+
+        if (rxBusRegister != null) rxBusRegister.unRegister();
+        BroadcastManager.getInstance().unregisterReceiver();
+        keyService.unBind();
+        scpiService.unBind();
+        App.setMainActivityAlive(false);
+        App.finish();
+        Log.d(TAG, "onDestory end");
+        super.onDestroy();
+    }
+
+
+    //endregion
+
+
+    /***
+     * 在CacheUtil重新载入【MAIN_LOAD_CACHE】前清理环境为标准状态
+     */
+    public void preMainLoadCahceProcess() {
+        mScope.setRun(false);
+        for(int i=0;i<ChannelFactory.CHANNEL_CNT;i++){
+            ChannelFactory.chClose(i);
+        }
+        mScope.clearWave();
+        mScope.setZoomFlags(DisplayAction.FLAGS_RESET_BAKSCALEID);
+        mScope.setZoom(false);
+        WorkModeManage.getInstance().setWorkMode(IWorkMode.WorkMode_YT, false);
+        mainViewGroup.hideAllSlip();
+    }
+
+    /***
+     * 载入CacheUtil内的配置，如果CacheUtil内为空配置，则载入默认设置信息
+     */
+    public void updateMainLoadCaheProcess(boolean isFromRecovery) {
+        //外部按键预选框的初始化需要在cache设置恢复之后
+        double normalScale = 0;
+        double zoomLargeScale = 0;
+        double zoomLargeScaleFull = 0;
+        boolean bRun = mScope.isRun();
+        mScope.setRun(true);
+        CacheUtil.get().checkCacheParam();
+        mScope.setUsersetReset(true);
+        mScope.setRun(bRun);
+        boolean bTmpZoom = false;
+
+        bTmpZoom = CacheUtil.get().getBoolean(CacheUtil.MAIN_BOTTOM_SLIP_ZOOM);
+        boolean runStop = CacheUtil.get().getBoolean(CacheUtil.MAIN_LEFT_RUNSTOP);
+        if (!runStop) {
+            CacheUtil.get().putMapInForce(CacheUtil.MAIN_LEFT_RUNSTOP, "true");
+        }
+        if(bTmpZoom){
+            normalScale = TBookUtil.getSFromTime(CacheUtil.get().getString(CacheUtil.MAIN_BOTTOM_TIMEBASE_NORMAL_SCALE));
+            zoomLargeScale = TBookUtil.getSFromTime(CacheUtil.get().getString(CacheUtil.ZOOM_BOTTOM_TIMEBASE_LARGE_SCALE));
+            zoomLargeScaleFull = TBookUtil.getSFromTime(CacheUtil.get().getString(CacheUtil.MAIN_BOTTOM_TIMEBASE_LARGE_SCALE_FULL));
+            CacheUtil.get().putMap(CacheUtil.MAIN_BOTTOM_SLIP_ZOOM, String.valueOf(false),true);
+        }
+        long x =  CacheUtil.get().getLong(CacheUtil.MAIN_WAVE_TIMEBASE_POSITION_NORMAL);
+        int channelsSelect = CacheUtil.get().getInt(CacheUtil.MAIN_CENTER_CHANNELS_SELECT);
+        ExternalKeysManager.get().init(mainViewGroup);
+
+        HorizontalAxis.setMaxGear(CacheUtil.get().getInt(CacheUtil.MAIN_WAVE_TIMEBASE_MAX));
+        HorizontalAxis.setMinGear(CacheUtil.get().getInt(CacheUtil.MAIN_WAVE_TIMEBASE_MIN));
+        HorizontalAxis.getInstance().initXAxis();
+
+
+        RxBus.getInstance().post(RxEnum.MAIN_LOAD_CACHE, new LoadCache());
+        //bug bug, all bug
+        CacheUtil.get().putMap(CacheUtil.MAIN_CENTER_CHANNELS_SELECT,String.valueOf(channelsSelect),true);
+        CacheUtil.get().putMap(CacheUtil.MAIN_CENTER_CHANNELS_SELECT_WILL_NULL,String.valueOf(channelsSelect),true);
+        RxBus.getInstance().post(RxEnum.MAIN_LOAD_CACHE_EX,new LoadCache());
+        CacheUtil.get().putMap(CacheUtil.MAIN_WAVE_TIMEBASE_POSITION_NORMAL, String.valueOf(x),true);
+        if(bTmpZoom){
+            CacheUtil.get().putMap(CacheUtil.MAIN_BOTTOM_SLIP_ZOOM, String.valueOf(bTmpZoom),true);
+
+            Command.get().getDisplay().setRoutineTimeBaseMode(Command_Display.RoutineTimeBaseMode_YT, true);
+            Command.get().getDisplay().Zoom(true, false);
+            Scope.getInstance().setZoom(true);
+            RxBus.getInstance().post(RxEnum.WAVEZONE_DISPLAY_YTZOOM, new YTZoomMsgDisplay(true));
+            WorkModeManage.getInstance().setWorkMode(IWorkMode.WorkMode_YTZOOM, false);
+
+            HorizontalAxis horizontalAxis = HorizontalAxis.getInstance();
+            horizontalAxis.setTimeScaleIdOfView(HorizontalAxis.WPI_STANDARD, horizontalAxis.timeValtoTimeScaleId(normalScale));
+            horizontalAxis.setTimeScaleIdOfView(HorizontalAxis.WPI_LARGE, horizontalAxis.timeValtoTimeScaleId(zoomLargeScaleFull));
+            horizontalAxis.setTimeScaleIdOfView(HorizontalAxis.WPI_SMALL, horizontalAxis.timeValtoTimeScaleId(zoomLargeScale));
+        }
+
+        TChan.foreachChan((i) -> {
+            Channel channel = ChannelFactory.getDynamicChannel(TChan.toFpgaChNo(i));
+            if (channel != null) {
+                for (int j = VerticalAxis.getMinGear(); j <= VerticalAxis.getMaxGear(); j++) {
+                    int pos = CacheUtil.get().getInt(CacheUtil.MAIN_WAVE_CH_Y_ZERO_POSITION + i + j);
+                    channel.setZero(j, pos);
+                }
+            }
+        });
+
+        TChan.foreachMath1ToR8(chan -> {
+            String selectColor = CacheUtil.get().getString(CacheUtil.MAIN_CHANNEL_COLOR + chan);
+            SvgNodeInfo.setChannelColor(chan, selectColor);//改变颜色值
+            RxBus.getInstance().post(RxEnum.MQ_MSG_CHANNEL_SELECT_COLOR, chan + ";" + selectColor);//发消息通知颜色值改变了
+        });
+//        int pos = 0;
+//        Channel channel;
+//        for(int i=IWave.Ch1;i<=IWave.Ch4;i++){
+//            channel = ChannelFactory.getDynamicChannel(i-IWave.Ch1);
+//            if(channel != null) {
+//                for (int j = VerticalAxis.getMinGear(); j <= VerticalAxis.getMaxGear(); j++) {
+//                    pos = CacheUtil.get().getInt(CacheUtil.MAIN_WAVE_CH_Y_ZERO_POSITION + i + j);
+//                    channel.setZero(j, pos);
+//                }
+//            }
+//        }
+        if (!isFromRecovery) {//重启之后恢复活动通道
+            int recoverySelect = CacheUtil.get().getInt(CacheUtil.MAIN_RECOVERY_CHANNEL_SELECT + "-1");
+            RxBus.getInstance().post(RxEnum.MQ_MSG_RECOVERY_SELECT, recoverySelect);
+        }
+
+        if (!runStop) {
+            RxBus.getInstance().post(RxEnum.MAINLEFT_MENU_RUNSTOP, new MainLeftMsgMenuRunStop(MainLeftMsgMenuRunStop.STOP));
+            CacheUtil.get().putMapInForce(CacheUtil.MAIN_LEFT_RUNSTOP, "false");
+        }
+        //0010993
+        long l = CacheUtil.get().getLong(CacheUtil.MAIN_WAVE_TIMEBASE_POSITION_NORMAL);
+        HorizontalAxis.getInstance().setTimePoseOfViewPix(ScopeBase.getWidth() / 2 - l);
+        mScope.setUsersetReset(false);
+
+    }
+
+    /***
+     * 等待CacheUtil重新载入【MAIN_LOAD_CACHE】后执行一些功能：比方说启动示波器运行、启动zoom等
+     */
+    public void postMainLoadCacheProcess() {
+        closeSplashActivity();//启动示波器为运行状态，启动zoom状态
+    }
+
+    private int drawRefresh = 0;
+
+    class MainHandler extends Handler {
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case MSG_SPLASH: {
+                    {//zoom的初始化改在了这里，不在loadCache中进行
+                        //打个补丁吧，哈哈
+                        SplashDialog.get().closeDialog();
+                        boolean runStop = CacheUtil.get().getBoolean(CacheUtil.MAIN_LEFT_RUNSTOP);
+
+                        ChannelFactory.forEachCh(channel -> {
+                            if(channel.getVerticalMode() == Channel.VERTICAL_MODE_SCREEN_CENTER){
+                                channel.setPos(Tools.getYTChannelPosition((channel.getChId() - ChannelFactory.CH1)  + 1));
+                            }
+                        });
+                        ChannelFactory.forEachMath(mathChannel -> mathChannel.setMathType(mathChannel.getMathType()));
+
+                        ChannelFactory.chActivate(ChannelFactory.getChActivate()); //	bug 0006536
+                        if(CacheUtil.get().getInt(CacheUtil.TOP_SLIP_DISPLAY_COMMON_TIMEBASE) == 1){
+                            Display.getInstance().setDisplayMode(Display.DISPLAY_XY);
+                        }
+
+                        if (mScope.isRun() && mScope.isInScrollMode()) {
+
+                            CacheUtil.get().putMap(CacheUtil.MAIN_BOTTOM_SLIP_ZOOM, String.valueOf(false));
+                            RxBus.getInstance().post(RxEnum.EXTERNALKEY_TOMCU,
+                                    new ExternalKeysMsg_ToMCU(ExternalKeysMsg_ToMCU.TYPE_ZOOM,
+                                            ExternalKeysMsg_ToMCU.STATE_LED_OFF));
+                        }
+
+                        boolean zoom = CacheUtil.get().getBoolean(CacheUtil.MAIN_BOTTOM_SLIP_ZOOM);
+                        if (zoom) {
+                            long x =  CacheUtil.get().getLong(CacheUtil.MAIN_WAVE_TIMEBASE_POSITION_NORMAL);
+                            HorizontalAxis.getInstance().setTimePoseOfViewPix(0);
+                            HorizontalAxis.getInstance().correctTimePose_poseMove();
+                            YTZoomMsgDisplay ytZoomMsgDisplay = new YTZoomMsgDisplay(true);
+                            ytZoomMsgDisplay.setReloadLargeTimeScale(true);
+                            ytZoomMsgDisplay.setPlaySound(false);
+                            RxBus.getInstance().post(RxEnum.WAVEZONE_DISPLAY_YTZOOM, ytZoomMsgDisplay);
+                            HorizontalAxis.getInstance().setTimePoseOfViewPix(ScopeBase.getWidth() / 2 - x);
+                            HorizontalAxis.getInstance().correctTimePose_poseMove();
+                        }
+//                        if(!mScope.isRun()){
+//                            mScope.clearWave();
+//                        }
+                        Display display = Display.getInstance();
+                        display.setCCT(display.isCCT());
+                        display.setPersistType(display.getPersistType());
+                        mScope.setRun(runStop);
+                        mScope.setUI(true);
+                        setScreenshotParam();
+                        ChannelFactory.forEachCh((channel)->{
+                            MainHolderTriggerLevel.changeSerialTrigVol_channel(TChan.toUiChNo(channel.getChId()));
+                        });
+                        HwManager.setString("app.micsig","2");
+                    }
+                }
+                break;
+                case MSG_REDRAWREF: {
+                    if (CacheUtil.get().getBoolean(CacheUtil.MAIN_RIGHT_REF)) {
+                        RefChannel refChannel;
+
+                        if (CacheUtil.get().getBoolean(CacheUtil.MAIN_CHANNEL_OPEN_STATE+TChan.Ch1)) {
+
+                            ChannelFactory.getRefChannel(ChannelFactory.REF1).setPos(Tools.getYTChannelPosition(TChan.R1));
+                        }
+                        if (CacheUtil.get().getBoolean(CacheUtil.MAIN_CHANNEL_OPEN_STATE+TChan.Ch2)) {
+
+                            ChannelFactory.getRefChannel(ChannelFactory.REF2).setPos(Tools.getYTChannelPosition(TChan.R2));
+                        }
+                        if (CacheUtil.get().getBoolean(CacheUtil.MAIN_CHANNEL_OPEN_STATE+TChan.Ch3)) {
+
+                            ChannelFactory.getRefChannel(ChannelFactory.REF3).setPos(Tools.getYTChannelPosition(TChan.R3));
+                        }
+                        if (CacheUtil.get().getBoolean(CacheUtil.MAIN_CHANNEL_OPEN_STATE + TChan.Ch4)) {
+                            ChannelFactory.getRefChannel(ChannelFactory.REF4).setPos(Tools.getYTChannelPosition(TChan.R4));
+                        }
+                        if (CacheUtil.get().getBoolean(CacheUtil.MAIN_CHANNEL_OPEN_STATE + TChan.Ch5)) {
+                            refChannel = ChannelFactory.getRefChannel(ChannelFactory.REF5);
+                            if (refChannel == null) return;
+                            refChannel.setPos(Tools.getYTChannelPosition(TChan.R5));
+                        }
+                        if (CacheUtil.get().getBoolean(CacheUtil.MAIN_CHANNEL_OPEN_STATE + TChan.Ch6)) {
+                            refChannel = ChannelFactory.getRefChannel(ChannelFactory.REF6);
+                            if (refChannel == null) return;
+                            refChannel.setPos(Tools.getYTChannelPosition(TChan.R6));
+                        }
+                        if (CacheUtil.get().getBoolean(CacheUtil.MAIN_CHANNEL_OPEN_STATE + TChan.Ch7)) {
+                            refChannel = ChannelFactory.getRefChannel(ChannelFactory.REF7);
+                            if (refChannel == null) return;
+                            refChannel.setPos(Tools.getYTChannelPosition(TChan.R7));
+                        }
+                        if (CacheUtil.get().getBoolean(CacheUtil.MAIN_CHANNEL_OPEN_STATE + TChan.Ch8)) {
+                            refChannel = ChannelFactory.getRefChannel(ChannelFactory.REF8);
+                            if (refChannel == null) return;
+                            refChannel.setPos(Tools.getYTChannelPosition(TChan.R8));
+                        }
+
+                    }
+                }
+                break;
+                case MSG_REFRESH_WAVE: {
+                    if (drawRefresh < 3) {
+                        mainHandler.sendEmptyMessageDelayed(MSG_REFRESH_WAVE, 150);
+                        drawRefresh++;
+                    }
+                    mScope.Refresh();
+                }
+                break;
+                case MSG_SAVE_PICTURE:{
+                    String picturePath = CacheUtil.get().getOtherString(CacheUtil.TOP_SLIP_SAVE_PICTURE_PATH_CURRENT);
+                    String pictureName = getPictureName();
+                    doSavePicture(picturePath, pictureName);
+                }
+                break;
+            }
+        }
+    }
+
+    private String getPictureName() {
+        String pictureName = CacheUtil.get().getOtherString(CacheUtil.TOP_SLIP_SAVE_PICTURE_NAME);
+        if (pictureName.isEmpty()) {
+            pictureName = Tools.generateName();
+        }
+        boolean isFileNumAddCheck = CacheUtil.get().getOtherBoolean(CacheUtil.TOP_SLIP_SAVE_PICTURE_SUFFIX_CHECK);
+        String suffixNum = CacheUtil.get().getOtherString(CacheUtil.TOP_SLIP_SAVE_PICTURE_SUFFIX_CHECK_NUM);
+        if (isFileNumAddCheck) {
+            pictureName = pictureName + "_" + suffixNum + ".png";
+        } else {
+            pictureName = pictureName + ".png";
+        }
+        return pictureName;
+    }
+
+    public void autoSaveScreenShot() {
+        String picturePath = CacheUtil.get().getString(CacheUtil.TOP_SLIP_SAVE_PICTURE_PATH_AUTO_SAVE);
+        String pictureName = CacheUtil.get().getString(CacheUtil.TOP_SLIP_SAVE_PICTURE_AUTO_SAVE_NAME);
+        Logger.i(TAG, "screenShot filePath= " + picturePath + " ,fileName= " + pictureName);
+        doAutoSavePicture(picturePath, pictureName);
+    }
+
+
+    public void screenShot() {
+        String picturePath = CacheUtil.get().getOtherString(CacheUtil.TOP_SLIP_SAVE_PICTURE_PATH_CURRENT);
+        String pictureName = getPictureName();
+        Logger.i(TAG, "screenShot filePath= " + picturePath + " ,fileName= " + pictureName);
+
+        if (SaveManage.getInstance().checkFileExists(picturePath + File.separator + pictureName)) {
+            ((DialogOkCancel) mainViewGroup.getDialog(MainViewGroup.DIALOG_OKCANCEL))
+                    .setData(null, R.string.top_slip_save_file_exists, null, null, onOkCancelClickListener);
+        } else {
+            doSavePicture(picturePath, pictureName);
+        }
+    }
+
+    private void doSavePicture(String path, String name) {
+        keyService.screenshot(CacheUtil.get().getBoolean(CacheUtil.TOP_SLIP_USERSET_TIMESTAMP),
+                CacheUtil.get().getBoolean(CacheUtil.TOP_SLIP_USERSET_SCREENINVERT), path, name);
+
+        RxBus.getInstance().post(RxEnum.MQ_MSG_SAVE_CAPTURE_SUCCESS, true);
+    }
+
+    private void doAutoSavePicture(String path, String name) {
+        keyService.screenshot(CacheUtil.get().getBoolean(CacheUtil.TOP_SLIP_USERSET_TIMESTAMP),
+                CacheUtil.get().getBoolean(CacheUtil.TOP_SLIP_USERSET_SCREENINVERT), path, name,true);
+
+    }
+
+    private DialogOkCancel.OnOkCancelClickListener onOkCancelClickListener = new DialogOkCancel.OnOkCancelClickListener() {
+        @Override
+        public void onOkClick(View v, Object data) {
+//            if (v == null || data == null) return;
+            String picturePath = CacheUtil.get().getOtherString(CacheUtil.TOP_SLIP_SAVE_PICTURE_PATH_CURRENT);
+            String pictureName = getPictureName();
+            if (FileUtils.deleteFile(picturePath + File.separator + pictureName)) {
+//                doSavePicture(picturePath, pictureName);
+                mainHandler.sendEmptyMessageDelayed(MSG_SAVE_PICTURE, 50);
+            }
+        }
+
+        @Override
+        public void onCancelClick(View v, Object data) {
+            //Do nothing
+            Logger.i("Click cancel");
+        }
+
+        @Override
+        public void onDialogClose(View view) {
+        }
+    };
+
+    public void unbindWirelessId(){
+        keyService.unbindWirelessId();
+    }
+
+    public void sendAutoSave(boolean bAutoSave){
+        keyService.sendAutoSave(bAutoSave);
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (KeyEventUtil.isIgnoreKey(event)) return true;
+        if(event.getAction() == KeyEvent.ACTION_DOWN){
+            if(event.getScanCode() == 194){
+                if(!Scope.getInstance().isStandby()) {
+                    ScopeMessage.getInstance().probeEvent();
+                }
+            }
+        }
+        return super.onKeyDown(keyCode, event);
+    }
+
+    public MTriggerTime getSlider() {
+        return slider;
+    }
+
+}

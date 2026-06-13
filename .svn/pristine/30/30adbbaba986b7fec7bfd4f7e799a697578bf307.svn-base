@@ -1,0 +1,490 @@
+package com.micsig.tbook.scope.Auto;
+
+import android.util.Log;
+
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.Bus.I2CBus;
+import com.micsig.tbook.scope.Bus.IBus;
+import com.micsig.tbook.scope.Bus.SpiBus;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.Trigger.Trigger;
+import com.micsig.tbook.scope.Trigger.TriggerFactory;
+import com.micsig.tbook.scope.Trigger.TriggerLevel;
+import com.micsig.tbook.scope.channel.Channel;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.channel.SerialChannel;
+import com.micsig.tbook.scope.horizontal.HorizontalAxis;
+import com.micsig.tbook.scope.measure.Measure;
+
+/**
+ * Created by zhuzh on 2018-7-13.
+ */
+
+public class AutoChannel {
+    private Channel channel;
+    private Auto auto;
+
+    private long lastSCyles = 0;
+
+    private double maxVal = 0;
+    private double peakVal = 0;
+    private volatile boolean bModifyVerticalGear = false; //档位调接延时进入计算。
+    private volatile boolean bModifyTimebase = false;
+    private volatile boolean bModifyLevel = false;
+
+    private static int BAOHE_MAX_VAL = 127;
+
+    public AutoChannel(Auto auto ,Channel channel){
+        this.auto = auto;
+        this.channel = channel;
+
+        BAOHE_MAX_VAL = 32767;
+
+    }
+    public double getMaxVal(){
+        return maxVal;
+    }
+    public double getPeakVal(){
+        return peakVal;
+    }
+
+    private void calcMaxMinVal(int max,int min){
+        peakVal = Math.abs(max-min) * channel.getVerticalPerPix();
+        if(Math.abs(max) < Math.abs(min)){
+            max = min;
+        }
+        maxVal = (double)(Math.abs(max) * channel.getVerticalPerPix());
+        Logger.d("auto","chId:" + channel.getChId() + ",peakVal:" + peakVal + ",maxVal:" + maxVal);
+    }
+
+    public synchronized void modifyVertical() {
+        this.bModifyVerticalGear = true;
+    }
+
+    public synchronized void modifyTimebase() {
+        this.bModifyTimebase = true;
+    }
+
+    public synchronized void modifyLevel() {
+        this.bModifyLevel = true;
+    }
+
+    public boolean autoWork(int min,int max,long cycle){
+        return autoWork(min,max,cycle,false);
+    }
+    public boolean autoWork(int min, int max, long cycle,boolean bSerialCh){
+        Log.d("auto", "ch = " + channel.getChId() + ",min=" + min + ", max=" + max + ",cycle=" + cycle + ",bSerialCh=" + bSerialCh  + "," +BAOHE_MAX_VAL);
+        int baohe = 0;
+        if(Math.abs(max) >= BAOHE_MAX_VAL
+                || Math.abs(min) >= BAOHE_MAX_VAL){
+            baohe = 1;
+        }
+
+            int pos = (int) Math.round(channel.getPos());
+            int bc = channel.getPlaceVal();
+            int m = channel.getM();
+            int n = channel.getN();
+            max = (int)(max/64);
+            min = (int)(min/64);
+//            Logger.d("auto","ch = " + channel.getChId() + ",pos:" + pos + ",bc:" + bc + ",m:" + m + ",n:" +n);
+//            max = (int) ((max/16 + m / 256.0) * n / 256.0/4 + bc + pos);
+//            min = (int) ((min/16 + m / 256.0) * n / 256.0/4 + bc + pos);
+//            Logger.d("auto","ch = " + channel.getChId() + ",min = " + min + " ,max = " + max + ",cycle = " + cycle);
+            calcMaxMinVal(max - pos, min - pos);
+
+        if(bSerialCh){
+            return serialWork(channel,baohe,max,min,cycle);
+        }else{
+            if(cycle != 0) {
+                return work(channel, baohe, max,min, cycle);
+            }
+        }
+        return false;
+    }
+
+    private boolean isSingleAuto(){
+        return !auto.isAutoRangeEnable();
+    }
+
+    public synchronized boolean isVerticalAuto(){
+        return (auto.isAutoRangeEnable()
+                && auto.isAutoVerticalEnable()
+                && (!bModifyVerticalGear));
+    }
+
+    public synchronized boolean isHorizontalAuto(){
+        return (auto.isAutoRangeEnable()
+                && auto.isAutoHorizontalEnable()
+                && (!bModifyTimebase));
+
+    }
+
+    public synchronized boolean isTriggerLevelAuto(){
+        return (auto.isAutoRangeEnable()
+                && auto.isAutoLevelEnable()
+                && (!bModifyLevel));
+    }
+
+
+    boolean work(Channel channel,int baoHe, int max, int min, long cycle)
+    {
+
+        boolean bVertival = false;
+        boolean bHorizontal = false;
+        HorizontalAxis horizontalAxis = HorizontalAxis.getInstance();
+        int ix = channel.getVScaleId();
+        int xd = horizontalAxis.getTimeScaleIdOfView();
+        if(isSingleAuto() || isVerticalAuto()) {
+            if (baoHe == 1) {
+                int ixx = ix + 3;
+                ixx = channel.calcVScaleId(ix,3);
+                if (ixx > channel.getMaxGear()) {
+                    ixx = channel.getMaxGear();
+                }
+                if (ixx != ix)
+                    channel.setVScaleId(ixx);
+            } else {
+                int dang = TiaoZenY(channel, max, min);
+
+                if (ix != dang) {
+                    channel.setVScaleId(dang);
+                    bVertival = true;
+                }
+            }
+        }
+
+        Trigger trigger = TriggerFactory.getTriggerObj();
+        if (trigger.getTriggerSource() == channel.getChId()) {
+            TriggerLevel triggerLevel = trigger.getTriggerLevel();
+            double trigPlace = Auto_TrigReset(channel, max, min);
+            double offset = trigPlace - triggerLevel.getPos();
+            if(isSingleAuto() || isTriggerLevelAuto()) {
+                if (offset != 0) {
+                    triggerLevel.setPos(trigPlace);
+                }
+            }
+            if(isSingleAuto() || isHorizontalAuto()) {
+                int xDang = TiaoZenX(cycle, max - min);
+                if (xDang < HorizontalAxis.getMinGear()) {
+                    xDang = HorizontalAxis.getMinGear();
+                }else if (xDang > HorizontalAxis.getMaxGear()) {
+                    xDang = HorizontalAxis.getMaxGear();
+                }
+                if (xDang != xd) {
+                    HorizontalAxis.getInstance().setTimeScaleIdOfView(xDang);
+                    bHorizontal = true;
+                }
+            }
+        }
+        return (bVertival || bHorizontal) ;
+
+    }
+    boolean serialWork(Channel channel,int baoHe, int max, int min, long cycle)
+    {
+
+        boolean bVertival = false;
+        int ix = channel.getVScaleId();
+        if(isSingleAuto() || isVerticalAuto()) {
+            if (baoHe == 1) {
+                int ixx = ix + 3;
+                ixx = channel.calcVScaleId(ix,3);
+                if (ixx > channel.getMaxGear()) {
+                    ixx = channel.getMaxGear();
+                }
+                if (ixx != ix)
+                    channel.setVScaleId(ixx);
+            } else {
+                int dang = TiaoZenY(channel, max, min);
+
+                if (ix != dang) {
+                    channel.setVScaleId(dang);
+                    bVertival = true;
+                }
+            }
+        }
+        Auto_ThreoldLevelReset(channel,max,min);
+        TiaoZenXBySerialCodeBaundRate();
+        return (bVertival) ;
+
+    }
+
+    void Auto_ThreoldLevelReset(Channel channel ,int max, int min){
+
+        int newValue = max;
+        if (-min > max)
+            newValue = -min;
+        if(510 <= newValue)
+            return; //信号饱和，不再进行触发位置调整
+        int pos = (int) Math.round(channel.getPos());
+        int halfPos = (max + min)/2 - pos;
+        int highPos = min + Math.abs(max - min)*3/4 - pos;
+        int lowPos = min + Math.abs(max - min)/4 - pos;
+
+        //if(channel.)
+
+        SerialChannel serialChannel;
+        int maxIdx = ChannelFactory.getMaxSerialIdx();
+        for(int i=ChannelFactory.S1;i<maxIdx;i++){
+            serialChannel = ChannelFactory.getSerialChannel(i);
+            if(serialChannel != null && serialChannel.isOpen()){
+                IBus bus = serialChannel.getBus();
+                if(bus.isChInSample(channel.getChId())) {
+                    if (serialChannel.getBusType() == IBus.ARINC429) {
+                        channel.setBusPrimaryLevel(highPos);
+                        channel.setBusSecondaryLevel(lowPos);
+                    } else {
+                        channel.setBusPrimaryLevel(halfPos);
+                        channel.setBusSecondaryLevel(halfPos);
+                    }
+                }
+            }
+        }
+    }
+    //自动调整X轴的档位
+    void TiaoZenXBySerialCodeBaundRate() {
+
+        IBus bus;
+        int chIdx =  -1;
+        SerialChannel serialChannel;
+        int maxIdx = ChannelFactory.getMaxSerialIdx();
+        for(int i=ChannelFactory.S1;i<maxIdx;i++){
+            serialChannel = ChannelFactory.getSerialChannel(i);
+            if(serialChannel != null && serialChannel.isOpen()) {
+                bus = serialChannel.getBus();
+                if (serialChannel.getBusType() == IBus.I2C ) {
+                    I2CBus i2cBus = (I2CBus)bus;
+                    chIdx = i2cBus.getSclChIdx();
+                }else if(serialChannel.getBusType() == IBus.SPI){
+                    SpiBus spiBus = (SpiBus) bus;
+                    chIdx = spiBus.getClkChIdx();
+                }
+                break;
+            }
+        }
+        if(chIdx >= 0){
+            Channel channel = ChannelFactory.getDynamicChannel(chIdx);
+            if(channel != null){
+                Measure measure = channel.getMeasure();
+                if(measure != null){
+                    if(measure.isMeasureItemValid(Measure.MeasureType.MEASURE_PERIOD)){
+                        float period = measure.getMeasureItemVal(Measure.MeasureType.MEASURE_PERIOD) * 4;
+                        int scaleId = HorizontalAxis.getInstance().timeValtoTimeScaleId(period);
+                        if(!HorizontalAxis.isRoolScale(scaleId)) {
+                            HorizontalAxis.getInstance().setTimeScaleIdOfView(scaleId);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    //自动调整X轴的档位
+    int TiaoZenX(long cycle, int ditAD)
+    {
+        int dang = HorizontalAxis.getInstance().getTimeScaleIdOfView();
+        //如果是直流，则固定在30档：100ns档
+        if(dang == HorizontalAxis.TSI_10mS)
+        {
+            //此处25比20大，是为了设置回差
+            //此处22Hz比20Hz大，也是为了设置回差
+            //>22Hz或波动很小认为还是直流
+            if(cycle > (int)(1e9/22) || ditAD < 25) return HorizontalAxis.TSI_10mS;
+        }
+        else
+        {
+            //≥20Hz或交流份量太小，认为是直流
+            if(cycle >= (int)(1e9/20) || ditAD < 20) return HorizontalAxis.TSI_10mS;
+        }
+        if(cycle == 0) cycle = 1;
+        if(lastSCyles == 0) lastSCyles = cycle;//初始化lastSCyles为第一个周期值
+        if(XiuZenX(cycle) == 0) return dang;
+
+        //找出使周期>=2.2，且更接近于3的档位
+        int i;
+        double fx1 = 0,fx2 = 0;
+        HorizontalAxis horizontalAxis = HorizontalAxis.getInstance();
+        for(i=HorizontalAxis.getMaxGear();i>HorizontalAxis.TSI_100mS;i--)
+        {
+            fx2 = fx1;
+            fx1 = (double) (horizontalAxis.getTimeScaleIdVal(i)
+                    * ScopeBase.getHorizonGridCnt() * 1e9/cycle);
+            if(fx1 >= 3) break;
+        }
+        //计算距离3个周期的绝对误差
+        fx1 = (double) Math.abs(fx1-3.0);
+
+        //看看上一档是否更接近于3个周期
+        if(i != HorizontalAxis.getMaxGear())
+        {
+            //检测上一个档（<3），是否更接近于3
+            if(i<HorizontalAxis.TSI_100mS) i = HorizontalAxis.TSI_100mS;
+            if(fx2 >= 2.2)//至少要显示2.2个周期
+            {
+                fx2 = (double)Math.abs(3.0-fx2);
+                if(fx1 > fx2)
+                {
+                    //更接近，则采用上一个档
+                    i++;
+                    fx1 = fx2;
+                }
+            }
+        }
+
+        //计算出的档位与现在的档位比较，看看那个更接近于3
+        if(dang < HorizontalAxis.TSI_100mS) dang = HorizontalAxis.TSI_100mS;
+        fx2 = (double)(HorizontalAxis.getInstance().getTimeScaleIdVal(dang)*ScopeBase.getHorizonGridCnt()*1e9/cycle);
+        fx2 = (double)Math.abs(fx2-3.0);
+        if(fx2>=0.2)//现在的档位，优惠0.2个周期
+        {
+            fx2 = (double)(fx2-0.2);
+        }
+        else
+        {
+            fx2 = 0;
+        }
+        fx2 = Math.abs(fx2);
+
+        if(fx2 <= fx1) return dang;
+        else return i;
+    }
+
+    private static final int TIME_X_WENDING = 50;
+    int XiuZenX(long cycle)
+    {
+        long del;
+        double fx;
+
+        //计算与基准周期之差
+        if(lastSCyles > cycle) del = lastSCyles-cycle;
+        else del = cycle-lastSCyles;
+        //计算现在的周期与基准周期之间的误差
+        fx = (double)del/lastSCyles;
+
+        if(fx < 0.1)
+        {
+            lastSCyles = cycle;
+            return 1;
+        }
+        else
+        {
+            //误差太大，周期无效，重设基准周期
+            //delay = time.elapsed();
+            lastSCyles = cycle;
+        }
+        return 0;
+    }
+
+    //自动调整Y轴的档位
+    int TiaoZenY(Channel channel,int maxAD, int minAD)
+    {
+
+        int offset = (int) Math.round(channel.getPos());
+        int dang = channel.getVScaleId();
+
+        //取最大和最小值相距本通道Y轴位置的偏移量
+        maxAD = maxAD-offset;
+        minAD = minAD-offset;
+
+        int num=ChannelFactory.getDynamicChannelOpenCount();
+        if(num < 1) num = 1;
+
+        int maxLimt,minLimt;
+        int n = ScopeBase.getVerticalPerGridPixels();
+        if(Auto.getInstance().isAutoRangeEnable())
+        {
+            maxLimt = (int)(((ScopeBase.getHeight()/2)-offset));
+            minLimt = (int)((-(ScopeBase.getHeight()/2)-offset));
+
+            if(maxLimt > 2*n){
+                maxLimt -= n;
+            }else{
+                maxLimt *= 0.8;
+            }
+            if(minLimt < -2*n){
+                minLimt += n;
+            }else{
+                minLimt *= 0.8;
+            }
+        }
+        else
+        {
+            maxLimt = ((ScopeBase.getHeight()/(num*2)));//*0.9;
+            minLimt = (-(ScopeBase.getHeight()/(num*2)));//*0.9;
+            maxLimt *= 0.8;
+            minLimt *= 0.8;
+        }
+        n = (int)(n * 0.2);
+        if(maxAD - maxLimt > n  || minLimt - minAD > n )
+        {
+            if(dang < channel.getMaxGear())
+            {
+
+                dang = channel.calcVScaleId(dang,1);
+            }
+        }
+        else
+        {
+            int i;
+
+            if(channel.getMinGear() == dang) return dang;
+
+            i = dang;
+            double maxV = maxAD*channel.getVerticalPerPix();
+            double minV = minAD*channel.getVerticalPerPix();
+
+            do
+            {
+                //i--;
+                i = channel.calcVScaleId(i,-1);
+
+                maxAD = (int)(maxV/channel.getVerticalPerPix(i));//换算成AD值
+                minAD = (int)(minV/channel.getVerticalPerPix(i));//换算成AD值
+
+
+                if(maxAD > maxLimt || minAD < minLimt)
+                {
+                    i = channel.calcVScaleId(i,1);
+                    break;
+                }
+            }while(i>channel.getMinGear());
+            dang = i;
+        }
+
+        return dang;
+    }
+    //自动模式的触发校正
+    double Auto_TrigReset(Channel channel,int max, int min)
+    {
+        int offset = (int) Math.round(channel.getPos());
+        Trigger trigger = TriggerFactory.getTriggerObj();
+        TriggerLevel triggerLevel = trigger.getTriggerLevel();
+
+        double trigPlace = triggerLevel.getPos();
+        int newValue = max;
+        if (-min > max)
+            newValue = -min;
+        if(510 <= newValue)  return trigPlace; //信号饱和，不再进行触发位置调整
+
+        //判断原触发位置是否在不调整范围内：中心位置的+-%5范围内
+        max -= offset;//去零
+        min -= offset;
+
+        if((trigPlace < max) && (trigPlace > min))
+        {
+            //触发位置允许有+-5%的误差
+            if(Math.abs((double)(trigPlace-min)/(max - min)-0.5) < 0.05)
+            {
+                return trigPlace;
+            }
+        }
+
+        //计算新的触发位置
+        //新触发位置与旧触发位置的偏差在+-4个像素内则不调整触发位置，否则调整新位置
+        newValue = (max+min)/2;
+
+        if(Math.abs(newValue - trigPlace) < 5)//触发位置允许误差+-4个像素
+        {
+            return trigPlace;
+        }
+        return newValue;
+    }
+}

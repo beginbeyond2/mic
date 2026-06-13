@@ -1,0 +1,54 @@
+package com.micsig.tbook.scope.Trigger;
+
+import android.util.Log;
+
+import com.micsig.tbook.scope.ScopeBase;
+
+/**
+ * Created by zhuzh on 2018/3/20.
+ */
+
+public class TriggerLevel {
+    public static final String TAG = "TriggerLevel";
+    public static final int TRIGGER_LEVEL_NORMAL = 0;
+    public static final int TRIGGER_LEVEL_LOW = TRIGGER_LEVEL_NORMAL;
+    public static final int TRIGGER_LEVEL_HIGH = 1;
+    public static final int TRIGGER_LEVEL_MAX = 2;
+    private volatile double pos = 0;//1000对应的值
+    private int triggerLevelType = TRIGGER_LEVEL_NORMAL;
+    private TriggerLevelAction triggerLevelAction;
+    public static boolean isTriggerLevelVaild(int triggerLevelType){
+        return triggerLevelType>= TRIGGER_LEVEL_NORMAL && triggerLevelType < TRIGGER_LEVEL_MAX;
+    }
+    public TriggerLevel(int triggerLevelType){
+        this.triggerLevelType = triggerLevelType;
+        triggerLevelAction = new TriggerLevelAction(this);
+    }
+
+    public synchronized double getPosUI(){
+        return ScopeBase.changeAccuracy(pos * ScopeBase.getToUICoff());
+    }
+
+    public synchronized double getPos(){
+        return pos;
+    }
+
+    public void setPos(double pos,boolean bUser){
+
+        synchronized (this) {
+            this.pos = pos * ScopeBase.getToFPGACoff();
+        }
+        triggerLevelAction.TriggerLevelChange();
+        if (bUser) {
+            triggerLevelAction.triggerLevelUserChange();
+        }
+    }
+    public void setPos(double pos){
+        setPos(pos,false);
+    }
+
+    public int getTriggerLevelType() {
+        return triggerLevelType;
+    }
+
+}

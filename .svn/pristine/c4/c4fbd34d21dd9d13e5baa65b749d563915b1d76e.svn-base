@@ -1,0 +1,47 @@
+package com.micsig.tbook.scope.Calibrate;
+
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+
+import java.util.Observable;
+import java.util.Observer;
+
+public class ProbeCalibrate implements Observer {
+
+    static ProbeCalibrate _instance = null;
+
+    public static ProbeCalibrate getInstance(){
+        if(_instance == null){
+            _instance = new ProbeCalibrate();
+        }
+        return _instance;
+    }
+
+    public boolean isCalibrate(){
+        CalibrateService calibrateService =  CalibrateService.getInstance();
+        return calibrateService.isCalibrate();
+    }
+    public void begin(Object param){
+
+        EventFactory.addEventObserver(EventFactory.EVENT_CALIBRATE_ITEM_FINISH,this);
+        CalibrateService.getInstance().getCalibrate(CalibrateService.PROBE_DA_CALIBRATE).setParam(param);
+        CalibrateService.getInstance().sendMsg(CalibrateService.CALIBRATE_BEGIN_PROBE);
+        CalibrateService.getInstance().start(CalibrateService.PROBE_DA_CALIBRATE);
+    }
+    private void end(){
+        EventFactory.delEventObserver(EventFactory.EVENT_CALIBRATE_ITEM_FINISH,this);
+        CalibrateService.getInstance().end();
+        EventFactory.sendEvent(new EventBase(EventFactory.EVENT_PROBE_CALIBRATE_END));
+    }
+    @Override
+    public void update(Observable o, Object data) {
+        EventBase eventBase = (EventBase)data;
+        if(eventBase.getId() == EventFactory.EVENT_CALIBRATE_ITEM_FINISH){
+
+            end();
+        }
+    }
+    public int getErrorCode(){
+        return CalibrateService.getInstance().getCalibrate(CalibrateService.PROBE_DA_CALIBRATE).getErrcode();
+    }
+}

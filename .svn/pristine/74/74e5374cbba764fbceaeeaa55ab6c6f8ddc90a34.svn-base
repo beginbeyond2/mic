@@ -1,0 +1,92 @@
+package com.micsig.tbook.scope.Calibrate;
+
+import android.util.Log;
+
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.fpga.FPGACommand;
+
+public abstract class ADC implements IADC{
+
+    protected FPGACommand fpgaCommand;
+
+    public ADC(){
+
+    }
+
+
+    public void setFpgaCommand(FPGACommand fpgaCommand) {
+        this.fpgaCommand = fpgaCommand;
+    }
+
+
+    protected void SendADData(int fpgaIdx,int adIdx,int addr,int val){
+        if(this.fpgaCommand != null) {
+            fpgaCommand.SendADData(fpgaIdx,adIdx, addr, val);
+        }
+    }
+    protected void AD_JMode(int fpgaIdx,int val,int v){
+        if(this.fpgaCommand != null){
+            fpgaCommand.AD_JMode(fpgaIdx,val,v);
+        }
+    }
+    @Override
+    public void setChannel(boolean [] sel) {
+        int cnt = 0;
+        for (boolean b : sel) {
+            if (b) {
+                cnt++;
+            }
+        }
+        setChannel(cnt,sel);
+    }
+
+    @Override
+    public void setCalibrate() {
+
+    }
+
+    @Override
+    public int getSampleChannel(boolean[] sel) {
+        //0,1,2,3,
+        int nums;
+        if((sel[0] && sel[1]) || (sel[2] && sel[3])){
+
+            nums = 8;
+        }else {
+            if(sel[0] || sel[1]){
+                if(!(sel[2] || sel[3])){
+                    sel[2] = true;
+                }
+            }else if(sel[2] || sel[3]){
+                sel[0] = true;
+            }
+            nums = 2;
+        }
+        return nums;
+    }
+
+    @Override
+    public int getMaxAdInClk() {
+        return 3000;
+    }
+
+    @Override
+    public int getMaxChNums() {
+        return 2;
+    }
+
+    @Override
+    public void setOffset(int fpgaIdx, int adIdx, int i0_q1, int vol) {
+
+    }
+
+    @Override
+    public void setGain(int fpgaIdx, int adIdx, int i0_q1, int vol) {
+
+    }
+
+    @Override
+    public boolean isChChangeReset() {
+        return false;
+    }
+}

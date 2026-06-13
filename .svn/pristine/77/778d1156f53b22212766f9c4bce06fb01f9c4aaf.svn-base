@@ -1,0 +1,19 @@
+package com.micsig.tbook.scope.fpga;
+
+/**
+ * Created by zhuzh on 2018-4-8.
+ */
+
+public class FPGAReg_CH_Y_PLACE extends FPGAReg {
+    public FPGAReg_CH_Y_PLACE() {
+        super(FPGA_CH_Y_PLACE, 16);
+    }
+
+    public void setVolm(int idx,int val){
+        setVal(idx,0,18,val);
+    }
+    public void setVoln(int idx,int val){
+        setVal(idx,18,11,val);
+    }
+
+}

@@ -1,0 +1,104 @@
+package com.micsig.tbook.scope.surface;
+
+import android.opengl.GLES20;
+
+import com.chillingvan.canvasgl.ICanvasGL;
+import com.chillingvan.canvasgl.glcanvas.BasicTexture;
+import com.chillingvan.canvasgl.textureFilter.BasicTextureFilter;
+
+/**
+ * Created by zhuzh on 2018-11-6.
+ */
+
+public class GrayMapFilter extends BasicTextureFilter {
+
+    private static final String UNIFORM_LIGHTTABLE = "uLightTable";
+    private float []lightTable = new float[256];
+    private static final String GRAY2RGBA_FRAGMENT_SHADER = "" +
+            "precision highp float;\n" +
+            "varying vec2 " + VARYING_TEXTURE_COORD + ";\n" +
+            "uniform sampler2D " + TEXTURE_SAMPLER_UNIFORM + ";\n" +
+            "uniform float " + UNIFORM_LIGHTTABLE + "[256];\n" +
+            "void main() {\n" +
+            "   vec4 color;\n" +
+            "   color = texture2D(" + TEXTURE_SAMPLER_UNIFORM + ", " + VARYING_TEXTURE_COORD + ");\n" +
+            "   color.r = " + UNIFORM_LIGHTTABLE + "[int(color.r*255.0+0.1)];\n" +
+            "   color.g = " + UNIFORM_LIGHTTABLE + "[int(color.g*255.0+0.1)];\n" +
+            "   color.b = " + UNIFORM_LIGHTTABLE + "[int(color.b*255.0+0.1)];\n" +
+            "   gl_FragColor = color;\n" +
+            "}\n";
+
+    public GrayMapFilter(){
+
+        rgbLightTable(0,60);
+    }
+    @Override
+    public String getVertexShader() {
+        return super.getVertexShader();
+    }
+
+    @Override
+    public String getFragmentShader() {
+        return GRAY2RGBA_FRAGMENT_SHADER;
+    }
+
+    @Override
+    public String getOesFragmentProgram() {
+        return super.getOesFragmentProgram();
+    }
+
+    @Override
+    public void onPreDraw(int program, BasicTexture texture, ICanvasGL canvas) {
+        super.onPreDraw(program, texture, canvas);
+
+        GLES20.glUniform1fv(GLES20.glGetUniformLocation(program,UNIFORM_LIGHTTABLE),256,lightTable,0);
+
+    }
+
+    private int lightType = -1;
+    private int light = -1;
+    public void setlightType(int lightType){
+        //rgbLightTable(lightType,light);
+    }
+
+    public void setLight(int light){
+
+        //rgbLightTable(lightType,light);
+
+    }
+
+    private void rgbLightTable(int type,int light){
+        if(type != lightType || this.light != light){
+            for(int i=0;i<256;i++)
+            {
+                lightTable[i] =  i/255.0f;;
+            }
+
+            /*
+            float v = 1.0f/255.0f;
+            int high = 200;
+            int low = 150*light/100;
+            int max = 25;
+            int min = 1;
+            if(type == 0)
+            {
+                high = 255;
+                low = 255*light/100;
+                max = 255;
+                min = 1;
+            }
+
+            lightTable[0] = 0.0f;
+            for(int i=1;i<256;i++)
+            {
+                if(i<min) lightTable[i] = v * (i*low/min);
+                else if(i>max) lightTable[i] =  v * (255-(255-i)*(255-high)/(255-max));
+                else lightTable[i] =  v * (low + (i-min)*(high-low)/(max-min));
+            }
+            */
+
+            this.lightType = type;
+            this.light = light;
+        }
+    }
+}

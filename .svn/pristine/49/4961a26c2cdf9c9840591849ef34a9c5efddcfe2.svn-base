@@ -1,0 +1,4478 @@
+package com.micsig.tbook.scope.fpga;
+
+import android.os.SystemClock;
+import android.util.Log;
+
+import com.micsig.base.DoubleUtil;
+import com.micsig.base.Logger;
+import com.micsig.tbook.hardware.Hardware;
+import com.micsig.tbook.hardware.HardwareProduct;
+import com.micsig.tbook.scope.Action.ChannelHardw;
+import com.micsig.tbook.scope.Auto.FreqCounter;
+import com.micsig.tbook.scope.BuildConfig;
+import com.micsig.tbook.scope.Bus.ARINC429Bus;
+import com.micsig.tbook.scope.Bus.CanBus;
+import com.micsig.tbook.scope.Bus.IBus;
+import com.micsig.tbook.scope.Bus.LinBus;
+import com.micsig.tbook.scope.Calibrate.ADC;
+import com.micsig.tbook.scope.Calibrate.CabteRegister;
+import com.micsig.tbook.scope.Calibrate.CalibrateService;
+import com.micsig.tbook.scope.Calibrate.HW;
+import com.micsig.tbook.scope.Calibrate.HwConfig;
+import com.micsig.tbook.scope.Data.SaveBin;
+import com.micsig.tbook.scope.Data.SyncHeader;
+import com.micsig.tbook.scope.Display.Display;
+import com.micsig.tbook.scope.Sample.MemDepthFactory;
+import com.micsig.tbook.scope.Sample.Sample;
+import com.micsig.tbook.scope.Sample.SegmentSample;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.ScopeFrozen;
+import com.micsig.tbook.scope.Trigger.Trigger;
+import com.micsig.tbook.scope.Trigger.TriggerCommon;
+import com.micsig.tbook.scope.Trigger.TriggerEdge;
+import com.micsig.tbook.scope.Trigger.TriggerFactory;
+import com.micsig.tbook.scope.Trigger.TriggerLogic;
+import com.micsig.tbook.scope.Trigger.TriggerNEdge;
+import com.micsig.tbook.scope.Trigger.TriggerPulseWidth;
+import com.micsig.tbook.scope.Trigger.TriggerRunt;
+import com.micsig.tbook.scope.Trigger.TriggerSlope;
+import com.micsig.tbook.scope.Trigger.TriggerTimeOut;
+import com.micsig.tbook.scope.Trigger.TriggerVideo;
+import com.micsig.tbook.scope.channel.Channel;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.channel.MathChannel;
+import com.micsig.tbook.scope.channel.SerialChannel;
+import com.micsig.tbook.scope.horizontal.HorizontalAxis;
+import com.micsig.tbook.scope.probe.BaseProbe;
+import com.micsig.tbook.scope.probe.ProbeFactory;
+import com.micsig.tbook.scope.vertical.VerticalAxis;
+
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+
+/** Created by zhuzh on 2018/3/13. */
+public class FPGACommand {
+    public static final String TAG = "FPGACommand";
+    private static volatile FPGACommand instance = null;
+
+    public static FPGACommand getInstance() {
+        if (instance == null) {
+            synchronized (FPGACommand.class) {
+                if (instance == null) {
+                    instance = new FPGACommand();
+                }
+            }
+        }
+        return instance;
+    }
+
+    private static final int FPGA_REG_COUNT = 256;
+    private FPGAReg[][] fpgaRegs;
+    private Hardware mHw;
+    private Scope scope;
+
+    private HwConfig hwConfig;
+    // 用于校准
+    private boolean bCalibrate = false;
+    private int CalibrateType = -1;
+    private int pgaVal;
+    private boolean bCalibrate_ad_diffGain = false; // AD增益校准时需要设置为1;
+
+    public void setADdiffGainCalib(boolean bx) {
+        bCalibrate_ad_diffGain = bx;
+    }
+
+    private FPGACommand() {
+
+        mHw = Hardware.getInstance();
+        scope = Scope.getInstance();
+        hwConfig = HwConfig.getInstance();
+        init();
+    }
+
+    public synchronized void setFlagCalibrate(boolean flag) {
+        bCalibrate = flag;
+    }
+
+    public synchronized void setCalibrateType(int calibrateType) {
+        this.CalibrateType = calibrateType;
+    }
+    public synchronized int getCalibrateType(){
+        return this.CalibrateType;
+    }
+    public synchronized boolean isZeroCalibrate(){
+        switch (this.CalibrateType){
+            case CalibrateService.ZERO_CALIBRATE:
+            case CalibrateService.CH_ZERO_CALIBRATE:
+            case CalibrateService.AD_OFFSET_CALIBRATE:
+                return true;
+            default:
+                return false;
+
+        }
+    }
+    public synchronized boolean isChGainCalibrate(){
+        return CalibrateType == CalibrateService.CHGAIN_CALIBRATE;
+    }
+
+    public synchronized void setPgaVal(int pgaVal) {
+        this.pgaVal = pgaVal;
+    }
+
+    public synchronized int getPgaVal(){
+        return this.pgaVal;
+    }
+    public synchronized boolean isCalibrate() {
+        return bCalibrate;
+    }
+
+    private ADC adc;
+
+    private int fpgaNums = 1;
+
+    private int maxAdcChNums = 2;
+
+    private int adcNums = 2;
+
+    private void init() {
+        fpgaNums = hwConfig.getFpgaNums();
+        maxAdcChNums = hwConfig.getAdcMaxChNums();
+        adcNums = hwConfig.getAdcNums();
+        fpgaRegs = new FPGAReg[fpgaNums][FPGA_REG_COUNT];
+        adc = hwConfig.getAdc();
+        adc.setFpgaCommand(this);
+        for (int i = 0; i < fpgaNums; i++) {
+            fpgaRegs[i][FPGAReg.FPGA_SAMPLE_MODE] = new FPGAReg_SAMPLE_MODE();
+            fpgaRegs[i][FPGAReg.FPGA_PJBL_TIMES] = new FPGAReg_PJBL_TIMES();
+            fpgaRegs[i][FPGAReg.FPGA_ZUN_DEPTH] = new FPGAReg_ZUN_DEPTH();
+            fpgaRegs[i][FPGAReg.FPGA_PRE_SAMP] = new FPGAReg_PRE_SAMP();
+            fpgaRegs[i][FPGAReg.FPGA_SCROLL_ROW] = new FPGAReg_SCROLL_ROW();
+            fpgaRegs[i][FPGAReg.FPGA_SLOW_SCALE_SET] = new FPGAReg_SLOW_SCALE_SET();
+            fpgaRegs[i][FPGAReg.FPGA_NUM_CY12] = new FPGAReg_NUM_CY12();
+            fpgaRegs[i][FPGAReg.FPGA_CY_BUCONG] = new FPGAReg_CY_BUCONG();
+            fpgaRegs[i][FPGAReg.FPGA_SERIAL_DEC_DEPTH] = new FPGAReg_SERIAL_DEC_DEPTH();
+            fpgaRegs[i][FPGAReg.FPGA_CH_Y_PLACE] = new FPGAReg_CH_Y_PLACE();
+            fpgaRegs[i][FPGAReg.FPGA_CH_Y_PLACE_BC] = new FPGAReg_CH_Y_PLACE_BC();
+            fpgaRegs[i][FPGAReg.FPGA_TRIG_MODE] = new FPGAReg_TRIG_MODE();
+            fpgaRegs[i][FPGAReg.FPGA_TRIG_AUTO_TRIG_TIME] = new FPGAReg_TRIG_AUTO_TRIG_TIME();
+            fpgaRegs[i][FPGAReg.FPGA_TRIG_RESTRAIN_TIME] = new FPGAReg_TRIG_RESTRAIN_TIME();
+            fpgaRegs[i][FPGAReg.FPGA_TRIG_LEVEL] = new FPGAReg_TRIG_LEVEL();
+            fpgaRegs[i][FPGAReg.FPGA_TRIG_COUPLE] = new FPGAReg_TRIG_COUPLE();
+            fpgaRegs[i][FPGAReg.FPGA_DIS_MODE] = new FPGAReg_DIS_MODE();
+            fpgaRegs[i][FPGAReg.FPGA_SEGMENT_FRAME] = new FPGAReg_SegmentFrame();
+            fpgaRegs[i][FPGAReg.FPGA_SEGMENT_NUMS] = new FPGAReg_SEGMENT_NUMS();
+            fpgaRegs[i][FPGAReg.FPGA_SEGMENT_START] = new FPGAReg_SEGMENT_START();
+            fpgaRegs[i][FPGAReg.FPGA_DISP_CHA1] = new FPGAReg_DISP_CHA();
+            fpgaRegs[i][FPGAReg.FPGA_DISP_SL] = new FPGAReg_DISP_SL();
+            fpgaRegs[i][FPGAReg.FPGA_DISP_PLACE_MAIN] = new FPGAReg_DISP_PLACE_MAIN();
+            fpgaRegs[i][FPGAReg.FPGA_DISP_WAVE] = new FPGAReg_DISP_WAVE();
+            fpgaRegs[i][FPGAReg.FPGA_DISP_PLACE_SL] = new FPGAReg_DISP_PLACE_SL();
+            fpgaRegs[i][FPGAReg.FPGA_DISP_SERI] = new FPGAReg_DISP_SERI();
+            fpgaRegs[i][FPGAReg.FPGA_AD_ZERO] = new FPGAReg_AD_ZERO();
+            fpgaRegs[i][FPGAReg.FPGA_CH_OFFSET_DA12] = new FPGAReg_CH_OFFSET_DA12();
+            fpgaRegs[i][FPGAReg.FPGA_DOT_MATRIX] = new FPGAReg_DOT_MATRIX();
+            fpgaRegs[i][FPGAReg.FPGA_COMMAND] = new FPGAReg_COMMAND();
+            fpgaRegs[i][FPGAReg.FPGA_CH_DISPLAY] = new FPGAReg_CH_DISPLAY();
+            fpgaRegs[i][FPGAReg.FPGA_BUS_TYPE] = new FPGAReg_BUS_TYPE();
+            fpgaRegs[i][FPGAReg.FPGA_BUS_LEVEL] = new FPGAReg_BUS_LEVEL();
+            fpgaRegs[i][FPGAReg.FPGA_BUS_PRIMARY] = new FPGAReg_BUS_PRIMARY();
+            fpgaRegs[i][FPGAReg.FPGA_BUS_SECONDARY] = new FPGAReg_BUS_SECONDARY();
+            fpgaRegs[i][FPGAReg.FPGA_BUS_PRIMARY_EXT] = new FPGAReg_BUS_PRIMARY_EXT();
+            fpgaRegs[i][FPGAReg.FPGA_BUS_SECONDARY_EXT] = new FPGAReg_BUS_SECONDARY_EXT();
+            fpgaRegs[i][FPGAReg.FPGA_BUS1_ADDR] = new FPGAReg_BUS_ADDR(FPGAReg.FPGA_BUS1_ADDR);
+            fpgaRegs[i][FPGAReg.FPGA_BUS2_ADDR] = new FPGAReg_BUS_ADDR(FPGAReg.FPGA_BUS2_ADDR);
+            fpgaRegs[i][FPGAReg.FPGA_BUS1_CAN_EXT] = new FPGAReg_BUS_CAN_EXT(FPGAReg.FPGA_BUS1_CAN_EXT);
+            fpgaRegs[i][FPGAReg.FPGA_BUS2_CAN_EXT] = new FPGAReg_BUS_CAN_EXT(FPGAReg.FPGA_BUS2_CAN_EXT);
+            fpgaRegs[i][FPGAReg.FPGA_CH_RESISTANCE] = new FPGAReg_Resistance();
+            fpgaRegs[i][FPGAReg.FPGA_EXT_GRIGGER_LEVEL] = new FPGAReg_ExtTriggerLevel();
+            fpgaRegs[i][FPGAReg.FPGA_SPI_EXT] = new FPGAReg_SPI_EXT();
+            fpgaRegs[i][FPGAReg.FPGA_DISP_RESOLUTION] = new FPGAReg_DISP_RESOLUTION();
+            fpgaRegs[i][FPGAReg.FPGA_SIGNAL_FREQ] = new FPGAReg_SIGNAL_FREQ();
+            fpgaRegs[i][FPGAReg.FPGA_CH_CAPACITANCE1] = new FPGAReg_CH_CAPACITANCE();
+            fpgaRegs[i][FPGAReg.FPGA_PROBE_DA12] = new FPGAReg_PROBE_DA12();
+//            fpgaRegs[i][FPGAReg.FPGA_TRIG_OFFSET1] = new FPGAReg_TRIG_OFFSET();
+            fpgaRegs[i][FPGAReg.FPGA_TEMPERATURE] = new FPGAReg_TEMPERATURE();
+            fpgaRegs[i][FPGAReg.FPGA_FAN_SPEED] = new FPGAReg_FanSpeed();
+            fpgaRegs[i][FPGAReg.FPGA_CH_DSIPLAY_POS] = new FPGAReg_CH_DISPLAY_POS();
+            fpgaRegs[i][FPGAReg.FPGA_ZOOM_SMALL_PLACE] = new FPGAReg_ZoomSmallPlace();
+            fpgaRegs[i][FPGAReg.FPGA_CH_CAPACITANCE1_16BIT] = new FPGAReg_CH_CAPACITANCE_16BIT();
+            fpgaRegs[i][FPGAReg.FPGA_CH_CAP_DA12] = new FPGAReg_CH_CAP_DA();
+            for (int j = 0; j < FPGA_REG_COUNT; j++) {
+                if (fpgaRegs[i][j] != null) {
+                    fpgaRegs[i][j].setFpgaIdx(i);
+                }
+            }
+        }
+    }
+
+    public static boolean isFpgaChIdx(int fpgaIdx,int chIdx){
+        return chIdx >=  beginChIdx(fpgaIdx) && chIdx < endChIdx(fpgaIdx);
+    }
+
+    public static int beginChIdx(int fpgaIdx) {
+        return ChannelFactory.CH1 + fpgaIdx * ChannelFactory.CH_CNT / 2;
+    }
+
+    public static int endChIdx(int fpgaIdx) {
+        return ChannelFactory.CH1 + (fpgaIdx + 1) * ChannelFactory.CH_CNT / 2;
+    }
+
+    public static int beginSerialIdx(int fpgaIdx) {
+        return ChannelFactory.S1 + fpgaIdx * ChannelFactory.SERIAL_CNT / 2;
+    }
+
+    public static int endSerialIdx(int fpgaIdx) {
+        return ChannelFactory.S1 + (fpgaIdx + 1) * ChannelFactory.SERIAL_CNT / 2;
+    }
+
+    public static int chIdxToFpgaIdx(int chIdx) {
+        return (chIdx - ChannelFactory.CH1) / (ChannelFactory.CH_CNT / 2);
+    }
+
+    public static int serialIdxToFpgaIdx(int serialIdx) {
+        return (serialIdx - ChannelFactory.S1) / (ChannelFactory.SERIAL_CNT / 2);
+    }
+
+    public void updateChCapacitance(int fpgaIdx) {
+
+        CabteRegister cabteRegister = CabteRegister.getInstance();
+
+        FPGAReg_CH_CAPACITANCE_16BIT regChCapacitance16BIT =
+                (FPGAReg_CH_CAPACITANCE_16BIT)
+                        getFPGAReg(fpgaIdx, FPGAReg.FPGA_CH_CAPACITANCE1_16BIT);
+        FPGAReg_CH_CAPACITANCE reg =
+                (FPGAReg_CH_CAPACITANCE) getFPGAReg(fpgaIdx, FPGAReg.FPGA_CH_CAPACITANCE1);
+
+        FPGAReg_CH_CAP_DA regChCapDa = (FPGAReg_CH_CAP_DA)getFPGAReg(fpgaIdx,FPGAReg.FPGA_CH_CAP_DA12);
+
+        Channel channel = null;
+        int beginIdx = beginChIdx(fpgaIdx);
+        int endIdx = endChIdx(fpgaIdx);
+        int dwidx = 0;
+
+        int [] daChMap = {1,3,2,0};
+        for (int i = beginIdx; i < endIdx; i++) {
+            channel = ChannelFactory.getDynamicChannel(i);
+            if (channel != null) {
+
+                dwidx = CabteRegister.getRatioIdx(channel.getResistanceType(),channel.getVScaleVal() / channel.getProbeRate());
+                int xvv = cabteRegister.getChCapacitanceHigh(i,dwidx);
+                regChCapacitance16BIT.setHigh(i-beginIdx, xvv);
+                regChCapDa.setHigh(daChMap[i-beginIdx], xvv);
+                reg.setHigh(i-beginIdx, xvv);
+                reg.setTotal(i-beginIdx, 0xFF);
+            }
+        }
+        sendCommand(regChCapDa);
+        sendCommand(regChCapacitance16BIT);
+        sendCommand(reg);
+        updataReg(fpgaIdx);
+    }
+
+    public void resume() {
+        Log.d("MHO68V2","resume" );
+        Arrays.fill(vol2A_last, -1);
+        Arrays.fill(vol2B_last, -1);
+        Arrays.fill(vScaleLast, -1);
+        coef_fpga_mho_bak[0] = null;
+        coef_fpga_mho_bak[1] = null;
+        coef_seach_mho_bak[0] = null;
+        coef_seach_mho_bak[1] = null;
+        Arrays.fill(Val0x31_last, -1);
+        Arrays.fill(Val0x3A_last, -1);
+        Arrays.fill(Val0x3B_last, -1);
+        Arrays.fill(cnt_last, -1);
+        Arrays.fill(sampleChState,false);
+        for (int i = 0; i < fpgaNums; i++) {
+            FPGAReg_DOT_MATRIX reg = (FPGAReg_DOT_MATRIX) getReg(i, FPGAReg.FPGA_DOT_MATRIX);
+            reg.resetBak();
+        }
+    }
+
+    public static void sendCmd(FPGAReg reg) {
+        getInstance().sendCommand(reg);
+    }
+
+    public static FPGAReg getReg(int idx, int regIdx) {
+        return getInstance().getFPGAReg(idx, regIdx);
+    }
+
+    public FPGAReg getFPGAReg(int idx, int regIdx) {
+        if(fpgaRegs.length > idx && fpgaRegs[idx].length > regIdx) {
+            return fpgaRegs[idx][regIdx];
+        }
+        return null;
+    }
+
+    public void runCommand(int idx, int regIdx) {
+        FPGAReg reg = getFPGAReg(idx, regIdx);
+        if (reg != null) {
+            reg.onCommand();
+            mHw.sendFpgaCmd(reg.getFpgaIdx(), reg.getCommand(), reg.getCommandLength());
+        }
+    }
+
+    public void sendCommand(FPGAReg reg, int len) {
+        if (reg != null) {
+            mHw.sendFpgaCmd(reg.getFpgaIdx(), reg.getCommand(), len);
+        }
+    }
+
+    public void sendCommand(FPGAReg reg) {
+        sendCommand(reg, reg.getCommandLength());
+    }
+
+    public void recvCommand(FPGAReg w_reg, FPGAReg r_reg) {
+        if (w_reg != null && r_reg != null) {
+            mHw.recvFpgaCmd(
+                    w_reg.getFpgaIdx(),
+                    w_reg.getCommand(),
+                    w_reg.getCommandLength(),
+                    r_reg.getCommand());
+        }
+    }
+
+    public void recvCommand(FPGAReg w_reg, ByteBuffer byteBuffer) {
+        if (w_reg != null && byteBuffer != null) {
+            mHw.recvFpgaCmd(
+                    w_reg.getFpgaIdx(), w_reg.getCommand(), w_reg.getCommandLength(), byteBuffer);
+        }
+    }
+
+
+
+    public void cmdSegment(int fpgaIdx) {
+        runCommand(fpgaIdx, FPGAReg.FPGA_SEGMENT_START);
+        runCommand(fpgaIdx, FPGAReg.FPGA_SEGMENT_NUMS);
+    }
+
+    boolean bClkOut = false;
+    boolean bChPowerEnable = true;
+    public void gntR_sampMode(int fpgaIdx) {
+        runCommand(fpgaIdx, FPGAReg.FPGA_SAMPLE_MODE);
+        runCommand(fpgaIdx, FPGAReg.FPGA_SEGMENT_FRAME);
+        updateChCapacitance(fpgaIdx);
+
+        int val = 0;
+        Sample sample = Sample.getInstance();
+        if(sample.isTriggerInOut()){
+            val |= 1;
+        }
+
+        if(sample.isClkInOut()){
+            val |= 2;
+        }
+
+        if(bClkOut != sample.isClkInOut()){
+            bChPowerEnable = false;
+            bClkOut = sample.isClkInOut();
+        }
+
+        SendClkInOut(fpgaIdx,val);
+        mHw.setTriggerInOut(sample.isTriggerInOut());
+        mHw.setClkInOut(sample.isClkInOut());
+    }
+    public void chPowerEnable(){
+        if(adc.isChChangeReset()) {
+            if (!bChPowerEnable) {
+                Arrays.fill(sampleChState, false);
+                SendAdc_ch_change(0);
+                bChPowerEnable = true;
+            }
+        }
+    }
+
+    public void gntR_pinJ_baoL(int fpgaIdx) {
+        runCommand(fpgaIdx, FPGAReg.FPGA_PJBL_TIMES);
+    }
+
+    public void gntR_zun_depth(int fpgaIdx) {
+        runCommand(fpgaIdx, FPGAReg.FPGA_ZUN_DEPTH);
+    }
+
+    // 计算每次刷新多少列
+    private int getColsPerRefresh_scollMode(int colsOneScreen) {
+        Scope scope = Scope.getInstance();
+
+        // 计算一屏的时间
+        int t1 = (int) (scope.timeScale_mainBoard() * ScopeBase.getHorizonGridCnt() * 1000 + 0.1);
+        // Logger.i(TAG, "one screeen time(ms)="+t1);
+        if (t1 < 1) {
+            t1 = 1;
+        }
+
+        int perT = 36;
+//        if (HardwareProduct.isMHO())
+        {
+            perT = 20;
+        }
+
+        int cols = perT * colsOneScreen;
+        if (cols % t1 != 0) cols = cols / t1 + 1;
+        else cols = cols / t1;
+        if (cols == 0) cols = 1;
+        Logger.i(TAG, "每次刷新列数=" + cols + ", 时间=" + (cols * t1 / colsOneScreen));
+        return cols;
+    }
+
+    public void gntR_samp_place(int fpgaIdx) {
+        FPGAReg_PRE_SAMP preSampReg = (FPGAReg_PRE_SAMP) getFPGAReg(fpgaIdx, FPGAReg.FPGA_PRE_SAMP);
+        FPGAReg_SCROLL_ROW scrollRowReg =
+                (FPGAReg_SCROLL_ROW) getFPGAReg(fpgaIdx, FPGAReg.FPGA_SCROLL_ROW);
+        FPGAReg_SLOW_SCALE_SET slowScaleSetReg =
+                (FPGAReg_SLOW_SCALE_SET) getFPGAReg(fpgaIdx, FPGAReg.FPGA_SLOW_SCALE_SET);
+
+        HorizontalAxis xAxis = HorizontalAxis.getInstance();
+        Scope scope = Scope.getInstance();
+        Sample sample = Sample.getInstance();
+        int zunDepth = sample.getSampleMemDepth();
+        int virSceenCols = ScopeBase.getWidth();
+
+        // 计算屏数
+        double screeNum = scope.screenNum_Main(scope.isRun(true)); // 最多只会有2位小�?
+
+        int type;
+        BigInteger t = BigInteger.valueOf(0);
+
+        if (scope.isInScrollMode()) // 滚动模式
+        {
+            type = 0;
+        } else {
+            type = 1;
+            // (触发位置时间*准存储深度)/(显示屏数*一屏的时间)
+            try {
+                long m = xAxis.getTimePosOfView(HorizontalAxis.WPI_STANDARD);
+
+                t = BigInteger.valueOf(m);
+                m = (long) zunDepth * 100; // 因为屏数可能为小数，所以放大100倍
+                t = t.multiply(BigInteger.valueOf(m));
+
+                m = (long) (screeNum * 100 + 0.1);
+                BigInteger t2 = BigInteger.valueOf(m);
+                m = scope.timeOneScreen_main();
+                t2 = t2.multiply(BigInteger.valueOf(m));
+                t = t.divide(t2);
+            } catch (Exception e) {
+                e.printStackTrace();
+                Log.e(TAG, e.toString());
+            }
+        }
+
+        if (type == 0) // 滚动模式
+        {
+            // 预采样深度计�?
+
+            preSampReg.setPreVol(0);
+
+            // 后采样时间计�?
+            // =准存储深�?每次滚动的时间Tg/一屏的时间�?
+            int x = virSceenCols;
+            int cols = getColsPerRefresh_scollMode(x);
+            if ((cols & 0x01) == 0x01) {
+                cols++;
+            }
+            // 计算最后一次刷新时，超出屏幕部�?
+            int n = x / cols;
+            int rev = x % cols;
+            if (rev != 0) {
+                n += 1;
+                rev = cols - rev;
+            }
+            scrollRowReg.setColsPerRefresh(cols);
+            scrollRowReg.setLastInvalidCols(rev);
+
+            slowScaleSetReg.setNumsReferesh(n);
+
+            long c = zunDepth;
+
+            c = cols * c / x;
+            preSampReg.setPostVolL((int) (c & 0xFFFFFFFFL));
+            preSampReg.setPostVolH((int) ((c >>> 32) & 0xFFFFFFFFL));
+
+        } else {
+            // 预采样深度计算
+            // 延迟模式
+            // =准存储深度/2-(触发位置时间*准存储深度)/(显示屏数*一屏的时间);
+            // 非延迟模式
+            // =准存储深度/2-(触发位置像素时间*准存储深度)/一屏的像素时间；
+            long m = (long) zunDepth / 2;
+            BigInteger c = BigInteger.valueOf(m);
+            c = c.subtract(t);
+            // 钳位处理
+            m = (long) zunDepth;
+            if (c.compareTo(BigInteger.valueOf(0)) < 0) {
+                c = BigInteger.valueOf(0);
+            } else if (c.compareTo(BigInteger.valueOf(m)) > 0) {
+                c = BigInteger.valueOf(m);
+            }
+            int val = c.intValue();
+
+            preSampReg.setPreVol(val);
+            if (bPrintf) Logger.i("preSampVol=" + val);
+
+            // 后采样时间计算
+            // 延迟模式
+            // =准存储深度/2+(触发位置时间*准存储深度)/(显示屏数*一屏的时间);
+            // 非延迟模式
+            // =准存储深度/2+(触发位置像素时间*准存储深度)/一屏的像素时间；
+            m = (long) zunDepth / 2;
+            c = BigInteger.valueOf(m);
+            c = c.add(t);
+            // 钳位处理
+            if (c.compareTo(BigInteger.valueOf(0)) < 0) {
+                c = BigInteger.valueOf(0);
+            }
+            long lval = c.longValue();
+            if (bPrintf) Logger.i("PostVol=" + lval);
+            preSampReg.setPostVolL((int) (lval & 0xFFFFFFFFL));
+            preSampReg.setPostVolH((int) ((lval >>> 32) & 0xFFFFFFFFL));
+
+            if (scope.isInSlowScaleMode()) { // 慢时基模式处理
+                // 后采样时间计算
+                // =准存储深度*每次滚动的时间Tg/一屏的时间;
+                int x = virSceenCols;
+                int cols = getColsPerRefresh_scollMode(x);
+                if ((cols & 0x01) == 0x01) {
+                    cols++;
+                }
+
+                // 前采样列数=预采样深度/每列多少组采样点
+                double y = (double) zunDepth / x;
+                slowScaleSetReg.setColsPreSamp((int) (preSampReg.getPreVol() / y + 0.5));
+                slowScaleSetReg.setSampsPerLie((int) (y + 0.1));
+                int temp = (int) (y * 100 + 0.5);
+                temp = temp % 100;
+
+                // 每列采样数有可能是小数
+                switch (temp) {
+                    case 25: // .25
+                        slowScaleSetReg.setSampsPerLie_pt(1);
+                        temp = 4;
+                        break;
+                    case 50: // .5
+                        slowScaleSetReg.setSampsPerLie_pt(2);
+                        temp = 2;
+                        break;
+                    case 75: // .75
+                        slowScaleSetReg.setSampsPerLie_pt(3);
+                        temp = 4;
+                        break;
+                    default:
+                        slowScaleSetReg.setSampsPerLie_pt(0);
+                        temp = 0;
+                        break;
+                }
+                if (temp != 0) cols = cols + temp - cols % temp;
+                scrollRowReg.setColsPerRefresh(cols);
+
+                // 计算触发位置
+                long z = (long) (lval / y + 0.01); // 后采样列数
+                // 后采样时间必须是整数列，否者会产生误差
+                lval = (long) (z * y + 0.01);
+                int xx = 0; // 触发位置在屏幕内
+                if (z > x) {
+                    // 触发位置在屏幕外，左边
+                    xx = (int) (z - x);
+                }
+                slowScaleSetReg.setColsTrigPlace(xx);
+
+                // 计算后采样需要完成多少次刷新
+                // 计算最后一次刷新时，超出屏幕部分
+                int n = (int) (z / cols);
+                int rev = (int) (z % cols);
+                if (rev != 0) {
+                    n += 1;
+                    rev = cols - rev;
+                }
+
+                scrollRowReg.setLastInvalidCols(rev);
+                slowScaleSetReg.setNumsReferesh(n);
+                // long cc = zunDepth;
+                // cc = cc * cols / virSceenCols;
+                long cc = (long) (cols * y + 0.1);
+                preSampReg.setPostVolL((int) (cc & 0xFFFFFFFFL));
+                preSampReg.setPostVolH((int) ((cc >>> 32) & 0xFFFFFFFFL));
+
+                preSampReg.setPreVol((int) (preSampReg.getPreVol() + y));
+
+                // 计算第一次刷新时，需要多少数据
+                long z1 = lval - zunDepth;
+                FPGAReg_ZUN_DEPTH zun_depthReg =
+                        (FPGAReg_ZUN_DEPTH) getFPGAReg(fpgaIdx, FPGAReg.FPGA_ZUN_DEPTH);
+                if (z1 <= 0) {
+                    zun_depthReg.Set_zunDepth((int) (cc - z1));
+                } else {
+                    zun_depthReg.Set_zunDepth((int) (cc - z1 % cc));
+                }
+                sendCommand(zun_depthReg);
+            }
+        }
+        sendCommand(scrollRowReg);
+        sendCommand(preSampReg);
+        sendCommand(slowScaleSetReg);
+        if (type == 0) {
+            setDataFreq(fpgaIdx, 30, 5);
+        }
+    }
+
+    public void gntR_CouY(int fpgaIdx) {
+        Scope scope = Scope.getInstance();
+        FPGAReg_NUM_CY12 couyReg = (FPGAReg_NUM_CY12) getFPGAReg(fpgaIdx, FPGAReg.FPGA_NUM_CY12);
+        FPGAReg_CY_BUCONG couybcReg =
+                (FPGAReg_CY_BUCONG) getFPGAReg(fpgaIdx, FPGAReg.FPGA_CY_BUCONG);
+
+        // 始终以最高采样速率采样，然后抽�?
+        int couY = 1;
+        long a = scope.maxSampClk();
+        a = a * 1000 * 1000 * 1000L; // 换算成mHz
+        double fs = scope.getSampleRate(scope.isRun(true));
+
+        long b = (long) (fs * 1000 + 0.1);
+
+        int cy = (int) (a / b);
+        if (a % b != 0) {
+            Log.e(TAG, "samp: can not couY to " + b + "mHz");
+        }
+        couyReg.setVol12(cy);
+
+        if (cy == 1) {
+            couY = 0;
+        }
+
+        switch (scope.getChannelSampOnCnt(scope.isRun(true))) {
+            case 2:
+            case 4:
+                cy = (int) Math.ceil((double) cy / 5.0);
+                break;
+            case 8:
+            default:
+                cy = (int) Math.ceil((double) cy / 2.5);
+                break;
+        }
+
+        couyReg.setVol34(cy);
+
+        sendCommand(couyReg);
+        couybcReg.setCyType12(couY);
+        couybcReg.setCyType34(couY);
+        sendCommand(couybcReg);
+    }
+
+    public void gntR_serial_dec_depth(int fpgaIdx) {
+        FPGAReg_SERIAL_DEC_DEPTH serialDecReg =
+                (FPGAReg_SERIAL_DEC_DEPTH) getFPGAReg(fpgaIdx, FPGAReg.FPGA_SERIAL_DEC_DEPTH);
+        Display display = Display.getInstance();
+        Scope scope = Scope.getInstance();
+
+        // 显示屏数*一屏的时间/40ns�?
+        // 计算屏数
+        double screeNum; // 最多只会有2位小�?
+        long timeOneScreen;
+
+        if (display.isZoom()) {
+            screeNum = scope.screenNum_zoom(scope.isRun(true));
+            timeOneScreen = scope.timeOneScreen_zoom();
+        } else {
+            screeNum = scope.screenNum_Main(scope.isRun(true));
+            timeOneScreen = scope.timeOneScreen_main();
+        }
+
+        long x = (long) (screeNum * 100 + 0.1);
+        x = x * timeOneScreen / (100 * 40 * 10000); // 0.1ps
+        serialDecReg.setDecDepth((int) x);
+
+        sendCommand(serialDecReg);
+    }
+
+    private double channelCoef(int chIdx, int idx) {
+        double val = 0;
+        Channel channel = ChannelFactory.getDynamicChannel(chIdx);
+        if (channel != null) {
+            CabteRegister cabteRegister = CabteRegister.getInstance();
+            double vScaleVal =
+                    VerticalAxis.clampMin(channel.getVScaleVal() / channel.getProbeRate(),channel.getResistanceType());
+            if (isCalibrate()
+                    && isZeroCalibrate()) {
+
+                val =
+                        cabteRegister.vol_ChannelCoef_defaultEx(channel.getChId(),
+                                channel.getVScaleId(), pgaVal & 0xFF);
+            } else {
+                val = cabteRegister.calc_coefChannel(chIdx, vScaleVal, idx);
+            }
+        }
+        Log.d("MHO38V1","ch" + chIdx + ":" + (-val) + "," + channel.getVScaleIdVal());
+        return -val;
+    }
+
+    private synchronized double getChannelZero(int chIdx) {
+        float val = 0;
+
+        CabteRegister cabteRegister = CabteRegister.getInstance();
+        int[] result = {pgaVal, 0, 0, 0,0};
+        Channel channel = ChannelFactory.getDynamicChannel(chIdx);
+        if (channel != null) {
+            double vScaleVal =
+                    VerticalAxis.clampMin(channel.getVScaleVal() / channel.getProbeRate(),channel.getResistanceType());
+            int idx = CabteRegister.getRatioIdx(channel.getResistanceType(),vScaleVal);
+            if (isCalibrate()
+                    && isZeroCalibrate()) {
+                val = cabteRegister.getChannelZero(chIdx, idx, pgaVal & 0xFF);
+            } else {
+                cabteRegister.calc_pga_fs_gain(channel.getChId(), vScaleVal, result);
+
+                val = cabteRegister.getChannelZero(chIdx, idx, result[0] & 0xFF);
+
+            }
+        }
+
+        return DoubleUtil.Float2Double(val);
+    }
+
+    private int getDA_Vol(Channel channel) {
+
+        boolean bInvert = channel.isInvert();
+        double chOffset = channel.getZero() + channel.getChOffset() * ScopeBase.getToFPGACoff();
+        double offset,coef,zero;
+        int vol;
+        zero = getChannelZero(channel.getChId());
+
+        if(!(HardwareProduct.isMHO38V1()
+                || HardwareProduct.isMHO28V1())){
+            int dang = CabteRegister.getRatioIdx(Channel.RESISTANCE_1M,channel.getVScaleVal()/channel.getProbeRate());
+            if (channel.getResistanceType() == Channel.RESISTANCE_1M
+                    && dang != HW.RATIO_DANG_1) {
+                bInvert = !bInvert;
+                chOffset = - chOffset;
+            }
+        }
+        if (bInvert) {
+            offset = (double) channel.getPos() - chOffset;
+            offset /= channel.getYFactor();
+            coef = channelCoef(channel.getChId(), offset >= 0 ? 0 : 1);
+            vol = (int) Math.round(zero - coef * offset);
+
+        }else{
+            offset = (double) channel.getPos() + chOffset;
+            offset /= channel.getYFactor();
+            coef = channelCoef(channel.getChId(), offset >= 0 ? 0 : 1);
+            vol = (int) Math.round(zero + coef * offset);
+        }
+        if (vol < 0) {
+            vol = 0;
+        } else if (vol > 65535){
+            vol = 65535;
+        }
+        return vol;
+    }
+
+    private double getValueDifferentCoef(int chIdx) {
+        return 1.0;
+    }
+
+    private double ADGear2PixBuf_fromVScale(int chIdx, int volScaleId) {
+        return hwConfig.getAdValPerPix();
+    }
+
+    private static final int MAX_m = ((1 << 17) - 5);
+    private static final int MIN_m = (-(1 << 17) + 5);
+
+    public void gntR_ch_y_place(int fpgaIdx) {
+        Scope scope = Scope.getInstance();
+        if (!scope.isRun(true)) return;
+        FPGAReg_CH_Y_PLACE chyplaceReg =
+                (FPGAReg_CH_Y_PLACE) getFPGAReg(fpgaIdx, FPGAReg.FPGA_CH_Y_PLACE);
+        FPGAReg_CH_Y_PLACE_BC chyplacebcReg =
+                (FPGAReg_CH_Y_PLACE_BC) getFPGAReg(fpgaIdx, FPGAReg.FPGA_CH_Y_PLACE_BC);
+
+        Display display = Display.getInstance();
+        int[] m = {0, 0, 0, 0};
+        int[] n = {0, 0, 0, 0};
+        int[] place_bc = {0, 0, 0, 0};
+        // int chIdx = 0;
+        Channel channel;
+
+        int beginIdx = beginChIdx(fpgaIdx);
+        int endIdx = endChIdx(fpgaIdx);
+        int j;
+        boolean[] chSample = new boolean[ChannelFactory.CH_CNT];
+        int chCnt = scope.getChannelSampOnCnt(scope.isRun(true), chSample);
+        int halfHeight = ScopeBase.getHeight() / 2;
+        for (int i = beginIdx; i < endIdx; i++) {
+            j = i - beginIdx;
+            if (!chSample[i]) continue;
+            channel = ChannelFactory.getDynamicChannel(i);
+            if (channel == null) {
+                continue;
+            }
+
+            int dang = channel.getVScaleId();
+            double pos = channel.getPos() / channel.getYFactor();
+            double zero = getChannelZero(channel.getChId());
+            double coef = channelCoef(channel.getChId(), pos >= 0 ? 0 : 1); // 取偏移量系数
+            double iValue = zero + pos * coef;
+            if (iValue < 0) {
+                iValue = 0;
+            } else if (iValue > 65535) {
+                iValue = 65535;
+            }else{
+                Logger.d(TAG, "ch:" + channel.getChId() + ",zero:" + zero + ",pos:" + pos + ",coef:" + coef);
+            }
+
+            double z = (Math.round(iValue) - zero) / coef; // 计算通道指示器相对与中心的偏移（上负下正）
+
+            // config.vPosOfZeroFix(true, chIdx) = z;
+            channel.setPosFix(z * channel.getYFactor()); // 保存修正值，在静态波形、触发、查找表中会用到
+
+            // 因档位不同，取不同的【AD值与屏幕像素的对应系数】
+            double a = getValueDifferentCoef(channel.getChId());
+            double k = ADGear2PixBuf_fromVScale(channel.getChId(), dang) * a;
+
+            // printf("channel %d diffent vol=%f\n", i+1, a);
+            // fAD2Pix[i] = k;
+            channel.setAdPix(k);
+            // 当通道偏移量移动到比较远时，可能导致m计算时溢出，这是进行相关处理
+            if (z > 500) {
+                place_bc[j] = (int) (-(z - 500));
+                z = 500;
+
+            } else if (z < -500) {
+                place_bc[j] = (int) (-(z + 500));
+                z = -500;
+            }
+
+            // iPlace_bc[i] = place_bc[i];
+            channel.setPlaceVal(place_bc[j] * hwConfig.getPix2AdFactor());
+            place_bc[j] = 0;
+
+            // place_bc[i] = z1;
+
+            double fx = z * hwConfig.getYPlaceFactor() / k ;
+
+            if (fx > MAX_m) fx = MAX_m;
+            else if (fx < MIN_m) fx = MIN_m;
+
+            int vol_m = (int) (fx + (fx > 0 ? 0.5 : -0.5)); // 进行舍入
+            int vol_n = (int) (k * 256 + 0.5);
+            // if(bXYMode) vol_n = 1*256;
+            if (display.isXYMode()
+                    || (isCalibrate() && isChGainCalibrate())) {
+                vol_n = 256;
+                channel.setPlaceVal(0);
+            }
+
+            m[j] = -vol_m;
+            n[j] = vol_n;
+
+            channel.setM(m[j]);
+            channel.setN(n[j]);
+
+        }
+
+
+        int xcnt = 0;
+        int sIdx = 0;
+        int s1 = 0;
+        int sbit = 0;
+        switch (chCnt) {
+            case 2:
+                xcnt = 4;
+                break;
+            case 4:
+                xcnt = 2;
+                break;
+            case 8:
+            default:
+                xcnt = 1;
+                break;
+        }
+
+        int idx = 0;
+        for (int i = beginIdx; i < endIdx; i++) {
+            idx = i - beginIdx;
+            if (chSample[i]) {
+                for (j = 0; j < xcnt; j++) {
+                    chyplaceReg.setVolm(sIdx + j, m[idx]);
+                    chyplaceReg.setVoln(sIdx + j, n[idx]);
+                    chyplacebcReg.setVal(s1, sbit, 16, place_bc[idx]);
+                    sbit += 16;
+                    if (sbit >= 32) {
+                        sbit = 0;
+                        s1 += 1;
+                    }
+                }
+                sIdx += xcnt;
+                chCnt--;
+            }
+            if (chCnt == 0) break;
+        }
+        sendCommand(chyplaceReg);
+        sendCommand(chyplacebcReg);
+    }
+
+    public void gntR_trigMode(int fpgaIdx) {
+        Scope scope = Scope.getInstance();
+        FPGAReg_TRIG_MODE reg = (FPGAReg_TRIG_MODE) getFPGAReg(fpgaIdx, FPGAReg.FPGA_TRIG_MODE);
+        reg.setVal(0, 4, 0);
+        reg.setVal(12, 15, 0xF);
+        reg.setJiaoZhun(bCalibrate_ad_diffGain ? 1 : 0); // AD增益校准时需要设置为1;
+
+        TriggerCommon triggerCommon = TriggerFactory.getInstance().getTriggerCommon();
+        Trigger trigger = TriggerFactory.getInstance().getTrigger();
+        int beginIdx = beginChIdx(fpgaIdx);
+        int endIdx = endChIdx(fpgaIdx);
+        boolean[] sel = new boolean[ChannelFactory.CH_CNT];
+        int chCnt = scope.getChannelSampOnCnt(scope.isRun(true), sel);
+        int selCh = trigger.getTriggerSource();
+
+        if (selCh == 8) {//外部触发
+            reg.setExternalTrigger(1);
+        } else {
+            reg.setExternalTrigger(0);
+        }
+//        chCnt /= adcNums;
+        if(chCnt <= adcNums){
+            selCh = (selCh / 4) * 4  + (selCh % 4) / 2;
+        }
+        reg.setTrigSource(selCh);
+        reg.setNomalTrig(triggerCommon.getTriggerMode());
+        reg.setForceTrig(0);
+        int triggerType = triggerCommon.getTriggerType();
+        switch (triggerType) {
+            case Trigger.TRIG_TYPE_EDGE:
+                {
+                    TriggerEdge triggerEdge = (TriggerEdge) trigger;
+                    reg.setTrigType(0);
+                    reg.setTrigParam(triggerEdge.getTriggerEdge() & 0x07);
+                }
+                break;
+
+
+            case Trigger.TRIG_TYPE_SERIAL1:
+            case Trigger.TRIG_TYPE_SERIAL2:
+            case Trigger.TRIG_TYPE_SERIAL3:
+            case Trigger.TRIG_TYPE_SERIAL4:
+                reg.setTrigType(4);
+                reg.setTrigBus(triggerType - Trigger.TRIG_TYPE_SERIAL1);
+                break;
+            case Trigger.TRIG_TYPE_LOW_PULSE:
+                {
+                    TriggerRunt triggerRunt = (TriggerRunt) trigger;
+                    reg.setTrigType(5);
+                    reg.setTrigParam(triggerRunt.getCondition() | (triggerRunt.getPolarity() << 4));
+                    int lowTime = (int) Trigger.triggerTime2FpgaUnit(triggerRunt.getTimeLow());
+                    int highTime = (int) Trigger.triggerTime2FpgaUnit(triggerRunt.getTimeHigh());
+                    if (triggerRunt.getCondition() == TriggerRunt.RUNT_RELATION_LESSER) {
+                        reg.setTrigValL(highTime);
+                        reg.setTrigValH(highTime);
+                    } else {
+                        reg.setTrigValL(lowTime);
+                        reg.setTrigValH(highTime);
+                    }
+                    break;
+                }
+            case Trigger.TRIG_TYPE_PULSE:
+                {
+                    TriggerPulseWidth triggerPulseWidth = (TriggerPulseWidth) trigger;
+                    reg.setTrigType(1);
+                    if (triggerPulseWidth.getCondition() == TriggerPulseWidth.PW_RELATION_NOT_EQUAL) {
+                        reg.setTrigParam(TriggerPulseWidth.PW_RELATION_EQUAL);
+                    } else {
+                        reg.setTrigParam(triggerPulseWidth.getCondition());
+                    }
+                    int x = triggerPulseWidth.getPolarity();
+                    for (int i = beginIdx; i < endIdx; i++) {
+                        reg.setTrigPolarityCh(i-beginIdx, x);
+                    }
+
+                    int vol = (int) Trigger.triggerTime2FpgaUnit(triggerPulseWidth.getPwTime());
+                    int lowTime = (int) Trigger.triggerTime2FpgaUnit(triggerPulseWidth.getTimeLow());
+                    int highTime = (int) Trigger.triggerTime2FpgaUnit(triggerPulseWidth.getTimeHigh());
+                    switch (triggerPulseWidth.getCondition()) {
+                        case TriggerPulseWidth.PW_RELATION_EQUAL:
+                            reg.setTrigValL((int) Math.floor(1.0 * vol * 0.95 + 0.5));
+                            reg.setTrigValH((int) Math.ceil(1.0 * vol * 1.05 + 0.5));
+                            break;
+                        case TriggerPulseWidth.PW_RELATION_LESSER://小于的时候 FPGA用最小值来判断的
+                            reg.setTrigValL(highTime);
+                            reg.setTrigValH(0);
+                            break;
+                        default:
+                            reg.setTrigValL(lowTime);
+                            reg.setTrigValH(highTime);
+                            break;
+                    }
+                    break;
+                }
+            case Trigger.TRIG_TYPE_LOGIC:
+                {
+                    TriggerLogic triggerLogic = (TriggerLogic) trigger;
+                    reg.setTrigType(2);
+                    if (triggerLogic.getCondition() == TriggerLogic.LOGIC_RELATION_NOT_EQUAL) {
+                        reg.setTrigParam(TriggerLogic.LOGIC_RELATION_EQUAL | ((triggerLogic.getLogic() << 3)));
+                    } else {
+                        reg.setTrigParam(triggerLogic.getCondition() | ((triggerLogic.getLogic() << 3)));
+                    }
+
+                    switch (chCnt) {
+                        case 2:
+                            {
+                                for (int i = beginIdx; i < endIdx; i++) {
+                                    if (sel[i]) {
+                                        if (TriggerFactory.isTriggerSource(i)) {
+                                            for (int j = 0; j < 4; j++) {
+                                                reg.setTrigPolarityCh(
+                                                        j, triggerLogic.getLogicValid(i));
+                                            }
+                                        }
+                                        for (int j = 0; j < 4; j++) {
+                                            reg.setLogicCh(
+                                                    j,
+                                                    triggerLogic.getLogicValid(i)
+                                                                    == TriggerLogic.LOGIC_NONE
+                                                            ? 1
+                                                            : 0);
+                                        }
+                                    }
+                                }
+                                break;
+                            }
+                        case 4:
+                            {
+                                int it = 0;
+                                for (int i = beginIdx; i < endIdx; i++) {
+                                    if (sel[i]) {
+                                        if (TriggerFactory.isTriggerSource(i)) {
+                                            reg.setTrigPolarityCh(
+                                                    it, triggerLogic.getLogicValid(i));
+                                            reg.setTrigPolarityCh(
+                                                    it + 1, triggerLogic.getLogicValid(i));
+                                        }
+                                        reg.setLogicCh(
+                                                it,
+                                                triggerLogic.getLogicValid(i)
+                                                                == TriggerLogic.LOGIC_NONE
+                                                        ? 1
+                                                        : 0);
+                                        reg.setLogicCh(
+                                                it + 1,
+                                                triggerLogic.getLogicValid(i)
+                                                                == TriggerLogic.LOGIC_NONE
+                                                        ? 1
+                                                        : 0);
+                                        it += 2;
+                                    }
+                                }
+                                break;
+                            }
+                        case 8:
+                        default:
+                        {
+                            for (int i = beginIdx; i < endIdx; i++) {
+                                reg.setTrigPolarityCh(
+                                        i - beginIdx, triggerLogic.getLogicValid(i));
+                                reg.setLogicCh(
+                                        i - beginIdx,
+                                        triggerLogic.getLogicValid(i) == TriggerLogic.LOGIC_NONE
+                                                ? 1
+                                                : 0);
+                            }
+                            break;
+                        }
+                    }
+                    long vol = Trigger.triggerTime2FpgaUnit(triggerLogic.getLogicTime());
+                    int lowTime = (int) Trigger.triggerTime2FpgaUnit(triggerLogic.getTimeLow());
+                    int highTime = (int) Trigger.triggerTime2FpgaUnit(triggerLogic.getTimeHigh());
+                    switch (triggerLogic.getCondition()) {
+                        case TriggerLogic.LOGIC_RELATION_EQUAL:
+                            reg.setTrigValL((int) (vol * 95 / 100));
+                            reg.setTrigValH((int) (vol * 105 / 100));
+                            break;
+                        case TriggerPulseWidth.PW_RELATION_LESSER://小于的时候 FPGA用最小值来判断的
+                            reg.setTrigValL(highTime);
+                            reg.setTrigValH(0);
+                            break;
+                        default:
+                            reg.setTrigValL(lowTime);
+                            reg.setTrigValH(highTime);
+                            break;
+                    }
+                    break;
+                }
+            case Trigger.TRIG_TYPE_VIDEO:
+                {
+                    TriggerVideo triggerVideo = (TriggerVideo) trigger;
+                    reg.setTrigType(3);
+                    for (int i = beginIdx; i < endIdx; i++) {
+                        reg.setTrigPolarityCh(i - beginIdx, triggerVideo.getPolarity());
+                    }
+
+                    reg.setTrigParam(
+                            triggerVideo.getVideoTrigger()
+                                    | (triggerVideo.getStandard() << 3)
+                                    | (triggerVideo.getVideoFrequency() << 6)
+                                    | (triggerVideo.getStandard()
+                                                    >= TriggerVideo.VIDEO_STANDARD_720P
+                                            ? (1 << 9)
+                                            : 0));
+                    reg.setTrigValL(triggerVideo.getLine());
+                    reg.setTrigValH(triggerVideo.triggerVideoTimeFieldLine());
+                    break;
+                }
+            case Trigger.TRIG_TYPE_TIMEOUT:
+                {
+                    TriggerTimeOut triggerTimeOut = (TriggerTimeOut) trigger;
+                    reg.setTrigType(6);
+                    reg.setTrigParam(triggerTimeOut.getPolarity());
+                    reg.setTrigValL(
+                            (int) Trigger.triggerTime2FpgaUnit(triggerTimeOut.getTimeOutTime()));
+
+                    break;
+                }
+            case Trigger.TRIG_TYPE_SLOPE:
+                {
+                    TriggerSlope triggerSlope = (TriggerSlope) trigger;
+                    reg.setTrigType(7);
+                    reg.setTrigParam(triggerSlope.getCondition() | (triggerSlope.getEdge() << 4));
+                    int lowTime = (int) Trigger.triggerTime2FpgaUnit(triggerSlope.getTimeLow());
+                    int highTime = (int) Trigger.triggerTime2FpgaUnit(triggerSlope.getTimeHigh());
+                    if (triggerSlope.getCondition() == TriggerSlope.SLOPE_RELATION_LESSER) {
+                        reg.setTrigValL(highTime);
+                        reg.setTrigValH(highTime);
+                    } else {
+                        reg.setTrigValL(lowTime);
+                        reg.setTrigValH(highTime);
+                    }
+                    break;
+                }
+            case Trigger.TRIG_TYPE_NEDGE:
+                {
+                    TriggerNEdge triggerNEdge = (TriggerNEdge) trigger;
+                    reg.setTrigType(8);
+                    reg.setTrigParam(triggerNEdge.getSlope());
+                    reg.setTrigValL((int) Trigger.triggerTime2FpgaUnit(triggerNEdge.getIdleTime()));
+                    reg.setTrigValH(triggerNEdge.getEdge());
+                    break;
+                }
+        }
+        sendCommand(reg);
+    }
+
+    public void gntR_trigRestrainTime(int fpgaIdx) {
+        FPGAReg_TRIG_RESTRAIN_TIME reg =
+                (FPGAReg_TRIG_RESTRAIN_TIME) getFPGAReg(fpgaIdx, FPGAReg.FPGA_TRIG_RESTRAIN_TIME);
+        long lx = TriggerFactory.getInstance().getTriggerCommon().getTriggerHoldOffTime();
+        reg.setRestrainTime((int) TriggerCommon.trriggerHoldOffTime2FpgaUnit(lx));
+        sendCommand(reg);
+    }
+
+    private int getTriggerEnterAutoTime() {
+        long time =
+                (long)
+                        (scope.timeScale_mainBoard()
+                                        * scope.screenNum_Main(scope.isRun(true))
+                                        * ScopeBase.getHorizonGridCnt()
+                                        * 1500
+                                + 0.1);
+        int type = TriggerFactory.getTriggerType();
+        if (type == Trigger.TRIG_TYPE_NEDGE) {
+            if (time < 1000) time = 1000;
+            TriggerNEdge nEdge = (TriggerNEdge) TriggerFactory.getTriggerObj();
+
+            long idleTime = nEdge.getIdleTime() * 8 * 2;
+            if (time * 1e6 < idleTime) {
+                time = (long) (idleTime / 1e6);
+            }
+        }
+        if ((type == Trigger.TRIG_TYPE_SERIAL1)
+                || (type == Trigger.TRIG_TYPE_SERIAL2)
+                || (type == Trigger.TRIG_TYPE_SERIAL3)
+                || (type == Trigger.TRIG_TYPE_SERIAL4)) {
+            time = 1000;
+        }
+        // if(time < 1000) time = 1000;
+
+        if (time < 200) time = 200;
+        // lao yang rang da yu 5秒
+        if (time > 5 * 1000) {
+            time = 5 * 1000;
+        }
+        return (int) time;
+    }
+
+    public void gntR_trigAutoTime(int fpgaIdx) {
+        FPGAReg_TRIG_AUTO_TRIG_TIME reg =
+                (FPGAReg_TRIG_AUTO_TRIG_TIME) getFPGAReg(fpgaIdx, FPGAReg.FPGA_TRIG_AUTO_TRIG_TIME);
+        if (isCalibrate()) reg.setTrigTime(1, 0);
+        else {
+            int ixx = 0;
+            int ix = getTriggerEnterAutoTime();
+            if (ix < 0 || ix > ((1 << 25) - 1)) ix = (1 << 25) - 1;
+            int x = HorizontalAxis.getInstance().getTimeScaleIdOfView(HorizontalAxis.WPI_STANDARD);
+
+            if (x <= HorizontalAxis.TSI_20mS) ix |= (3 << 30);
+            else if (x == HorizontalAxis.TSI_10mS) ix |= (2 << 30);
+            else if (x == HorizontalAxis.TSI_5mS) ix |= (1 << 30);
+
+            if (x <= HorizontalAxis.TSI_20mS) {
+                ixx = 100;
+            } else if (x <= HorizontalAxis.TSI_10mS) {
+                ixx = 50;
+            } else if (x <= HorizontalAxis.TSI_5mS) {
+                ixx = 20;
+            } else {
+                ixx = 9;
+            }
+            reg.setTrigTime(ix, ixx);
+        }
+
+        sendCommand(reg);
+    }
+
+    public void setTrigHuiCha(int[] x_rise_fall /*Integer x_rise,Integer x_fall*/) {
+
+        // 注意：由于fpga使用触发电平时扩�?倍，所以回差值也是相对于AD值扩�?�?
+        Channel channel;
+        int tmp = 0;
+        Scope scope = Scope.getInstance();
+        Trigger trigger = TriggerFactory.getInstance().getTrigger();
+        x_rise_fall[0] = 8;
+        x_rise_fall[1] = 8;
+
+        int trigSrcCnt = trigger.getTriggerSourceCnt();
+        if (trigSrcCnt == 1) {
+            channel = ChannelFactory.getDynamicChannel(trigger.getTriggerSource());
+            if (channel == null) return;
+            int y = channel.getVScaleId();
+            // 触发源为静态变量，所以以何种触发类型去获取都一样，这里用边沿触�?
+
+            switch (y) {
+                case VerticalAxis.DANG_500uV:
+                    x_rise_fall[0] = 50;
+                    break;
+                case VerticalAxis.DANG_1mV:
+                    x_rise_fall[0] = 38;
+                    break;
+                case VerticalAxis.DANG_2mV:
+                    x_rise_fall[0] = 20;
+                    break;
+                case VerticalAxis.DANG_5mV:
+                    x_rise_fall[0] = 20;
+                    break;
+                case VerticalAxis.DANG_10mV:
+                case VerticalAxis.DANG_20mV:
+                case VerticalAxis.DANG_50mV:
+                    x_rise_fall[0] = 10; // 4
+                    break;
+                default:
+                    x_rise_fall[0] = 8;
+                    break;
+            }
+            x_rise_fall[0] += 8;
+
+            x_rise_fall[1] = x_rise_fall[0];
+
+            switch (trigger.getTriggerType()) {
+                case Trigger.TRIG_TYPE_LOGIC:
+                    TriggerLogic triggerLogic = (TriggerLogic) trigger;
+                    int logicCondition = triggerLogic.getCondition();
+                    if (logicCondition == Trigger.TRIGGER_RELATION_TRUE) {
+                        x_rise_fall[0] = 0;
+                    } else if (logicCondition == Trigger.TRIGGER_RELATION_FALSE) {
+                        x_rise_fall[1] = 0;
+                    }
+                    break;
+                case Trigger.TRIG_TYPE_EDGE:
+                    {
+                        TriggerEdge triggerEdge = (TriggerEdge) trigger;
+                        int tedge = triggerEdge.getTriggerEdge();
+                        if (tedge == TriggerEdge.TET_ASC) // 上升�?
+                        {
+                            x_rise_fall[0] = 0;
+                        } else if (tedge == TriggerEdge.TET_DSC) // 下降�?
+                        {
+                            x_rise_fall[1] = 0;
+                        }
+                        //                    else {
+                        //                        //x_rise_fall[0] = 0;
+                        //                        //x_rise_fall[1] = 0;
+                        //                    }
+                    }
+                    break;
+                case Trigger.TRIG_TYPE_LOW_PULSE: // 矮脉�?
+                    {
+                        TriggerRunt triggerRunt = (TriggerRunt) trigger;
+                        int polarity = triggerRunt.getPolarity();
+                        if (polarity == TriggerRunt.RUNT_POLARITY_POSITIVE) {
+                            x_rise_fall[1] = 0;
+                        } else if (polarity == TriggerRunt.RUNT_POLARITY_NEGATIVE) {
+                            x_rise_fall[0] = 0;
+                        }
+                        break;
+                    }
+                case Trigger.TRIG_TYPE_PULSE: // 脉宽触发
+                    {
+                        TriggerPulseWidth triggerPulseWidth = (TriggerPulseWidth) trigger;
+                        if (triggerPulseWidth.getPolarity()
+                                == TriggerPulseWidth.PW_POLARITY_POSITIVE) {
+                            x_rise_fall[1] = 0;
+                        } else {
+                            x_rise_fall[0] = 0;
+                        }
+                        break;
+                    }
+                case Trigger.TRIG_TYPE_TIMEOUT: // 超时触发
+                    {
+                        TriggerTimeOut triggerTimeOut = (TriggerTimeOut) trigger;
+                        if (triggerTimeOut.getPolarity()
+                                == TriggerTimeOut.TIMEOUT_POLARITY_POSITIVE) {
+                            x_rise_fall[0] = 0;
+                        } else {
+                            x_rise_fall[1] = 0;
+                        }
+                        break;
+                    }
+                default:
+                    break;
+//                case Trigger.TRIG_TYPE_LOW_PULSE: // 矮脉�?
+                case Trigger.TRIG_TYPE_SLOPE: // 斜率触发
+                    x_rise_fall[0] = 0;
+                    x_rise_fall[1] = 0;
+                    break;
+                case Trigger.TRIG_TYPE_NEDGE: // 第n边沿触发
+                    {
+                        TriggerNEdge triggerNEdge = (TriggerNEdge) trigger;
+                        int edgeType = triggerNEdge.getSlope();
+                        if (edgeType == TriggerNEdge.TET_ASC) {
+                            x_rise_fall[0] = 0;
+                        } else if (edgeType == TriggerNEdge.TET_DSC) {
+                            x_rise_fall[1] = 0;
+                        }
+                        break;
+                    }
+            }
+        }
+        // Logger.d("x_rise = " + x_rise_fall[0] + ",x_fall = " + x_rise_fall[1]);
+    }
+
+    public void setTriggerLevelReg(
+            int fpgaIdx, int value, int trigIdx, int riseHuiCha, int fallHuiCha) {
+
+        if (!ChannelFactory.isDynamicCh(trigIdx)
+                || !isFpgaChIdx(fpgaIdx,trigIdx)) // NONE触发源不用处�?
+            return;
+        Scope scope = Scope.getInstance();
+        FPGAReg reg = getFPGAReg(fpgaIdx, FPGAReg.FPGA_TRIG_LEVEL);
+
+        int x1 = value + 512 * 32 + riseHuiCha * 32;
+        int x2 = value + 512 * 32 - fallHuiCha * 32;
+
+        int bOF = 0;
+        if (x1 > 32767 || x1 < 0) bOF = 1;
+        if (x2 > 32767 || x2 < 0) bOF = 1;
+        int cnt = 0;
+        int beginIdx = beginChIdx(fpgaIdx);
+        int endIdx = endChIdx(fpgaIdx);
+        boolean[] sel = new boolean[ChannelFactory.CH_CNT];
+        cnt = scope.getChannelSampOnCnt(scope.isRun(true), sel);
+        int idx = 0;
+        switch (cnt) {
+            case 2:
+                cnt = 4;
+                idx = 0;
+                break;
+            case 4:
+                for (int i = beginIdx; i < endIdx; i++) {
+                    if (sel[i]) {
+                        if (i == trigIdx) idx = 0;
+                        else idx = 2;
+                        break;
+                    }
+                }
+                cnt = 2;
+                break;
+            case 8:
+            default:
+                idx = trigIdx-beginIdx;
+                if(idx < 0) idx = 0;
+                cnt = 1;
+                break;
+        }
+        cnt = cnt + idx;
+        for (int i = idx; i < cnt; i++) {
+            reg.setVal(i, 0, 15, x1);
+            reg.setVal(i, 15, 1, bOF);
+            reg.setVal(i, 16, 15, x2);
+            reg.setVal(i, 31, 1, bOF);
+        }
+    }
+
+    public void setTriggerLevelReg_snd(int fpgaIdx, int value, int riseHuiCha, int fallHuiCha) {
+        FPGAReg reg = getFPGAReg(fpgaIdx, FPGAReg.FPGA_TRIG_LEVEL);
+        int x1 = value + 512 * 32 + riseHuiCha * 32;
+        int x2 = value + 512 * 32 - fallHuiCha * 32;
+
+        int bOF = 0; // 溢出标记 =1溢出
+        if (x1 > 32767 || x1 < 0) bOF = 1;
+        if (x2 > 32767 || x2 < 0) bOF = 1;
+
+        reg.setVal(4, 0, 15, x1);
+        reg.setVal(4, 15, 1, bOF);
+        reg.setVal(4, 16, 15, x2);
+        reg.setVal(4, 31, 1, bOF);
+    }
+
+    public double ADGear2PixBuf(int chIdx, boolean autoAdj) {
+
+        int adGear = 0;
+        Channel channel = ChannelFactory.getDynamicChannel(chIdx);
+        if (channel != null) {
+            adGear = channel.getVScaleId();
+            if (!Scope.getInstance().isRun(true) && autoAdj) {
+                VerticalAxis verticalAxis = ScopeFrozen.getInstance().getChVertical(chIdx);
+                if (verticalAxis != null) {
+                    adGear = verticalAxis.getScaleId();
+                }
+            }
+        }
+
+        return ADGear2PixBuf_fromVScale(chIdx, adGear);
+    }
+
+    public void gntR_trigLevel(int fpgaIdx) {
+
+        FPGAReg reg = getFPGAReg(fpgaIdx, FPGAReg.FPGA_TRIG_LEVEL);
+        int[] x_rise_fall = {0, 0};
+
+        setTrigHuiCha(x_rise_fall);
+        double sen = TriggerFactory.getInstance().getTriggerCommon().getTriggerSensitivity();
+        if(sen < 0.1) sen = 0.1;
+        else if(sen > 1) sen = 1;
+
+        double r = hwConfig.getTriggerHuiChaFactor() * sen / 0.5;
+        x_rise_fall[0] = (int)Math.round(r * x_rise_fall[0]);
+        x_rise_fall[1] = (int)Math.round(r * x_rise_fall[1]);
+
+        Trigger trigger = TriggerFactory.getInstance().getTrigger();
+        switch (trigger.getTriggerType()) {
+            case Trigger.TRIG_TYPE_EDGE: // 边沿触发
+            case Trigger.TRIG_TYPE_PULSE: // 脉宽触发
+            case Trigger.TRIG_TYPE_LOW_PULSE: // 矮脉冲
+            case Trigger.TRIG_TYPE_SLOPE:
+            case Trigger.TRIG_TYPE_NEDGE:
+            case Trigger.TRIG_TYPE_TIMEOUT:
+            case Trigger.TRIG_TYPE_LOGIC:
+                {
+                    for (int k = 0; k < trigger.getTriggerSourceCnt(); k++) {
+                        int trigSouce = trigger.getTriggerSource(k);
+                        Channel channel = ChannelFactory.getDynamicChannel(trigSouce);
+                        if (channel != null) {
+                            int cnt = trigger.getSrcTriggerLevelCnt();
+                            for (int i = 0; i < cnt; i++) {
+                                double level = trigger.getTriggerLevel(i, trigSouce).getPos();
+                                level += channel.getPosFix();
+
+                                double fx =
+                                        level
+                                                        * hwConfig.getTriggerLevelFactor()
+                                                        / channel.getYFactor()
+                                                        / ADGear2PixBuf(trigSouce, false)
+                                                + (level > 0 ? 0.5 : -0.5);
+
+                                if (i == 0)
+                                    setTriggerLevelReg(
+                                            fpgaIdx,
+                                            (int) fx,
+                                            trigSouce,
+                                            x_rise_fall[0],
+                                            x_rise_fall[1]);
+                                else
+                                    setTriggerLevelReg_snd(
+                                            fpgaIdx, (int) fx, x_rise_fall[0], x_rise_fall[1]);
+                            }
+                        }
+                    }
+                }
+            case Trigger.TRIG_TYPE_VIDEO: // 视频触发
+            case Trigger.TRIG_TYPE_SERIAL1: // 串行触发
+            case Trigger.TRIG_TYPE_SERIAL2: // 串行触发
+            case Trigger.TRIG_TYPE_SERIAL3: // 串行触发
+            case Trigger.TRIG_TYPE_SERIAL4: // 串行触发
+            default:
+                break;
+        }
+
+        sendCommand(reg);
+    }
+
+    // ac耦合�?00Hz
+    int[] cnTrigCoup_AC = {
+        0x0010, 65534, // p4
+        65534, // p3
+        65535, // p2
+        65536, // p1
+    };
+    // 低频抑制�?0kHz
+    int[] cnTrigCoup_LFRS = {
+        0x0010, 65290, // p4
+        65331, // p3
+        65413, // p2
+        65495, // p1
+    };
+    // 高频抑制�?0kHz
+    int[] cnTrigCoup_HFRS = {
+        0x0000, 65289, // p4
+        41, // p3
+        41, // p2
+        41, // p1
+    };
+    // 噪声抑制�?0MHz
+    int[] cnTrigCoup_NOISERS = {
+        0x0000, 30530, // p4
+        4427, // p3
+        5710, // p2
+        7366, // p1
+    };
+
+    public void gntR_trigCouple(int fpgaIdx) {
+
+        FPGAReg_TRIG_COUPLE reg =
+                (FPGAReg_TRIG_COUPLE) getFPGAReg(fpgaIdx, FPGAReg.FPGA_TRIG_COUPLE);
+
+        TriggerEdge triggerEdge =
+                (TriggerEdge) TriggerFactory.getInstance().getTrigger(Trigger.TRIG_TYPE_EDGE);
+
+        int[] coef_fpga = null;
+        reg.setVal(0, 0);
+        switch (triggerEdge.getTriggerCouple()) {
+            case TriggerEdge.COUPLING_DIRECT: // 直流耦合
+                coef_fpga = null;
+                reg.setDC(1);
+
+                break;
+            case TriggerEdge.COUPLING_AC: // 交流耦合
+                coef_fpga = cnTrigCoup_AC;
+                reg.setAC(1);
+                break;
+            case TriggerEdge.COUPLING_HFRS: // 高频抑制
+                coef_fpga = cnTrigCoup_HFRS;
+                reg.setHig(1);
+                break;
+            case TriggerEdge.COUPLING_LFRS: // 低频抑制
+                coef_fpga = cnTrigCoup_LFRS;
+                reg.setLow(1);
+                break;
+            case TriggerEdge.COUPLING_NOISERS: // 噪声抑制
+                coef_fpga = cnTrigCoup_NOISERS;
+                reg.setNoi(1);
+                break;
+            default:
+                coef_fpga = null;
+                break;
+        }
+        sendCommand(reg);
+        /*
+        if (coef_fpga != null) {
+            FPGAReg regx = new FPGAReg(FPGAReg.FPGA_COUP_COEF, 20);
+            regx.setVal(coef_fpga);
+            sendCommand(regx);
+        }
+         */
+    }
+
+    private boolean isChOpen(int chIdx) {
+        Scope scope = Scope.getInstance();
+        Channel channel = ChannelFactory.getDynamicChannel(chIdx);
+        if (channel != null) {
+            if (scope.isRun(true)) {
+                return channel.isOpen();
+            } else {
+                return ScopeFrozen.getInstance().isChSamped(chIdx) && channel.isOpen();
+            }
+        }
+        return false;
+    }
+
+    public void disDianZhengTuCheng(int fpgaIdx) {
+
+        Scope scope = Scope.getInstance();
+        FPGAReg_CH_DISPLAY chDisplayReg =
+                (FPGAReg_CH_DISPLAY) getFPGAReg(fpgaIdx, FPGAReg.FPGA_CH_DISPLAY);
+        Channel channel;
+        int beginIdx = beginChIdx(fpgaIdx);
+        int endIdx = endChIdx(fpgaIdx);
+        for (int i = beginIdx; i < endIdx; i++) {
+            chDisplayReg.setChEnable(i - beginIdx, 0);
+        }
+        boolean[] sle = new boolean[ChannelFactory.CH_CNT];
+        int ChOpenCnt = scope.getChannelSampOnCnt(scope.isRun(true), sle);
+        switch (ChOpenCnt) {
+            case 4:
+            case 2:
+                {
+                    int k = 0;
+                    for (int i = beginIdx; i < endIdx; i++) {
+                        if (sle[i]) {
+                            if (isChOpen(i)) {
+                                chDisplayReg.setChEnable(k, 1);
+                                if (k == 0) chDisplayReg.setCh1Color(i - beginIdx);
+                                else chDisplayReg.setCh2Color(i - beginIdx);
+                            }
+                            k++;
+                        }
+                    }
+                    break;
+                }
+
+            case 8:
+            default:
+                {
+                    for (int i = beginIdx; i < endIdx; i++) {
+                        if (sle[i] && isChOpen(i)) {
+                            chDisplayReg.setChEnable(i - beginIdx, 1);
+                        }
+                    }
+                    break;
+                }
+        }
+
+        // 反向
+        int bitsWidth;
+        int bitsVal;
+
+        int val;
+        int startBit = 0;
+
+        switch (ChOpenCnt) {
+            case 2:
+                bitsWidth = 2;
+                bitsVal = 0x03;
+                break;
+            case 4:
+            case 8:
+            default:
+                bitsWidth = 1;
+                bitsVal = 0x01;
+                break;
+        }
+
+        for (int i = beginIdx; i < endIdx; i++) {
+            if (sle[i]) {
+                channel = ChannelFactory.getDynamicChannel(i);
+                if (channel != null) {
+                    val = channel.isInvert() ? bitsVal : 0;
+                    chDisplayReg.setVal(16 + startBit, bitsWidth, val);
+                    startBit += bitsWidth;
+                }
+            }
+        }
+
+        sendCommand(chDisplayReg);
+    }
+
+    private void huidu_yingse(int fpgaIdx, int light) {
+        int high = 200;
+        int low = 150 * light / 100;
+        int max1 = 25 * 2048 / 255;
+        int min1 = 1;
+
+        high = 200 + 40 * light / 100;
+        low = (150 + 50 * light / 100) * light / 100;
+        max1 = 25 * 2047 / 255;
+        if (light < 20) max1 = max1 + (20 - light) * 1024 / 20;
+
+        FPGAReg xreg = new FPGAReg(FPGAReg.FPGA_GRAY_LEVEL, 2048);
+        xreg.setFpgaIdx(fpgaIdx);
+        for (int n = 0; n < 2048; n++) {
+            double temp = n + 1;
+            if (temp < min1) temp = temp * low / min1;
+            else if (temp < max1) temp = low + (high - low) * (temp - min1) / (max1 - min1);
+            else temp = high + (255 - high) * (temp - max1) / (2048 - max1);
+            xreg.byteBuffer.put(n + FPGAReg.FPGA_REG_HEADER_LEN, (byte) Math.round(temp));
+        }
+
+        sendCommand(xreg);
+    }
+
+    public void gntR_disMode(int fpgaIdx) {
+        Display display = Display.getInstance();
+        FPGAReg_DIS_MODE reg = (FPGAReg_DIS_MODE) getFPGAReg(fpgaIdx, FPGAReg.FPGA_DIS_MODE);
+
+        int beginIdx = beginChIdx(fpgaIdx);
+        int endIdx = endChIdx(fpgaIdx);
+        int cnt = scope.getChannelSampOnCnt(scope.isRun(true));
+
+        switch (cnt) {
+            case 2:
+                reg.setChNum(0);
+                break;
+            case 4:
+                reg.setChNum(2);
+                break;
+            case 8:
+            default:
+                reg.setChNum(4);
+                break;
+        }
+        for (int i = beginIdx; i < endIdx; i++) {
+            reg.setChValid(i - beginIdx, scope.isChannelInSample(i, scope.isRun(true)));
+        }
+        reg.setMaxGray(255);
+        reg.setZoom(display.isZoom() ? 1 : 0);
+        reg.setNeedStaticBitBuf(1);
+
+        reg.setNeedStaticWave(isCalibrate() ? 1 : 0);
+        reg.setDisType(display.getDrawType() == Display.DRAWTYPE_DOTS ? 1 : 0);
+        disDianZhengTuCheng(fpgaIdx);
+
+        sendCommand(reg);
+
+        huidu_yingse(fpgaIdx, Display.getInstance().getBrightness());
+
+        FPGAReg_DISP_RESOLUTION r =
+                (FPGAReg_DISP_RESOLUTION) getFPGAReg(fpgaIdx, FPGAReg.FPGA_DISP_RESOLUTION);
+        r.setWidth(ScopeBase.getWidth());
+        r.setHeight(ScopeBase.getHeight());
+        sendCommand(r);
+
+        cmdTrigOffset(fpgaIdx);
+    }
+    public void gntR_yuHui(int fpgaIdx) {
+        //临时配合tBookMini网表，smart就没有这个参�?
+
+        FPGAReg regx = new FPGAReg(FPGAReg.FPGA_DISP_YUHUI, 4);
+        Display display = Display.getInstance();
+        regx.setFpgaIdx(fpgaIdx);
+        if (display.getPersistType() == Display.PERSIST_TYPE_NONE) {
+            regx.setVal(0, 32, 1 << 15);
+        } else {
+            regx.setVal(0, 32, 0);
+        }
+
+        sendCommand(regx);
+    }
+
+    public int num_chazhi(double chaZhiNumIn, int[] chaZhiNumOut) {
+        if (chaZhiNumIn < 0.999) {
+            if (chaZhiNumOut[0] != 0) chaZhiNumOut[0] = 0;
+            return 0;
+        }
+
+        // printf("chazhiNumIn=%f\n", chaZhiNumIn);
+
+        // 处理带小数的插值倍数
+        long k = (long) (chaZhiNumIn * 100 + 0.01);
+        int base = 1;
+        if (k % 100 != 0) {
+            k *= 2;
+            base = 2;
+            if (k % 100 != 0) {
+                k *= 2;
+                base = 4;
+                if (k % 100 != 0) {
+                    k *= 2;
+                    base = 8;
+                    if (k % 100 != 0) {
+                        Log.e(TAG, "!!!!chaZhi error,chaZhiNumIn=" + chaZhiNumIn + ",k:" + k );
+                        return  0;
+                    }
+                }
+            }
+        }
+
+        k /= 100;
+
+        // 处理8倍�?0倍和80倍插值，处理后每�?.25个数�?
+        int len = ScopeBase.getWidth() * base;
+        if (k % 8 == 0) {
+            k = k * 5 / 4;
+            len = len * 5 / 4;
+        }
+
+        if (k > 100) {
+            k = 0;
+            len = 0;
+        }
+        if (chaZhiNumOut[0] != 0) chaZhiNumOut[0] = (int) k;
+        return len;
+    }
+
+    public void gntR_Dis(int fpgaIdx) {
+        gntR_Dis(fpgaIdx, scope.isRun(true), 0);
+    }
+
+    private boolean bPrintf = true;
+
+    public void gntR_Dis(int fpgaIdx, boolean isRun, int screenNum) {
+        if (bPrintf) Logger.i("=============gntR_Dis()=======start===>");
+        Logger.i("isRun:" + isRun + " screenNum:" + screenNum);
+        Display display = Display.getInstance();
+        Scope scope = Scope.getInstance();
+
+        ScopeFrozen scopeFrozen = ScopeFrozen.getInstance();
+        long zunDepth = scope.zunMemDepth(isRun);
+        double num1 = scope.screenNum_Main(isRun);
+        if (screenNum == 1) num1 = 1;
+        int x0 = ScopeBase.getWidth();
+        double num2 = 1;
+        boolean zoom = display.isZoom();
+        if (zoom) {
+            num2 = scope.screenNum_zoom(isRun);
+            if (screenNum == 1) num2 = 1;
+        }
+
+        double cols1, cols2; // 存储深度对应的总列�?
+        cols1 = num1 * x0;
+        cols2 = num2 * x0;
+        if (cols1 < 1.0) cols1 = 1.0;
+        if (cols2 < 1.0) cols2 = 1.0;
+        if (bPrintf) {
+            Logger.i("x0:" + x0 + " zoom:" + zoom + " zunDepth:" + zunDepth);
+            Logger.i("num1:" + num1 + " num2:" + num2 + " cols1:" + cols1 + " cols2:" + cols2);
+        }
+
+        num2 *= num1;
+        cols2 *= num1;
+
+        // 1. 插值计算----------------------------------------------------------------------------------
+        // 计算每列有多少组数据
+        // 在zoom模式，只有放大窗口需要插值，缩略窗口不需要插�?
+        double lie = 0;
+
+        int[] chaZhiNum = {1}; // 插值倍数（最终结果）
+        int noDisp = 0;
+        FPGAReg_DISP_CHA disChaZhiReg =
+                (FPGAReg_DISP_CHA) getFPGAReg(fpgaIdx, FPGAReg.FPGA_DISP_CHA1);
+        disChaZhiReg.setNeedChaZhi(0);
+
+        if (!isRun && !ScopeFrozen.getInstance().isValid()) {
+            noDisp = 1;
+        } else {
+            double temp; // 插值倍数
+            if (zoom) {
+                temp = (num2 * x0) / zunDepth;
+            } else {
+                temp = (num1 * x0) / zunDepth;
+            }
+
+            if (bPrintf) Logger.i("chaZhiRateTemp:" + temp);
+
+            if (temp > 1.001) {
+                double c = temp;
+                double [] r={1.6,3.2,160};
+                for (double v: r) {
+                    if(DoubleUtil.FuzzyCompare(temp, v)){
+                        temp  = temp * 5 / 4;
+                        break;
+                    }
+                }
+
+                long k = DoubleUtil.floor(temp);
+                if(k <= 100) {
+                    if (100 % k != 0) {
+                        if (k % 8 == 0) {
+                            temp = temp * 5 / 4;
+                        }
+                    }
+                }
+
+                r = new double[]{0.5,0.25};
+                k = DoubleUtil.floor(temp);
+                for(int i=0;i < r.length;i++){
+                    if(DoubleUtil.FuzzyCompare(temp -  k,r[i])){
+                        temp *= Math.pow(2,i + 1);
+                        break;
+                    }
+                }
+
+                int len = 0;
+                k = DoubleUtil.floor(temp);
+                if(k <= 200){
+                    if(k != 200) {
+                        if (100 % k == 0) {
+                            len = (int)DoubleUtil.floor(ScopeBase.getWidth() * temp / c);
+                        } else {
+                            Log.e(TAG, "k:" + k + ",temp:" + temp);
+                        }
+                        chaZhiNum[0] = (int)k;
+                    }else {
+                        len = (int)ScopeBase.getWidth();
+                        chaZhiNum[0] = 100;
+                    }
+                }
+
+                if (len == 0) {
+                    noDisp = 2; // noDisp = 2;
+                } else {
+                    disChaZhiReg.setTotalMul(chaZhiNum[0]);
+                    disChaZhiReg.setFirstCoefJianGe(100 / chaZhiNum[0]);
+
+                    if(k == 200){
+                        chaZhiNum[0] = 200;
+                    }
+
+                    disChaZhiReg.setDataNFirstCha(
+                            len / chaZhiNum[0] + (len % chaZhiNum[0] == 0 ? 0 : 1));
+                    disChaZhiReg.setNeedChaZhi(1);
+
+                    disChaZhiReg.setChaZhi200(k > 100 ? 1 : 0);
+                }
+
+                if (bPrintf) Logger.i("chaZhiRate:" + temp + " - " + chaZhiNum[0] + ", len:" + len);
+
+            }
+
+            lie = 1 / temp;
+
+            if (bPrintf) Logger.i("chaZhiRateTemp:" + temp + ", lie:" + lie);
+
+        }
+        // 注意：设置的值必须能被虚拟屏幕列数整除
+        // 注：只有在示波器设置采样模式为平均或包络时才进行点阵抽样
+        int cnDataCyNum1 = 350 * 1000; // 点阵抽样
+        int cnDataCyNum2 = 280 * 1000; // 点阵抽样
+        int cnDataCyNum3 = 175 * 1000; // 点阵抽样
+
+        FPGAReg_DISP_PLACE_MAIN disWavePlaceMainReg =
+                (FPGAReg_DISP_PLACE_MAIN) getFPGAReg(fpgaIdx, FPGAReg.FPGA_DISP_PLACE_MAIN);
+        FPGAReg_DISP_WAVE disStaticWave =
+                (FPGAReg_DISP_WAVE) getFPGAReg(fpgaIdx, FPGAReg.FPGA_DISP_WAVE);
+        long dataLen = 0;
+        // 缩略视图的xstart和xend计算
+        if (zoom) {
+            long datasPerLie;
+            FPGAReg_ZoomSmallPlace zoomSmallPlace =
+                    (FPGAReg_ZoomSmallPlace) getFPGAReg(fpgaIdx, FPGAReg.FPGA_ZOOM_SMALL_PLACE);
+            FPGAReg_DISP_SL disSlReg = (FPGAReg_DISP_SL) getFPGAReg(fpgaIdx, FPGAReg.FPGA_DISP_SL);
+            FPGAReg_DISP_PLACE_SL dispWavePlaceSlReg =
+                    (FPGAReg_DISP_PLACE_SL) getFPGAReg(fpgaIdx, FPGAReg.FPGA_DISP_PLACE_SL);
+
+            datasPerLie = (int) (zunDepth *  4 / cols1 + 0.1);
+            if (datasPerLie == 0) datasPerLie = 1; // 防护一�?
+
+            if (bPrintf) {
+                Logger.i(TAG, "datasPerLie : " + datasPerLie);
+            }
+
+            dispWavePlaceSlReg.setNumsPerLie((int)(datasPerLie / 4));
+            disWavePlaceMainReg.setNumsPerLie2((int)(datasPerLie % 4) << 2);
+            dispWavePlaceSlReg.setDaoShuLieNum((int)((262144 * 4) / datasPerLie));
+            dispWavePlaceSlReg.setNeedCouY(0);
+            dispWavePlaceSlReg.setNumCouY(1);
+
+            long timeOneScreen = scope.timeOneScreen_main();
+
+            double tm3;
+            tm3 = num1 * timeOneScreen / 2;
+
+            long halfDataTime = (long) (tm3 + 0.1);
+
+            HorizontalAxis horizontalAxis = HorizontalAxis.getInstance();
+            long t_small = horizontalAxis.getTimePosOfView(HorizontalAxis.WPI_SMALL);
+
+            long t = scopeFrozen.getTimePosOfView();
+
+            Log.d(TAG,"zoom t:" + t + ",halfDataTime:" + halfDataTime + ",t_small:" + t_small);
+
+            if (t < -halfDataTime) {
+                t = 2 * halfDataTime + t_small;
+            } else {
+                t =
+                        halfDataTime
+                                - t
+                                + t_small
+                                + (t
+                                % (1000
+                                * 1000
+                                * 10
+                                / scope.maxSampClk())); // 数据头距离屏幕中心的时间计算
+            }
+
+            long halfScreen = timeOneScreen / 2;
+
+            int place = 0; // 取数相对位置
+            int start = 0; // 显示起始位置
+            int end = x0 - 1; // 显示结束位置
+
+            if (t < halfScreen) {
+
+                // 数据头在屏幕中
+                place = 0;
+                BigInteger t3 = BigInteger.valueOf(halfScreen - t);
+                t3 = t3.multiply(BigInteger.valueOf(x0));
+                t3 = t3.divide(BigInteger.valueOf(timeOneScreen));
+                start = t3.intValue();
+                if (start >= x0) {
+                    start = x0;
+                }
+            } else {
+                start = 0;
+                // 计算取数位置
+                BigInteger t3 = BigInteger.valueOf(t - halfScreen);
+                t3 = t3.multiply(BigInteger.valueOf(zunDepth));
+                t3 = t3.divide(BigInteger.valueOf(halfDataTime * 2));
+                if (t3.compareTo(BigInteger.valueOf(zunDepth)) >= 0) {
+                    t3 = BigInteger.valueOf(zunDepth);
+                }
+                place = t3.intValue();
+            }
+
+            {
+                BigInteger t3 = BigInteger.valueOf(halfDataTime * 2);
+                t3 = t3.subtract(BigInteger.valueOf(t));
+                t3 = t3.add(BigInteger.valueOf(halfScreen));
+                if (t3.compareTo(BigInteger.ZERO) < 0) {
+                    start = x0;
+                    end = x0;
+                } else if (t3.compareTo(BigInteger.valueOf(timeOneScreen)) < 0) {
+                    BigInteger t2 =
+                            t3.multiply(BigInteger.valueOf(x0))
+                                    .divide(BigInteger.valueOf(timeOneScreen));
+                    end = t2.intValue() - 1;
+                    if (isRun) {
+                        long a = timeOneScreen / x0;
+                        t3 = BigInteger.valueOf(timeOneScreen).subtract(t3);
+                        long b = t3.longValue();
+                        if (bPrintf) Logger.i("b:" + b + " a:" + a);
+                        if (b > 0 && b < a) {
+                            end++;
+                        }
+                    }
+                }
+            }
+            dataLen = datasPerLie * (end + 1 - start) / 4;
+
+            if (isRun) {
+
+                disSlReg.setXStart(0);
+                disSlReg.setXEnd(x0 - 1);
+
+                zoomSmallPlace.setPlace(place);
+                zoomSmallPlace.setNums((int)dataLen);
+            }
+            else
+            {
+
+                int validLie = scopeFrozen.getVaildAddr();
+                if (scopeFrozen.isRool()) {
+                    dataLen = ((x0 - validLie) * zunDepth / x0);
+                    start = (int)(end - dataLen * 4 / datasPerLie + 1);
+                    if (start < 0) start = 0;
+                    disSlReg.setXStart(start);
+                    disSlReg.setXEnd(end);
+                    place = (int)((end - start + 1) * datasPerLie / 4);
+
+                    zoomSmallPlace.setPlace((int)(dataLen - place));
+                    zoomSmallPlace.setNums(place);
+                } else if (scopeFrozen.isSlowScale()) {
+                    dataLen = (int) ((validLie + 1) * zunDepth / x0);
+                    validLie = (int)(dataLen * 4 / datasPerLie);
+                    int e = start + validLie - 1;
+                    if (e < end) {
+                        end = e;
+                    }
+                    dataLen = (end - start + 1) * datasPerLie / 4;
+                    disSlReg.setXStart(start);
+                    disSlReg.setXEnd(end);
+                    zoomSmallPlace.setPlace(place);
+                    zoomSmallPlace.setNums((int)dataLen);
+
+                    if (scopeFrozen.isSegmentEnable()) {
+                        disSlReg.setXLastStart(0);
+                        disSlReg.setXLastEnd(x0 - 1);
+                    }
+
+                } else {
+                    disSlReg.setXStart(start);
+                    disSlReg.setXEnd(end);
+                    zoomSmallPlace.setPlace(place);
+                    zoomSmallPlace.setNums((int)dataLen);
+                }
+                if (noDisp == 1) {
+                    disSlReg.setXStart(x0);
+                    disSlReg.setXEnd(x0);
+                }
+            }
+            sendCommand(disSlReg);
+            sendCommand(dispWavePlaceSlReg);
+            sendCommand(zoomSmallPlace);
+        } else {
+            disWavePlaceMainReg.setNumsPerLie2(0);
+        }
+
+        // config.flagNoDispInterpWave(1) = (noDisp?true:false);
+        if (noDisp != 0) {
+            // 此时波形数据无效，对应测量和光标无效
+            disWavePlaceMainReg.setXStart(x0);
+            disWavePlaceMainReg.setXEnd(x0);
+            disWavePlaceMainReg.setLastXStart(x0);
+            disWavePlaceMainReg.setLastXEnd(x0);
+            disWavePlaceMainReg.setLen(0);
+            disWavePlaceMainReg.setLastLen(0);
+            disWavePlaceMainReg.setPlace(0);
+            disWavePlaceMainReg.setNumsPerLie1(1);
+            disWavePlaceMainReg.setNumsPerLie2(0);
+            disWavePlaceMainReg.setDaoShuLieNum(262144);
+            disWavePlaceMainReg.setNeedCouY(0);
+            disWavePlaceMainReg.setNumCouY(1);
+
+            disStaticWave.setCouY(1);
+            disStaticWave.setNeedCY(0);
+            disStaticWave.setLen(0);
+            disStaticWave.setWavePlace(0);
+        }
+
+        {
+            // 2.
+            // 缩略视图取数计算-----------------------------------------------------------------------------------
+            long datasPerLie; // 每列有多少组数据
+            int cou = 1; // 数据的抽样比
+            // 缩略视图
+            // 计算每屏的数据量tm2:非zoom时主视图，或zoom时缩略视�?
+            // int tm1 = (int) (num1 * 100 + 0.1);
+
+            long zunDepth1 = zunDepth / cou;
+
+            //            if (zoom) {
+            //                int num = 4;//4列的数据肯定为整�?
+            //                datasPerLie = (int) (zunDepth1 * num / cols1 + 0.1);
+            //                if (datasPerLie == 0) datasPerLie = 1;//防护一�?
+            //                if(bPrintf){
+            //                    Logger.i(TAG,"datasPerLie : " + datasPerLie);
+            //                }
+            //                FPGAReg_DISP_PLACE_SL dispWavePlaceSlReg = (FPGAReg_DISP_PLACE_SL)
+            // getFPGAReg(FPGAReg.FPGA_DISP_PLACE_SL);
+            //
+            //                dispWavePlaceSlReg.setNumsPerLie(datasPerLie / 4);
+            //                disWavePlaceMainReg.setNumsPerLie2((datasPerLie % 4) << 2);
+            //                dispWavePlaceSlReg.setDaoShuLieNum((262144 * num) / datasPerLie);
+            //                dispWavePlaceSlReg.setNeedCouY(cou > 1 ? 1 : 0);
+            //                dispWavePlaceSlReg.setNumCouY(cou);
+            //                sendCommand(dispWavePlaceSlReg);
+            //            } else {
+            //                disWavePlaceMainReg.setNumsPerLie2(0);
+            //            }
+
+            // 3.
+            // 计算主视图抽样后每列的数据量-----------------------------------------------------------------------------------
+            double cols; // 存储深度对应的总列�?主视�?
+            if (zoom) // 放大模式
+            {
+                // 主视图，即放大视图
+                // 计算每屏的数据量: 主视图
+                //                tm1 = (int) (num2 * 100 + 0.1);
+                //                int tm2;
+                //                if (tm1 < 100) {//小于1�?
+                //                    tm2 = (int) zunDepth;
+                //                } else {
+                //                    tm2 = (int) (zunDepth * 100 / tm1);
+                //                }
+                cou = 1;
+                // 抽样�?.2M�?.5M
+
+                zunDepth1 = zunDepth / cou;
+
+                cols = cols2;
+            } else {
+                cols = cols1;
+            }
+            int num = 4; // 4�?
+            if (bPrintf)
+                Logger.i(
+                        "zoom:"
+                                + zoom
+                                + " cols:"
+                                + cols
+                                + " num:"
+                                + num
+                                + " zunDepth1:"
+                                + zunDepth1);
+            // 抽样以及插值后，每列的数据组数(可能�?n.25�?n.5的小�?�?4整数化。实际列数传递时
+            // 反向处理可能不整�?，需要进行余数传递，余数形式�?�?�?
+            datasPerLie = (int) (zunDepth1 * chaZhiNum[0] * num / cols + 0.1);
+            if (bPrintf) Logger.i("--datasPerLie:" + datasPerLie);
+
+            if (noDisp == 0) {
+                if (scopeFrozen.isSlowScale() && !isRun) {
+                    if (bPrintf) Logger.i("InSlowScale and Scope is Stop ===> ");
+                    // datasPerLie时按照全屏波形计算的，对于滚屏非满屏时放大一些位置并不合适，
+                    // 所以这里要重新修正计算，以保证参数numsPerLie1设置正确
+                    int validLie = scopeFrozen.getVaildAddr();
+                    if (validLie > 0) {
+                        int waveLen = validLie + 1;
+                        int dataLenx = (int) (waveLen * zunDepth / x0);
+
+                        if (bPrintf)
+                            Logger.i(
+                                    "waveLen:"
+                                            + waveLen
+                                            + " dataLenX:"
+                                            + dataLenx
+                                            + " datasPerLie:"
+                                            + datasPerLie
+                                            + " num:"
+                                            + num
+                                            + " num1:"
+                                            + num1);
+                        if (dataLenx < datasPerLie / num && num1 < 1) {
+                            int _datasPerLie = dataLenx;
+                            if (_datasPerLie != 0) datasPerLie = _datasPerLie;
+                            if (bPrintf) Logger.i("refresh datasPerLie:" + datasPerLie);
+                        }
+                    }
+                }
+
+                disWavePlaceMainReg.setNumsPerLie1((int)(datasPerLie / 4));
+                if (num1 > 2.0 / 14)
+                    disWavePlaceMainReg.setNumsPerLie2((int)
+                            (disWavePlaceMainReg.getNumsPerLie2() | datasPerLie % 4));
+                disWavePlaceMainReg.setDaoShuLieNum((int)((262144 * num) / datasPerLie));
+            }
+
+            // 4. 主视图取数计�?----------------------------------------------------------
+            long t_sy = 0;
+            // S64 t_sy=0;//计算取数位置对应时间精确到数据点后，还有余数，单�?.1ps
+            if (noDisp == 0) {
+                int place = 0; // 取数相对位置
+                int start = 0; // 显示起始位置
+                int end = x0 - 1; // 显示结束位置
+
+                double tm3; // 数据总列�?
+                tm3 = num1 * scope.timeOneScreen_main() / 2; // 数据总时�?2
+
+                long halfDataTime = (long) (tm3 + 0.1); // 1半数据的时间
+                if (bPrintf) {
+                    Logger.i("num1:" + num1 + " timeOneScreen_main:" + scope.timeOneScreen_main());
+                    Logger.i("fullDataTime:" + tm3 + ",halfDataTime:" + halfDataTime);
+                }
+
+                // 计算数据头距离缩略窗口中心的时间: tst
+                long t_std =
+                        HorizontalAxis.getInstance().getTimePosOfView(HorizontalAxis.WPI_STANDARD);
+
+                long tst; // 触发位置距离数据中心的时�?
+                if (isRun) tst = t_std;
+                else tst = scopeFrozen.getTimePosOfView(); // config.freezeWave.timePosOfView;
+                if (bPrintf) Logger.i("t_std:" + t_std + " tst:" + tst);
+
+                long t_main; // 主视图的触发位置
+                long oneScreenTime; // 主视图一屏的时间:
+                // oneScreenTime：主视图1屏对应的时间
+                // t_main: 主视图触发位置距离屏幕中心的时间�?
+                if (zoom) {
+                    if (screenNum == 1) {
+                        t_main = t_std; // config.timePosOfView(0, Wave::WPI_STANDARD);
+                        oneScreenTime = scope.timeOneScreen_main();
+                    } else {
+                        t_main =
+                                HorizontalAxis.getInstance()
+                                        .getTimePosOfView(HorizontalAxis.WPI_LARGE);
+                        oneScreenTime = scope.timeOneScreen_zoom();
+                    }
+                } else {
+                    t_main = t_std;
+                    oneScreenTime = scope.timeOneScreen_main();
+                }
+                if (bPrintf) Logger.i("t_main:" + t_main + " oneScreenTime:" + oneScreenTime);
+                if (tst < -halfDataTime) { // 触发位置在右，并且到达数据尾巴还超过，这时候单屏时，屏幕左边应该有空白显示�?
+                    // 即触发位置位于数据的最后一个；
+                    // 主视图左右不对称
+                    // 详细公式：t = halfDataTime*2+t+(config.timePosOfView(0, Wave::WPI_STANDARD)-t)
+                    //        +(config.timePosOfView(0, Wave::WPI_LARGE)
+                    //        -config.timePosOfView(0, Wave::WPI_STANDARD));
+                    tst = halfDataTime * 2 + t_main; // 数据头距离屏幕中心的时间计算
+                } else {
+                    // 详细公式：t = halfDataTime+(config.timePosOfView(0, Wave::WPI_STANDARD)-t)
+                    //        +(config.timePosOfView(0, Wave::WPI_LARGE)
+                    //        -config.timePosOfView(0, Wave::WPI_STANDARD));
+                    // tst = halfDataTime - tst + t_main;//数据头距离屏幕中心的时间计算
+                    // 还需要考虑动态时，触发不在采样点上；
+                    tst =
+                            halfDataTime
+                                    - tst
+                                    + t_main
+                                    + (tst
+                                            % (1000
+                                                    * 1000
+                                                    * 10
+                                                    / scope.maxSampClk())); // 数据头距离屏幕中心的时间计算
+                }
+                // 计算主窗口的取数位置
+                long halfScreen = oneScreenTime / 2; // 半屏对应的时�?
+                if (bPrintf) Logger.i("new tst:" + tst + " halfScreen:" + halfScreen);
+
+                if (halfScreen > tst) { // 数据头在屏幕�?
+
+                    // 数据头在屏幕中
+
+                    // 显示窗口的左边有"无波形区"
+                    place = 0;
+                    // 计算起始�?
+                    BigInteger t3 = BigInteger.valueOf(halfScreen - tst);
+                    t3 = t3.multiply(BigInteger.valueOf(x0));
+                    t3 = t3.divide(BigInteger.valueOf(oneScreenTime));
+
+                    start = t3.intValue();
+                    if (start > x0 - 1) {
+                        start = x0;
+                    }
+                } else {
+                    start = 0; // 从第0列开始显�?
+                    // 计算取数位置
+                    BigInteger t3 = BigInteger.valueOf(tst - halfScreen);
+                    BigInteger temp = BigInteger.valueOf(tst - halfScreen);
+                    t3 = t3.multiply(BigInteger.valueOf(zunDepth));
+                    BigInteger th = BigInteger.valueOf(halfDataTime * 2);
+                    BigInteger tn = t3.divide(th);
+                    BigInteger tm = t3.mod(th);
+
+                    if (tm.compareTo(th.divide(BigInteger.valueOf(2))) > 0) {
+                        t3 = tn.add(BigInteger.ONE);
+                    } else {
+                        t3 = tn;
+                    }
+
+                    if (t3.compareTo(BigInteger.valueOf(zunDepth - 1)) > 0) {
+                        t3 = BigInteger.valueOf(zunDepth - 1);
+                    }
+                    place = t3.intValue();
+                    t3 = BigInteger.valueOf(place);
+                    t3 =
+                            t3.multiply(BigInteger.valueOf(halfDataTime * 2))
+                                    .divide(BigInteger.valueOf(zunDepth));
+                    t3 = temp.subtract(t3);
+                    t_sy = t3.longValue();
+
+                    if (t_sy < 0) t_sy = 0;
+                }
+                // 计算结束�?
+                {
+                    BigInteger t3 = BigInteger.valueOf(halfDataTime * 2);
+                    t3 = t3.subtract(BigInteger.valueOf(tst));
+                    t3 = t3.add(BigInteger.valueOf(halfScreen));
+                    if (t3.compareTo(BigInteger.ZERO) < 0) {
+                        start = x0;
+                        end = x0;
+                    } else if (t3.compareTo(BigInteger.valueOf(oneScreenTime)) < 0) {
+
+                        BigInteger t2 =
+                                t3.multiply(BigInteger.valueOf(x0))
+                                        .divide(BigInteger.valueOf(oneScreenTime));
+                        end = t2.intValue() - 1;
+                        // 静态波形多一列可能多屏是错误。待验证
+                        //if (isRun)
+                        {
+                            long a = oneScreenTime / x0;
+                            t3 = BigInteger.valueOf(oneScreenTime).subtract(t3);
+                            long b = t3.longValue();
+                            if (bPrintf) Logger.i("b:" + b + " a:" + a);
+                            if (b > 0 && b < a) {
+                                end++;
+                            }
+                        }
+                    }
+                }
+                if (bPrintf) Logger.i("place:" + place + " start:" + start + " end:" + end);
+
+                if (start == x0) end = x0;
+                if (start > end) end = start;
+                int lastStart = start;
+                int lastEnd = end;
+                int lastLen = (int)dataLen;
+                if (!isRun) {
+                    if (bPrintf) {
+                        Logger.i("Scope is stop===> validAdr:" + scopeFrozen.getVaildAddr());
+                        Logger.i(
+                                "isRoll:"
+                                        + scopeFrozen.isRool()
+                                        + " isSlow:"
+                                        + scopeFrozen.isSlowScale());
+                    }
+                    if (scopeFrozen.isRool()) {
+                        // 静态滚屏时处理
+                        long startD = scopeFrozen.getVaildAddr();
+
+                        // 计算无效数据�?
+                        startD = startD * zunDepth / x0;
+                        place -= startD;
+                        if (bPrintf) Logger.i("is roll!! new place:" + place);
+                        if (place < 0) {
+                            // 修正start的�?
+                            if (start < x0) {
+                                long tm1x = start;
+                                tm1x -= (long) (place / lie - 0.1);
+                                if (tm1x > x0 - 1) {
+                                    start = x0;
+                                    end = x0;
+                                } else {
+                                    start = (int) tm1x;
+                                }
+                                if (bPrintf)
+                                    Logger.i(
+                                            "ROLL new start:"
+                                                    + start
+                                                    + " end:"
+                                                    + end
+                                                    + " place = 0");
+                            }
+                            place = 0;
+                        }
+                    } else if (scopeFrozen.isSlowScale()) {
+
+                        long xn = scope.getSegmentFrameNums();
+                        long xno = SegmentSample.getInstance().getFrameNo();
+//                        Log.d(TAG,"xn:" + xn + ",xno:" + xno);
+
+                        long endD = scopeFrozen.getVaildAddr();
+
+                        if(xn > 0 && xno >=0 ){
+                            if((xno + 1) != xn){
+                                endD = ScopeBase.getWidth() - 1;
+                            }
+                        }
+
+                        endD = (long) ((endD + 1) * zunDepth / x0 - lie + 0.1);
+                        long tm1x = (long) place;
+                        tm1x += (long) ((end - start + 1) * lie + 0.1);
+                        tm1x = endD - tm1x;
+                        if (bPrintf) {
+                            Logger.i(
+                                    "is slow!! zunDepth:"
+                                            + zunDepth
+                                            + " lie:"
+                                            + lie
+                                            + " endD:"
+                                            + endD);
+                            Logger.i(
+                                    "place:" + place + " end:" + end + " start:" + start + " tm1x:"
+                                            + tm1x);
+                        }
+                        if (tm1x < 0) {
+                            // 修正end的�?
+                            if (end < x0) {
+                                tm1x = end + (long) (tm1x / lie + 0.1);
+                                if (tm1x < 0) {
+                                    start = x0;
+                                    end = x0;
+                                } else {
+                                    end = (int) tm1x;
+                                }
+                                if (bPrintf)
+                                    Logger.i(
+                                            "SLOW new start:"
+                                                    + start
+                                                    + " end:"
+                                                    + end
+                                                    + " place = "
+                                                    + place);
+                            }
+                        }
+                    }
+                }
+                if (start == x0) end = x0;
+                if (start > end) end = start;
+                // bug 0004915
+                if (screenNum == 1) {
+                    if (!isRun) {
+                        if (scopeFrozen.isSlowScale()) {
+                            end = end + start;
+                            start = 0;
+                            if (end >= x0) end = x0 - 1;
+                            place = 0;
+
+                        } else if (scopeFrozen.isRool()) {
+
+                        } else {
+                            start = 0;
+                            end = x0 - 1;
+                            place = 0;
+                        }
+                        if (bPrintf)
+                            Logger.i(
+                                    "screenNum=1 and ScopeIsStop ==> start:"
+                                            + start
+                                            + " end:"
+                                            + end
+                                            + " place:"
+                                            + place);
+                    }
+                }
+                dataLen = (int)(datasPerLie * (end + 1 - start) / num);
+                lastLen = (int)(datasPerLie * (lastEnd + 1 - lastStart) / num);
+                if (bPrintf) Logger.i("wavelen:" + dataLen + ",datasPerLie:"
+                        + datasPerLie + ",end:" + end + ",start:"
+                        + start + ",num:" +num);
+
+                // 防止压缩时，误差导致数据变多
+//                if (!isRun) {
+//                    int validLine = x0;
+//                    if (scopeFrozen.isRool()) {
+//                        validLine = x0 - scopeFrozen.getVaildAddr();
+//                    } else if (scopeFrozen.isSlowScale()) {
+//                        validLine = scopeFrozen.getVaildAddr() + 1;
+//                    }
+//
+////                    if(lie < 1) {
+////                        temp /= lie;
+////                    }
+//                    if (bPrintf) Logger.i("validLine:" + validLine + ",lie:" + lie);
+//                    int temp = (int) (zunDepth * validLine / x0);
+//
+//                    if (bPrintf) Logger.i( "dataLen:" + dataLen + ",temp:" + temp);
+//                    if (dataLen > temp) {
+//                        if (scopeFrozen.isRool() || scopeFrozen.isSlowScale()) {
+//                            dataLen = temp;
+//                            end -= 1;
+//                            if (end < start)
+//                                end = start;
+//                        }
+//                        if (bPrintf)
+//                            Logger.i("start:" + start + " end:" + end + " wavelen:" + dataLen);
+//                    }
+//
+//
+//                }
+
+                int len;
+                len = (int)dataLen;
+
+                disWavePlaceMainReg.setPlace(place);
+                disWavePlaceMainReg.setXStart(start);
+                disWavePlaceMainReg.setXEnd(end);
+                disWavePlaceMainReg.setLen(len);
+
+                if (scopeFrozen.isSlowScale() && scopeFrozen.isSegmentEnable()) {
+                    disWavePlaceMainReg.setLastXStart(lastStart);
+                    disWavePlaceMainReg.setLastXEnd(lastEnd);
+                    disWavePlaceMainReg.setLastLen(lastLen);
+                }
+
+                disWavePlaceMainReg.setNeedCouY(cou > 1 ? 1 : 0);
+                disWavePlaceMainReg.setNumCouY(cou);
+
+                double lieT = (double) oneScreenTime / x0;
+                double sLast = (((zunDepth - place) / lie) * lieT / 4e4 + 13);
+                double sLen =  (lieT * (end - start + 1) / 4e4);
+                //Logger.d(TAG, "lieT:" + lieT + ",sLast:" + sLast + ",sLen:" + sLen + ",place:" + place + ",lie:" + place + ",zunDepth:" + zunDepth);
+
+                FPGAReg_DISP_SERI dispSeriReg =
+                        (FPGAReg_DISP_SERI) getFPGAReg(fpgaIdx, FPGAReg.FPGA_DISP_SERI);
+                dispSeriReg.setCodepos((int) sLast);
+                dispSeriReg.setCodelen((int) sLen);
+                dispSeriReg.setZipparam((int) (lieT / 4e4));
+                sendCommand(dispSeriReg);
+            }
+
+            if (chaZhiNum[0] > 1 && noDisp == 0) {
+
+                // fpga的最高采样频率为双通道1G,所以采样时间的精度只有1ns
+
+                // AD采样精度�?G，即1ns=10*1000(0.1ps)
+                // AD采样精度�?00M，即2ns=20*1000(0.1ps)
+                // int step = 1000*1000*10/IModuleDevice::instance()->maxInputClk_AD();
+                // 计算采样精度
+                double fx = scope.getSampleRate(isRun);
+
+                long fx_dd = (long) (fx * (1000 * 10) + 0.1); // 采样频率单位换算�?.1mHz
+
+                long step =
+                        (1000L * 1000 * 1000 * 1000 * 1000 * 10 * 10)
+                                / fx_dd; // 周期，即两个采样的时间，单位0.1ps
+
+                long t = t_sy * chaZhiNum[0] / step;
+
+                if (t != 0) {
+                    if (t > chaZhiNum[0]) t = t - chaZhiNum[0];
+                    if (t > chaZhiNum[0]) t = chaZhiNum[0];
+                }
+
+                if (bPrintf) Logger.i("Chazhi setXiaoShu=" + t);
+                disWavePlaceMainReg.setXiaoShu((int) t * 100 / chaZhiNum[0]);
+
+            } else {
+                disWavePlaceMainReg.setXiaoShu(0);
+            }
+        }
+        sendCommand(disWavePlaceMainReg);
+        sendCommand(disChaZhiReg);
+
+        // 数学波形
+        if (noDisp == 0) {
+            int tm1;
+            int tm2;
+            // 数学波形取数计算:
+            if (zoom) // 放大模式
+            {
+                tm1 = (int) (num2 * 100 + 0.1);
+            } else {
+                tm1 = (int) (num1 * 100 + 0.1);
+            }
+
+            // 计算每屏的数据量: 主视�?
+            if (tm1 < 100) {
+                // 小于1屏时�?屏处�?
+                tm2 = (int) zunDepth;
+            } else {
+                tm2 = (int) (zunDepth * 100 * chaZhiNum[0] / tm1);
+            }
+
+            // 数学波形的抽样在点阵波形抽样的基础上进行再抽样
+            tm2 /= disWavePlaceMainReg.getNumCouY();
+
+            int cou = mathCouYang(tm2);
+
+            disStaticWave.setCouY(cou);
+            disStaticWave.setNeedCY(cou > 1 ? 1 : 0);
+
+            // 数学波形是从点阵数据中抽�?
+            disStaticWave.setLen((int)(dataLen / cou));
+            //            disStaticWave.setWavePlace(disWavePlaceMainReg.getPlace());
+            disStaticWave.setWavePlace((int)(
+                    dataLen
+                            / cou
+                            / (disWavePlaceMainReg.getXEnd()
+                                    - disWavePlaceMainReg.getXStart()
+                                    + 1)));
+
+            double fs = scope.getSampleRate(isRun);
+            fs /= cou;
+            MathChannel mathChannel;
+            int maxIdx = ChannelFactory.getMaxMathIdx();
+            for (int i = ChannelFactory.MATH1; i < maxIdx; i++) {
+                mathChannel = ChannelFactory.getMathChannel(i);
+                if (mathChannel != null) {
+                    mathChannel.setSampleRate(fs, chaZhiNum[0]);
+                    mathChannel.setWaveLen((int)(dataLen / cou));
+                }
+            }
+        }
+        sendCommand(disStaticWave);
+        HorizontalAxis.getInstance().setStartX(disWavePlaceMainReg.getXStart());
+        HorizontalAxis.getInstance().setEndX(disWavePlaceMainReg.getXEnd());
+    }
+
+    private int mathCouYang(int len) {
+        int cou = 1;
+        int []cnDataCyMath = MemDepthFactory.getMemDepth().getMathCouArray();
+        int k = cnDataCyMath[0];
+        if(len > k){
+            cou = len / k;
+            while ( k >= ScopeBase.getWidth()
+                    && (len % k) != 0
+                    || (k % ScopeBase.getWidth() != 0)) {
+                cou++;
+                k = len / cou;
+            }
+        }
+        return cou;
+    }
+
+    static int[] vol2A_last = {-1, -1};
+    static int[] vol2B_last = {-1, -1};
+
+    public void ExtTriggerLevel(int fpgaIdx){
+        FPGAReg_ExtTriggerLevel level = (FPGAReg_ExtTriggerLevel)getFPGAReg(fpgaIdx,FPGAReg.FPGA_EXT_GRIGGER_LEVEL);
+        TriggerCommon triggerCommon = TriggerFactory.getInstance().getTriggerCommon();
+        int tempVal = (int) Math.round(triggerCommon.getExtTriggerLevel() * 65536 / 5);
+        if (tempVal >= 65536) {
+            tempVal = 65535;
+        }
+        level.setLevel(tempVal);
+        sendCmd(level);
+    }
+
+    public void ChangeResistance(int fpgaIdx) {
+        FPGAReg_Resistance regResistance =
+                (FPGAReg_Resistance) getFPGAReg(fpgaIdx, FPGAReg.FPGA_CH_RESISTANCE);
+        Channel channel;
+        int val;
+        int beginIdx = beginChIdx(fpgaIdx);
+        int endIdx = endChIdx(fpgaIdx);
+        int dang;
+        for (int i = beginIdx; i < endIdx; i++) {
+            channel = ChannelFactory.getDynamicChannel(i);
+            if (channel != null) {
+                val = channel.getResistanceType();
+                regResistance.setResistance(i - beginIdx, val);
+                regResistance.setResistanceSel(i - beginIdx, 0);
+//                dang = CabteRegister.getRatioIdx(channel.getResistanceType(),channel.getVScaleVal() / channel.getProbeRate());
+//                if (channel.getResistanceType() == Channel.RESISTANCE_50) {
+//                    if (dang == CabteRegister.RATIO_DANG_1) {
+//                        if (i > ChannelFactory.CH4) {
+//                            regResistance.setResistanceSel(i - beginIdx, 1);
+//                        }
+//                    }
+//                }
+            }
+        }
+        TriggerCommon triggerCommon = TriggerFactory.getInstance().getTriggerCommon();
+        regResistance.setExtTrigger(triggerCommon.getExtTriggerInputRes());
+        sendCmd(regResistance);
+    }
+
+    public void ChangeProbeDa(int fpgaIdx) {
+        FPGAReg_PROBE_DA12 regProbeDa12 =
+                (FPGAReg_PROBE_DA12) getFPGAReg(fpgaIdx, FPGAReg.FPGA_PROBE_DA12);
+        Channel channel;
+        int beginIdx = beginChIdx(fpgaIdx);
+        int endIdx = endChIdx(fpgaIdx);
+        for (int i = beginIdx; i < endIdx; i++) {
+            channel = ChannelFactory.getDynamicChannel(i);
+            if (channel != null) {
+                BaseProbe baseProbe = channel.getProbe();
+                if (baseProbe != null && baseProbe.isDa()) {
+                    Log.d(TAG,"zhuzh" + ",ch:" + i  +",daVal:" +  baseProbe.getDaValue());
+                    regProbeDa12.setDaValue(i - beginIdx, baseProbe.getDaValue());
+                } else {
+                    regProbeDa12.setDaValue(i - beginIdx, 0);
+                }
+            }
+        }
+
+        sendCmd(regProbeDa12);
+
+    }
+
+    public void sendFpga_gain_bc(int fpgaIdx, float[] pgain_bc) {
+        // 发送增益补偿系数给fpga
+        short[] bc = {0, 0, 0, 0};
+        FPGAReg reg = new FPGAReg(FPGAReg.FPGA_GAIN_BC_AD, 2 * 4);
+        reg.setFpgaIdx(fpgaIdx);
+        for (int i = 0; i < bc.length; i++) {
+            short ix = (short) (pgain_bc[i] * 4096 + 0.5);
+            if (ix < 4096) ix = 4096;
+            bc[i] = ix;
+        }
+        reg.setVal(bc);
+        sendCommand(reg);
+    }
+
+    static int[] Val0x31_last = {-1, -1};
+    static int[] Val0x3A_last = {-1, -1};
+    static int[] Val0x3B_last = {-1, -1};
+    static int[] cnt_last = {-1, -1};
+    static boolean[] sampleChState = {false,false,false,false,false,false,false,false};
+
+    public boolean SendAdc_ch_change(int fpgaIdx) {
+        if(!scope.isRun()){
+            return false;
+        }
+
+        boolean[] sle = new boolean[ChannelFactory.CH_CNT];
+        int cnt = scope.getChannelSampOnCnt(scope.isRun(true), sle);
+
+        boolean bChange = false;
+        for (int i = 0; i < sle.length; i++) {
+            if (sampleChState[i] != sle[i]) {
+                bChange = true;
+                break;
+            }
+        }
+        System.arraycopy(sle, 0, sampleChState, 0, sle.length);
+        if (bChange) {
+            ChannelHardw channelHardw = ChannelHardw.getInstance();
+            if(adc.isChChangeReset()) {
+
+                for (int i = 0; i < fpgaNums; i++) {
+                    cmdFpgaPause(i);
+                    resetChOffset(i);
+                }
+                channelHardw.ChPowerEnable(false);
+                ms_sleep(10);
+                adc.setChannel(cnt, sle);
+                channelHardw.ChPowerEnable(true);
+                channelHardw.wrte_ad_gain(1);
+                channelHardw.wrte_ad_gain(0);
+                adc.setCalibrate();
+                channelHardw.changeChVolScale();
+                for (int i = 0; i < fpgaNums; i++) {
+                    gntR_ChOffsetDa(i);
+                }
+
+                cmdDevice(100);
+                cmdFpgaResume(1);
+                cmdFpgaResume(0);
+
+            }else {
+                adc.setChannel(cnt, sle);
+                channelHardw.wrte_ad_gain(fpgaIdx);
+                adc.setCalibrate();
+            }
+            cmdChNoise(fpgaIdx);
+        }
+        return bChange;
+    }
+
+//    public void writeAD_gain(int adIdx, int i0_q1, int vol) {
+//        adc.setGain(adIdx, i0_q1, vol);
+//    }
+    public void writeAD_gain(int fpgaIdx,int adcIdx,int i0_q1, int vol){
+        adc.setGain(fpgaIdx,adcIdx, i0_q1, vol);
+    }
+
+    public void writeAD_offset(int fpgaIdx,int adIdx, int i0_q1, int vol){
+        adc.setOffset(fpgaIdx,adIdx,i0_q1,vol);
+    }
+
+    public void setADCChannel(boolean b1, boolean b2, boolean b3, boolean b4) {
+        adc.setChannel(new boolean[] {b1, b2, b3, b4});
+    }
+
+    public void setADCChannel(boolean[] sel) {
+//        cmdFpgaPause(1);
+//        cmdFpgaPause(0);
+//        ChannelHardw.getInstance().ChPowerEnable(false);
+//        adc.setChannel(sel);
+//        ChannelHardw.getInstance().changeChVolScale();
+//        cmdFpgaResume(1);
+//        cmdFpgaResume(0);
+        adc.setChannel(sel);
+    }
+
+    public void SendADData(int fpgaIdx, int adIdx, int addr, int val) {
+        Log.d("MHO38V1",
+                "SendADData() called with: fpgaIdx = ["
+                        + fpgaIdx
+                        + "], adIdx = ["
+                        + adIdx
+                        + "], addr = ["
+                        + Integer.toHexString(addr)
+                        + "], val = ["
+                        + val
+                        + "]");
+        cmdDevice(0,100);
+        FPGAReg_SPI_EXT reg = (FPGAReg_SPI_EXT) getFPGAReg(fpgaIdx, FPGAReg.FPGA_SPI_EXT);
+        reg.setType(FPGAReg_SPI_EXT.SPI_EXT_AD);
+        reg.setWriteAd(1 << adIdx);
+        reg.setAdData(addr, val);
+        reg.setDataLength((HardwareProduct.isMHO68V2() && !mHw.isAdcB12DJ3200NBB()) ? 2 : 1);
+        reg.setByteValid(0);
+        sendCommand(reg);
+    }
+
+    public void AD_JMode(int fpgaIdx,int val,int v){
+        Log.d("MHO68V2", "AD_JMode() called with: fpgaIdx = [" + fpgaIdx + "], val = [" + val + "], v = [" +Integer.toHexString(v&0xFFFF) + "]");
+        cmdDevice(0,100);
+        FPGAReg_SPI_EXT reg = (FPGAReg_SPI_EXT) getFPGAReg(fpgaIdx, FPGAReg.FPGA_SPI_EXT);
+        reg.setType(FPGAReg_SPI_EXT.SPI_EXT_AD);
+        reg.setADMode(val,v);
+        reg.setDataLength(1);
+        reg.setByteValid(0);
+        sendCommand(reg);
+    }
+
+    public void AdInit(int fpgaIdx) {
+//        if(!HardwareProduct.isMHO10008()) {
+//            FPGAReg_SPI_EXT reg = (FPGAReg_SPI_EXT) getFPGAReg(fpgaIdx, FPGAReg.FPGA_SPI_EXT);
+//            reg.setType(FPGAReg_SPI_EXT.SPI_EXT_AD);
+//            reg.setVal(12, 4, 0x0F);
+//            reg.setDataLength(1);
+//            reg.setByteValid(0);
+//            reg.setVal(1, 1);
+//            sendCommand(reg);
+//            reg.setVal(12, 4, 0x00);
+//            reg.setVal(16, 4, 0x0F);
+//            reg.setVal(1, 0);
+//            sendCommand(reg);
+//        }
+    }
+
+    int debugPGA = -1;
+    public void setDebugPGA(int val){
+        debugPGA = val;
+    }
+    public void SendAD8370Data(int fpgaIdx, int[] val) {
+        if(BuildConfig.DEBUG) {
+            if (debugPGA > 0) {
+                Arrays.fill(val, debugPGA);
+            }
+        }
+        StringBuilder str = new StringBuilder();
+        for (int j : val) {
+            str.append(Integer.toHexString(j & 0xFFFF));
+            str.append(",");
+        }
+        Log.d("MHO38V1", "fpgaIdx:" + fpgaIdx + ",pga val:" + str);
+
+        FPGAReg_SPI_EXT reg = (FPGAReg_SPI_EXT) getFPGAReg(fpgaIdx, FPGAReg.FPGA_SPI_EXT);
+        reg.setType(FPGAReg_SPI_EXT.SPI_EXT_CHGAIN);
+        reg.setDataLength(4);
+        reg.setByteValid(0);
+        reg.setVGAIdx(0);
+        reg.setCh(0xF);
+        for (int i = 0; i < val.length; i++) {
+            reg.setVal(1 + i, val[i]);
+        }
+        sendCommand(reg);
+    }
+    public void SendChPD(int pdVal){
+        //Log.d("MHO68V2", "SendChPD() called with: pdVal = [" + Integer.toHexString(pdVal) + "]");
+
+        SendChPD(0,(pdVal & 0xF) | (pdVal>>12) & 0xF0);
+        SendChPD(1,((pdVal>>4) & 0xF) | (pdVal>>16) & 0xF0);
+    }
+    public void SendChPD_v2(long pdVal){
+        Log.d("MHO68V2", "SendChPD_v2() called with: pdVal = [" + Long.toHexString(pdVal) + "]");
+        SendChPD(0,(int)(pdVal & 0xFFFFFFFFL));
+        SendChPD(1,(int)((pdVal >> 32) & 0xFFFFFFFFL));
+    }
+    public void SendChPD(int fpgaIdx,int val){
+        Log.d(TAG, "SendChPD() called with: fpgaIdx = [" + fpgaIdx + "], val = [" + Integer.toHexString(val & 0xFF) + "]");
+        FPGAReg_SPI_EXT reg = (FPGAReg_SPI_EXT) getFPGAReg(fpgaIdx,FPGAReg.FPGA_SPI_EXT);
+        reg.setType(FPGAReg_SPI_EXT.SPI_EXT_CHPD);
+        reg.setDataLength(1);
+        reg.setByteValid(0);
+        reg.setVal(1,val);
+        sendCommand(reg);
+    }
+    public void SendClkInOut(int fpgaIdx,int val){
+
+        Log.d(TAG, "SendClkInOut() called with: val = [" + Integer.toHexString(val&0xFFFFFFFF) + "]");
+        FPGAReg_SPI_EXT reg = (FPGAReg_SPI_EXT) getFPGAReg(fpgaIdx,FPGAReg.FPGA_SPI_EXT);
+        reg.setType(FPGAReg_SPI_EXT.SPI_EXT_CLKINOUT);
+        reg.setDataLength(1);
+        reg.setByteValid(0);
+        reg.setVal(1,val);
+        sendCommand(reg);
+    }
+    public void SendProbe(int chIdx, byte[] bytes) {
+        int nums = bytes.length / 4;
+        int fpgaIdx = chIdxToFpgaIdx(chIdx);
+        FPGAReg_SPI_EXT reg = new FPGAReg_SPI_EXT(bytes.length + 4);
+        reg.setFpgaIdx(fpgaIdx);
+        reg.setType(FPGAReg_SPI_EXT.SPI_EXT_UART);
+        reg.setDataLength(nums);
+        reg.setByteValid(0);
+        reg.setVal(8, 4, 1 << chIdx);
+        for (int i = 0; i < nums; i++) {
+            reg.setVal(
+                    i + 1,
+                    (bytes[i * 4] & 0xFF) << 24
+                            | (bytes[i * 4 + 1] & 0xFF) << 16
+                            | (bytes[i * 4 + 2] & 0xFF) << 8
+                            | (bytes[i * 4 + 3] & 0xFF));
+        }
+        sendCommand(reg);
+    }
+
+    private void ms_sleep(long ms) {
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void gntR_ChOffsetDa(int fpgaIdx) {
+        Channel channel;
+        int[] chValue = {0, 0, 0, 0};
+        int beginIdx = beginChIdx(fpgaIdx);
+        int endIdx = endChIdx(fpgaIdx);
+        for (int i = beginIdx; i < endIdx; i++) {
+            channel = ChannelFactory.getDynamicChannel(i);
+            if (channel != null) {
+                chValue[i - beginIdx] = getDA_Vol(channel);
+            }
+        }
+        gntR_ChOffsetDa(fpgaIdx, chValue[0], chValue[1], chValue[2], chValue[3]);
+    }
+
+    public void resetChOffset(int fpgaIdx){
+        Channel channel;
+        int[] chValue = {0, 0, 0, 0};
+        int beginIdx = beginChIdx(fpgaIdx);
+        int endIdx = endChIdx(fpgaIdx);
+        for (int i = beginIdx; i < endIdx; i++) {
+            channel = ChannelFactory.getDynamicChannel(i);
+            if (channel != null) {
+                chValue[i - beginIdx] = (int)Math.round(getChannelZero(channel.getChId()));
+            }
+        }
+        gntR_ChOffsetDa(fpgaIdx, chValue[0], chValue[1], chValue[2], chValue[3]);
+    }
+
+
+
+    public void gntR_ChOffsetDa(int fpgaIdx, int ch1, int ch2, int ch3, int ch4) {
+        Log.d(
+                "MHO38V1",
+                "gntR_ChOffsetDa() called with: fpgaIdx = ["
+                        + fpgaIdx
+                        + "], ch1 = ["
+                        + ch1
+                        + "], ch2 = ["
+                        + ch2
+                        + "], ch3 = ["
+                        + ch3
+                        + "], ch4 = ["
+                        + ch4
+                        + "]");
+        FPGAReg_CH_OFFSET_DA12 reg =
+                (FPGAReg_CH_OFFSET_DA12) getFPGAReg(fpgaIdx, FPGAReg.FPGA_CH_OFFSET_DA12);
+        reg.setCh1(ch1);
+        reg.setCh2(ch2);
+        reg.setCh3(ch3);
+        reg.setCh4(ch4);
+        sendCommand(reg);
+    }
+
+    static final double x1_suolue = (double) ScopeBase.zoomYGrid_suolue() / ScopeBase.YGridWave();
+    static final double x1_main = (double) ScopeBase.zoomYGrid_fangda() / ScopeBase.YGridWave();
+    static final double y1_suolue =
+            (double) (ScopeBase.YGridWave() - ScopeBase.zoomYGrid_suolue()) / 2;
+    static final double y1_main =
+            (double) (ScopeBase.zoomYGrid_fangda() - ScopeBase.YGridWave()) / 2;
+
+    public void cmdFpgaDotMatrix(int chIdx) {
+        int fpgaIdx = chIdxToFpgaIdx(chIdx);
+        Scope scope = Scope.getInstance();
+        if (!scope.isChannelInSample(chIdx, scope.isRun(true))) return;
+        Channel channel = ChannelFactory.getDynamicChannel(chIdx);
+        if (channel == null) return;
+        double chPos = (double) channel.getPos();
+        FPGAReg_DOT_MATRIX dotMatrixReg =
+                (FPGAReg_DOT_MATRIX) getFPGAReg(fpgaIdx, FPGAReg.FPGA_DOT_MATRIX);
+        dotMatrixReg.reset();
+        dotMatrixReg.matrixParam.bChange = true;
+        dotMatrixReg.matrixParam.x1 = 1.0d; // 放大镜引起的衰减
+        dotMatrixReg.matrixParam.y1 = 0; // 放大镜引起的零点偏移
+        dotMatrixReg.matrixParam.y0 = chPos; // 现在通道位置
+        dotMatrixReg.matrixParam.k =
+                ADGear2PixBuf(chIdx, true) * getValueDifferentCoef(chIdx); // AD与屏幕对应关�?
+        // dotMatrixReg.matrixParam.y1 = chPos - dotMatrixReg.matrixParam.k *
+        // Math.floor(chPos/dotMatrixReg.matrixParam.k);
+        boolean[] chEn = new boolean[ChannelFactory.CH_CNT];
+        int cnt = scope.getChannelSampOnCnt(scope.isRun(true), chEn);
+
+        int beginIdx = beginChIdx(fpgaIdx);
+        int endIdx = endChIdx(fpgaIdx);
+        int idx = chIdx - beginIdx;
+        switch (cnt) {
+            case 2:
+                for (int i = beginIdx; i < endIdx; i++) {
+                    if (chEn[i]) {
+                        if (i == chIdx) {
+                            dotMatrixReg.setChannel(1);
+                            break;
+                        }
+                    }
+                }
+                break;
+            case 4: {
+                int k = 0;
+                for (int i = beginIdx; i < endIdx; i++) {
+                    if (chEn[i]) {
+                        if (i == chIdx) {
+                            dotMatrixReg.setChannel(1 << k);
+                            break;
+                        }
+                        k++;
+                    }
+                }
+            }
+                break;
+            case 8:
+            default:
+                dotMatrixReg.setChannel(1 << idx);
+
+                break;
+        }
+
+        if (scope.isRun(true)) {
+            dotMatrixReg.matrixParam.x0 = 1.0d;
+            dotMatrixReg.matrixParam.z = channel.getPosFix();
+        } else {
+            ScopeFrozen scopeFrozen = ScopeFrozen.getInstance();
+            dotMatrixReg.matrixParam.x0 = (double) scope.zoomYScale(chIdx) / channel.getYFactor();
+            dotMatrixReg.matrixParam.z =
+                    scopeFrozen.getChPosFix(chIdx) / scopeFrozen.getYFactor(chIdx)
+                            - channel.getZPos();
+        }
+        int len;
+
+        if (scope.isZoom()) {
+
+            dotMatrixReg.setUpDisSuolue(0);
+            dotMatrixReg.matrixParam.y1 = y1_main;
+            dotMatrixReg.matrixParam.x1 = x1_main;
+            if (dotMatrixReg.judgeDotMatrixChange(dotMatrixReg.matrixParam, 0, chIdx)) {
+
+                len =
+                        dotMatrixReg.dotMatrixCal(
+                                dotMatrixReg.matrixParam,
+                                hwConfig.getAdMaxVal(),
+                                0,
+                                511 + ScopeBase.getHeight() / 2 - ScopeBase.zoomYGrid_suolue(),
+                                0);
+                dotMatrixReg.setCmdLength(len);
+                sendCommand(dotMatrixReg, len + FPGAReg.FPGA_REG_HEADER_LEN);
+            }
+
+            dotMatrixReg.setUpDisSuolue(1);
+            dotMatrixReg.matrixParam.y1 = y1_suolue;
+            dotMatrixReg.matrixParam.x1 = x1_suolue;
+
+            if (dotMatrixReg.judgeDotMatrixChange(dotMatrixReg.matrixParam, 1, chIdx)) {
+                len =
+                        dotMatrixReg.dotMatrixCal(
+                                dotMatrixReg.matrixParam,
+                                hwConfig.getAdMaxVal(),
+                                0,
+                                1023,
+                                511 + ScopeBase.getHeight() / 2 - ScopeBase.zoomYGrid_suolue());
+                dotMatrixReg.setCmdLength(len);
+                sendCommand(dotMatrixReg, len + FPGAReg.FPGA_REG_HEADER_LEN);
+            }
+        } else {
+            dotMatrixReg.setUpDisSuolue(0);
+            if (dotMatrixReg.judgeDotMatrixChange(dotMatrixReg.matrixParam, 0, chIdx)) {
+                len =
+                        dotMatrixReg.dotMatrixCal(
+                                dotMatrixReg.matrixParam, hwConfig.getAdMaxVal(), 0, 1023, 0);
+                dotMatrixReg.setCmdLength(len);
+                sendCommand(dotMatrixReg, len + FPGAReg.FPGA_REG_HEADER_LEN);
+            }
+        }
+    }
+    public void resetBak(int fpgaIdx){
+        FPGAReg_DOT_MATRIX dotMatrixReg =
+                (FPGAReg_DOT_MATRIX) getFPGAReg(fpgaIdx, FPGAReg.FPGA_DOT_MATRIX);
+        int beginIdx = beginChIdx(fpgaIdx);
+        int endIdx = endChIdx(fpgaIdx);
+        for(int i=beginIdx;i<endIdx;i++) {
+            dotMatrixReg.dotMatrixChange(i);
+        }
+    }
+
+    public int update_v_Zoom(int fpgaIdx) {
+
+        int n = hwConfig.getAdbits();
+        int r, a, b, c, e = hwConfig.getAdMaxVal() + 1;
+        double f = 1, f1, f2, bakPos;
+        boolean bRun = scope.isRun(true);
+        Channel channel;
+        int[] vol = new int[8 * 3 + 1];
+        Arrays.fill(vol, 0);
+        double vScaleVal;
+        int ret = 0;
+        if (n < 12) return 0;
+        double chPos;
+        int beginIdx = beginChIdx(fpgaIdx);
+        int endIdx = endChIdx(fpgaIdx);
+        FPGAReg_DOT_MATRIX dotMatrixReg =
+                (FPGAReg_DOT_MATRIX) getFPGAReg(fpgaIdx, FPGAReg.FPGA_DOT_MATRIX);
+        double digitV = 1;
+        for (int i = beginIdx; i < endIdx; i++) {
+            channel = ChannelFactory.getDynamicChannel(i);
+            if (channel == null) continue;
+            vScaleVal = channel.getVScaleVal() / channel.getProbeRate();//档位
+            f1 = channel.getYFactor();
+            bakPos = channel.getZPos();
+            digitV = HwConfig.getInstance().getDigitDang(channel.getResistanceType());
+            if (bRun) {
+                f = digitV / vScaleVal;
+                chPos = 0;
+                vScaleVal = 0;
+                f2 = 1;
+            } else {
+                ScopeFrozen scopeFrozen = ScopeFrozen.getInstance();
+                f1 = scopeFrozen.getYFactor(i);
+                VerticalAxis verticalAxis = scopeFrozen.getChVertical(i);
+                double v = verticalAxis.getScaleVal() / verticalAxis.getProbeRate();
+                v *= f1;
+                f = f2 = v / vScaleVal;
+
+                vScaleVal = scopeFrozen.getChPosFix(i) / f1;
+                chPos = channel.getPos();
+            }
+
+            if (f < 1) {
+                f = 1;
+            } else if (f > 4) {
+                f = 4;
+            }
+            if (!bRun) {
+
+                if(f <= 1){
+                    channel.setZPos(0);
+                    chPos = 0;
+                }else {
+                    r = e / 2;
+                    r = (int) Math.round(r * f + r);
+                    f2 /= f;
+                    int z = (int) Math.round(chPos / f2 - vScaleVal * f);
+                    if (z > r) {
+                        z = r;
+                    } else if (z < -r) {
+                        z = -r;
+                    }
+                    channel.setZPos(vScaleVal - chPos / f2);
+                    chPos = z;
+                }
+            }
+
+            a = (int) (Math.pow(2, n - 1) + 0.1);
+
+            b = (int) (e * f * Math.pow(2, 16 - n) + 0.1);
+            c = (int) Math.round((double) e / 2 + chPos);
+            vol[i - beginIdx + 1] = vol[i - beginIdx + 5] = a;
+            vol[i - beginIdx + 9] = vol[i - beginIdx + 13] = b;
+            vol[i - beginIdx + 17] = vol[i - beginIdx + 21] = c;
+//            Log.d("1234","ch:" + channel.getChId() + ",f:" + f + ",a:" + a + ",b:" + b + ",c:" + c);
+            channel.setYFactor(f);
+            channel.setABC(a,b,c);
+
+            if (!DoubleUtil.FuzzyCompare(channel.getYFactor(), f1)
+                    || !DoubleUtil.FuzzyCompare(channel.getZPos(), bakPos)) {
+                dotMatrixReg.dotMatrixChange(i);
+                ret |= 1 << i;
+            }
+        }
+        FPGAReg reg = new FPGAReg(FPGAReg.FPGA_V_ZOOM, vol.length * 4);
+        reg.setFpgaIdx(fpgaIdx);
+        reg.setVal(vol);
+        sendCommand(reg);
+        return ret;
+    }
+
+    static int[][] coef_fpga_mho_bak = {null, null};
+    static int[][] coef_seach_mho_bak = {null, null};
+
+    public void cmdFpgaReloadChazhiCoef_mho(int fpgaIdx) {
+        Scope scope = Scope.getInstance();
+        int[] coef_fpga;
+        int[] coef_seach;
+        FPGAReg_DISP_CHA dispChaReg =
+                (FPGAReg_DISP_CHA) getFPGAReg(fpgaIdx, FPGAReg.FPGA_DISP_CHA1);
+        if (!dispChaReg.isNeedChaZhi()) {
+            return;
+        }
+
+        FPGAReg_CY_BUCONG cyBucongReg =
+                (FPGAReg_CY_BUCONG) getFPGAReg(fpgaIdx, FPGAReg.FPGA_CY_BUCONG);
+        if (cyBucongReg.getCyType12() > 0) { // 线性插值
+            coef_fpga = CHAZHI_COEF.chazhiCoef_Line;
+            coef_seach = coef_fpga;
+        } else { // 升采样正弦滤波
+            boolean[] sle = new boolean[ChannelFactory.CH_CNT];
+            int cnt = scope.getChannelSampOnCnt(scope.isRun(true), sle);
+
+            cnt /= adcNums;
+
+            if(cnt > 1){
+                coef_seach = CHAZHI_COEF.chazhiCoef_dub;
+            }else{
+                coef_seach = CHAZHI_COEF.chazhiCoef_sgl;
+            }
+            if (Display.getInstance().getDrawType() == Display.DRAWTYPE_DOTS)
+                coef_fpga = CHAZHI_COEF.chazhiCoef_Line;
+            else {
+                coef_fpga = coef_seach;
+            }
+        }
+        //
+        if (coef_fpga != coef_fpga_mho_bak[fpgaIdx]) {
+            coef_fpga_mho_bak[fpgaIdx] = coef_fpga;
+
+            FPGAReg reg = new FPGAReg(FPGAReg.FPGA_CHAZHI_COEF, coef_fpga.length * 4);
+            reg.setFpgaIdx(fpgaIdx);
+            reg.setVal(coef_fpga);
+            Log.d(TAG, "coef_fpga len:" + reg.getCommandLength());
+            sendCommand(reg);
+        }
+
+        if (coef_seach != coef_seach_mho_bak[fpgaIdx]) {
+            coef_seach_mho_bak[fpgaIdx] = coef_seach;
+
+            FPGAReg reg = new FPGAReg(FPGAReg.FPGA_SEACH_COEF, coef_seach.length * 4);
+            reg.setFpgaIdx(fpgaIdx);
+            reg.setVal(coef_seach);
+            Log.d(TAG, "coef_seach len:" + reg.getCommandLength());
+            sendCommand(reg);
+        }
+    }
+
+    public void cmdFpgaReloadChazhiCoef(int fpgaIdx) {
+        cmdFpgaReloadChazhiCoef_mho(fpgaIdx);
+    }
+
+    private int[] FPGA_Command(int fpgaIdx, int param, int cmd) {
+        return FPGA_Command(fpgaIdx, param, cmd, false);
+    }
+
+    private int[] FPGA_Command(int fpgaIdx, int param, int cmd, boolean bRecv) {
+        // 因为在校准线程中直接调用了FPGA_Command 可能会与 命令线程中的 FPGA_Command 不同步
+        int[] res = {-1, -1, -1};
+        synchronized (this) {
+            if (bAdCablition) {
+                long t = SystemClock.elapsedRealtime() - adCablitionTs;
+                t =  50 - t;
+                if (t > 0) {
+                    ms_sleep(t);
+                }
+                bAdCablition = false;
+                adCablitionTs = 0;
+            }
+            FPGAReg_COMMAND reg = (FPGAReg_COMMAND) getFPGAReg(fpgaIdx, FPGAReg.FPGA_COMMAND);
+            reg.setParam(param);
+            reg.setCmd(cmd);
+            reg.setCmdCntValid(1);
+            reg.setCmdCnt(SyncHeader.getSyncHeader());
+            if (bRecv) {
+                recvCommand(reg, reg.getRecvReg());
+                res[0] = reg.getSyncHeader();
+                res[1] = reg.getColAddr();
+                res[2] = reg.getFrameNums();
+                return res;
+            } else {
+                sendCommand(reg);
+            }
+            return res;
+        }
+    }
+
+    public void segmentTimestamp(int fpgaIdx) {
+        if (scope.isSegmentEnable(scope.isRun(true))) {
+            FPGAReg reg = new FPGAReg(FPGAReg.FPGA_SEGMENT_TS, 4);
+            reg.setFpgaIdx(fpgaIdx);
+            reg.setVal(0, 0x01);
+            sendCommand(reg);
+        }
+    }
+
+    public void forceTrigger(int fpgaIdx) {
+
+        FPGAReg reg = new FPGAReg(FPGAReg.FPGA_FORCE_TRIGGER,4);
+        reg.setFpgaIdx(fpgaIdx);
+        reg.setVal(0,0x01);
+        sendCommand(reg);
+    }
+
+    private boolean bAdCablition = false;
+    private long adCablitionTs = 0;
+
+    public void forceAdCablition(int fpgaIdx) {
+        Log.d(TAG, "forceAdCablition() called with: fpgaIdx = [" + fpgaIdx + "]");
+        if(HardwareProduct.isMHO38V1()
+                || HardwareProduct.isMHO28V1()){
+
+            FPGAReg_SPI_EXT reg = (FPGAReg_SPI_EXT) getFPGAReg(fpgaIdx, FPGAReg.FPGA_SPI_EXT);
+            reg.setType(FPGAReg_SPI_EXT.SPI_EXT_AD);
+            reg.setCalibrationAd(0xF);
+            reg.setDataLength(1);
+            reg.setVal(1, 1);
+            synchronized (this) {
+                sendCommand(reg);
+                bAdCablition = true;
+                adCablitionTs = SystemClock.elapsedRealtime();
+            }
+        }
+    }
+
+    public void adSync(){
+        Log.d(TAG, "adSync() called");
+        FPGAReg_SPI_EXT reg = (FPGAReg_SPI_EXT) getFPGAReg(0, FPGAReg.FPGA_SPI_EXT);
+        reg.setType(FPGAReg_SPI_EXT.SPI_EXT_AD);
+        reg.adSync();
+        reg.setDataLength(1);
+        reg.setVal(1, 1);
+        sendCommand(reg);
+    }
+
+    public void updataRegDis(int fpgaIdx) {
+        Log.d(TAG, "updataRegDis() called with: fpgaIdx = [" + fpgaIdx + "]");
+        FPGA_Command(fpgaIdx, 0x00, 0x33);
+    }
+
+    public void updataReg(int fpgaIdx) {
+        if (scope.isRun(true)) {
+            updataRegEx(fpgaIdx);
+        }
+    }
+
+    public void updataRegEx(int fpgaIdx) {
+        FPGA_Command(fpgaIdx, 0x00, 0x55);
+    }
+
+    public void cmdDevice(int fpgaIdx, int time_ms) {
+        if (!scope.isRun(true)) time_ms = 0;
+        FPGA_Command(fpgaIdx, time_ms / 5, 0x22);
+    }
+
+    public void cmdDevice(int time_ms) {
+        cmdDevice(1, time_ms);
+        cmdDevice(0,time_ms);
+    }
+
+
+
+    public void cmdFpgaRun(int fpgaIdx) {
+        chPowerEnable();
+        FPGA_Command(fpgaIdx, 0x01, 0x11);
+    }
+
+    public int[] cmdFpgaStop(int fpgaIdx) {
+        int[] val = FPGA_Command(fpgaIdx, 0x00, 0x11, true);
+        Logger.d("cmdFpgaStop:" + val[0] + "," + val[1]);
+        return val;
+    }
+
+    public void cmdFpgaSingle(int fpgaIdx) {
+        FPGA_Command(fpgaIdx, 0x02, 0x11);
+    }
+
+    public int[] cmdFpgaPause(int fpgaIdx) {
+        return FPGA_Command(fpgaIdx, 0x04, 0x11, true);
+    }
+
+    public void cmdFpgaResume(int fpgaIdx) {
+        FPGA_Command(fpgaIdx, 0x05, 0x11, false);
+    }
+
+    public void cmdFpgaSyncData(int fpgaIdx) {
+        FPGA_Command(fpgaIdx, 0x01, 0x66, false);
+    }
+
+    public void cmdFpgaClear(int fpgaIdx) {
+        FPGA_Command(fpgaIdx, 0x00, 0x66, false);
+    }
+
+    public void cmdFpgaHighRefresh(int fpgaIdx) {
+        int val = 1;
+        FPGA_Command(fpgaIdx, val, 0x77);
+    }
+
+    public void cmdInit() {
+        for (int i = 0; i < fpgaNums; i++) {
+            cmdFpgaHighRefresh(i);
+            ChangeProbeDa(i);
+            updataReg(i);
+        }
+        ms_sleep(1);
+        mHw.probeIo();
+    }
+
+    public void ADCalibrate() {
+        adc.setCalibrate();
+    }
+
+    // --------------------------------------------------------------------------------------------------------------------------
+    // AD前置滤波
+    // 1阶IIR滤波系数计算
+    // Fc为-3dB频点；Fs：采样频率（单位均为Hz）
+    // type: =0，低通；=1，高通；
+    // out：滤波结果，长度4个数据，顺序为：b1、b2、a1、a2；
+    static final double PI = 3.14159265358979323846264338328;
+
+    private boolean iir_coef_cal(double Fc, double Fs, int type, double[] out) {
+        double[] a = {0, 0, 0};
+        double[] b = {0, 0, 0};
+        double p;
+
+        if (Fc <= 1e-6 || Fc >= (Fs / 2 - 1e-6)) return false;
+        // 频率校准
+        Fc = Fs * Math.tan(PI * Fc / Fs) / PI;
+        if (type == 0) {
+            // 低通
+            p = 0.31755496498600060962 * Fs / Fc;
+            b[0] = 1 / (1 + p);
+            b[1] = b[0];
+        } else if (type == 1) {
+            // 高通
+            p = 0.31906660205046560863 * Fs / Fc;
+            b[0] = 1 / (1 + 1 / p);
+            b[1] = -b[0];
+        } else return false;
+
+        a[0] = 1;
+        a[1] = (1 - p) / (1 + p);
+        out[0] = b[0];
+        out[1] = b[1];
+        out[2] = a[0];
+        out[3] = a[1];
+        return true;
+    }
+
+    // IIR系数归一化
+    // in：a、b系数输入，顺序为：b1、b2、a1、a2；
+    // out：归一化系数输出，长度8个数据，顺序为p1~p8；
+    // bit：归一化后的系数位数，=0，自动归一化，其他值，固定归一化值
+    private void iir_coef_normalize(double[] in, int[] out, int idx, int bit) {
+
+        double[] p = new double[16];
+        Arrays.fill(p, 0);
+        double b = in[0];
+        double a = in[3];
+
+        p[0] = b;
+        p[1] = -a * b;
+        p[2] = a * a * b;
+        p[3] = -a * a * a * b;
+
+        p[4] = -a * (1L << bit);
+        p[5] = Math.pow(a, 4) * (1L << bit);
+        p[6] = Math.pow(a, 8) * (1L << bit);
+        p[7] = Math.pow(a, 16) * (1L << bit);
+        double v = 0;
+        double m = Math.abs(p[0]);
+        for (int i = 1; i < 4; i++) {
+            v = Math.abs(p[i]);
+            if (m < v) {
+                m = v;
+            }
+        }
+
+        int j = 0;
+        while (m * (1L << j) < 0xFFFF) {
+            j++;
+            if (j > 62) {
+                break;
+            }
+        }
+        j--;
+
+        long n = 0;
+        for (int i = 0; i < 4; i++) {
+            out[idx + i] = (int) Math.round(p[i] * (1L << j));
+            n = Math.round(p[4 + i]);
+            out[idx + 4 + i * 2] = (int) (n & 0x3FFFF);
+            out[idx + 5 + i * 2] = (int) ((n >>> 18) & 0x3FFFF);
+        }
+        out[idx + 12] = j;
+    }
+
+    private void iir_coef_normalize_8(double[] in, int[] out, int idx, int bit) {
+
+        double[] p = new double[16];
+        Arrays.fill(p, 0);
+        double b = in[0];
+        double a = in[3];
+        for(int i=0;i<8;i++){
+            p[i] = Math.pow(-a,i) * b;
+        }
+//        for(int i=0;i<4;i++){
+//            p[8 + i] = Math.pow(a,Math.pow(2,i)) * (1L << bit);
+//        }
+        p[8] = -a * (1L << bit);
+        double A = Math.pow(a, 8);
+        p[9] = Math.pow(A, 1) * (1L << bit);
+        p[10] = Math.pow(A, 2) * (1L << bit);
+        p[11] = Math.pow(A, 4) * (1L << bit);
+        p[12] = Math.pow(A, 6) * (1L << bit);
+
+        double v = 0;
+        double m = Math.abs(p[0]);
+        for (int i = 1; i < 8; i++) {
+            v = Math.abs(p[i]);
+            if (m < v) {
+                m = v;
+            }
+        }
+
+        int j = 0;
+        while (m * (1L << j) < 0xFFFF) {
+            j++;
+            if (j > 62) {
+                break;
+            }
+        }
+        j--;
+
+        long n = 0;
+        for (int i = 0; i < 8; i++) {
+            out[idx + i] = (int) Math.round(p[i] * (1L << j));
+        }
+        for (int i = 0; i <= 4; i++) {
+            n = Math.round(p[8 + i]);
+            out[idx + 8 + i * 2] = (int) (n & 0x3FFFF);//低位
+            out[idx + 9 + i * 2] = (int) ((n >>> 18) & 0x3FFFF);//取高位
+        }
+        out[idx + 18] = j;
+    }
+    // 重载电压档位改变引起的前置滤波系数变化，�?00uV需要限制带宽，其他档不需�?
+    static double[] vScaleLast = {-1, -1, -1, -1, -1, -1, -1, -1};
+
+    public void cmdReload_AD_coef_VOL_dangChange(int chIdx) {
+
+        if (!ChannelFactory.isDynamicCh(chIdx)) return;
+        Channel channel = ChannelFactory.getDynamicChannel(chIdx);
+        if (channel != null) {
+            double ix = channel.getVScaleVal()/channel.getProbeRate();
+            if (vScaleLast[chIdx] != ix) {
+                vScaleLast[chIdx] = ix;
+                cmdReload_AD_coef(chIdxToFpgaIdx(chIdx));
+            }
+        }
+    }
+
+    public void cmdChNoise(int fpgaIdx){
+        boolean[] sle = new boolean[ChannelFactory.CH_CNT];
+        int chCnt = scope.getChannelSampOnCnt(scope.isRun(true), sle);
+        int [] vv = {0,0,0,0};
+        int beginIdx = beginChIdx(fpgaIdx);
+        int endIdx = endChIdx(fpgaIdx);
+
+        switch (chCnt) {
+            case 2:
+                for(int i=beginIdx;i<endIdx;i++){
+                    if(sle[i]) {
+                        Channel channel = ChannelFactory.getDynamicChannel(i);
+
+                        if(channel.getResistanceType() == Channel.RESISTANCE_1M) {
+                            double xv = channel.getVScaleVal() / channel.getProbeRate();
+                            if ((xv > 0.015 && xv < 0.0250001) || (xv > 0.4 && xv < 0.6000001)) {
+                                Arrays.fill(vv, 5);
+                            }
+                        }
+                    }
+                }
+
+                break;
+            case 4:
+                int k = 0;
+                for (int i = beginIdx; i < endIdx; i++) {
+                    if (sle[i]) {
+                        Channel channel = ChannelFactory.getDynamicChannel(i);
+                        if(channel.getResistanceType() == Channel.RESISTANCE_1M) {
+                            double xv = channel.getVScaleVal() / channel.getProbeRate();
+                            if ((xv > 0.015 && xv < 0.0250001) || (xv > 0.4 && xv < 0.6000001)) {
+                                vv[2 * k] = 5;
+                                vv[2 * k + 1] = 5;
+                            }
+                        }
+                        k++;
+                    }
+                }
+                break;
+            case 8:
+                for (int i = beginIdx; i < endIdx; i++) {
+                    Channel channel = ChannelFactory.getDynamicChannel(i);
+                    if(channel.getResistanceType() == Channel.RESISTANCE_1M) {
+                        double xv = channel.getVScaleVal() / channel.getProbeRate();
+                        if ((xv > 0.015 && xv < 0.0250001)
+                                || (xv > 0.4 && xv < 0.6000001)) {
+                            vv[i - beginIdx] = 5;
+                        }
+                    }
+                }
+                break;
+        }
+
+        if(isCalibrate()) {
+            Arrays.fill(vv,0);
+        }
+
+        setChNosie(fpgaIdx, vv);
+    }
+    final static long BANDWIDTH_SETP = 50_000_000L;
+    final static long BANDWIDTH_CHA = 150_000_000L;
+    final static long [] sBandWidth ={
+        20_000_000L  + BANDWIDTH_CHA,
+        50_000_000L  + BANDWIDTH_CHA,
+        100_000_000L + BANDWIDTH_CHA,
+        150_000_000L + BANDWIDTH_CHA,
+        200_000_000L + BANDWIDTH_CHA,
+        250_000_000L + BANDWIDTH_CHA,
+        300_000_000L + BANDWIDTH_CHA,
+        350_000_000L + BANDWIDTH_CHA,
+        400_000_000L + BANDWIDTH_CHA,
+        450_000_000L + BANDWIDTH_CHA,
+        500_000_000L + BANDWIDTH_CHA,
+        550_000_000L + BANDWIDTH_CHA,
+        600_000_000L + BANDWIDTH_CHA,
+        650_000_000L + BANDWIDTH_CHA,
+        700_000_000L + BANDWIDTH_CHA,
+        750_000_000L + BANDWIDTH_CHA,
+        800_000_000L + BANDWIDTH_CHA,
+        850_000_000L + BANDWIDTH_CHA,
+        900_000_000L + BANDWIDTH_CHA,
+        950_000_000L + BANDWIDTH_CHA,
+        1000_000_000L+ BANDWIDTH_CHA,
+    };
+
+    // 重载前置滤波系数
+    public void cmdReload_AD_coef(int fpgaIdx) {
+
+        double fc = 0;
+        int type = 0;
+        int bandWidthType;
+        Channel channel = null;
+
+        // 判断每个通道的滤波方式和Fc值
+        int[] type1 = {0, 0, 0, 0};
+        double[] fc1 = {0, 0, 0, 0};
+        double[] fc12 = {0, 0, 0, 0};
+
+        int[] type3 = {0,0,0,0};
+
+
+        int beginIdx = beginChIdx(fpgaIdx);
+        int endIdx = endChIdx(fpgaIdx);
+        long fs = adc.getMaxAdInClk() * 1000L * 1000 / maxAdcChNums;
+
+        for (int i = beginIdx; i < endIdx; i++) {
+            int j = i - beginIdx;
+            channel = ChannelFactory.getDynamicChannel(i);
+            if (channel == null) continue;
+
+            fc = channel.getBandWidth();
+            bandWidthType = channel.getBandWidthType();
+
+            if(isCalibrate()) {
+                type = 0;
+                bandWidthType = Channel.BANDWIDTH_TYPE_FULL;
+                fc12[j] = fc = Channel.MAX_BANDWIDTH;
+            }else{
+                type = 1;
+                int idx = (int) (Math.ceil(Channel.getMaxBandWidth() / BANDWIDTH_SETP) + 0.01);
+
+                if (idx < sBandWidth.length) {
+                    fc12[j] = sBandWidth[idx];
+                }else{
+                    fc12[j] = Channel.MAX_BANDWIDTH;
+                }
+                if(channel.getResistanceType() == Channel.RESISTANCE_1M){
+                    if(fc12[j] > Channel.MAX_BANDWIDTH/2){
+                        fc12[j] = Channel.MAX_BANDWIDTH;
+                    }
+                    if(HardwareProduct.isMHO68V2()) {
+                        double v = channel.getVScaleVal() / channel.getProbeRate();
+                        if ((v > 0.025 && v < 0.08)
+                                || (v > 0.6 && v < 1.5)) {
+                            fc12[j] = 700 * 1e6;
+                            type3[j] = (1 << 17);
+                        }
+                    }
+                }
+                if(HardwareProduct.isMHO68V1() || HardwareProduct.isMHO68V2()) {
+                    if (fc12[j] >= Channel.MAX_BANDWIDTH * 3 / 4) {
+                        type = 0;
+                    }
+                }else {
+                    if(bandWidthType == Channel.BANDWIDTH_TYPE_FULL){
+                        type = 0;
+                    }
+                }
+            }
+
+
+            switch (bandWidthType) {
+                case Channel.BANDWIDTH_TYPE_LOWPASS:
+                    type |= (0 << 16) // =0低通；=1高通
+                            | (1 << 17); // =0关闭滤波器；=1开始滤波器
+
+                    break;
+                case Channel.BANDWIDTH_TYPE_HIGHPASS:
+                    type |= (1 << 16) // =0低通；=1高通
+                            | (1 << 17); // =0关闭滤波器；=1开始滤波器
+
+                    break;
+                case Channel.BANDWIDTH_TYPE_20M:
+                case Channel.BANDWIDTH_TYPE_200M:
+                case Channel.BANDWIDTH_TYPE_300M:
+                    type |= 1;
+                    fc12[j] = fc;
+                    break;
+            }
+
+            type1[j] = type;
+            fc1[j] = fc;
+            Log.d(TAG,"lvbb -- ch:" + i + ",type:" + Integer.toHexString(type) + ",fc:" + fc + ",fc2:" + fc12[j]);
+        }
+
+        // 结合fpga对单双四通道的特殊要�?
+        int[] type2 = {0, 0, 0, 0};
+        double[] fc2 = {0, 0, 0, 0};
+        double[] fc22 = {0, 0, 0, 0};
+        Scope scope = Scope.getInstance();
+        boolean[] sle = new boolean[ChannelFactory.CH_CNT];
+        int chCnt = scope.getChannelSampOnCnt(scope.isRun(true), sle);
+
+        switch (chCnt) {
+            case 2:
+                {
+                    for (int i = beginIdx; i < endIdx; i++) {
+                        if (sle[i]) {
+                            int idx = i - beginIdx;
+                            Arrays.fill(fc22,fc12[idx]);
+                            Arrays.fill(fc2,fc1[idx]);
+                            Arrays.fill(type2,type1[idx]);
+                            Arrays.fill(type3,type3[idx]);
+                            break;
+                        }
+                    }
+                    break;
+                }
+            case 4:
+            {
+                int k = 0;
+                for (int i = beginIdx; i < endIdx; i++) {
+                    if (sle[i]) {
+                        int idx = i - beginIdx;
+                        fc22[2 * k] = fc12[idx];
+                        fc22[2 * k + 1] = fc12[idx];
+                        fc2[2 * k] = fc1[idx];
+                        fc2[2 * k + 1] = fc1[idx];
+                        type2[2 * k] = type1[idx];
+                        type2[2 * k + 1] = type1[idx];
+                        type3[2 * k] = type3[idx];
+                        type3[2 * k + 1] = type3[idx];
+                        k++;
+                    }
+                }
+                break;
+            }
+            case 8:
+            default:
+                for (int i = beginIdx; i < endIdx; i++) {
+                    int idx = i - beginIdx;
+                    fc2[idx] = fc1[idx];
+                    fc22[idx] = fc12[idx];
+                    type2[idx] = type1[idx];
+                }
+                break;
+        }
+
+
+        {
+
+            int N = HardwareProduct.isMHO68V2() ? 32 : 16;
+            int[] vol = new int[1 + N * 4 + N * 4];
+            Arrays.fill(vol, 0);
+            int bits = 30;
+
+
+            for (int i = 3; i >= 0; i--) {
+                if ((type2[i] & (1 << 17)) != 0) {
+                    // 滤波器使能
+                    double[] coef = {0, 0, 0, 0};
+                    int idx = 1 + i * N;
+                    fc = fc2[i];
+                    if (iir_coef_cal(fc, fs, 0, coef)) {
+                        // 归一化
+                        if(N > 16) {
+                            iir_coef_normalize_8(coef, vol, idx, bits);
+                        }else{
+                            iir_coef_normalize(coef,vol,idx,bits);
+                        }
+                    }
+                }
+
+                if(type3[i] != 0){
+                    type2[i] |= 0x01;
+                }
+
+                if((type2[i] &0x01) != 0){
+                    double[] coef = {0, 0, 0, 0};
+                    int idx = 1 + 4 * N + i * N;
+                    fc = fc22[i];
+                    if (iir_coef_cal(fc, fs, 0, coef)) {
+                        // 归一化
+                        if(N > 16) {
+                            iir_coef_normalize_8(coef, vol, idx, bits);
+                        }else{
+                            iir_coef_normalize(coef,vol,idx,bits);
+                        }
+                    }
+                }
+
+                vol[0] <<= 4;
+                vol[0] |= type2[i];
+            }
+
+            int len = vol.length * 4;
+            FPGAReg reg = new FPGAReg(FPGAReg.FPGA_AD_COEF, len);
+            reg.setFpgaIdx(fpgaIdx);
+            reg.setVal(vol);
+            sendCommand(reg);
+        }
+    }
+
+    public void gntR_Bus_Type(int fpgaIdx) {
+        Log.d(TAG, "gntR_Bus_Type() called with: fpgaIdx = [" + fpgaIdx + "]");
+        FPGAReg_BUS_TYPE regBusType = (FPGAReg_BUS_TYPE) getFPGAReg(fpgaIdx, FPGAReg.FPGA_BUS_TYPE);
+        regBusType.reset();
+
+        SerialChannel serialChannel;
+        int beginIdx = beginSerialIdx(fpgaIdx);
+        int endIdx = endSerialIdx(fpgaIdx);
+        for (int i = beginIdx; i < endIdx; i++) {
+            serialChannel = ChannelFactory.getSerialChannel(i);
+            if (serialChannel.isOpen()
+                    || TriggerFactory.getTriggerType()
+                            == (Trigger.TRIG_TYPE_SERIAL1 + (i - ChannelFactory.S1))) {
+                Logger.d(TAG, "getBusType : " + serialChannel.getBusType() + ",S:" + serialChannel.getChId());
+                int j = i - beginIdx;
+                switch (serialChannel.getBusType()) {
+                    case IBus.UART:
+                        regBusType.setUART(j, 1);
+                        break;
+                    case IBus.LIN:
+                        {
+                            LinBus lin = (LinBus) serialChannel.getBus(IBus.LIN);
+                            switch (lin.getLinType()) {
+                                default:
+                                case LinBus.LIN_TYPE_1_3:
+                                    regBusType.setLin(j, 1);
+                                    break;
+                                case LinBus.LIN_TYPE_2_0:
+                                    regBusType.setLin2_0(j, 1);
+                                    break;
+                                case LinBus.LIN_TYPE_1_3_LONG:
+                                    regBusType.setLin1_3_Long(j, 1);
+                                    break;
+                            }
+                        }
+                        break;
+                    case IBus.CAN:
+                        {
+                            CanBus bus = (CanBus) serialChannel.getBus(IBus.CAN);
+                            if (bus.isCanFDEnable()) {
+                                regBusType.setCanFD(j, 1);
+                            } else {
+                                regBusType.setCan(j, 1);
+                            }
+                        }
+                        break;
+                    case IBus.SPI:
+                        regBusType.setSPI(j, 1);
+                        break;
+                    case IBus.I2C:
+                        regBusType.setI2C(j, 1);
+                        break;
+                    case IBus.ARINC429:
+                        regBusType.set429(j, 1);
+                        break;
+                    case IBus.MILSTD1553B:
+                        regBusType.set1553B(j, 1);
+                        break;
+                }
+                regBusType.setEnable(j, 1);
+            }
+        }
+
+        Scope scope = Scope.getInstance();
+        if (scope.isInScrollMode() || scope.isInSlowScaleMode() || scope.isInXYMode()) {
+            regBusType.setEnable(0, 0);
+            regBusType.setEnable(1, 0);
+        }
+        sendCommand(regBusType);
+        if (regBusType.isEnable(0) || regBusType.isEnable(1)) {
+            setDataFreq(fpgaIdx, 16, 16);
+        } else {
+            setDataFreq(fpgaIdx,  60 ,  60 );
+        }
+    }
+
+    private int getCh_Primary_Level(int chIdx) {
+        int chLevel = 0;
+        Channel channel = ChannelFactory.getDynamicChannel(chIdx);
+        if (channel != null) {
+            int v = (int) (Math.pow(2, hwConfig.getAdbits()) + 0.1);
+            int vol = (int) Math.round(channel.getBusPrimaryLevel()) + (int) Math.round(channel.getPosFix());
+
+            vol *= hwConfig.getPix2AdFactor();
+            vol /= channel.getYFactor();
+            chLevel = (int) (vol / ADGear2PixBuf(chIdx, false) + v / 2);
+            if (chLevel > v) {
+                chLevel = v;
+            } else if (chLevel < 0) {
+                chLevel = 0;
+            }
+        }
+        return chLevel;
+    }
+
+    private int getCh_Secondary_Level(int chIdx) {
+        int chLevel = 0;
+        Channel channel = ChannelFactory.getDynamicChannel(chIdx);
+        if (channel != null) {
+            int vol = (int) Math.round(channel.getBusSecondaryLevel()) + (int) Math.round(channel.getPosFix());
+            int v = (int) (Math.pow(2, hwConfig.getAdbits()) + 0.1);
+            vol *= hwConfig.getPix2AdFactor();
+            vol /= channel.getYFactor();
+            chLevel = (int) (vol / ADGear2PixBuf(chIdx, false) + v / 2);
+            if (chLevel > v) {
+                chLevel = v;
+            } else if (chLevel < 0) {
+                chLevel = 0;
+            }
+        }
+        return chLevel;
+    }
+
+    public void gntR_Bus_Level(int fpgaIdx) {
+        Scope scope = Scope.getInstance();
+        FPGAReg_BUS_PRIMARY regBusPrimary =
+                (FPGAReg_BUS_PRIMARY) getFPGAReg(fpgaIdx, FPGAReg.FPGA_BUS_PRIMARY);
+        FPGAReg_BUS_PRIMARY_EXT regBusPrimaryExt =
+                (FPGAReg_BUS_PRIMARY_EXT) getFPGAReg(fpgaIdx, FPGAReg.FPGA_BUS_PRIMARY_EXT);
+
+        FPGAReg_BUS_SECONDARY busSecondary =
+                (FPGAReg_BUS_SECONDARY) getFPGAReg(fpgaIdx, FPGAReg.FPGA_BUS_SECONDARY);
+        FPGAReg_BUS_SECONDARY_EXT busSecondaryExt =
+                (FPGAReg_BUS_SECONDARY_EXT) getFPGAReg(fpgaIdx, FPGAReg.FPGA_BUS_SECONDARY_EXT);
+
+        boolean[] sel = new boolean[ChannelFactory.CH_CNT];
+        int beginIdx = beginChIdx(fpgaIdx);
+        int endIdx = endChIdx(fpgaIdx);
+        int cnt = scope.getChannelSampOnCnt(scope.isRun(true), sel);
+        int nums = hwConfig.getAdcMaxChNums();
+
+        for (int i = beginIdx; i < endIdx; i++) {
+            if (sel[i]) {
+                int j = i - beginIdx;
+                if(HardwareProduct.isMHO68V1()){
+                    if(cnt <=2){
+                        j = 0;
+                    }else if(cnt <= 4) {
+                        j = j == 0 ? 0 : 2;
+                    }
+                }else{
+                    if(cnt <= 4) {
+                        j = (j / nums) * nums;
+                    }
+                }
+
+                int primaryLevel = getCh_Primary_Level(i);
+                regBusPrimary.setLevel(j, primaryLevel);
+                regBusPrimaryExt.setLevel(j, (primaryLevel >>> 8) & 0xFF);
+
+                int secondaryLevel = getCh_Secondary_Level(i);
+                busSecondary.setLevel(j,secondaryLevel);
+                busSecondaryExt.setLevel(j,(secondaryLevel >>> 8) & 0xFF);
+            }
+        }
+
+//        FPGAReg_BUS_SECONDARY busSecondary =
+//                (FPGAReg_BUS_SECONDARY) getFPGAReg(fpgaIdx, FPGAReg.FPGA_BUS_SECONDARY);
+//        FPGAReg_BUS_SECONDARY_EXT busSecondaryExt =
+//                (FPGAReg_BUS_SECONDARY_EXT) getFPGAReg(fpgaIdx, FPGAReg.FPGA_BUS_SECONDARY_EXT);
+//        SerialChannel serialChannel;
+//        IBus iBus;
+//        int tmpLevel = 0;
+//        beginIdx = beginSerialIdx(fpgaIdx);
+//        endIdx = endSerialIdx(fpgaIdx);
+//        for (int i = beginIdx; i < endIdx; i++) {
+//            tmpLevel = 0;
+//            serialChannel = ChannelFactory.getSerialChannel(i);
+//            if (serialChannel != null) {
+//                int j = i - beginIdx;
+//                iBus = serialChannel.getBus();
+//                if (iBus.getBusType() == IBus.ARINC429){
+//                    int idx = ((ARINC429Bus) iBus).getSrcChIdx();
+//                    tmpLevel = getCh_Secondary_Level(idx);
+//                }
+//
+//                busSecondary.setLevel(j, tmpLevel);
+//                busSecondaryExt.setLevel(j, (tmpLevel >>> 8) & 0xFF);
+//            }
+//        }
+        sendCommand(regBusPrimary);
+        sendCommand(regBusPrimaryExt);
+        sendCommand(busSecondary);
+        sendCommand(busSecondaryExt);
+    }
+
+    public void Bus_Config(int chIdx) {
+        if (ChannelFactory.isSerialCh(chIdx)) {
+            SerialChannel serialChannel = ChannelFactory.getSerialChannel(chIdx);
+            if (serialChannel != null) {
+                int[] addr = {FPGAReg.FPGA_BUS1_ADDR, FPGAReg.FPGA_BUS2_ADDR};
+                int fpgaIdx = serialIdxToFpgaIdx(chIdx);
+                chIdx = (chIdx - ChannelFactory.S1) % (ChannelFactory.SERIAL_CNT / 2);
+                FPGAReg_BUS_ADDR busAddr = (FPGAReg_BUS_ADDR) getFPGAReg(fpgaIdx, addr[chIdx]);
+                IBus iBus = serialChannel.getBus();
+                busAddr.configBus(fpgaIdx, iBus);
+
+                if (iBus instanceof CanBus) {
+                    int[] canExt = {FPGAReg.FPGA_BUS1_CAN_EXT, FPGAReg.FPGA_BUS2_CAN_EXT};
+                    FPGAReg_BUS_CAN_EXT busCanExt = (FPGAReg_BUS_CAN_EXT) FPGACommand.getReg(fpgaIdx, canExt[chIdx]);
+                    busCanExt.configBus(fpgaIdx, iBus);
+                }
+
+            }
+        }
+    }
+
+    public void gntR_Bus(int fpgaIdx) {
+        gntR_Bus_Type(fpgaIdx);
+        Bus_Config(ChannelFactory.S1 + fpgaIdx * ChannelFactory.SERIAL_CNT / 2);
+        Bus_Config(ChannelFactory.S2 + fpgaIdx * ChannelFactory.SERIAL_CNT / 2);
+        gntR_Bus_Level(fpgaIdx);
+    }
+
+    public int readFpgaId(int fpgaIdx) {
+        FPGAReg_STATUS_ID regStatusId = new FPGAReg_STATUS_ID();
+        regStatusId.reset(true);
+        regStatusId.setFpgaIdx(fpgaIdx);
+        recvCommand(regStatusId, regStatusId.getRecvReg());
+        Log.d(TAG, "fpga id = " + Integer.toHexString(regStatusId.getId()) + ",fpgaIdx:" + fpgaIdx);
+        regStatusId.getRecvReg().Dump();
+        return regStatusId.getId();
+    }
+
+    public int readFpgaStatus(int fpgaIdx) {
+        FPGAReg_STATUS regStatus = new FPGAReg_STATUS();
+        regStatus.reset(true);
+        regStatus.setFpgaIdx(fpgaIdx);
+        recvCommand(regStatus, regStatus.getRecvReg());
+        Log.d(TAG, "fpga status = " + Integer.toHexString(regStatus.getStatus()));
+        return regStatus.getStatus();
+    }
+
+    public boolean getFpgaClockInOutStatus(int fpgaIdx, boolean isIn) {
+        FPGAReg_STATUS regStatus = new FPGAReg_STATUS();
+        regStatus.reset(true);
+        regStatus.setFpgaIdx(fpgaIdx);
+        recvCommand(regStatus, regStatus.getRecvReg());
+        return isIn ? regStatus.getClockInStatus() : regStatus.getClockOutStatus();
+    }
+
+    public int readFpgaVer(int fpgaIdx) {
+        FPGAReg_VER ver = new FPGAReg_VER();
+        ver.reset(true);
+        ver.setFpgaIdx(fpgaIdx);
+        recvCommand(ver, ver.getRecvReg());
+        Log.d(TAG, "fpga ver = " + Integer.toHexString(ver.getVersion()));
+        return ver.getVersion();
+    }
+
+    public int getFpgaTemperature(int fpgaIdx) {
+        FPGAReg_TEMPERATURE fpgaReg_temperature =
+                (FPGAReg_TEMPERATURE) getFPGAReg(fpgaIdx, FPGAReg.FPGA_TEMPERATURE);
+        fpgaReg_temperature.reset(true);
+        fpgaReg_temperature.setFpgaIdx(fpgaIdx);
+        recvCommand(fpgaReg_temperature, fpgaReg_temperature.getRecvReg());
+        return fpgaReg_temperature.getTemperature();
+    }
+
+    public int getFpgaFanSpeed(int fpgaIdx, int[] fans) {
+        FPGAReg_FanSpeed fpgaRegFanSpeed =
+                (FPGAReg_FanSpeed) getFPGAReg(fpgaIdx, FPGAReg.FPGA_FAN_SPEED);
+        fpgaRegFanSpeed.reset(true);
+        fpgaRegFanSpeed.setFpgaIdx(fpgaIdx);
+        recvCommand(fpgaRegFanSpeed, fpgaRegFanSpeed.getRecvReg());
+        return fpgaRegFanSpeed.getFanSpeed(fans);
+    }
+
+    public int getFpgaStatus(){
+        int v = 0;
+        FPGAReg_STATUS regStatus = new FPGAReg_STATUS();
+        for(int i=0;i<fpgaNums;i++) {
+            regStatus.reset(true);
+            regStatus.setFpgaIdx(i);
+            recvCommand(regStatus, regStatus.getRecvReg());
+            Log.d("123456789","" + Integer.toHexString(regStatus.getStatus()));
+            v |= ((regStatus.getStatus()>>25) & 0x0F) << (i * 4);
+        }
+        return v;
+    }
+
+    public void probeProcess(int fpgaIdx) {
+        boolean[] b = {false, false, false, false};
+        boolean bAlive = false;
+        ProbeFactory probeFactory = ProbeFactory.getInstance();
+        FPGAReg_PROBE fpgaReg_probe = new FPGAReg_PROBE();
+        fpgaReg_probe.setFpgaIdx(fpgaIdx);
+        int beginIdx = beginChIdx(fpgaIdx);
+        int endIdx = endChIdx(fpgaIdx);
+        do {
+            for (int i = 0; i < 3; i++) {
+                fpgaReg_probe.reset(true);
+                recvCommand(fpgaReg_probe, fpgaReg_probe.getRecvReg());
+                if (fpgaReg_probe.getRecvReg().isHeaderValid()) {
+                    break;
+                }
+            }
+
+            if (fpgaReg_probe.getRecvReg().isHeaderValid()) {
+                for (int i = beginIdx; i < endIdx; i++) {
+                    int idx = i - beginIdx;
+                    Channel channel = ChannelFactory.getDynamicChannel(i);
+                    if (channel == null) continue;
+                    b[idx] = bAlive = fpgaReg_probe.isProbeAlive(idx);
+                    if (bAlive) {
+                        int s = fpgaReg_probe.getProbeFifoSize(idx);
+
+                        if (s > 0) {
+                            s += 2;
+                            FPGAReg_SPI_Read r = new FPGAReg_SPI_Read();
+                            r.setType(FPGAReg_SPI_Read.SPI_EXT_UART);
+                            r.setFpgaIdx(fpgaIdx);
+                            r.setByteValid(0);
+                            r.setDataLength(s);
+                            r.setVal(8, 4, 1 << idx);
+                            r.setCmdLength(s * 4);
+                            ByteBuffer byteBuffer = ByteBuffer.allocate(256 /*s*4*/);
+                            recvCommand(r, byteBuffer);
+                            if ((byteBuffer.get(6) & 0xFF) == 0xAA
+                                    && (byteBuffer.get(7) & 0xFF) == 0xAA) {
+                                int len =
+                                        byteBuffer.get(4) & 0xFF | (byteBuffer.get(5) & 0xFF << 8);
+                                len /= 4;
+                                len *= 4;
+                                len = Math.min(len, byteBuffer.capacity() - 8);
+                                probeFactory.Input(channel, byteBuffer, 8, len);
+                                probeFactory.process(channel);
+                            } else {
+                                StringBuilder sb = new StringBuilder();
+                                sb.append("ch:").append(i).append(",data:");
+                                for (int j = 0; j < byteBuffer.capacity(); j++) {
+                                    sb.append(",")
+                                            .append(Integer.toHexString(byteBuffer.get(j) & 0xFF));
+                                }
+                                Log.e(TAG, "Probe 0xAAAA error," + sb.toString());
+                            }
+                        }
+                        b[idx] = s > 0;
+                    }
+                    probeFactory.alive(channel, bAlive);
+                }
+            } else {
+                Log.e(TAG, "Probe Header error:" + fpgaIdx);
+            }
+        } while (b[0] || b[1] || b[2] || b[3]);
+    }
+
+    public void readFpgaStatus(int fpgaIdx, FPGA_Status fpgaStatus) {
+        int sIdx, eIdx;
+        sIdx = beginChIdx(fpgaIdx);
+        eIdx = endChIdx(fpgaIdx);
+        FPGAReg_INTRPT regIntrpt = new FPGAReg_INTRPT();
+        regIntrpt.setFpgaIdx(fpgaIdx);
+        regIntrpt.reset(true);
+        recvCommand(regIntrpt, regIntrpt.getRecvReg());
+        regIntrpt.onRecv();
+        if (regIntrpt.isAutoFinish()) {
+
+            FPGAReg_STATUS_AUTO_V[] statusAutoV = new FPGAReg_STATUS_AUTO_V[4];
+            FPGAReg_STATUS_AUTO_CYCLE[] statusAutoCycle = new FPGAReg_STATUS_AUTO_CYCLE[4];
+            FPGA_Status.FpgaAuto a;
+
+            for (int i = 0; i < statusAutoV.length; i++) {
+                statusAutoV[i] = new FPGAReg_STATUS_AUTO_V(FPGAReg.FPGA_AUTO_V1 + i);
+                statusAutoV[i].setFpgaIdx(fpgaIdx);
+                recvCommand(statusAutoV[i], statusAutoV[i].getRecvReg());
+                statusAutoV[i].onRecv();
+            }
+
+            for (int i = 0; i < statusAutoCycle.length; i++) {
+                statusAutoCycle[i] =
+                        new FPGAReg_STATUS_AUTO_CYCLE(FPGAReg.FPGA_STATUS_AUTO_CYCLE_1 + i);
+                statusAutoCycle[i].setFpgaIdx(fpgaIdx);
+                recvCommand(statusAutoCycle[i], statusAutoCycle[i].getRecvReg());
+            }
+
+            for (int i = sIdx; i < eIdx; i++) {
+                a = fpgaStatus.getAuto(i);
+                a.setVaild(true);
+
+                a.setMinVal(statusAutoV[i - sIdx].getMinVal());
+                a.setMaxVal(statusAutoV[i - sIdx].getMaxVal());
+                a.setCycle(statusAutoCycle[i - sIdx].getRecvReg().getVal(0));
+
+                if(a.getMinVal() == a.getMaxVal()
+                        && a.getMinVal() == 0){
+                    a.setVaild(false);
+                }
+            }
+
+
+        }
+
+        if (regIntrpt.isFre()) {
+            FPGA_Status.FpgaFreq f = fpgaStatus.getFreq();
+            FreqCounter freqCounter = FreqCounter.getInstance();
+            if(freqCounter.isFreqCounterEnable()) {
+
+                int idx = freqCounter.getChIdx()/4;
+                if(idx == fpgaIdx) {
+                    FPGAReg_STATUS_FREQ[] statusFreqs = new FPGAReg_STATUS_FREQ[2];
+                    for (int i = 0; i < 2; i++) {
+                        statusFreqs[i] = new FPGAReg_STATUS_FREQ(FPGAReg.FPGA_STATUS_CH_T + i);
+                        statusFreqs[i].setFpgaIdx(fpgaIdx);
+                        recvCommand(statusFreqs[i], statusFreqs[i].getRecvReg());
+                        f.setVaild(true);
+                        f.setTN(i, statusFreqs[i].getRecvReg().getVal(0));
+                    }
+                }
+            }
+        }
+    }
+
+    public int cmdFpgaGetSegmentFrames(int fpgaIdx) {
+        FPGAReg_STATUS_FREQ status_freq = new FPGAReg_STATUS_FREQ(FPGAReg.FPGA_STATUS_FRAMES);
+        status_freq.setFpgaIdx(fpgaIdx);
+        recvCommand(status_freq, status_freq.getRecvReg());
+        return status_freq.getRecvReg().getVal(0);
+    }
+
+    public int cmdFpgaGet50O(int fpgaIdx) {
+        FPGAReg_STATUS_FREQ status_freq = new FPGAReg_STATUS_FREQ(FPGAReg.FPGA_50O_STATUS);
+        status_freq.setFpgaIdx(fpgaIdx);
+        recvCommand(status_freq, status_freq.getRecvReg());
+        return status_freq.getRecvReg().getVal(0);
+    }
+
+    public void cmdFpgaGetData(int fpgaIdx) {
+
+        int ch = 0;
+        int status = 0;
+        long num = 0;
+        SaveBin bin = SaveBin.getInstance();
+
+        ch = bin.getChIdx();
+        if(chIdxToFpgaIdx(ch) != fpgaIdx){
+            return;
+        }
+
+
+        status = bin.getStatus();
+        num = bin.getNums();
+
+        FPGAReg_SEGMENT_NUMS regNums = new FPGAReg_SEGMENT_NUMS();
+        FPGAReg_SEGMENT_START regStart = new FPGAReg_SEGMENT_START();
+        regNums.setFpgaIdx(fpgaIdx);
+        regStart.setFpgaIdx(fpgaIdx);
+        int n = 1;
+        int segmentLen = bin.getSegmentspace();
+
+        if (segmentLen > SaveBin.MAX_GET_VAL) {
+            n = 1;
+        } else {
+            n = (int) num / segmentLen;
+            if (num % segmentLen > 0) {
+                n++;
+            }
+            segmentLen *= n;
+        }
+        regStart.setVal(0, bin.getSegmentIdx());
+        regNums.setVal(0, n);
+        sendCommand(regStart);
+        sendCommand(regNums);
+
+        if (scope.isSegmentEnable(scope.isRun(true))) {
+            if (num > segmentLen) {
+                num = segmentLen;
+            }
+        }
+        this.updataRegEx(0);
+
+        Logger.d(
+                TAG,
+                "num:"
+                        + num
+                        + ",segmentLen:"
+                        + segmentLen
+                        + ",idx:"
+                        + bin.getSegmentIdx()
+                        + ",n:"
+                        + n);
+        FPGAReg_GET_DATA reg = new FPGAReg_GET_DATA();
+        boolean[] sle = new boolean[ChannelFactory.CH_CNT];
+        int cnt = scope.getChannelSampOnCnt(scope.isRun(true), sle);
+        switch (cnt) {
+            case 2:
+                ch = 0;
+                break;
+            case 4:
+                if(HardwareProduct.isMHO68V1()){
+                    ch = ch % 2;
+                }else {
+                    ch = (ch % 4) / 2;
+                }
+                break;
+            default:
+                break;
+        }
+        reg.setFpgaIdx(fpgaIdx);
+        reg.setReg(ch % 4, status, (int) num);
+
+        sendCommand(reg);
+
+    }
+
+    public void cmdTrigOffset(int fpgaIdx) {
+
+        int cnt = 0;
+        cnt = (int) (1e6 / Scope.getInstance().maxSampClk() + 0.1);
+        int dang = 0;
+        for (int i = 0; i < ChannelFactory.CH_CNT; i++) {
+            Channel channel = ChannelFactory.getDynamicChannel(i);
+            FPGAReg_TRIG_OFFSET fpgaReg_trig_offset = new FPGAReg_TRIG_OFFSET(FPGAReg.FPGA_TRIG_OFFSET1 + i);
+            if (channel != null) {
+                int xd = 0;
+                dang = CabteRegister.getRatioIdx(channel.getResistanceType(),channel.getVScaleVal()/channel.getProbeRate());
+                if(HardwareProduct.isMHO68V1()){
+                    if (channel.getResistanceType() == Channel.RESISTANCE_1M) {
+                        switch (dang) {
+                            case HW.RATIO_DANG_1:
+                                xd = 0;
+                                break;
+                            case HW.RATIO_DANG_3:
+                            case HW.RATIO_DANG_2:
+                            case HW.RATIO_DANG_4:
+                                xd = -2666;
+                                break;
+                        }
+                    } else {
+                        xd = 667;
+                    }
+                }else if(HardwareProduct.isMHO68V2()) {
+                    if (channel.getResistanceType() == Channel.RESISTANCE_1M) {
+                        switch (dang) {
+                            case HW.RATIO_DANG_1:
+                                xd = 0;
+                                break;
+                            case HW.RATIO_DANG_3:
+                            case HW.RATIO_DANG_2:
+                                xd = -2666;
+                                break;
+                        }
+                    } else {
+                        xd = 667;
+                    }
+                }
+
+//                Log.d(TAG,"chid:" + channel.getChId() + ",xd:" + xd);
+                int delay = channel.getDelay() + xd;
+                int n = delay / cnt;
+                int m = delay % cnt;
+                if (m > 0) {
+                    n += 1;
+                    m = cnt - Math.abs(m);
+                } else {
+                    m = Math.abs(m);
+                }
+                fpgaReg_trig_offset.setChOffset(i, n, m * 100 / cnt);
+            }
+            if (fpgaReg_trig_offset.getFpgaIdx() != fpgaIdx) {
+                fpgaReg_trig_offset.setFpgaIdx(fpgaIdx);
+            }
+            sendCommand(fpgaReg_trig_offset);
+        }
+    }
+
+    public void setDataFreq(int fpgaIdx, int bmpFreq, int waveFreq) {
+
+        FPGAReg_SIGNAL_FREQ regSignalFreq =
+                (FPGAReg_SIGNAL_FREQ) getFPGAReg(fpgaIdx, FPGAReg.FPGA_SIGNAL_FREQ);
+        regSignalFreq.setSignalFreq(60, 60);
+//        if (!HardwareProduct.isMHO())
+        {
+            sendCommand(regSignalFreq);
+        }
+    }
+
+    public void setChNosie(int fpgaIdx,int [] val){
+        FPGAReg_SIGNAL_FREQ regSignalFreq =
+                (FPGAReg_SIGNAL_FREQ) getFPGAReg(fpgaIdx, FPGAReg.FPGA_SIGNAL_FREQ);
+        for(int i=0;i<val.length;i++) {
+            regSignalFreq.setChNosie(i, val[i]);
+        }
+        sendCommand(regSignalFreq);
+    }
+}

@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AbsoluteLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:ui="http://schemas.android.com/apk/res-auto"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+
+    <com.micsig.tbook.ui.MButton_CheckBox_ThreeClick
+        android:id="@+id/channelButton"
+        android:layout_width="56px"
+        android:layout_height="35px"
+        android:layout_x="0px"
+        android:layout_y="41px"
+        android:text=""
+        android:textColor="@color/color_Text_white"
+        android:textSize="16px"
+        ui:checkedBitmap="@drawable/l_ch1"
+        ui:text_x="13px"
+        ui:text_y="50px"
+        ui:unCheckedBitmap="@drawable/l_unclick" />
+
+    <RelativeLayout
+        android:id="@+id/showLayout"
+        android:layout_width="64px"
+        android:layout_height="58px"
+        android:layout_x="-4px"
+        android:layout_y="42px">
+
+        <TextView
+            android:id="@+id/invert"
+            android:layout_width="27px"
+            android:layout_height="1px"
+            android:layout_marginStart="11px"
+            android:layout_marginTop="4px"
+            android:background="@android:color/white" />
+
+        <TextView
+            android:id="@+id/channelText"
+            style="@style/textStyleMiddlebarRightMain"
+            android:layout_width="30px"
+            android:layout_height="15px"
+            android:layout_below="@id/invert"
+            android:layout_marginStart="9px"
+            android:layout_marginTop="-2px"
+            android:text="CH1" />
+
+        <ImageView
+            android:id="@+id/couple"
+            android:layout_width="10px"
+            android:layout_height="15px"
+            android:layout_above="@+id/probeType"
+            android:layout_marginStart="3px"
+            android:layout_marginBottom="-1px"
+            android:layout_toEndOf="@+id/channelText"
+            android:scaleType="center"
+            android:src="@drawable/coupling_dc" />
+
+        <RelativeLayout
+            android:id="@+id/probeType"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/channelText"
+            android:layout_marginStart="2px"
+            android:layout_marginTop="-2px"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/probeTypeNum"
+                style="@style/textStyleMiddlebarRight"
+                android:layout_width="wrap_content"
+                android:layout_height="18px"
+                android:gravity="end|bottom"
+                android:text="500m"
+                android:textSize="14px"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/probeTypeUnit"
+                style="@style/textStyleMiddlebarRight"
+                android:layout_width="wrap_content"
+                android:layout_height="18px"
+                android:layout_toEndOf="@id/probeTypeNum"
+                android:gravity="bottom"
+                android:text="V"
+                android:textSize="14px"
+                android:textStyle="bold" />
+        </RelativeLayout>
+
+        <TextView
+            android:id="@+id/bandWidth"
+            style="@style/textStyleMiddlebarRight"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/probeType"
+            android:layout_marginStart="7px"
+            android:layout_marginTop="-1px"
+            android:gravity="center"
+            android:maxLines="1"
+            android:text="20M"
+            android:textSize="15px" />
+    </RelativeLayout>
+
+    <com.micsig.tbook.ui.MButton
+        android:id="@+id/mV"
+        android:layout_width="39px"
+        android:layout_height="52px"
+        android:layout_x="57px"
+        android:layout_y="0px"
+        android:clickable="true"
+        ui:touchDownBitmap="@drawable/ch1_mv_press"
+        ui:touchUpBitmap="@drawable/ch1_mv" />
+
+    <View
+        android:id="@+id/probeDetailBg"
+        android:layout_width="39px"
+        android:layout_height="15px"
+        android:layout_x="57px"
+        android:layout_y="52px"
+        android:background="@drawable/ch1_10x" />
+
+    <TextView
+        android:id="@+id/probeDetailText"
+        style="@style/textStyleMiddlebarRight"
+        android:layout_width="39px"
+        android:layout_height="15px"
+        android:layout_x="57px"
+        android:layout_y="52px"
+        android:text="1mX"
+        android:textSize="11px" />
+
+    <com.micsig.tbook.ui.MButton
+        android:id="@+id/v"
+        android:layout_width="39px"
+        android:layout_height="52px"
+        android:layout_x="57px"
+        android:layout_y="67px"
+        android:clickable="true"
+        ui:touchDownBitmap="@drawable/ch1_v_press"
+        ui:touchUpBitmap="@drawable/ch1_v" />
+</AbsoluteLayout>

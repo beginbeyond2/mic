@@ -1,0 +1,1408 @@
+
+package com.micsig.tbook.tbookscope.top.layout.measure;
+
+import android.content.Context;
+import android.os.Bundle;
+
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.RadioButton;
+
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.Event.EventUIObserver;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.channel.BaseChannel;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.channel.RefChannel;
+import com.micsig.tbook.scope.horizontal.HorizontalAxis;
+import com.micsig.tbook.scope.horizontal.HorizontalAxisMath;
+import com.micsig.tbook.scope.measure.Measure;
+import com.micsig.tbook.scope.measure.MeasureService;
+import com.micsig.tbook.tbookscope.GlobalVar;
+import com.micsig.tbook.tbookscope.LoadCache;
+import com.micsig.tbook.tbookscope.MainActivity;
+import com.micsig.tbook.tbookscope.MainViewGroup;
+import com.micsig.tbook.tbookscope.R;
+import com.micsig.tbook.tbookscope.main.ExternalKeysMsgCursor;
+import com.micsig.tbook.tbookscope.main.mainright.MainRightMsgChannels;
+import com.micsig.tbook.tbookscope.main.mainright.MainRightMsgOthers;
+import com.micsig.tbook.tbookscope.middleware.command.Command;
+import com.micsig.tbook.tbookscope.middleware.command.Command_Cursor;
+import com.micsig.tbook.tbookscope.middleware.command.Command_Measure;
+import com.micsig.tbook.tbookscope.rightslipmenu.RightMsgRefForEight;
+import com.micsig.tbook.tbookscope.rxjava.RxBus;
+import com.micsig.tbook.tbookscope.rxjava.RxEnum;
+import com.micsig.tbook.tbookscope.tools.PlaySound;
+import com.micsig.tbook.tbookscope.tools.Tools;
+import com.micsig.tbook.tbookscope.top.OnDetailSendMsgListener;
+import com.micsig.tbook.tbookscope.top.popwindow.TopDialogMeasureDelay;
+import com.micsig.tbook.tbookscope.top.popwindow.TopDialogMeasurePhase;
+import com.micsig.tbook.tbookscope.top.popwindow.TopDialogMeasureTValue;
+import com.micsig.tbook.tbookscope.util.CacheUtil;
+import com.micsig.tbook.tbookscope.wavezone.IWorkMode;
+import com.micsig.tbook.tbookscope.wavezone.WorkModeManage;
+import com.micsig.tbook.tbookscope.wavezone.display.CursorManage;
+import com.micsig.tbook.tbookscope.wavezone.measure.MeasureManage;
+import com.micsig.tbook.ui.MMainMenuChannel;
+import com.micsig.tbook.ui.top.view.channel.TopViewChannel;
+import com.micsig.tbook.ui.util.StrUtil;
+import com.micsig.tbook.ui.util.TBookUtil;
+import com.micsig.tbook.ui.wavezone.TChan;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
+import io.reactivex.rxjava3.annotations.NonNull;
+import io.reactivex.rxjava3.functions.Consumer;
+
+
+/**
+ * Created by Administrator on 2017/4/5.
+ */
+
+public class TopLayoutMeasureCommon extends Fragment {
+    private static final String TAG = "TopLayoutMeasure";
+
+    public static final String MEASURE_DATA_INIT = "----";
+    public static final int MEASURE_INDEX_DELAY = Measure.MeasureType.MEASURE_DELAY - Measure.MeasureType.MEASURE_FIRST;//延时
+    public static final int MEASURE_INDEX_PHASE = Measure.MeasureType.MEASURE_PHASE - Measure.MeasureType.MEASURE_FIRST;//相位
+    public static final int MEASURE_INDEX_COLVAL = Measure.MeasureType.MEASURE_COLV - Measure.MeasureType.MEASURE_FIRST;//
+    public static final int MEASURE_INDEX_TVALUE = Measure.MeasureType.MEASURE_TVALUE - Measure.MeasureType.MEASURE_FIRST;
+
+    private Context context;
+    /**
+     * 此列中的数据，channelID的是�??0�??始计算的<p></p>
+     * 底层数据列表和此列表相同，channelId是从0�??始计算的
+     */
+    private ArrayList<MeasureBean> measureBeanList = new ArrayList<MeasureBean>();
+    //不显示的测量项
+    private List<MeasureBean> hideMeasureBeanList = new ArrayList<>();
+    /**
+     * 已�?�择列表中的数据，由于是跟波形区相�?�的，所以channelId的是�??1�??始的
+     */
+    private ArrayList<MeasureBean> measureSelectList = new ArrayList<MeasureBean>();
+    private static final int measureSelectMaxNum = GlobalVar.get().getMeasureItemCount();//可选中的最大数量
+    private static final int measureSpanCount = 16;//每行显示数量
+    private static final int measureSelectSpanCount = 14;//选中的每行显示数量
+    private int allMeasureNums = 27;//所有测量项
+    private MeasureAdapter measureAdapter, measureSelectAdapter;
+    private Button btnClear;
+    private TopDialogMeasureDelay delayDialog;
+    private TopDialogMeasurePhase phaseDialog;
+    private TopDialogMeasureTValue tvalueDialog;
+    private MMainMenuChannel viewChannel;
+    //Ch1--Ch8
+    //Math1--Math8
+    //R1--R8
+    //S1--S4
+    private boolean[] channelShow = {
+            false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false,
+            false, false, false, false
+    };
+    private ViewGroup rootView;
+
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        return inflater.inflate(R.layout.layout_measure_common, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        this.context = getActivity();
+        rootView = (ViewGroup) view;
+        initView(view);
+        initControl();
+    }
+
+    private void initView(View view) {
+        initChannelView(view);
+        initMeasureView(view);
+        initMeasureSelectView(view);
+        Button button = (Button) view.findViewById(R.id.indicator);
+        button.setVisibility(View.INVISIBLE);
+        btnClear = (Button) view.findViewById(R.id.clear);
+        btnClear.setOnClickListener(onClickListener);
+        delayDialog = (TopDialogMeasureDelay) ((MainActivity) context).findViewById(R.id.dialogMeasureDelay);
+        phaseDialog = (TopDialogMeasurePhase) ((MainActivity) context).findViewById(R.id.dialogMeasurePhase);
+        tvalueDialog = (TopDialogMeasureTValue) ((MainActivity) context).findViewById(R.id.dialogMeasureTValue);
+    }
+
+    private void initChannelView(View view) {
+        viewChannel = (MMainMenuChannel) view.findViewById(R.id.chanMeasureCommon);
+        viewChannel.setChangeListener(onChannelItemClickListener, null);
+    }
+
+    private void initMeasureView(View view) {
+        RecyclerView rvMeasureList = (RecyclerView) view.findViewById(R.id.measureList);
+        rvMeasureList.setLayoutManager(new GridLayoutManager(context, measureSpanCount));
+        String[] measures = getResources().getStringArray(R.array.measures);
+        allMeasureNums = measures.length;
+        for (int i = 0; i < measures.length; i++) {
+            measureBeanList.add(new MeasureBean(i, measures[i], viewChannel.getSelectChannel() + 1, getMeasureDrawable()[i], false));
+        }
+        measureAdapter = new MeasureAdapter(context, measureBeanList);
+        measureAdapter.setItemClickListener(onMeasureItemClickListener);
+        rvMeasureList.setAdapter(measureAdapter);
+    }
+
+    private int[] getMeasureDrawable() {
+        return new int[]{
+                R.drawable.ic_measure_period,
+                R.drawable.ic_measure_frequency,
+                R.drawable.ic_measure_raisetime,
+                R.drawable.ic_measure_falltime,
+                R.drawable.ic_measure_delay,
+                R.drawable.ic_measure_pdc,
+                R.drawable.ic_measure_ndc,
+                R.drawable.ic_measure_ppw,
+                R.drawable.ic_measure_npw,
+                R.drawable.ic_measure_bpw,
+                R.drawable.ic_measure_pos,
+                R.drawable.ic_measure_nos,
+                R.drawable.ic_measure_phase,
+                R.drawable.ic_measure_pkpk,
+                R.drawable.ic_measure_amp,
+                R.drawable.ic_measure_high,
+                R.drawable.ic_measure_low,
+                R.drawable.ic_measure_max,
+                R.drawable.ic_measure_min,
+                R.drawable.ic_measure_rms,
+                R.drawable.ic_measure_crms,
+                R.drawable.ic_measure_mean,
+                R.drawable.ic_measure_cmean,
+                R.drawable.ic_measure_mean_ac,
+                R.drawable.ic_measure_risetime_rate,
+                R.drawable.ic_measure_falltime_rate,
+                R.drawable.ic_measure_tvolt,
+        };
+    }
+
+    private void initMeasureSelectView(View view) {
+        RecyclerView rvMeasureSelectList = (RecyclerView) view.findViewById(R.id.measureSelectList);
+        rvMeasureSelectList.setLayoutManager(new GridLayoutManager(context, measureSelectSpanCount));
+        measureSelectList.clear();
+        measureSelectAdapter = new MeasureAdapter(context, measureSelectList);
+        measureSelectAdapter.setItemClickListener(onMeasureItemClickListener);
+        rvMeasureSelectList.setAdapter(measureSelectAdapter);
+    }
+
+    private void initControl() {
+        RxBus.getInstance().getObservable(RxEnum.MAINRIGHT_CHANNELS).subscribe(consumerMainRightChannels);
+        RxBus.getInstance().getObservable(RxEnum.MAINRIGHT_OTHERS).subscribe(consumerMainRightOthers);
+        RxBus.getInstance().getObservable(RxEnum.RIGHTLAYOUT_REF).subscribe(consumerRightRef);
+        RxBus.getInstance().getObservable(RxEnum.BOTTOMLAYOUT_ALLMEASURE).subscribe(consumerAllMeasure);
+        RxBus.getInstance().getObservable(RxEnum.MAIN_LOAD_CACHE).subscribe(consumerLoadCache);
+        RxBus.getInstance().getObservable(RxEnum.COMMANDMEASUREOPEN_TO_UI).subscribe(consumerCommandMeasureOpenToUI);
+        RxBus.getInstance().getObservable(RxEnum.COMMANDMEASURECLOSE_TO_UI).subscribe(consumerCommandMeasureCloseToUI);
+        RxBus.getInstance().getObservable(RxEnum.TOP_USER_SELFADJUST).subscribe(consumerUserSelfAdjust);
+        RxBus.getInstance().getObservable(RxEnum.MQ_MSG_UPDATE_MEASURE_ITEM_POS).subscribe(consumerUpdateMeasureItemPos);
+        RxBus.getInstance().getObservable(RxEnum.MQ_MSG_DELETE_MEASURE_ITEM_POS).subscribe(consumerDeleteMeasureItemPos);
+        EventFactory.addEventObserver(EventFactory.EVENT_CH_MEASURE_UPDATE, eventUIObserver);
+        EventFactory.addEventObserver(EventFactory.EVENT_MATH_MEASURE_UPDATE, eventUIObserver);
+        EventFactory.addEventObserver(EventFactory.EVENT_REF_MEASURE_UPDATE, eventUIObserver);
+        RxBus.getInstance().getObservable(RxEnum.MQ_MSG_CHANNEL_SELECT_COLOR).subscribe(consumerSelectColor);
+        setChannelShow();
+    }
+
+    private void setCache() {
+        //Cache中保存的channelId是从1�??始的，这是因为是从�?�择列表得的数据保存�??
+        String channelStrings = CacheUtil.get().getString(CacheUtil.TOP_SLIP_MEASURE_SELECT_LIST_CHANNEL);
+        String positionStrings = CacheUtil.get().getString(CacheUtil.TOP_SLIP_MEASURE_SELECT_LIST_INDEX);
+        int channelSelect = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_MEASURE_CHANNEL_SELECT);
+
+        ArrayList<String> channelList = StrUtil.getListFromString(channelStrings, CacheUtil.MEASURE_SELECT_LIST_SLIP);
+        ArrayList<String> indexList = StrUtil.getListFromString(positionStrings, CacheUtil.MEASURE_SELECT_LIST_SLIP);
+
+        Logger.i("TopLayoutMeasureCommon channelList= " + channelList);
+        Logger.i("TopLayoutMeasureCommon indexList= " + indexList);
+        measureSelectList.clear();
+        delAll();
+        for (int i = 0; i < channelList.size(); i++) {
+            int index = Integer.parseInt(indexList.get(i));
+            int channel = Integer.parseInt(channelList.get(i));
+            MeasureBean measureBean;
+            if (index < 0) {
+                measureBean = new MeasureBean(index, "", channel, 0);
+            } else {
+                measureBean = measureBeanList.get(index);
+            }
+            MeasureBean measureSelect = new MeasureBean(measureBean.getIndex(), measureBean.getName(), channel, measureBean.getDrawableResId());
+//                measureSelectList.add(measureSelect);
+//                addMeasureItem(measureSelect.getChannel(), measureSelect.getIndex(), measureSelect.getName(), MEASURE_DATA_INIT);
+
+            String[] delays = CacheUtil.get().getString(CacheUtil.TOP_SLIP_MEASURE_DELAY_DATA + measureSelect.getChannel()).split(CacheUtil.DELAY_SLIP);
+            delayDialog.setCache(Integer.parseInt(delays[0]), Integer.parseInt(delays[1]), Integer.parseInt(delays[2]));
+            int phase = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_MEASURE_PHASE_DATA + measureSelect.getChannel());
+            phaseDialog.setCache(phase);
+            String[] tvalue = CacheUtil.get().getString(CacheUtil.TOP_SLIP_MEASURE_TVALUE_DATA + measureSelect.getChannel()).split(CacheUtil.DELAY_SLIP);
+
+            double vol=0; int edgeOccurence=1; int cursorIndex=0;
+            try {
+                vol = Double.parseDouble(tvalue[0]);
+                edgeOccurence = Integer.parseInt(tvalue[1]);
+                cursorIndex = Integer.parseInt(tvalue[2]);
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+            tvalueDialog.setCache(vol,edgeOccurence,cursorIndex);
+
+            if (measureBean.getIndex() == MEASURE_INDEX_DELAY) {
+                if (selectListAdd(measureSelect, Integer.parseInt(delays[0]), Integer.parseInt(delays[1]), Integer.parseInt(delays[2]))) {
+                    sendHardwareMsg(measureSelect.getChannel() - 1, MEASURE_INDEX_DELAY, true, new int[]{Integer.parseInt(delays[0]), Integer.parseInt(delays[1]), Integer.parseInt(delays[2])}, null);
+                }
+            } else if (measureBean.getIndex() == MEASURE_INDEX_PHASE) {
+                if (selectListAdd(measureSelect, phase)) {
+                    sendHardwareMsg(measureSelect.getChannel() - 1, MEASURE_INDEX_PHASE, true, null, new int[]{phase});
+                }
+            } else if (measureBean.getIndex() == MEASURE_INDEX_TVALUE) {
+                if (selectListAdd(measureSelect, phase)) {
+                    sendHardwareMsg(measureSelect.getChannel() - 1, MEASURE_INDEX_TVALUE, true,new int[]{edgeOccurence}, null, vol);
+                }
+                cursorTValueTrace(measureSelect,cursorIndex);
+            }else {
+                if (selectListAdd(measureSelect)) {
+                    sendHardwareMsg(measureSelect.getChannel() - 1, measureBean.getIndex(), true, null, null);
+                }
+            }
+        }
+        measureSelectAdapter.notifyDataSetChanged();
+
+        viewChannel.setChangeListener(null, null);
+        viewChannel.setChecked(channelSelect);
+        viewChannel.setChangeListener(onChannelItemClickListener, null);
+        boolean ch1 = CacheUtil.get().getBoolean(CacheUtil.MAIN_CHANNEL_OPEN_STATE + TChan.Ch1);
+        boolean ch2 = CacheUtil.get().getBoolean(CacheUtil.MAIN_CHANNEL_OPEN_STATE + TChan.Ch2);
+        boolean ch3 = CacheUtil.get().getBoolean(CacheUtil.MAIN_CHANNEL_OPEN_STATE + TChan.Ch3);
+        boolean ch4 = CacheUtil.get().getBoolean(CacheUtil.MAIN_CHANNEL_OPEN_STATE + TChan.Ch4);
+        boolean ch5 = CacheUtil.get().getBoolean(CacheUtil.MAIN_CHANNEL_OPEN_STATE + TChan.Ch5);
+        boolean ch6 = CacheUtil.get().getBoolean(CacheUtil.MAIN_CHANNEL_OPEN_STATE + TChan.Ch6);
+        boolean ch7 = CacheUtil.get().getBoolean(CacheUtil.MAIN_CHANNEL_OPEN_STATE + TChan.Ch7);
+        boolean ch8 = CacheUtil.get().getBoolean(CacheUtil.MAIN_CHANNEL_OPEN_STATE + TChan.Ch8);
+
+        if (GlobalVar.get().getChannelsCount() == GlobalVar.CHANNEL_COUNT_2) {
+            channelShow[0] = ch1;
+            channelShow[1] = ch2;
+        } else if (GlobalVar.get().getChannelsCount() == GlobalVar.CHANNEL_COUNT_4) {
+            channelShow[0] = ch1;
+            channelShow[1] = ch2;
+            channelShow[2] = ch3;
+            channelShow[3] = ch4;
+        } else {
+            channelShow[0] = ch1;
+            channelShow[1] = ch2;
+            channelShow[2] = ch3;
+            channelShow[3] = ch4;
+            channelShow[4] = ch5;
+            channelShow[5] = ch6;
+            channelShow[6] = ch7;
+            channelShow[7] = ch8;
+        }
+        TChan.foreachCh1ToR8(chan -> {
+            if (TChan.isMath(chan)) {
+                boolean isCheck = CacheUtil.get().getBoolean(CacheUtil.MAIN_RIGHT_MATH + chan);
+                boolean isAddByUser = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_ADD_BY_USER_MATH + chan);
+                channelShow[TChan.toFpgaChNo(chan)] = isCheck && isAddByUser;
+            }
+            if (TChan.isRef(chan)) {
+                boolean isCheck = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_REF_CHECK + chan);
+                boolean isAddByUser = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_ADD_BY_USER_REF + chan);
+                channelShow[TChan.toFpgaChNo(chan)] = isCheck && isAddByUser;
+            }
+        });
+        setChannelShow();
+        RxBus.getInstance().post(RxEnum.CONTROLS_VISIBLE_CHANGED, MainViewGroup.VISIBLE_TOPMEASURE_SELECT);
+        addEmptyMeasure();
+    }
+
+    private void addEmptyMeasure() {
+        String channelStrings = CacheUtil.get().getString(CacheUtil.TOP_SLIP_MEASURE_SELECT_LIST_CHANNEL);
+        String positionStrings = CacheUtil.get().getString(CacheUtil.TOP_SLIP_MEASURE_SELECT_LIST_INDEX);
+        ArrayList<String> channelList = StrUtil.getListFromString(channelStrings, CacheUtil.MEASURE_SELECT_LIST_SLIP);
+        ArrayList<String> indexList = StrUtil.getListFromString(positionStrings, CacheUtil.MEASURE_SELECT_LIST_SLIP);
+        for (int i = 0; i < channelList.size() - 1; i++) {
+            int channel = Integer.parseInt(channelList.get(i));
+            int measureId = Integer.parseInt(indexList.get(i));
+            if (channel < 0) {
+                MeasureManage.MeasureItemStruct item = MeasureManage.getInstance().new MeasureItemStruct(channel, measureId, "", "");
+                MeasureManage.getInstance().getMeasureItem().addEmptyMeasureItem(i, item);
+            }
+        }
+        MeasureManage.getInstance().getMeasureItem().clearRowEmpty();//若一行都为空，则删除
+    }
+
+    private boolean selectListAdd(MeasureBean measureBean, int... param) {
+        return selectListAdd(measureBean,0,param);
+    }
+    private boolean selectListAdd(MeasureBean measureBean, double a, int... param){
+
+        Tools.PrintControlsLocation("TopLayoutMeasureCommon", rootView);
+        //如果已选择列表中包含当前通道的延时相位，则界面上不做修改，只需返回true用以修改底层数据
+        if ((param.length == 1 && measureBean.getIndex() == MEASURE_INDEX_PHASE)) {
+            for (int i = measureSelectList.size() - 1; i >= 0; i--) {
+                MeasureBean item = measureSelectList.get(i);
+                if (item.getIndex() == MEASURE_INDEX_PHASE && item.getChannel() == measureBean.getChannel()) {
+                    return true;
+                }
+            }
+        } else if ((param.length == 3 && measureBean.getIndex() == MEASURE_INDEX_DELAY)) {
+            for (int i = measureSelectList.size() - 1; i >= 0; i--) {
+                MeasureBean item = measureSelectList.get(i);
+                if (item.getIndex() == MEASURE_INDEX_DELAY && item.getChannel() == measureBean.getChannel()) {
+                    return true;
+                }
+            }
+        }
+
+        if (measureSelectList.size() < measureSelectMaxNum) {
+            for (MeasureBean item : measureSelectList) {
+                if (item.equals(measureBean)) {
+                    return item.getIndex() == MEASURE_INDEX_TVALUE
+                            && item.getChannel() == measureBean.getChannel();
+                }
+            }
+            measureSelectList.add(measureBean);
+            measureSelectAdapter.notifyDataSetChanged();
+            // 添加
+            addMeasureItem(measureBean.getChannel(), measureBean.getIndex(), measureBean.getName(), MEASURE_DATA_INIT);
+            saveMeasureSelect();
+            setStaticsItemEnable(measureBean.getChannel()-1,measureBean.getIndex(),true);
+            if (param.length == 0 ) {
+                Command.get().getMeasure().Open(measureBean.getIndex(), measureBean.getChannel() - 1, 0, 0, 0, false);
+            } else if (param.length == 1
+                    && measureBean.getIndex() == MEASURE_INDEX_PHASE) { //相位
+                Command.get().getMeasure().Open(measureBean.getIndex(), measureBean.getChannel() - 1, param[0], 0, 0, false);
+            } else if (param.length == 3
+                    && measureBean.getIndex() == MEASURE_INDEX_DELAY) { //延时
+                Command.get().getMeasure().Open(measureBean.getIndex(), measureBean.getChannel() - 1, param[0], param[1], param[2], false);
+            } else if (param.length == 1
+                    && measureBean.getIndex() == MEASURE_INDEX_TVALUE){
+                Command.get().getMeasure().Open(measureBean.getIndex(), measureBean.getChannel() - 1, param[0], 0, 0, a, false);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private void saveMeasureSelect() {
+        ArrayList<String> listIndex = new ArrayList<>();
+        ArrayList<String> listChannel = new ArrayList<>();
+//        for (MeasureBean item : measureSelectList) {
+//            listIndex.add(String.valueOf(item.getIndex()));
+//            listChannel.add(String.valueOf(item.getChannel()));
+//        }
+
+        List<MeasureManage.MeasureItemStruct> list = MeasureManage.getInstance().getMeasureItem().getMeasureList();
+        for (MeasureManage.MeasureItemStruct itemStruct : list) {
+            listIndex.add(String.valueOf(itemStruct.getMeasureId()));
+            listChannel.add(String.valueOf(itemStruct.getChannelId()));
+        }
+        CacheUtil.get().putMap(CacheUtil.TOP_SLIP_MEASURE_SELECT_LIST_INDEX, StrUtil.getStringFromList(listIndex, CacheUtil.MEASURE_SELECT_LIST_SLIP));
+        CacheUtil.get().putMap(CacheUtil.TOP_SLIP_MEASURE_SELECT_LIST_CHANNEL, StrUtil.getStringFromList(listChannel, CacheUtil.MEASURE_SELECT_LIST_SLIP));
+        RxBus.getInstance().post(RxEnum.CONTROLS_VISIBLE_CHANGED, MainViewGroup.VISIBLE_TOPMEASURE_SELECT);
+        updateMeasureBeanState();
+    }
+
+
+    private void updateMeasureBeanState() {
+        ArrayList<String> listIndex = new ArrayList<>();
+        ArrayList<String> listChannel = new ArrayList<>();
+//        for (MeasureBean item : measureSelectList) {
+//            listIndex.add(String.valueOf(item.getIndex()));
+//            listChannel.add(String.valueOf(item.getChannel()));
+//        }
+
+        List<MeasureManage.MeasureItemStruct> list = MeasureManage.getInstance().getMeasureItem().getMeasureList();
+        for (MeasureManage.MeasureItemStruct itemStruct : list) {
+            listIndex.add(String.valueOf(itemStruct.getMeasureId()));
+            listChannel.add(String.valueOf(itemStruct.getChannelId()));
+        }
+
+        for (int i = 0; i < measureBeanList.size(); i++) {
+            measureBeanList.get(i).setSelect(false);
+            measureBeanList.get(i).setChannel(viewChannel.getSelectChannel() + 1);
+        }
+        for (int i= 0; i< listChannel.size(); i++) {
+            if (Integer.parseInt(listChannel.get(i)) < 0) continue;
+            if(Integer.parseInt(listChannel.get(i)) == TChan.toUiChNo(viewChannel.getSelectChannel())
+                    && ChannelFactory.isChOpen(viewChannel.getSelectChannel())) {
+                measureBeanList.get(Integer.parseInt(listIndex.get(i))).setSelect(true);
+            }
+        }
+        measureAdapter.notifyDataSetChanged();
+    }
+
+
+    private void setChannelShow() {
+        viewChannel.setItemVisible(channelShow,true);
+        RxBus.getInstance().post(RxEnum.CONTROLS_VISIBLE_CHANGED, MainViewGroup.VISIBLE_TOPMEASURE_CHANNEL);
+        updateMeasureBeanState();
+    }
+
+    public void setOnDetailSendMsgListener(OnDetailSendMsgListener onDetailSendMsgListener) {
+
+    }
+
+    public IMeasureDetail getMeasureDetail() {
+        return null;
+    }
+
+    private Consumer<MainRightMsgChannels> consumerMainRightChannels = new Consumer<MainRightMsgChannels>() {
+        @Override
+        public void accept(MainRightMsgChannels msgChannels) throws Exception {
+            TChan.foreachChan(chan -> {
+                boolean isOpen = CacheUtil.get().getBoolean(CacheUtil.MAIN_CHANNEL_OPEN_STATE + chan);
+                channelShow[TChan.toFpgaChNo(chan)] = msgChannels.getCh(TChan.toFpgaChNo(chan)).isValue();
+            });
+            setChannelShow();
+        }
+    };
+
+    private Consumer<MainRightMsgOthers> consumerMainRightOthers = new Consumer<MainRightMsgOthers>() {
+        @Override
+        public void accept(MainRightMsgOthers msgOthers) throws Exception {
+            TChan.foreachMath(chan -> {
+                boolean isCheck = CacheUtil.get().getBoolean(CacheUtil.MAIN_RIGHT_MATH + chan);
+                boolean isAddByUser = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_ADD_BY_USER_MATH + chan);
+                channelShow[TChan.toFpgaChNo(chan)] = isCheck && isAddByUser;
+            });
+            TChan.foreachRef(chan -> {
+                boolean isCheck = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_REF_CHECK + chan);
+                boolean isAddByUser = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_ADD_BY_USER_REF + chan);
+                channelShow[TChan.toFpgaChNo(chan)] = isCheck && isAddByUser;
+            });
+            setChannelShow();
+        }
+    };
+
+    private Consumer<RightMsgRefForEight> consumerRightRef = new Consumer<RightMsgRefForEight>() {
+        @Override
+        public void accept(RightMsgRefForEight msgRef) throws Exception {
+            //哪个通道变化 设置哪个通道
+            boolean isAddByUser = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_ADD_BY_USER_REF + msgRef.getRefChannelNumber());
+            channelShow[TChan.toFpgaChNo(msgRef.getRefChannelNumber())] = msgRef.getRefChecked().isValue() && isAddByUser;
+            setChannelShow();
+        }
+    };
+
+    private Consumer<Boolean> consumerAllMeasure = new Consumer<Boolean>() {
+        @Override
+        public void accept(Boolean b) throws Exception {
+            int ch = CacheUtil.get().getInt(CacheUtil.MAIN_CENTER_CHANNELS_SELECT);
+            //设置对应通道的measureAll数据计算的打�?与关闭，并关闭其他�?�道的数�?
+            for (int i = ChannelFactory.CH1; i < ChannelFactory.REF_MAX; i++) {
+                for (int j = 0; j < measureBeanList.size(); j++) {
+                    MeasureBean bean = measureBeanList.get(j);
+                    String[] delays = CacheUtil.get().getString(CacheUtil.TOP_SLIP_MEASURE_DELAY_DATA + (i + 1)).split(CacheUtil.DELAY_SLIP);
+                    sendHardwareMsg(i, bean.getIndex(), b && i == ch
+                            , new int[]{Integer.parseInt(delays[0]), Integer.parseInt(delays[1]), Integer.parseInt(delays[2])}
+                            , new int[]{CacheUtil.get().getInt(CacheUtil.TOP_SLIP_MEASURE_PHASE_DATA + (i + 1))});
+                }
+            }
+            //打开对用的单项的测量数据
+            for (int i = 0; i < measureSelectList.size(); i++) {
+                MeasureBean bean = measureSelectList.get(i);
+                if(bean.getIndex() == MeasureManage.IMeasure.MeasureId_TVALUE) {
+                    String[] tvalue = CacheUtil.get().getString(CacheUtil.TOP_SLIP_MEASURE_TVALUE_DATA + bean.getChannel()).split(CacheUtil.DELAY_SLIP);
+
+                    double vol; int edgeOccurence; int cursorIndex;
+                    vol = Double.parseDouble(tvalue[0]);
+                    edgeOccurence = Integer.parseInt(tvalue[1]);
+                    cursorIndex = Integer.parseInt(tvalue[2]);
+                    sendHardwareMsg(bean.getChannel() - 1, bean.getIndex(), true
+                            , new int[]{edgeOccurence}
+                            , new int[]{edgeOccurence},vol);
+                    cursorTValueTrace(bean,cursorIndex);
+                }else{
+                    String[] delays = CacheUtil.get().getString(CacheUtil.TOP_SLIP_MEASURE_DELAY_DATA + (bean.getChannel())).split(CacheUtil.DELAY_SLIP);
+                    sendHardwareMsg(bean.getChannel() - 1, bean.getIndex(), true
+                            , new int[]{Integer.parseInt(delays[0]), Integer.parseInt(delays[1]), Integer.parseInt(delays[2])}
+                            , new int[]{CacheUtil.get().getInt(CacheUtil.TOP_SLIP_MEASURE_PHASE_DATA + (bean.getChannel()))});
+                }
+            }
+        }
+    };
+
+    private Consumer<LoadCache> consumerLoadCache = new Consumer<LoadCache>() {
+        @Override
+        public void accept(@NonNull LoadCache loadCache) throws Exception {
+            setCache();
+            CacheUtil.get().setLoadMenuState(CacheUtil.LOAD_TopLayoutMeasureCommon, true);
+        }
+    };
+
+    private Consumer<Command_Measure.MeasureInfo> consumerCommandMeasureOpenToUI = new Consumer<Command_Measure.MeasureInfo>() {
+        @Override
+        public void accept(Command_Measure.MeasureInfo measureInfo) throws Exception {
+//            Logger.i(TAG,"measure.type:"+measureInfo.measureType);
+            // 26为所有测量项
+            checkAndUpdateSelectList();
+            if (measureInfo.measureType >= 0 && measureInfo.measureType < allMeasureNums) {
+                addUIMeasureItem(measureInfo);
+            } else {
+                addHideMeasureItem(measureInfo);
+            }
+
+        }
+    };
+
+    private void addUIMeasureItem(Command_Measure.MeasureInfo measureInfo) {
+        MeasureBean measureBean = measureBeanList.get(measureInfo.measureType);
+        MeasureBean measureBean2 = new MeasureBean(measureBean.getIndex(), measureBean.getName(), measureInfo.measureChannel + 1, measureBean.getDrawableResId());
+        if (measureSelectList.size() < GlobalVar.get().getMeasureItemCount()) {
+            for (MeasureBean item : measureSelectList) {
+                if (item.equals(measureBean2)) {
+                    if(measureInfo.measureType == MeasureManage.IMeasure.MeasureId_TVALUE){
+                        int[] param = {measureInfo.param1};
+                        sendHardwareMsg(item.getChannel() - 1, item.getIndex(), true, param, null,measureInfo.dparam1);
+
+                        cursorTValueTrace(measureBean2,measureInfo.param2);
+                    }
+                    return;
+                }
+            }
+//            measureSelectList.add(measureBean2);
+            // 添加
+            addMeasureItem(measureBean2.getChannel(), measureBean2.getIndex(), measureBean2.getName(), MEASURE_DATA_INIT);
+            setStaticsItemEnable(measureBean2.getChannel()-1, measureBean2.getIndex(),true);
+//            Logger.i(TAG,"type:"+measureInfo.measureType);
+            switch (measureInfo.measureType) {
+                case 4: {
+                    int selfPosition=measureInfo.param2;
+                    int otherChannel=measureInfo.param1;
+                    int otherPosition=measureInfo.param3;
+                    CacheUtil.get().putMap(CacheUtil.TOP_SLIP_MEASURE_DELAY_DATA + measureBean2.getChannel(), selfPosition + CacheUtil.DELAY_SLIP + otherChannel + CacheUtil.DELAY_SLIP + otherPosition);
+                    if (selectListAdd(measureBean2, selfPosition, otherChannel, otherPosition)) {
+                        int[] param = {measureInfo.param2, measureInfo.param1, measureInfo.param3};
+                        sendHardwareMsg(measureBean2.getChannel() - 1, measureBean2.getIndex(), true, param, null);
+                    }
+                }
+                break;
+                case 12: {
+                    CacheUtil.get().putMap(CacheUtil.TOP_SLIP_MEASURE_PHASE_DATA + measureBean2.getChannel(), String.valueOf(measureInfo.param1));
+                    if (selectListAdd(measureBean2, measureInfo.param1)) {
+                        int[] param = {measureInfo.param1};
+                        sendHardwareMsg(measureBean2.getChannel() - 1, measureBean2.getIndex(), true, null, param);
+                    }
+                }
+                break;
+                case MeasureManage.IMeasure.MeasureId_TVALUE:{
+                    Log.d(TAG,"MeasureId_TVALUE:" + measureInfo.param2);
+                    int cursoridx = measureInfo.param2;
+
+                    CacheUtil.get().putMap(CacheUtil.TOP_SLIP_MEASURE_TVALUE_DATA + measureBean2.getChannel(), measureInfo.dparam1 + CacheUtil.DELAY_SLIP + measureInfo.param1 + CacheUtil.DELAY_SLIP + cursoridx);
+                    if(selectListAdd(measureBean2,measureInfo.dparam1,measureInfo.param1)) {
+                        int[] param = {measureInfo.param1};
+                        sendHardwareMsg(measureBean2.getChannel() - 1, measureBean2.getIndex(), true, param, null, measureInfo.dparam1);
+                    }
+                    cursorTValueTrace(measureBean2,cursoridx);
+
+                }
+                break;
+
+
+                default: {
+                    if (selectListAdd(measureBean2, new int[0])) {
+                        sendHardwareMsg(measureBean2.getChannel() - 1, measureBean2.getIndex(), true, null, null);
+                    }
+                }
+                break;
+            }
+            measureSelectAdapter.notifyDataSetChanged();
+            saveMeasureSelect();
+        }
+    }
+
+    private void addHideMeasureItem(Command_Measure.MeasureInfo measureInfo) {
+        switch (measureInfo.measureType) {
+            case MeasureManage.IMeasure.MeasureId_ColValQ: {
+                MeasureBean bean = new MeasureBean(measureInfo.measureType, "", measureInfo.measureChannel, 0);
+                hideMeasureBeanList.add(bean);
+                int[] param = {measureInfo.param1};
+                sendHardwareMsg(measureInfo.measureChannel, measureInfo.measureType, true, null, param);
+//                Logger.i(TAG, "23 add");
+            }
+
+        }
+    }
+
+    private Consumer<Command_Measure.MeasureInfo> consumerCommandMeasureCloseToUI = new Consumer<Command_Measure.MeasureInfo>() {
+        @Override
+        public void accept(Command_Measure.MeasureInfo measureInfo) throws Exception {
+            if (measureInfo.flag == Command_Measure.MeasureInfo.FLAG_ClearAll) {
+                measureSelectList.clear();
+                measureSelectAdapter.notifyDataSetChanged();
+                hideMeasureBeanList.clear();
+//                MeasureManage.getInstance().getMeasureItem().delAllMeasureItem();
+                delAll();
+                saveMeasureSelect();
+//                Logger.i(TAG,"clear all!");
+            } else {
+                if (measureInfo != null) {
+//                    Log.d(TAG,"measureInfo.measureChannel:" + measureInfo.measureChannel
+//                            + ",measureInfo.measureType:" + measureInfo.measureType);
+
+                    MeasureManage.getInstance().getMeasureItem().delMeasureItem(measureInfo.measureChannel+1, measureInfo.measureType);
+
+                    try {
+                        int index = Tools.indexOf(measureSelectList, s -> s.getChannel() == measureInfo.measureChannel+1 && s.getIndex() == measureInfo.measureType);
+                        if(index >= 0) {
+                            measureSelectList.remove(index);
+                        }
+                        measureSelectAdapter.notifyDataSetChanged();
+                        index = Tools.indexOf(hideMeasureBeanList, s -> s.getChannel() == measureInfo.measureChannel && s.getIndex() == measureInfo.measureType);
+                        if(index >= 0) {
+                            hideMeasureBeanList.remove(index);
+                        }
+                    }catch (Exception e){
+
+                    }
+
+                    if(!isMeasureAll(measureInfo.measureChannel+1,measureInfo.measureType)
+                            || measureInfo.measureType == MEASURE_INDEX_COLVAL) {
+
+//                        Log.d(TAG,"close ch:" + measureInfo.measureChannel + ",type:" + measureInfo.measureType);
+
+                        sendHardwareMsg(measureInfo.measureChannel, measureInfo.measureType, false, null, null);
+                    }
+
+
+                    saveMeasureSelect();
+                    //hideMeasureBeanList.remove(new MeasureBean(measureInfo.measureType, "", measureInfo.measureChannel , 0));
+//                    Logger.i(TAG,"clear item type:"+measureInfo.measureType);
+                }
+            }
+        }
+    };
+
+    private Consumer<Integer> consumerUserSelfAdjust = new Consumer<Integer>() {
+        @Override
+        public void accept(Integer integer) throws Exception {
+            if (measureSelectList.size() != 0) {
+                onClickListener.onClick(btnClear);
+            }
+        }
+    };
+
+    private Consumer<String> consumerUpdateMeasureItemPos = new Consumer<String>() {
+        @Override
+        public void accept(String posStr) throws Throwable {
+            String[] posInfo = posStr.split(",");
+            int fromPos = Integer.parseInt(posInfo[0]);
+            int toPos = Integer.parseInt(posInfo[1]);
+            boolean isSwap = Boolean.parseBoolean(posInfo[2]);
+//            if (isSwap) {
+//                Tools.swapElement(measureSelectList, fromPos, toPos);
+//            } else {
+//                Tools.insertElement(measureSelectList, fromPos, toPos);
+//            }
+            updateSelectMeasureList();
+            measureSelectAdapter.notifyDataSetChanged();
+            saveMeasureSelect();
+        }
+    };
+
+    private void checkAndUpdateSelectList() {
+        List<MeasureManage.MeasureItemStruct> validList = MeasureManage.getInstance().getMeasureItem().getValidMeasureList();
+        if (measureSelectList.size() != validList.size()) {
+            updateSelectMeasureList();
+        }
+    }
+
+    private void updateSelectMeasureList() { //
+        ArrayList<MeasureBean> tempList = new ArrayList<>();
+        List<MeasureManage.MeasureItemStruct> list = MeasureManage.getInstance().getMeasureItem().getValidMeasureList();
+        for (MeasureManage.MeasureItemStruct itemStruct : list) {
+            for (MeasureBean measureBean : measureSelectList) {
+                if (itemStruct.getChannelId() == measureBean.getChannel() && itemStruct.getMeasureId() == measureBean.getIndex()) {
+                    tempList.add(measureBean);
+                    break;
+                }
+            }
+        }
+        measureSelectList.clear();
+        measureSelectList.addAll(tempList);
+    }
+
+    private Consumer<String> consumerDeleteMeasureItemPos = new Consumer<String>() {
+        @Override
+        public void accept(String deleteItemInfo) throws Throwable {
+            if (StrUtil.isEmpty(deleteItemInfo)) return;
+            Logger.i("TopLayoutMeasureCommon deleteItemInfo= " + deleteItemInfo);
+            String[] strs = deleteItemInfo.split(" ");
+            int channelId = Integer.parseInt(strs[0]);
+            int measureId = Integer.parseInt(strs[1]);
+            measureSelectList.removeIf(bean -> bean.getChannel() < 0);
+            MeasureBean temp = null;
+            for (MeasureBean bean : measureSelectList) {
+                if (bean.getChannel() == channelId && bean.getIndex() == measureId) {
+                    temp = bean;
+                    break;
+                }
+            }
+            if (temp == null) return;
+            int i = measureSelectList.indexOf(temp);
+            measureSelectList.remove(temp);
+            measureSelectAdapter.notifyDataSetChanged();
+            //删除
+            delMeasureItem(temp.getChannel(), temp.getIndex(), i);
+            saveMeasureSelect();
+            setStaticsItemEnable(temp.getChannel() - 1, temp.getIndex(), false);
+            if (!isMeasureAll(temp.getChannel(), temp.getIndex())) {
+                sendHardwareMsg(temp.getChannel() - 1, temp.getIndex(), false, null, null);
+            }
+        }
+    };
+
+
+    private TopViewChannel.onItemClickListener onChannelItemClickListener = new TopViewChannel.onItemClickListener() {
+        @Override
+        public void checkChanged(int viewId, int checkedIndex,RadioButton radioButton) {
+            PlaySound.getInstance().playButton();
+            CacheUtil.get().putMap(CacheUtil.TOP_SLIP_MEASURE_CHANNEL_SELECT, String.valueOf(checkedIndex));
+            saveMeasureSelect();
+        }
+    };
+
+
+
+    private boolean isMeasureAll(int chIdx,int measureIdx){
+
+        MeasureManage.AllMeasure allMeasure = MeasureManage.getInstance().getAllMeasure();
+        if (allMeasure.isVisible() && allMeasure.getChIdx() == chIdx) {//更新AllMeasure
+
+            return measureIdx != MEASURE_INDEX_DELAY && measureIdx != MEASURE_INDEX_PHASE;
+        }
+        return false;
+    }
+    private View.OnClickListener onClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            PlaySound.getInstance().playButton();
+            int len = measureSelectList.size();
+            for (int i = 0; i < len; i++) {
+                MeasureBean bean = measureSelectList.get(i);
+                if(!isMeasureAll(bean.getChannel(),bean.getIndex())) {
+                    sendHardwareMsg(bean.getChannel() - 1, bean.getIndex(), false, null, null);
+                }
+            }
+            measureSelectList.clear();
+            measureSelectAdapter.notifyDataSetChanged();
+            //清空�???�???
+            delAll();
+            saveMeasureSelect();
+
+//            Measure measure = getHardwareMeasure(viewChannel.getSelectChannel());
+//            if (measure != null) {
+//                measure.MeasureCalc();
+//            }
+        }
+    };
+
+    private TopDialogMeasureTValue.OnSureListener onTValueSureListener = new TopDialogMeasureTValue.OnSureListener() {
+        @Override
+        public void onSure(MeasureBean measureBean, double vol, int edgeOccurence, int cursorIndex) {
+            PlaySound.getInstance().playButton();
+
+            CacheUtil.get().putMap(CacheUtil.TOP_SLIP_MEASURE_TVALUE_DATA + TChan.toUiChNo(viewChannel.getSelectChannel()), vol + CacheUtil.DELAY_SLIP + edgeOccurence + CacheUtil.DELAY_SLIP + cursorIndex);
+            MeasureBean measureBean2 = new MeasureBean(measureBean.getIndex(), measureBean.getName(), viewChannel.getSelectChannel() + 1, R.drawable.ic_measure_tvolt);
+            if (selectListAdd(measureBean2, vol,edgeOccurence)) {
+                sendHardwareMsg(viewChannel.getSelectChannel(), MEASURE_INDEX_TVALUE, true, new int[]{edgeOccurence}, null, vol);
+            }
+            cursorTValueTrace(measureBean,cursorIndex);
+        }
+    };
+
+    private void cursorTValueTrace(MeasureBean measureBean, int cursorIndex){
+
+        boolean bCursor = false;
+        int chIdx = measureBean.getChannel() - 1;
+        int X1 = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_MEASURE_TVALUE_X1);
+        int X2 = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_MEASURE_TVALUE_X2);
+
+        Log.d(TAG,"chIdx:" + chIdx + ",cursorIndex:" + cursorIndex + ",X1:" + X1 + ",X2:" + X2);
+
+        switch (cursorIndex){
+            case 1:
+                X1 = chIdx;
+                if(X2 == chIdx){
+                    X2 = -1;
+                }
+                bCursor = true;
+                break;
+            case 2:
+                X2 = chIdx;
+                if(X1 == chIdx){
+                    X1 = -1;
+                }
+                bCursor = true;
+                break;
+            default:
+                if(X1 == chIdx){
+                    X1 = -1;
+                }
+                if(X2 == chIdx){
+                    X2 = -1;
+                }
+                break;
+        }
+
+//        if(X1 == X2){
+//            new Throwable().printStackTrace();
+//        }
+
+        CacheUtil.get().putMap(CacheUtil.TOP_SLIP_MEASURE_TVALUE_X1,String.valueOf(X1));
+        CacheUtil.get().putMap(CacheUtil.TOP_SLIP_MEASURE_TVALUE_X2,String.valueOf(X2));
+
+
+        if(bCursor){
+            CursorManage cursorManage = CursorManage.getInstance();
+            if(!cursorManage.getColVisible()){
+                RxBus.getInstance().post(RxEnum.EXTERNALKEYS_CURSOR, new ExternalKeysMsgCursor(false, ExternalKeysMsgCursor.TYPE_OPEN));
+            }
+            if(cursorManage.isCursorTrace()) {
+//                cursorManage.setCursorTrace(false);
+                Command.get().getCursor().Trace(false,true);
+            }
+
+            if(MeasureService.isCursorRang()){
+                Command.get().getMeasure_setting().Range(0, true);
+            }
+
+        }
+        //这里将光标追踪按钮置灰
+        RxBus.getInstance().post(RxEnum.MSG_TVALUE_ENABLE, true);
+    }
+
+    private void resetTValueCurSorCache(int chId) {
+
+        String[] tValues = CacheUtil.get().getString(CacheUtil.TOP_SLIP_MEASURE_TVALUE_DATA + (chId + 1)).split(CacheUtil.DELAY_SLIP);
+        int cursorIndex = Integer.parseInt(tValues[2]);
+        int X1 = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_MEASURE_TVALUE_X1);
+        int X2 = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_MEASURE_TVALUE_X2);
+        Log.d(TAG,"cursorIndex:" + cursorIndex + ",X1:" + X1 + ",X2:" + X2 + ",chId:" + chId);
+        switch (cursorIndex) {
+            case 1:
+                if (X1 == chId) {
+                    CacheUtil.get().putMap(CacheUtil.TOP_SLIP_MEASURE_TVALUE_X1, String.valueOf("-1"));
+                }
+                break;
+            case 2:
+                if (X2 == chId) {
+                    CacheUtil.get().putMap(CacheUtil.TOP_SLIP_MEASURE_TVALUE_X2, String.valueOf("-1"));
+                }
+                break;
+            default:
+//                CacheUtil.get().putMap(CacheUtil.TOP_SLIP_MEASURE_TVALUE_X1, String.valueOf("-1"));
+//                CacheUtil.get().putMap(CacheUtil.TOP_SLIP_MEASURE_TVALUE_X2, String.valueOf("-1"));
+                break;
+        }
+        RxBus.getInstance().post(RxEnum.MSG_TVALUE_ENABLE, true);
+    }
+
+
+    private TopDialogMeasurePhase.OnSureListener onPhaseSureListener = new TopDialogMeasurePhase.OnSureListener() {
+        @Override
+        public void onSure(MeasureBean measureBean, String selfChannel, int otherChannelIndex) {
+            PlaySound.getInstance().playButton();
+            CacheUtil.get().putMap(CacheUtil.TOP_SLIP_MEASURE_PHASE_DATA + (viewChannel.getSelectChannel() + 1), String.valueOf(otherChannelIndex));
+            MeasureBean measureBean2 = new MeasureBean(measureBean.getIndex(), measureBean.getName(), viewChannel.getSelectChannel() + 1, R.drawable.ic_measure_phase);
+            if (selectListAdd(measureBean2, otherChannelIndex)) {
+                sendHardwareMsg(viewChannel.getSelectChannel(), MEASURE_INDEX_PHASE, true, null, new int[]{otherChannelIndex});
+            }
+        }
+    };
+
+    private TopDialogMeasureDelay.OnSureListener onDelaySureListener = new TopDialogMeasureDelay.OnSureListener() {
+        @Override
+        public void onSure(MeasureBean measureBean, String selfChannel, int selfPosition, int otherChannel, int otherPosition) {
+            PlaySound.getInstance().playButton();
+            CacheUtil.get().putMap(CacheUtil.TOP_SLIP_MEASURE_DELAY_DATA + (viewChannel.getSelectChannel() + 1), selfPosition + CacheUtil.DELAY_SLIP + otherChannel + CacheUtil.DELAY_SLIP + otherPosition);
+            MeasureBean measureBean2 = new MeasureBean(measureBean.getIndex(), measureBean.getName(), viewChannel.getSelectChannel() + 1, R.drawable.ic_measure_delay);
+            if (selectListAdd(measureBean2, selfPosition, otherChannel, otherPosition)) {
+                sendHardwareMsg(viewChannel.getSelectChannel(), MEASURE_INDEX_DELAY, true, new int[]{selfPosition, otherChannel, otherPosition}, null);
+            }
+        }
+    };
+
+    private MeasureAdapter.OnItemClickListener onMeasureItemClickListener = new MeasureAdapter.OnItemClickListener() {
+        @Override
+        public void onClick(MeasureAdapter adapter, MeasureBean measureBean) {
+            PlaySound.getInstance().playButton();
+            checkAndUpdateSelectList();
+            String[] measureStrings = context.getResources().getStringArray(R.array.measures);
+            RadioButton radioButton = viewChannel.getSelectedRadioButton();
+            if (adapter.hashCode() == measureAdapter.hashCode()) {
+                if (measureBean.isSelect()) {
+                    measureSelectAdapter.getItemClickListener().onClick(measureSelectAdapter, measureBean);
+                } else {
+                    int chIdx = viewChannel.getSelectChannel();
+                    if (!channelShow[chIdx]) return;
+                    measureBean.setChannel(chIdx);
+                    if (measureStrings[MEASURE_INDEX_DELAY].equals(measureBean.getName())) {//延时
+                        if (ChannelFactory.isRefCh(chIdx)) return;
+                        String[] delays = CacheUtil.get().getString(CacheUtil.TOP_SLIP_MEASURE_DELAY_DATA + (chIdx + 1)).split(CacheUtil.DELAY_SLIP);
+                        delayDialog.setCache(Integer.parseInt(delays[0]), Integer.parseInt(delays[1]), Integer.parseInt(delays[2]));
+                        delayDialog.setData(radioButton.getText().toString(), measureBean, onDelaySureListener);
+                    } else if (measureStrings[MEASURE_INDEX_PHASE].equals(measureBean.getName())) {//相位
+                        if (ChannelFactory.isRefCh(chIdx)) return;
+                        String phase = CacheUtil.get().getString(CacheUtil.TOP_SLIP_MEASURE_PHASE_DATA + (chIdx + 1));
+                        phaseDialog.setCache(Integer.parseInt(phase));
+                        phaseDialog.setData(radioButton.getText().toString(), measureBean, onPhaseSureListener);
+                    } else if (measureStrings[MEASURE_INDEX_TVALUE].equals(measureBean.getName())) {//TValue
+                        String[] tValues = CacheUtil.get().getString(CacheUtil.TOP_SLIP_MEASURE_TVALUE_DATA + (chIdx + 1)).split(CacheUtil.DELAY_SLIP);
+                        tvalueDialog.setCache(Double.parseDouble(tValues[0]), Integer.parseInt(tValues[1]), Integer.parseInt(tValues[2]));
+                        tvalueDialog.setData(radioButton.getText().toString(), measureBean, onTValueSureListener);
+                    } else {
+                        MeasureBean measureBean2 = new MeasureBean(measureBean.getIndex(), measureBean.getName(), chIdx + 1, measureBean.getDrawableResId());
+                        if (selectListAdd(measureBean2)) {
+                            sendHardwareMsg(chIdx, measureBean.getIndex(), true, null, null);
+                        }
+                    }
+                }
+            } else if (adapter.hashCode() == measureSelectAdapter.hashCode()) {
+                int i = measureSelectList.indexOf(measureBean);
+                measureSelectList.remove(measureBean);
+                measureSelectAdapter.notifyDataSetChanged();
+                //删除
+                delMeasureItem(measureBean.getChannel(), measureBean.getIndex(), i);
+                saveMeasureSelect();
+                setStaticsItemEnable(measureBean.getChannel() - 1, measureBean.getIndex(), false);
+//                Command.get().getMeasure().Clear(i, false);
+                if(!isMeasureAll(measureBean.getChannel(),measureBean.getIndex())) {
+                    sendHardwareMsg(measureBean.getChannel() - 1, measureBean.getIndex(), false, null, null);
+                }
+            }
+        }
+    };
+    private void sendHardwareMsg(int chId, int measureId, boolean isOpen, int[] delay, int[] phase){
+        sendHardwareMsg(chId,measureId,isOpen,delay,phase,0);
+    }
+    private void sendHardwareMsg(int chId, int measureId, boolean isOpen, int[] delay, int[] phase,double v) {
+        Log.d(TAG, "sendHardwareMsg() called with: chId = [" + chId + "], measureId = [" + measureId + "], isOpen = [" + isOpen + "], delay = [" + delay + "], phase = [" + phase + "], v = [" + v + "]");
+        Measure measure = getHardwareMeasure(chId);
+//        Logger.i(TAG," measure: " + (measure!=null?"true":"false")+",measureId:"+measureId+",chId:"+chId);
+        if (measure != null) {
+            if (measureId == MEASURE_INDEX_DELAY) {
+                if (isOpen) {
+                    if (delay != null) {
+                        measure.MeasureDelay(delay[0], delay[1], delay[2]);
+                        measure.MeasureDelayEnable(true);
+                    }
+                } else {
+                    measure.MeasureDelayEnable(false);
+                }
+            } else if (measureId == MEASURE_INDEX_PHASE) {
+                if (isOpen) {
+                    if (phase != null) {
+                        measure.MeasurePhase(phase[0]);
+                        measure.MeasurePhaseEnable(true);
+                    }
+                } else {
+                    measure.MeasurePhaseEnable(false);
+                }
+            } else if (measureId == MEASURE_INDEX_COLVAL) {
+                if (isOpen) {
+                    if (phase != null) {
+                        measure.MeasureCol(phase[0]);
+                    }
+                }
+            }else if(measureId == MEASURE_INDEX_TVALUE){
+                if (isOpen) {
+                    if (delay != null) {
+                        measure.setTValue(v,delay[0]);
+                    }
+                } else {
+                    resetTValueCurSorCache(chId);
+                }
+            }
+            measure.MeasureItemEnable(measureId + Measure.MeasureType.MEASURE_FIRST, isOpen);
+            if (ChannelFactory.isDynamicCh(chId)) {
+                MeasureService.forceChMeasureRefresh();
+            } else if (ChannelFactory.isMathCh(chId)) {
+                MeasureService.forceMathMeasureRefresh();
+            } else if (ChannelFactory.isRefCh(chId)) {
+                MeasureService.forceRefMeasureRefresh();
+            }
+        }
+    }
+
+    private Measure getHardwareMeasure(int chId) {
+        BaseChannel baseChannel = null;
+        if (ChannelFactory.isDynamicCh(chId)) {
+            baseChannel = ChannelFactory.getDynamicChannel(chId);
+        } else if (ChannelFactory.isMathCh(chId)) {
+            baseChannel = ChannelFactory.getMathChannel(chId);
+        } else if (ChannelFactory.isRefCh(chId)) {
+            baseChannel = ChannelFactory.getRefChannel(chId);
+        }
+        if (baseChannel != null) {
+            return baseChannel.getMeasure();
+        }
+        return null;
+    }
+
+    private void setStaticsItemEnable(int chIdx,int measureId,boolean bEnable){
+
+        Measure measure = getHardwareMeasure(chIdx);
+        if(measure != null){
+            measure.setStaticsItemEnable(measureId + Measure.MeasureType.MEASURE_PERIOD,bEnable);
+        }
+    }
+
+    private void addMeasureItem(int channelId, int measureId, String measureName, String data) {
+        MeasureManage.MeasureItemStruct item = MeasureManage.getInstance().new MeasureItemStruct(channelId, measureId, measureName, data);
+        MeasureManage.getInstance().getMeasureItem().addMeasureItem(item);
+
+    }
+
+    void updateMeasureItem(int channelId, int measureId, String measureName, String data) {
+        MeasureManage.MeasureItemStruct item = MeasureManage.getInstance().new MeasureItemStruct(channelId, measureId, measureName, data);
+        MeasureManage.getInstance().getMeasureItem().updateMeasureItem(item);
+    }
+
+    void updateMeasureIndication(){
+        int chIdx = 0;
+        int idx = 0;
+        Measure measure=null;
+        MeasureManage.MeasureIndication measureIndication = MeasureManage.getInstance().getMeasureIndication();
+
+        for (int i = 0; i < measureSelectList.size(); i++) {//更新SelectMeasure
+            MeasureBean bean = measureSelectList.get(i);
+            measure = getHardwareMeasure(bean.getChannel() - 1);
+            idx = bean.getIndex() + Measure.MeasureType.MEASURE_FIRST;
+            chIdx = bean.getChannel()-1;
+            if(measureIndication.getChIdx() == chIdx
+                    && measureIndication.getMeasureId() == idx) {
+                break;
+            }
+        }
+        if(com.micsig.tbook.scope.Display.Display.getInstance().isXYMode()){
+            measure = null;
+        }
+        if(measure != null
+                && ChannelFactory.isChOpen(chIdx)
+                && measure.isMeasureItemValid(idx)){
+            for (int j = 0; j < MeasureManage.MeasureIndication.MEASURE_INDICATION_MAX; j++) {
+                int v = measure.getIndication(idx, j);
+                measureIndication.setVisiable(j, v >= 0);
+                measureIndication.setPos(j, v);
+            }
+        }else{
+            measureIndication.setVisiable(false);
+        }
+
+    }
+
+    private void delMeasureItem(int channelId, int measureId, int index) {
+        MeasureManage.MeasureItem measureItem = MeasureManage.getInstance().getMeasureItem();
+        if(measureItem == null || channelId < 0 || measureId < 0) return;
+//        List<MeasureManage.MeasureItemStruct> measureStructList = measureItem.getMeasureList();
+//        for (int i= 0; i< measureStructList.size(); i++) {
+//            MeasureManage.MeasureItemStruct measureItemStruct = measureStructList.get(i);
+//            if(measureItemStruct.getChannelId() == channelId && measureItemStruct.getMeasureId() == measureId) {
+//                measureItem.delMeasureItem(channelId, measureId);
+//                break;
+//            }
+//        }
+        measureItem.delMeasureItem(channelId, measureId);
+        MeasureManage.MeasureItemStruct measureItemStruct = measureItem.getMeasureItemStruct(channelId, measureId);
+
+
+//        int effectiveCount = 0;//有效测量项的个数
+//        int newIndex = 0;//最终需要删除index
+//        MeasureManage.MeasureItemStruct measureItemStruct = null;
+//        for (int i = 0; i < measureStructList.size(); i++) {
+//            measureItemStruct = measureItem.getMeasureList().get(i);
+//            newIndex = i;
+//            if (measureItemStruct.getChannelId() >= 0) {
+//                effectiveCount++;
+//                if (effectiveCount == index + 1) {
+//                    break;
+//                }
+//            }
+//        }
+//        measureItem.delMeasureItem(newIndex);
+        MeasureManage.MeasureIndication measureIndication = MeasureManage.getInstance().getMeasureIndication();
+        if(measureIndication != null){
+            measureIndication.setVisiable(false);
+            if(measureItemStruct != null && measureIndication.getChIdx() == (measureItemStruct.getChannelId() - 1)
+                && measureIndication.getMeasureId() == (measureItemStruct.getMeasureId() + Measure.MeasureType.MEASURE_FIRST)){
+                measureIndication.setMeasureIndication(-1,-1);
+            }
+        }
+        Command.get().getMeasure().Clear(index, false);
+    }
+
+    private void delAll() {
+
+        ChannelFactory.forEachCh(channel -> {
+            Measure measure = getHardwareMeasure(channel.getChId());
+            if(measure != null){
+                measure.getMeasureStatics().clear();
+            }
+        });
+        MeasureManage.getInstance().getMeasureItem().delAllMeasureItem();
+        Command.get().getMeasure().ClearAllItem(false);
+        MeasureManage.getInstance().getMeasureIndication().setVisiable(false);
+        MeasureManage.getInstance().getMeasureIndication().setMeasureIndication(-1,-1);
+    }
+
+
+    private EventUIObserver eventUIObserver = new EventUIObserver() {
+        @Override
+        public void update(Object data) {
+            EventBase eventBase = (EventBase) data;
+            int id = eventBase.getId();
+
+            if (id == EventFactory.EVENT_CH_MEASURE_UPDATE
+                    || id == EventFactory.EVENT_MATH_MEASURE_UPDATE
+                    || id == EventFactory.EVENT_REF_MEASURE_UPDATE) {
+
+                int chidx = -1;
+
+
+                CursorManage cursorManage = CursorManage.getInstance();
+                WorkModeManage workModeManage = WorkModeManage.getInstance();
+                int X1 = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_MEASURE_TVALUE_X1);
+                int X2 = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_MEASURE_TVALUE_X2);
+
+//                Log.d(TAG,"X1:" + X1 + ",X2:" + X2);
+
+                for (int i = 0; i < measureSelectList.size(); i++) {//更新SelectMeasure
+                    MeasureBean bean = measureSelectList.get(i);
+                    chidx = bean.getChannel() - 1;
+                    long curTimeX = 0;
+                    double timeEvery = 0;
+//                    int chIdx = TChan.toFpgaChNo(chidx);
+                    if (ChannelFactory.isDynamicCh(chidx)
+                            || ChannelFactory.isMathCh(chidx)
+                            || ChannelFactory.isSerialCh(chidx)) {
+                        if (ChannelFactory.isMath_FFT_Ch(chidx)) {
+                            HorizontalAxisMath horizontalAxisMath = ChannelFactory.getMathChannel(chidx).getHorizontalAxisMathFFT();
+                            curTimeX = ScopeBase.getWidth() / 2 - horizontalAxisMath.getXPosOfView();
+                            timeEvery = horizontalAxisMath.fftXScaleIdVal() / ScopeBase.getHorizonPerGridPixels();
+                        } else {
+                            curTimeX = ScopeBase.getWidth() / 2 - HorizontalAxis.getInstance().getTimePoseOfViewPix();
+                            timeEvery = HorizontalAxis.getInstance().getTimesPrePix();
+                        }
+                    } else if (ChannelFactory.isRefCh(chidx)) {
+                        RefChannel refChannel = ChannelFactory.getRefChannel(chidx);
+                        curTimeX = ScopeBase.getWidth() / 2 - refChannel.getTimePoseOfViewPix();
+                        timeEvery = refChannel.getRefTimePerPix();
+                    }
+
+                    Measure measure = getHardwareMeasure(chidx);
+                    int idx = bean.getIndex() + Measure.MeasureType.MEASURE_FIRST;
+
+                    if (ChannelFactory.isChOpen(chidx) && measure != null
+                            && measure.isMeasureItemValid(idx)) {
+
+                        if((ChannelFactory.isDynamicCh(chidx) && id != EventFactory.EVENT_CH_MEASURE_UPDATE)
+                                || (ChannelFactory.isMathCh(chidx) && id != EventFactory.EVENT_MATH_MEASURE_UPDATE)
+                                || (ChannelFactory.isRefCh(chidx) && id != EventFactory.EVENT_REF_MEASURE_UPDATE)
+                        ){
+                            continue;
+                        }
+
+                        float itemVal = measure.getMeasureItemVal(idx);
+                        if(idx == Measure.MeasureType.MEASURE_TVALUE){
+//                            if(!cursorManage.isCursorTrace()
+//                                    && cursorManage.getColVisible()
+//                                    && (workModeManage.getmWorkMode() == IWorkMode.WorkMode_YT
+//                                    || workModeManage.getmWorkMode() == IWorkMode.WorkMode_YTZOOM
+//                            )
+//                                ){
+//                                Log.d(TAG,"X1:" + X1 + ",chidx:" + chidx +",X2:" + X2 + ",itemVal:" + itemVal);
+                                if(X1 == chidx){
+
+                                    cursorManage.setCursor(TChan.Cursor_col_1, itemVal);
+                                }
+                                if(X2 == chidx){
+                                    cursorManage.setCursor(TChan.Cursor_col_2, itemVal);
+                                }
+//                            }
+
+                            itemVal = (float) ((itemVal - curTimeX) * timeEvery);
+
+//                            Log.d(TAG,"---itemVal:" + itemVal);
+                        }
+
+
+                        Command.get().getMeasure().setListMeasureValue(bean.getChannel(), bean.getIndex(), itemVal, true);
+                        updateMeasureItem(bean.getChannel(), bean.getIndex(), bean.getName(),
+                                clippingProcess(addUnit(chidx, bean.getIndex(), itemVal),
+                                        idx, measure.getClipping()));
+                    } else {
+                        Command.get().getMeasure().setListMeasureValue(bean.getChannel(), bean.getIndex(), 0,false);
+                        updateMeasureItem(bean.getChannel(), bean.getIndex(), bean.getName(), MEASURE_DATA_INIT);
+                    }
+                }
+                if(measureSelectList.size() > 0) {
+                    updateMeasureIndication();
+                }
+//                Logger.i(TAG," hidemeasurebeanlist size:"+hideMeasureBeanList.size());
+
+
+                for (int i = 0; i < hideMeasureBeanList.size(); i++) {
+                    int ch = hideMeasureBeanList.get(i).getChannel();
+                    int idx = hideMeasureBeanList.get(i).getIndex() + Measure.MeasureType.MEASURE_PERIOD;
+                    Measure measure = getHardwareMeasure(ch);
+//                    Logger.i(TAG,"ch:"+ch+",measure:"+(measure!=null?"true":"false")+",valid:"+measure.isMeasureItemValid(idx));
+                    if (ChannelFactory.isChOpen(ch) && measure != null
+                            && measure.isMeasureItemValid(idx)) {
+                        if((ChannelFactory.isDynamicCh(chidx) && id != EventFactory.EVENT_CH_MEASURE_UPDATE)
+                                || (ChannelFactory.isMathCh(chidx) && id != EventFactory.EVENT_MATH_MEASURE_UPDATE)
+                                || (ChannelFactory.isRefCh(chidx) && id != EventFactory.EVENT_REF_MEASURE_UPDATE)
+                        ){
+                            continue;
+                        }
+                        if(measure.isMeasureItemValid(idx)){
+                            float itemVal = measure.getMeasureItemVal(idx);
+
+                            Command.get().getMeasure().setListMeasureValueEx(ch, idx - Measure.MeasureType.MEASURE_PERIOD, itemVal,true);
+                        }else{
+                            Command.get().getMeasure().setListMeasureValueEx(ch, idx - Measure.MeasureType.MEASURE_PERIOD, 0,false);
+                        }
+                    }
+                }
+                setAllMeasureData();
+            }
+        }
+    };
+
+    private void setAllMeasureData(){
+        if (MeasureManage.getInstance().getAllMeasure().isVisible()) {//更新AllMeasure
+            List<String> values = new ArrayList<>();
+            int ch = CacheUtil.get().getInt(CacheUtil.MAIN_CENTER_CHANNELS_SELECT);
+            Measure measure = getHardwareMeasure(ch);
+            for (MeasureBean bean : measureBeanList) {
+                if (bean.getIndex() == MEASURE_INDEX_DELAY
+                        || bean.getIndex() == MEASURE_INDEX_PHASE
+                        || bean.getIndex() == MEASURE_INDEX_TVALUE) {//延时、相位没有AllMeasure�???
+                    continue;
+                }
+                if (measure != null && measure.isMeasureItemValid(bean.getIndex() + Measure.MeasureType.MEASURE_PERIOD)) {
+                    float itemVal = measure.getMeasureItemVal(bean.getIndex() + Measure.MeasureType.MEASURE_PERIOD);
+                    values.add(clippingProcess(addUnit(ch, bean.getIndex(), itemVal),
+                            bean.getIndex() + Measure.MeasureType.MEASURE_PERIOD,
+                            measure.getClipping()));
+                } else {
+                    values.add(MEASURE_DATA_INIT);
+                }
+            }
+            MeasureManage.getInstance().getAllMeasure().setMeasureData(values);
+        }
+    }
+
+    private String addUnit(int ch, int measureType, float val) {
+        switch (measureType) {
+            case MeasureManage.IMeasure.MeasureId_Freq:
+                return TBookUtil.getFourFromD_(val) + "Hz";
+            case MeasureManage.IMeasure.MeasureId_DutyAdd:
+            case MeasureManage.IMeasure.MeasureId_DutySub:
+            case MeasureManage.IMeasure.MeasureId_ROV:
+            case MeasureManage.IMeasure.MeasureId_FOV:
+                //%不显示m、k、M等前缀，保留2位小数
+                return TBookUtil.getPoint2FromD_noscale(val * 100) + "%";
+            case MeasureManage.IMeasure.MeasureId_Phase:
+                String d = TBookUtil.getFourFromD_(val);
+                if ("-0 f".equals(d) || "0 f".equals(d)) {
+                    d = "0";
+                }
+                return d + "°";
+            case MeasureManage.IMeasure.MeasureId_Period:
+            case MeasureManage.IMeasure.MeasureId_RiseTime:
+            case MeasureManage.IMeasure.MeasureId_FallTime:
+            case MeasureManage.IMeasure.MeasureId_Delay:
+            case MeasureManage.IMeasure.MeasureId_WidthAdd:
+            case MeasureManage.IMeasure.MeasureId_WidthSub:
+            case MeasureManage.IMeasure.MeasureId_BurstW:
+            case MeasureManage.IMeasure.MeasureId_TVALUE:
+                return TBookUtil.getFourFromD_(val) + "s";
+            case MeasureManage.IMeasure.MeasureId_PKPK:
+            case MeasureManage.IMeasure.MeasureId_Amp:
+            case MeasureManage.IMeasure.MeasureId_High:
+            case MeasureManage.IMeasure.MeasureId_Low:
+            case MeasureManage.IMeasure.MeasureId_Max:
+            case MeasureManage.IMeasure.MeasureId_Min:
+            case MeasureManage.IMeasure.MeasureId_RMS:
+            case MeasureManage.IMeasure.MeasureId_CRMS:
+            case MeasureManage.IMeasure.MeasureId_Mean:
+            case MeasureManage.IMeasure.MeasureId_CMean:
+            case MeasureManage.IMeasure.MeasureId_ACRMS:
+                return TBookUtil.getFourFromD_(val) + ChannelFactory.getProbeType(ch);
+            case MeasureManage.IMeasure.MeasureId_PostitiveRate:
+            case MeasureManage.IMeasure.MeasureId_NegativeRate:
+                return TBookUtil.getFourFromD_(val) + ChannelFactory.getProbeType(ch) + "/s";
+        }
+        return "";
+    }
+
+    private String clippingProcess(String sData, int itemId, int clipping) {
+        switch (clipping) {
+            case 1://正削
+                switch (itemId) {
+                    case Measure.MeasureType.MEASURE_NEGATIVE_OVERSHOOT:
+                    case Measure.MeasureType.MEASURE_LOW:
+                    case Measure.MeasureType.MEASURE_MIN:
+                        break;
+                    default:
+                        if (!sData.equals(MEASURE_DATA_INIT)) sData += "?";
+                        break;
+                }
+                break;
+            case 2://负削
+                switch (itemId) {
+                    case Measure.MeasureType.MEASURE_POSITIVE_OVERSHOOT:
+                    case Measure.MeasureType.MEASURE_HIGH:
+                    case Measure.MeasureType.MEASURE_MAX:
+                        break;
+                    default:
+                        if (!sData.equals(MEASURE_DATA_INIT)) sData += "?";
+                        break;
+                }
+                break;
+            case 3://双削
+                if (!sData.equals(MEASURE_DATA_INIT)) sData += "?";
+                break;
+            case 4://无波
+                if (!sData.equals(MEASURE_DATA_INIT)) sData += "?";
+                break;
+            case 0://正常
+            default:
+                break;
+        }
+        return sData;
+    }
+
+    private Consumer<String> consumerSelectColor = new Consumer<String>() {
+        @Override
+        public void accept(String colorInfo) throws Throwable {
+            if (colorInfo.isEmpty()) return;
+            Logger.i(TAG, "selectColorInfo= " + colorInfo);
+            String[] info = colorInfo.split(";");
+            int chIndex = Integer.parseInt(info[0]);
+            String colorStr = info[1];
+            viewChannel.setChannelColor(chIndex, colorStr);
+            measureAdapter.updateColors();
+            measureSelectAdapter.updateColors();
+        }
+    };
+
+}

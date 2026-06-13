@@ -1,0 +1,421 @@
+<resources>
+
+    <!--
+    العربية		    阿拉伯语	    ar_IL
+    čeština		捷克语		cs_CZ
+    Deutsch		德语		    de_DE
+    English		英语(美国)	en_US
+    Español		西班牙语	    es_ES
+    Français	法语		    fr_FR
+    Italiano	意大利语	    it_IT
+    日本語		日语		    ja_JP
+    한국의		韩语		    ko_KR
+    Protuguês	葡萄牙语	    pt_PT
+    Русский		俄罗斯语	    ru_RU
+    Türkçe		土耳其语	    tr_TR
+    中文简体	    中文简体	    zh_CN
+    中文繁体	    中文繁体	    zh_TW
+     -->
+    <string name="app_system_supported" translatable="false" >Applications not supported by the system</string>
+
+    <!--底部菜单-->
+    <string name="menu_bottom_adjust">Fine</string>
+    <string name="menu_bottom_save">Quick\r\nSave</string>
+    <string name="menu_bottom_cursor">Cursor</string>
+    <string name="menu_bottom_time">10:13</string>
+    <string name="menu_bottom_qiuck_screen">Capture</string>
+    <string name="menu_bottom_qiuck_zoom">Zoom</string>
+    <string name="menu_bottom_qiuck_all_measure">All Meas.</string>
+    <string name="menu_bottom_qiuck_serials_txt">Serials Txt</string>
+    <string name="menu_bottom_qiuck_center_menu">Menu</string>
+    <string name="menu_bottom_qiuck_segment">SG View</string>
+    <string name="menu_bottom_qiuck_home">Home</string>
+    <string name="menu_bottom_enter_yt" translatable="false">Enter YT</string>
+    <string name="dialog_center_menu_half_timebase">timebase</string>
+    <string name="dialog_center_menu_half_level">level</string>
+    <string name="dialog_center_menu_half_hor_cursor">horizontal cursor</string>
+    <string name="dialog_center_menu_half_ver_cursor">vertical cursor</string>
+    <string name="dialog_center_menu_half_channels">channels</string>
+
+    <string name="dialog_ok">OK</string>
+    <string name="dialog_cancel">Cancel</string>
+    <string name="new_folder"> New Folder</string>
+    <string name="seleced_folder">  Selected folder</string>
+    <string name="file_selection_not_supported"> File selection not supported</string>
+    <string name="label_folder">Folder</string>
+    <string name="label_file">File</string>
+    <string name="toast_create_success">Created successfully</string>
+    <string name="toast_create_failure">Failed to create</string>
+    <string name="error_already_exists">Already exists</string>
+    <!-- TopTriggerSerials -->
+    <string name="topSerialsHeadData">Data</string>
+    <string name="topSerialsHeadData1">Data1</string>
+    <string name="topSerialsHeadData2">Data2</string>
+    <string name="topSerialsHeadLabel">Label</string>
+    <string name="topSerialsHeadSdi">SDI</string>
+    <string name="topSerialsHeadSsm">SSM</string>
+    <string name="topSerialsHeadId">ID</string>
+    <string name="topSerialsHeadDlc">DLC</string>
+    <string name="topSerialsHeadAddr">Addr</string>
+    <string name="topSerialsHeadCondition">Condition</string>
+
+    <string name="m1553bCsWordCsWordHead">Command/Status</string>
+    <string name="m1553bDataWordDataHead">Data</string>
+    <string name="m1553bRtAddrRtAddrHead">RT Addr</string>
+    <string name="spiDataDataHead">Set the Bits</string>
+
+    <string name="mainTopLeftStateRun">Run</string>
+    <string name="mainTopLeftStateStop">Stop</string>
+    <string name="mainTopLeftStateWait">Wait</string>
+    <string name="mainTopLeftStateAuto">Auto</string>
+    <string name="mainTopLeftSD">SD</string>
+    <string name="mainTopLeftLength">87.5K</string>
+    <string name="mainTopLeftRate">3.13MSa/s</string>
+    <string name="mainTopCenterShow">0ps</string>
+    <string name="mainRightSample">256Ave</string>
+    <string name="mainTopLeftStateNormal">Normal</string>
+
+    <string name="mainCenterRadioButtonCh1" translatable="false">CH1</string>
+    <string name="mainCenterRadioButtonCh2" translatable="false">CH2</string>
+    <string name="mainCenterRadioButtonCh3" translatable="false">CH3</string>
+    <string name="mainCenterRadioButtonCh4" translatable="false">CH4</string>
+    <string name="mainCenterRadioButtonCh5" translatable="false">CH5</string>
+    <string name="mainCenterRadioButtonCh6" translatable="false">CH6</string>
+    <string name="mainCenterRadioButtonCh7" translatable="false">CH7</string>
+    <string name="mainCenterRadioButtonCh8" translatable="false">CH8</string>
+    <string name="mainCenterRadioButtonMath1" translatable="false">M1</string>
+    <string name="mainCenterRadioButtonMath2" translatable="false">M2</string>
+    <string name="mainCenterRadioButtonMath3" translatable="false">M3</string>
+    <string name="mainCenterRadioButtonMath4" translatable="false">M4</string>
+    <string name="mainCenterRadioButtonMath5" translatable="false">M5</string>
+    <string name="mainCenterRadioButtonMath6" translatable="false">M6</string>
+    <string name="mainCenterRadioButtonMath7" translatable="false">M7</string>
+    <string name="mainCenterRadioButtonMath8" translatable="false">M8</string>
+    <string name="mainCenterRadioButtonR1" translatable="false">R1</string>
+    <string name="mainCenterRadioButtonR2" translatable="false">R2</string>
+    <string name="mainCenterRadioButtonR3" translatable="false">R3</string>
+    <string name="mainCenterRadioButtonR4" translatable="false">R4</string>
+    <string name="mainCenterRadioButtonR5" translatable="false">R5</string>
+    <string name="mainCenterRadioButtonR6" translatable="false">R6</string>
+    <string name="mainCenterRadioButtonR7" translatable="false">R7</string>
+    <string name="mainCenterRadioButtonR8" translatable="false">R8</string>
+    <string name="mainCenterRadioButtonS1" translatable="false">S1</string>
+    <string name="mainCenterRadioButtonS2" translatable="false">S2</string>
+    <string name="mainCenterRadioButtonS3" translatable="false">S3</string>
+    <string name="mainCenterRadioButtonS4" translatable="false">S4</string>
+    <string name="mainCenterRadioButtonDefault" translatable="false">Auto</string>
+    <string name="interval" translatable="false">Interval</string>
+    <string name="start" translatable="false">Start</string>
+    <string name="startCondition" translatable="false">Start\nCondition</string>
+    <string name="stopCondition" translatable="false">Stop\nCondition</string>
+    <string name="savePicture" translatable="false">Picture</string>
+    <string name="saveSession" translatable="false">Session</string>
+    <string name="autoSaveMode" translatable="false">Save Mode</string>
+    <string name="inputCorrectNframe" translatable="false">Please input correct number!</string>
+    <string name="inputCorrectYear" translatable="false">Please input correct year!</string>
+    <string name="inputCorrectMonth" translatable="false">Please input correct month!</string>
+    <string name="inputCorrectDay" translatable="false">Please input correct day!</string>
+    <string name="inputCorrectHour" translatable="false">Please input correct hour!</string>
+    <string name="inputCorrectMinute" translatable="false">Please input correct minute!</string>
+    <string name="inputCorrectSecond" translatable="false">Please input correct second!</string>
+    <string name="Year" translatable="false">Year</string>
+    <string name="Month" translatable="false">Mon.</string>
+    <string name="Day" translatable="false">Day</string>
+    <string name="Hour" translatable="false">Hour</string>
+    <string name="Minute" translatable="false">Min.</string>
+    <string name="Second" translatable="false">Sec.</string>
+
+    <string name="view_savewithhead_title"> Name</string>
+    <string name="autoSaveTips" translatable="false">Recommended using USB devices to maximize EMMC lifespan</string>
+    <string name="view_savewithhead_input">1704060001</string>
+    <string name="view_savewithhead_confirm">Save</string>
+    <string name="view_seekbarwithhead_title">Brightness</string>
+    <string name="TriggerSensitivityLow" translatable="false">Low</string>
+    <string name="TriggerSensitivityHigh" translatable="false">High</string>
+    <string name="TriggerSensitivity" translatable="false">Trigger\nSensitivity</string>
+    <string name="view_seekbarwithhead_show">66%</string>
+    <string name="view_display_brightness">Brightness</string>
+    <string name="view_display_transparency">Transparency</string>
+    <string name="view_display_intensity">Intensity</string>
+    <string name="view_afterglow_clearup">Clear</string>
+    <string name="view_horizontallist_title">Adjust</string>
+    <string name="view_display_adjust">Adjust</string>
+    <string name="view_horizontallist_show">100ms</string>
+    <string name="view_trigger_inhibitiontimetitle">Hold-Off\nTime</string>
+    <string name="view_trigger_inhibitiontimevalue">200ns</string>
+    <string name="view_trigger_pulsewidth">1us</string>
+    <string name="view_trigger_logic">1us</string>
+    <string name="trigger_pulsewidth">PulseWidth</string>
+    <string name="trigger_overTime">Timeout</string>
+    <string name="triggervideo_linehead">Line</string>
+    <string name="triggervideo_linedetail">1</string>
+    <string name="triggeruart_datatitle">Data</string>
+    <string name="triggeruart_datadetail">56</string>
+    <string name="triggerslope_timehighhead">Upper</string>
+    <string name="triggerslope_timelowhead">Lower</string>
+    <string name="triggerrunt_timehigh">Upper</string>
+    <string name="triggerrunt_timelow">Lower</string>
+    <string name="triggerlogic_timehigh">Upper</string>
+    <string name="triggerlogic_timelow">Lower</string>
+    <string name="triggerpulsewidth_timehigh">Upper</string>
+    <string name="triggerpulsewidth_timelow">Lower</string>
+    <string name="triggernedge_time">Idle</string>
+    <string name="triggernedge_edge">Edge</string>
+    <string name="triggernedge_edgevalue">345</string>
+    <string name="settingoscillograph_saveas">SaveTo</string>
+    <string name="settingfactory_pleasesure">Please make sure to reset factory config!</string>
+    <string name="settingfactory_sure">OK</string>
+    <string name="settingcalibration_pleasesure">Remove probes please,then click OK to start SelfAdjust!</string>
+    <string name="settingcalibration_sure">OK</string>
+    <string name="autosetting_levelhead">Threshold level</string>
+    <string name="autosetting_leveldetail">10</string>
+    <string name="oscillograpg_storage">Save</string>
+    <string name="oscillograpg_recovery">Recovery</string>
+    <string name="measure_indicator" translatable="false">Indicator</string>
+    <string name="measure_clear">Clear</string>
+    <string name="measure_relationto">Relation To</string>
+    <string name="sure">OK</string>
+    <string name="save_saveto">Save To</string>
+    <string name="save_r1">R1</string>
+    <string name="save_r2">R2</string>
+    <string name="save_r3">R3</string>
+    <string name="save_r4">R4</string>
+
+    <string name="Information" translatable="false">Info</string>
+
+    <string name="dialogcount_title">N Edge</string>
+    <string name="dialogcount_x1">1x</string>
+    <string name="dialogcount_x100">100x</string>
+    <string name="dialogcount_subtract">-</string>
+    <string name="dialogcount_add">+</string>
+    <string name="dialogmeasuredelay_head">Ch1</string>
+    <string name="dialogmeasurephase_head">Ch1</string>
+    <string name="dialogscale_head">Logic</string>
+    <string name="dialogscale_show">9.00ms</string>
+
+    <string name="serialsUserDefine">UserDefine</string>
+
+    <string name="mainBottomScreenRecorderStart">Start Recorder:</string>
+    <string name="mainBottomScreenRecorderEnd">End Recorder。</string>
+    <string name="mainBottomScreenShot">Shot Success:</string>
+
+    <string name="topSlipUsersetSaveRecoveryDefaultName">default</string>
+    <string name="topSlipUsersetSaveRecoveryStorage">Save Success</string>
+    <string name="topSlipUsersetSaveRecoveryRecovery">Recovery Success</string>
+    <string name="msgForGoHomeWhenLockScreen">The current touch function is off
+        \nTo enter the desktop, the touch function will open
+        \nConfirm to enter the desktop, please press the "Home" button again.
+        \nPress other keys to return
+    </string>
+
+    <string name="topBtn">上半部</string>
+    <string name="bottomBtn">下半部</string>
+    <string name="topZeroTitle">零点校准</string>
+    <string name="topADGainTitle">AD增益校准</string>
+    <string name="topADZeroTitle">AD零点校准</string>
+    <string name="centerChGain">通道增益校准(需接校准信号)</string>
+    <string name="bottomZeroTitle">零点校准</string>
+    <string name="bottomOffsetTitle">偏移量系数校准</string>
+    <string name="bottomChDiffTitle">通道差异校准</string>
+    <string name="calibration">（已校准）</string>
+    <string name="unCalibration">（未校准）</string>
+
+    <string name="topSaveSaveInToast">No Storage device,Udisk</string>
+
+    <string name="dialogMsgExitToHome">whether is exit to home?</string>
+    <string name="dialogMsgInSlowTimeBase">switch to ROLL model,FFT will be close!</string>
+    <string name="keyBoardMsgBeyond">Sorry，your setting is illegal!</string>
+    <string name="msgClickFFTInRoll">ROLL mode doesn’t support FFT!</string>
+    <string name="msgBatteryLow">The battery is low,connect the adapter!</string>
+    <string name="msgKeyBoardBatteryLow" translatable="false">The battery of the remote control is low,please connect the charging cable!</string>
+    <string name="msgParameterLimited">Parameter Limited! </string>
+    <string name="msgOpenMathInModeXY">XY model doesn’t support Math wave!</string>
+
+    <string name="msgSelfAdjustRun">SelfAdjust is running……</string>
+    <string name="msgSelfAdjustSuccess">SelfAdjust is successful!</string>
+    <string name="msgSelfAdjustFail">SelfAdjust is failed! Error code：%1$s</string>
+
+    <string name="msgAutoZeroRunning">Auto Zero Calibration In Progress ...</string>
+    <string name="msgAutoZeroSuccess">Auto Zero Calibration Completed</string>
+    <string name="msgAutoZeroFailed">Auto Zero Calibration Failed</string>
+
+    <string name="msgTopSaveNameExisted">file name %1$s have existed!</string>
+    <string name="msgTopSaveBinNoSupport">It is not supported to save the channel as Bin data!</string>
+    <string name="msgTopSaveBinSuccess">wave %1$s save success!</string>
+    <string name="msgTopSaveBinFailed">wave %1$s save failed!</string>
+    <string name="msgTopSaveCsvNotSelect" translatable="false">Please select the channel you want to save first!</string>
+    <string name="msgTopSaveCsvNotSpace" translatable="false">Not Enough Space!</string>
+    <string name="msgTopSaveTypeNotSelect" translatable="false">Please select  type you want to save first!</string>
+
+
+    <string name="serialsWordTitleS1">S1</string>
+    <string name="serialsWordTitleS2">S2</string>
+    <string name="serialsWordTitleS3">S3</string>
+    <string name="serialsWordTitleS4">S4</string>
+    <string name="serialsWordTitleS12">S1&amp;S2</string>
+    <string name="serialsWordClear">Clear</string>
+    <string name="serialsWordTip">Please open the channel first!</string>
+    <string name="serialsWordUartTitleBin">Bin</string>
+    <string name="serialsWordUartTitleHex">Hex</string>
+    <string name="serialsWordUartTitleASCII">ASCII</string>
+    <string name="serialsWordUartTip">Please keep the selected serials settings the same first</string>
+    <string name="serialsWordLinTitleCh">Ch</string>
+    <string name="serialsWordLinTitleTime">Time</string>
+    <string name="serialsWordLinTitleId">ID</string>
+    <string name="serialsWordLinTitleData">Data</string>
+    <string name="serialsWordLinTitleError">Error</string>
+    <string name="serialsWordLinTitleCheck">Check</string>
+    <string name="serialsWordLinTitleTrigger">Trigger</string>
+    <string name="serialsWordCanTitleCh">Ch</string>
+    <string name="serialsWordCanTitleTime">Time</string>
+    <string name="serialsWordCanTitleId">Id</string>
+    <string name="serialsWordCanTitleType">Type</string>
+    <string name="serialsWordCanTitleDlc">DLC</string>
+    <string name="serialsWordCanTitleData">Data</string>
+    <string name="serialsWordCanTitleCrc">CRC</string>
+    <string name="serialsWordCanTitleError">Error</string>
+    <string name="serialsWordCanTitleTrigger">Trigger</string>
+    <string name="serialsWordSpiTitleCh">Ch</string>
+    <string name="serialsWordSpiTitleTime">Time</string>
+    <string name="serialsWordSpiTitleData">Data</string>
+    <string name="serialsWordSpiTitleTrigger">Trigger</string>
+    <string name="serialsWordI2cTitleCh">Ch</string>
+    <string name="serialsWordI2cTitleTime">Time</string>
+    <string name="serialsWordI2cTitleAddr">Addr</string>
+    <string name="serialsWordI2cTitleData">Data</string>
+    <string name="serialsWordI2cTitleConfirm">Confirm</string>
+    <string name="serialsWordI2cTitleTrigger">Trigger</string>
+    <string name="serialsWordI2cTitleRestart">Restart</string>
+    <string name="serialsWordM429TitleCh">Ch</string>
+    <string name="serialsWordM429TitleTime">Time</string>
+    <string name="serialsWordM429TitleLabel">Label</string>
+    <string name="serialsWordM429TitleSdi">SDI</string>
+    <string name="serialsWordM429TitleData">Data</string>
+    <string name="serialsWordM429TitleSsm">SSM</string>
+    <string name="serialsWordM429TitleError">Error</string>
+    <string name="serialsWordM429TitleTrigger">Trigger</string>
+    <string name="serialsWordM1553bTitleCh">Ch</string>
+    <string name="serialsWordM1553bTitleTime">Time</string>
+    <string name="serialsWordM1553bTitleType">Type</string>
+    <string name="serialsWordM1553bTitleRAdr">RAdr</string>
+    <string name="serialsWordM1553bTitleData">Data</string>
+    <string name="serialsWordM1553bTitleTrigger">Trigger</string>
+    <string name="serialsWordM1553bTitleError">Error</string>
+    <string name="serialsWordUartMsg">TX FRAMES:%1$s\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tERR:%2$s(%3$s)</string>
+    <string name="serialsWordCanMsg">FRAMES:%1$s\t\t\t\t\t\t\t\t\t\t\t\tSPEC:%2$s\t\t\t\t\t\t\t\t\t\t\t\tERR FR:%3$s(%4$s)</string>
+    <string name="serialsWordM429Msg">WORDS:%1$s\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tERRORS:%2$s(%3$s)</string>
+
+    <string name="serialsWordUartMsgFrameTitle" translatable="false">TX FRAMES:</string>
+    <string name="serialsWordUartMsgErrorTitle" translatable="false">ERR:</string>
+    <string name="serialsWordCanMsgTotalTitle" translatable="false">FRAMES:</string>
+    <string name="serialsWordCanMsgSpaceTitle" translatable="false">SPEC:</string>
+    <string name="serialsWordCanMsgErrorTitle" translatable="false">ERR FR:</string>
+    <string name="serialsWordM429MsgFrameTitle" translatable="false">WORDS:</string>
+    <string name="serialsWordM429MsgErrorTitle" translatable="false">ERRORS:</string>
+
+    <string name="rightMathMenuFftMeasure_DC">DC</string>
+    <string name="rightMathMenuFftMeasure_Freq">Freq</string>
+    <string name="rightMathMenuFftMeasure_Amp">Amp</string>
+
+    <string name="screenShotSuccess">Screen Shot Success:</string>
+    <string name="saveRecoveryFileIsNotExist">File does not exist!Load default config!!</string>
+    <string name="rightMathAxbUnitTitle">Unit</string>
+
+    <string name="msgNumberFormatException">Input is illegal</string>
+    <string name="mainCenterMenuAuto">Auto\nSet</string>
+    <string name="mainCenterMenuAutoRange" >Auto\nScale</string>
+    <string name="mainCenterMenuRunStop">Run\nStop</string>
+    <string name="mainCenterBottomMenuAutoSaveStop" translatable="false">Stop AutoSave</string>
+    <string name="mainCenterMenuSEQ">Single\nSEQ</string>
+    <string name="sysNoSupport">The system version is too low to support this function!</string>
+
+    <string name="msgMathAdvanceFormulaError">%2$s error at location %1$s</string>
+    <string name="msgMathAdvanceFormulaNull">Expression cannot be empty</string>
+
+    <string name="mainCenterMenuZero">Zero</string>
+    <string name="settingWirelesskeyboard" translatable="false">Remote Controller</string>
+    <string name="probeRemoveSignal" translatable="false">Please remove the signal being tested.</string>
+    <string name="probeCalibrationSuccessful" translatable="false">Calibration successful.</string>
+    <string name="probeCalibrationFailed" translatable="false">Calibration failed.</string>
+    <string name="probeAbnormal" translatable="false">Probe calibration failed. Please check the probe connection signal and recalibrate!</string>
+    <string name="probeSignalAbnormal" translatable="false">Please verify the probe input signal and recalibrate!</string>
+
+    <string name="probeUpgrade" translatable="false">Probe is currently upgrading. Please wait!</string>
+
+    <string name="probeUpgradeSuccessful" translatable="false">Upgrade successful!</string>
+
+    <string name="probeUpgradeAbort" translatable="false">Upgrade Abort!</string>
+
+    <string name="channelProbeAlarmMsg1RangeOut" translatable="false">Measurement limit exceeded!</string>
+    <string name="channelProbeAlarmMsg2BatteryLow" translatable="false">Probe battery is low, please replace!</string>
+    <string name="channelProbeAlarmMsg3CommAbnormal" translatable="false">The probe communication is abnormal，Please plug the probe again！</string>
+    <string name="channelProbeAlarmMsg4FiftySwitch" translatable="false">50Ω/1M switching abnormal.</string>
+    <string name="channelProbeAlarmMsg5ConvHighTemp" translatable="false">Electro-optical converter high temperature.</string>
+    <string name="channelProbeAlarmMsg6CompHighTemp" translatable="false">Photoreductor high temperature.</string>
+    <string name="channelProbeAlarmMsg7AcDcAbnormal" translatable="false">DC/AC switching abnormal.</string>
+    <string name="channelProbeAlarmMsgAreplaceBattery" translatable="false">Please replace the battery!</string>
+
+    <string name="channelProbeAlarmMsgBMismatch" translatable="false">Mismatch between attenuator and probe!</string>
+    <string name="channelProbeAlarmMsgCAttenuator" translatable="false">Attenuator error!</string>
+
+    <string name="dialog_measure_static_curr_value" translatable="false">Curr:</string>
+    <string name="dialog_measure_static_avg_value" translatable="false">Mean:</string>
+    <string name="dialog_measure_static_max_value" translatable="false"> Max:</string>
+    <string name="dialog_measure_static_min_value" translatable="false"> Min:</string>
+    <string name="dialog_measure_static_mean_var_value" translatable="false"> Dev:</string>
+    <string name="dialog_measure_static_count_value" translatable="false"> Cnt:</string>
+
+    <string name="mathRefSerialsSlip_math" translatable="false">Math</string>
+    <string name="mathRefSerialsSlip_ref" translatable="false">Ref</string>
+    <string name="mathRefSerialsSlip_serials" translatable="false">Serials Bus</string>
+
+    <string name="mathRefSerialsSlip_display">Display</string>
+    <string name="mathRefSerialsSlip_delete" translatable="false">Delete</string>
+
+    <string name="mathRefSerials_can_not_add" translatable="false">Please delete the existing channel first!</string>
+    <string name="serials_can_not_add" translatable="false">SerialsChannel not obtained, please try again later！</string>
+    <string name="math_can_not_add" translatable="false">MathChannel not obtained, please try again later！</string>
+    <string name="ref_can_not_add" translatable="false">RefChannel not obtained, please try again later！</string>
+    <string name="serials_channel_already_max" translatable="false">The maximum SerialsChannel has been reached！</string>
+    <string name="math_channel_already_max" translatable="false">The maximum MathChannel has been reached！</string>
+    <string name="ref_channel_already_max" translatable="false">The maximum RefChannel has been reached！</string>
+
+    <string name="top_edge_external_trigger" translatable="false">Trig In</string>
+    <string name="top_user_auxout_trigger_tips" translatable="false">The maximum allowable input voltage is a 5Vpp positive bias signal, exceeding which may damage the Oscilloscope!</string>
+    <string name="top_user_auxout_clock_tips" translatable="false">Do you want to wait for the external clock input signal?</string>
+
+    <string name="select_ref_data_first" translatable="false">Please select Ref data first！</string>
+    <string name="all_ref_checked" translatable="false">All Refs have been selected！</string>
+    <string name="dialog_no_ref_data_checked" translatable="false">No available data for Ref！</string>
+    <string name="file_load_fail" translatable="false">Could not parse the file！</string>
+    <string name="top_save_wave_directory" translatable="false">FilePath</string>
+    <string name="top_save_browse" translatable="false">Browse</string>
+    <string name="top_save_file_name_add" translatable="false">Increment Name</string>
+    <string name="top_file_show_only" translatable="false"> Show Files Only</string>
+    <string name="top_slip_directory_save_to" translatable="false">Please select the path first！</string>
+    <string name="top_slip_select_file_first" translatable="false">Please select file first！</string>
+    <string name="top_slip_stop_must_later_start" translatable="false">The stop time must be after the start time！</string>
+
+    <string name="internal_storage">Internal Shared Storage</string>
+    <string name="folder_selection_not_supported" translatable="false"> Please select File</string>
+    <string name="select_flie_not_exist" translatable="false">The selected file does not exist!</string>
+    <string name="top_slip_save_invoke" translatable="false">Invoke</string>
+    <string name="top_slip_save_invoke_session" translatable="false">Session</string>
+    <string name="top_slip_save_invoke_setting" translatable="false">Setting</string>
+    <string name="top_slip_save_invoke_wave" translatable="false">Wave</string>
+    <string name="top_slip_save_session_success" translatable="false">Save Success!</string>
+    <string name="top_slip_save_session_failed" translatable="false">Save Failed!</string>
+    <string name="top_slip_recovery_session_failed" translatable="false">Recovery Failed!</string>
+    <string name="top_slip_recovery_session_success" translatable="false">Recovery Success!</string>
+    <string name="top_slip_save_wave_path_unable" translatable="false">Path Failure!</string>
+    <string name="top_slip_save_file_exists" translatable="false">The file already exists. Do you want to overwrite it?</string>
+    <string name="file_name_not_null" translatable="false">The file name cannot be empty!</string>
+    <string name="internal_storage_for_display" translatable="false">Internal shared storage</string>
+    <string name="no_storage_space" translatable="false">There is insufficient storage space.</string>
+    <string name="storage_type_not_avaiable" translatable="false">The file is too large and is not supported by the current USB drive format.</string>
+    <string name="file_not_support" translatable="false">This file cannot be opened on this model. Please note the hardware version.</string>
+    <string name="top_userset_time_base" translatable="false">TrigPos</string>
+    <string name="ref_pahse_delay" translatable="false">PhaseDelay</string>
+    <string name="measure_tvalue_trace" translatable="false">Manual control is locked when Cursor is assigned to Tvalue.</string>
+
+</resources>

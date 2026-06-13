@@ -1,0 +1,255 @@
+package com.micsig.tbook.scope.vertical;
+
+/**
+ * Created by Administrator on 2018/9/7.
+ */
+
+public class VerticalAxisMathFft extends VerticalAxis{
+    private static final String TAG = "VerticalAxisMathFft";
+    /**
+     * _YDANG_DBV
+     */
+    public static final int DANG_DBV_MIN    = 0;
+    public static final int DANG_DBV_1DB    = DANG_DBV_MIN;
+    public static final int DANG_DBV_2DB    = 1;
+    public static final int DANG_DBV_5DB    = 2;
+    public static final int DANG_DBV_10DB   = 3;
+    public static final int DANG_DBV_20DB   = 4;
+    public static final int DANG_DBV_50DB   = 5;
+    public static final int DANG_DBV_100DB  = 6;
+    public static final int DANG_DBV_200DB  = 7;
+    public static final int DANG_DBV_500DB  = 8;
+    public static final int DANG_DBV_MAX    = DANG_DBV_500DB;
+    public static final int DANG_DBV_CNT    = DANG_DBV_MAX-DANG_DBV_MIN+1;
+    /**
+     * _YDANG_RMS
+     */
+    public static final int DANG_RMS_MIN    = 0;
+    public static final int DANG_RMS_500uV  = DANG_RMS_MIN;
+    public static final int DANG_RMS_1mV    = 1;
+    public static final int DANG_RMS_2mV    = 2;
+    public static final int DANG_RMS_5mV    = 3;
+    public static final int DANG_RMS_10mV   = 4;
+    public static final int DANG_RMS_20mV   = 5;
+    public static final int DANG_RMS_50mV   = 6;
+    public static final int DANG_RMS_100mV  = 7;
+    public static final int DANG_RMS_200mV  = 8;
+    public static final int DANG_RMS_500mV  = 9;
+    public static final int DANG_RMS_1V     = 10;
+    public static final int DANG_RMS_2V     = 11;
+    public static final int DANG_RMS_5V     = 12;
+    public static final int DANG_RMS_10V    = 13;
+    public static final int DANG_RMS_MAX    = DANG_RMS_10V;
+    public static final int DANG_RMS_CNT    = DANG_RMS_MAX - DANG_RMS_MIN + 1;
+
+
+    private int scaleId = DANG_DBV_MIN;
+    private int scaleIdInRms = DANG_RMS_MIN;
+    private double fineScale = 1.0;
+    private double fineScaleInRms = 1.0;
+
+    public VerticalAxisMathFft(){}
+
+    //region DBV FUNCTIONS
+    public static boolean isValidScaleId(int scaleId){
+        return (scaleId >= DANG_DBV_MIN && scaleId <= DANG_DBV_MAX);
+    }
+    @Override
+    public void setScaleId(int scaleId){
+        if(isValidScaleId(scaleId)) this.scaleId = scaleId;
+    }
+    @Override
+    public int getScaleId(){
+        return scaleId;
+    }
+    @Override
+    public int getScaleId(double scaleIdVal){
+        return getScaleIdInDb(scaleIdVal);
+    }
+
+
+
+    private static int findNearScale(int scaleId, double scaleIdVal) {
+        double valLeft = dbvIdToValue(scaleId);
+        double valRight = dbvIdToValue(scaleId + 1);
+        if (valLeft <= scaleIdVal && valRight >= scaleIdVal && Math.abs(valLeft - scaleIdVal) <= Math.abs(valRight - scaleIdVal)) {
+            return scaleId;
+        } else if (valLeft <= scaleIdVal && valRight >= scaleIdVal && Math.abs(valLeft - scaleIdVal) >= Math.abs(valRight - scaleIdVal)) {
+            return scaleId + 1;
+        } else {
+            return -1;
+        }
+    }
+
+
+
+    public static int getScaleIdInDb(double scaleIdInDb){
+        for (int i = DANG_DBV_MIN; i <= DANG_DBV_CNT; i++) {
+            if (i < DANG_DBV_CNT && findNearScale(i, scaleIdInDb) != -1) {
+                return findNearScale(i, scaleIdInDb);
+            } else if (isValidScaleId(i, scaleIdInDb)) {
+                return i;
+            }
+        }
+        return DANG_DBV_MAX;
+    }
+    @Override
+    public double getScaleIdVal(){
+        return dbvIdToValue(this.scaleId);
+    }
+    @Override
+    public double getScaleIdVal(int scaleId){
+        return dbvIdToValue(scaleId);
+    }
+    @Override
+    public double getScaleVal(){
+        return getScaleIdVal()*getFineScale();
+    }
+    @Override
+    public double getFineScale(){
+        return fineScale;
+    }
+    @Override
+    public void setFineScale(double fine){
+        fineScale = fine;
+    }
+
+    public int vScaleInRmsToDbv(int _vScale) {
+        float dbv = (float) Math.abs(20*Math.log10(getScaleIdValInRms(_vScale)));
+        for(int i = DANG_DBV_MAX; i>= DANG_DBV_MIN; i--){
+            if(dbv >= dbvIdToValue(i)) {
+                return i;
+            }
+        }
+        return DANG_DBV_MIN;
+    }
+
+    public static double dbvIdToValue(int dbvScaleId){
+        switch(dbvScaleId)
+        {
+            case DANG_DBV_1DB:      return 1;
+            case DANG_DBV_2DB:      return 2;
+            case DANG_DBV_5DB:      return 5;
+            case DANG_DBV_10DB:     return 10;
+            case DANG_DBV_20DB:     return 20;
+            case DANG_DBV_50DB:     return 50;
+            case DANG_DBV_100DB:    return 100;
+            case DANG_DBV_200DB:    return 200;
+            case DANG_DBV_500DB:    return 500;
+            default:                return -1;
+        }
+    }
+
+
+    private static boolean isValidScaleId(int scaleId,double scaleIdVal){
+        double val = dbvIdToValue(scaleId);
+        if(scaleIdVal>(val-val/10) && scaleIdVal<(val+val/10)){
+            return  true;
+        }
+        return false;
+    }
+    //endregion
+    //region RMS FUNCTIONS
+    public static boolean isValidScaleIdInRms(int scaleIdInRms){
+        return (scaleIdInRms >= DANG_RMS_MIN && scaleIdInRms <= DANG_RMS_MAX);
+    }
+    public void setScaleIdInRms(int scaleIdInRms) {
+        if(isValidScaleIdInRms(scaleIdInRms)) this.scaleIdInRms = scaleIdInRms;
+    }
+    public int getScaleIdInRms(){
+        return scaleIdInRms;
+    }
+
+
+    private static int findNearScaleInRums(int scaleId, double scaleIdVal) {
+        double valLeft = getScaleIdValInRms(scaleId);
+        double valRight = getScaleIdValInRms(scaleId + 1);
+        if (valLeft <= scaleIdVal && valRight >= scaleIdVal && Math.abs(valLeft - scaleIdVal) <= Math.abs(valRight - scaleIdVal)) {
+            return scaleId;
+        } else if (valLeft <= scaleIdVal && valRight >= scaleIdVal && Math.abs(valLeft - scaleIdVal) >= Math.abs(valRight - scaleIdVal)) {
+            return scaleId + 1;
+        } else {
+            return -1;
+        }
+    }
+
+
+    public static int getScaleIdInRms(double scaleIdInRms) {
+        for (int i = DANG_RMS_MIN; i <= DANG_RMS_CNT; i++) {
+            if (i < DANG_RMS_CNT && findNearScaleInRums(i, scaleIdInRms) != -1) {
+                return findNearScaleInRums(i, scaleIdInRms);
+            } else if (isValidScaleIdInRms(i, scaleIdInRms)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public double getScaleIdValInRms(){
+        return rmsIdToValue(this.scaleIdInRms);
+    }
+
+    public static double getScaleIdValInRms(int scaleIdInRms) {
+        return rmsIdToValue(scaleIdInRms);
+    }
+
+    public double getScaleValInRms(){
+        return getScaleIdValInRms();
+    }
+
+    public double getFineScaleInRms(){
+        return fineScaleInRms;
+    }
+    public void setFineScaleInRms(double fineInRms){
+        fineScaleInRms = fineInRms;
+    }
+
+    public static double rmsIdToValue(int rmsScaleId) {
+        switch (rmsScaleId)
+        {
+            case DANG_RMS_500uV:    return 500e-6;  //-66.0206db
+            case DANG_RMS_1mV:      return 1e-3;    //-60db
+            case DANG_RMS_2mV:      return 2e-3;    //-53.9794db
+            case DANG_RMS_5mV:      return 5e-3;    //-46.0206db
+            case DANG_RMS_10mV:     return 10e-3;   //-40db
+            case DANG_RMS_20mV:     return 20e-3;   //-33.9794db
+            case DANG_RMS_50mV:     return 50e-3;   //-26.0206db
+            case DANG_RMS_100mV:    return 100e-3;  //-20db
+            case DANG_RMS_200mV:    return 200e-3;  //-13.9794db
+            case DANG_RMS_500mV:    return 500e-3;  //-6.0206db
+            case DANG_RMS_1V:       return 1;       //0db
+            case DANG_RMS_2V:       return 2;       //6.0206db
+            case DANG_RMS_5V:       return 5;       //13.9794db
+            case DANG_RMS_10V:
+            default:                return 10;      //20db
+        }
+    }
+
+    public int rmsIdFromValue(double rmsScale) {
+        if(rmsScale+5e-3 >= 10) return DANG_RMS_10V;
+        else if(rmsScale+5e-3 >= 5) return DANG_RMS_5V;
+        else if(rmsScale+5e-3 >= 2) return DANG_RMS_2V;
+        else if(rmsScale+5e-3 >= 1) return DANG_RMS_1V;
+        else if(rmsScale+5e-6 >= 500e-3) return DANG_RMS_500mV;
+        else if(rmsScale+5e-6 >= 200e-3) return DANG_RMS_200mV;
+        else if(rmsScale+5e-6 >= 100e-3) return DANG_RMS_100mV;
+        else if(rmsScale+5e-6 >= 50e-3) return DANG_RMS_50mV;
+        else if(rmsScale+5e-6 >= 20e-3) return DANG_RMS_20mV;
+        else if(rmsScale+5e-6 >= 10e-3) return DANG_RMS_10mV;
+        else if(rmsScale+5e-9 >= 5e-3) return DANG_RMS_5mV;
+        else if(rmsScale+5e-9 >= 2e-3) return DANG_RMS_2mV;
+        else if(rmsScale+5e-9 >= 1e-3) return DANG_RMS_1mV;
+        else if(rmsScale+5e-9 >= 500e-6) return DANG_RMS_500uV;
+        else return DANG_RMS_MIN;
+    }
+
+    private static boolean isValidScaleIdInRms(int scaleIdInRms,double scaleIdValInRms){
+        double val = getScaleIdValInRms(scaleIdInRms);
+        if(scaleIdValInRms>(val-val/10) && scaleIdValInRms<(val+val/10)){
+            return  true;
+        }
+        return false;
+    }
+    //endregion
+
+}

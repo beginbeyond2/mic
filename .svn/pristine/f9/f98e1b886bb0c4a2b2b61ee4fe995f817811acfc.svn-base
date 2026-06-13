@@ -1,0 +1,47 @@
+package com.micsig.tbook.scope.fpga;
+
+/**
+ * Created by zhuzh on 2018-5-30.
+ */
+
+public class FPGAReg_BUS_TYPE extends FPGAReg{
+    public FPGAReg_BUS_TYPE() {
+        super(FPGA_BUS_TYPE, 4);
+    }
+    public void setI2C(int busIdx,int val){
+        setVal(busIdx * 16,1,val);
+    }
+    public void setSPI(int busIdx,int val){
+        setVal(busIdx * 16 + 1,1,val);
+    }
+    public void setCan(int busIdx,int val){
+        setVal(busIdx * 16 + 2,1,val);
+    }
+    public void setLin(int busIdx,int val){
+        setVal(busIdx * 16 + 3,1,val);
+    }
+    public void setUART(int busIdx,int val){
+        setVal(busIdx * 16 + 4,1,val);
+    }
+    public void set1553B(int busIdx,int val){
+        setVal(busIdx * 16 + 5,1,val);
+    }
+    public void set429(int busIdx,int val){
+        setVal(busIdx * 16 + 6,1,val);
+    }
+
+    public void setCanFD(int busIdx,int val){
+        setVal(busIdx * 16 + 7,1,val);
+    }
+    public void setLin2_0(int busIdx,int val){setVal(busIdx * 16 + 8,1,val);}
+    public void setLin1_3_Long(int busIdx,int val){setVal(busIdx * 16 + 9,1,val);}
+
+    public void setEnable(int busIdx,int val){
+        setVal(busIdx * 16 + 15,1,val);
+    }
+
+    public boolean isEnable(int busIdx){
+        return (getVal() & (busIdx * 16 + 15)) != 0;
+    }
+
+}

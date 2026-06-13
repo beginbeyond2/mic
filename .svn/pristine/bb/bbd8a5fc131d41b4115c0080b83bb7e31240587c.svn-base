@@ -1,0 +1,128 @@
+package com.micsig.tbook.scope.Sample;
+
+import android.annotation.SuppressLint;
+import android.os.Build;
+
+import androidx.annotation.IntDef;
+
+import com.micsig.tbook.hardware.HardwareProduct;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.R;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+
+/**
+ * Created by zhuzh on 2018/3/13.
+ */
+
+public class MemDepthFactory {
+
+
+    private MemDepthFactory() {
+    }
+
+    @IntDef({ MEM_DEPTH_1800M, MEM_DEPTH_18M,MEM_DEPTH_360M,MEM_DEPTH_36M})
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface MEM_DEPTH {}
+
+
+    public static final int MEM_DEPTH_1800M = 1800_000_000;
+    public static final int MEM_DEPTH_18M = 18_000_000;
+    public static final int MEM_DEPTH_360M = 360_000_000;
+    public static final int MEM_DEPTH_36M = 36_000_000;
+    public static final int MEM_DEPTH_MAX = MEM_DEPTH_1800M;
+    private static int memDepthSet = MemDepthFactory.getDefaultMemDepth();
+    public static void setMemDepth(int memDepth){
+        memDepthSet = memDepth;
+    }
+    private static IMemDepth memDepthObj = null;
+    public static IMemDepth getMemDepth(){
+        synchronized (MemDepthFactory.class) {
+            if (memDepthObj == null) {
+                memDepthObj = getMemDepth(memDepthSet);
+            }
+        }
+        return memDepthObj;
+    }
+    //强制设置存储深度(校准的时候需要)
+    public static void forceMemDepth(@MEM_DEPTH int memDepth){
+        boolean bRet = false;
+        synchronized (MemDepthFactory.class){
+            if(memDepth != memDepthSet){
+                memDepthSet = memDepth;
+                memDepthObj = getMemDepth(memDepthSet);
+                memDepthObj.forceMemDepthChange();
+                bRet = true;
+            }
+        }
+        if(bRet){
+            EventFactory.sendEvent(EventFactory.EVENT_FORCE_MEM_DEPTH,true);
+        }
+    }
+    public static int getMemDepthSet(){
+        return memDepthSet;
+    }
+
+    //tools for horizontalRef
+    public static IMemDepth getMemDepthObj(@MEM_DEPTH int memDepth) {
+        return getMemDepth(memDepth);
+    }
+
+    @SuppressLint("SwitchIntDef")
+    private static IMemDepth getMemDepth(@MEM_DEPTH int memDepth){
+        IMemDepth obj = null;
+        switch(memDepth){
+            default:
+            case MEM_DEPTH_1800M:
+                if(HardwareProduct.isMHO68V1()){
+                    obj = new MemDepth1800M(MEM_DEPTH_1800M);
+                }else if(HardwareProduct.isMHO68V2()){
+                    obj = new MemDepth1800MV2(MEM_DEPTH_1800M);
+                }
+                break;
+            case MEM_DEPTH_360M:
+                obj = new MemDepth360M(MEM_DEPTH_360M);
+                break;
+            case MEM_DEPTH_36M:
+                obj = new MemDepth36M(MEM_DEPTH_36M);
+                break;
+            case MEM_DEPTH_18M:
+                if(HardwareProduct.isMHO68V1()){
+                    obj = new MemDepth18M(MEM_DEPTH_18M);
+                }else if(HardwareProduct.isMHO68V2()){
+                    obj = new MemDepth18MV2(MEM_DEPTH_18M);
+                }
+                break;
+        }
+        return obj;
+    }
+    public static int getSampleMemDepth(){
+        return getMemDepth().getSampleMemDepth();
+    }
+    public static int getSampleMemDepth(int chCnt){
+        return getMemDepth().getSampleMemDepth(chCnt);
+    }
+    public static int getDefaultMemDepth(){
+        switch (Build.PRODUCT){
+            default:
+            case HardwareProduct.RK3588_MHO68_V1:
+            case HardwareProduct.RK3588_MHO68_V2:
+                return MEM_DEPTH_1800M;
+            case HardwareProduct.RK3588_MHO38_V1:
+            case HardwareProduct.RK3588_MHO28_V1:
+                return MEM_DEPTH_360M;
+        }
+    }
+    public static int getDefaultMemDepthEx(){
+        switch (Build.PRODUCT){
+            default:
+            case HardwareProduct.RK3588_MHO68_V1:
+            case HardwareProduct.RK3588_MHO68_V2:
+                return MEM_DEPTH_18M;
+            case HardwareProduct.RK3588_MHO38_V1:
+            case HardwareProduct.RK3588_MHO28_V1:
+                return MEM_DEPTH_36M;
+        }
+    }
+}

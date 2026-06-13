@@ -1,0 +1,39 @@
+package com.micsig.tbook.scope.fpga;
+
+/**
+ * Created by zhuzh on 2018-4-8.
+ */
+
+public class FPGAReg_DISP_CHA extends FPGAReg {
+    public FPGAReg_DISP_CHA() {
+        super(FPGA_DISP_CHA1, 8);
+    }
+
+    public void setTotalMul(int val){
+        setVal(0,8,val);
+    }
+    public void setFirstMul(int val){
+        setVal(8,8,val);
+    }
+    public void setSecondMul(int val){
+        setVal(16,8,val);
+    }
+    public void setFirstCoefJianGe(int val){
+        setVal(24,8,val);
+    }
+    public void setDataNFirstCha(int val){
+        setVal(1,0,20,val);
+    }
+    public void setNeedChaZhi(int val){
+        setVal(1,20,1,val);
+    }
+    public boolean isNeedChaZhi(){
+        return ((getVal(1) & (1<<20)) != 0);
+    }
+    public void setChaZhi200(int val){
+        setVal(1,21,1,val);
+    }
+    public void setSecondCoefJianGe(int val){
+        setVal(1,24,8,val);
+    }
+}

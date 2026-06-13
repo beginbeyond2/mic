@@ -1,0 +1,37 @@
+package com.micsig.tbook.scope.fpga;
+
+/**
+ * Created by zhuzh on 2018-7-11.
+ */
+
+public class FPGAReg_STATUS_AUTO_V extends FPGAReg {
+    private FPGAReg recvReg;
+    private int val = 0;
+    public FPGAReg_STATUS_AUTO_V(int addr) {
+        super(addr, 4, true);
+        recvReg = new FPGAReg(addr,4);
+    }
+
+    public FPGAReg getRecvReg(){
+        return recvReg;
+    }
+
+    public void onRecv(){
+        val = recvReg.getVal(0);
+    }
+    public byte getMinVal(int idx){
+        return (byte) ((val>>>(8+idx*16)) & 0xFF);
+    }
+    public byte getMaxVal(int idx){
+        return (byte) ((val>>>(idx*16)) & 0xFF);
+    }
+
+    public int getMinVal(){
+        return (short)((val >>> 16) & 0xFFFF);
+    }
+    public int getMaxVal(){
+        return (short)(val & 0xFFFF);
+    }
+
+
+}

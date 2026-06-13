@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="35px"
+    android:layout_marginTop="4px"
+    android:background="@color/color_Backcolor_MainMenu2"
+    android:paddingStart="1px">
+
+
+    <TextView
+        android:id="@+id/lblTrig"
+        style="@style/textStyle"
+        android:layout_width="35px"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4px"
+        android:gravity="center"
+        android:text="Trig"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/maintopright_an"
+        style="@style/textStyle"
+        android:layout_width="25px"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="A"
+        android:textSize="20px"
+        app:layout_constraintBottom_toBottomOf="@+id/lblTrig"
+        app:layout_constraintLeft_toRightOf="@+id/lblTrig" />
+
+
+    <ImageView
+        android:id="@+id/maintopright_icon"
+        android:layout_width="40px"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:layout_marginStart="6px"
+        android:src="@drawable/trigger_s"
+        app:layout_constraintBottom_toBottomOf="@+id/lblTrig"
+        app:layout_constraintLeft_toRightOf="@+id/maintopright_an" />
+
+    <com.micsig.tbook.ui.MTriggerStateBar
+        android:id="@+id/maintopright_detail"
+        android:layout_width="wrap_content"
+        android:layout_height="100px"
+        android:layout_gravity="center_vertical"
+        android:layout_marginStart="2px"
+        app:layout_constraintLeft_toRightOf="@+id/maintopright_icon"
+        app:layout_constraintTop_toTopOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>-->
+
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="wrap_content"
+    android:layout_height="68px"
+    android:layout_marginTop="4px"
+    android:background="@color/color_Backcolor_MainMenu2"
+    android:paddingStart="15px">
+
+
+    <TextView
+        android:id="@+id/lblTrig"
+        style="@style/textStyle"
+        android:layout_width="35px"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="Trig"
+        app:layout_constraintBottom_toTopOf="@+id/maintopright_icon"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toLeftOf="@+id/maintopright_an"
+        app:layout_constraintRight_toRightOf="@+id/maintopright_an"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/maintopright_an"
+        style="@style/textStyle"
+        android:layout_width="25px"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="A"
+        android:textSize="20px"
+        app:layout_constraintBottom_toTopOf="@+id/maintopright_icon"
+        app:layout_constraintLeft_toRightOf="@+id/lblTrig"
+        app:layout_constraintTop_toTopOf="parent" />
+
+
+    <ImageView
+        android:id="@+id/maintopright_icon"
+        android:layout_width="40px"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:layout_marginStart="6px"
+        android:src="@drawable/trigger_s"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/maintopright_an" />
+
+    <com.micsig.tbook.ui.MTriggerStateBar
+        android:id="@+id/maintopright_detail"
+        android:layout_width="match_parent"
+        android:layout_height="100px"
+        android:layout_gravity="center_vertical"
+        android:layout_marginStart="5px"
+        android:layout_marginLeft="0px"
+        app:layout_constraintLeft_toRightOf="@+id/maintopright_an"
+        app:layout_constraintTop_toTopOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,0 +1,28 @@
+package com.micsig.tbook.scope.fpga;
+
+import com.micsig.tbook.scope.Sample.SegmentSample;
+import com.micsig.tbook.scope.Scope;
+
+public class FPGAReg_SEGMENT_START extends FPGAReg{
+    public FPGAReg_SEGMENT_START() {
+        super(FPGAReg.FPGA_SEGMENT_START, 4);
+    }
+
+    @Override
+    public void onCommand() {
+        SegmentSample segmentSample = SegmentSample.getInstance();
+        if(segmentSample.isSegmentEnable()) {
+            if (segmentSample.getSegmentDisplayType() == SegmentSample.SEGMENT_DISPLAY_SFRAME) {
+                int frameno = (int)segmentSample.getFrameNo();
+                if(Scope.getInstance().isRun(true)){
+                    frameno =  0x7FFFFFFF;
+                }
+                setVal(0, frameno);
+            } else {
+                setVal(0, segmentSample.getFittingBegingFrame());
+            }
+        }else{
+            setVal(0,0);
+        }
+    }
+}

@@ -1,0 +1,56 @@
+package com.micsig.tbook.scope.fpga;
+
+import com.micsig.tbook.scope.Calibrate.HwConfig;
+import com.micsig.tbook.scope.Sample.SegmentSample;
+import com.micsig.tbook.scope.Scope;
+
+public class FPGAReg_SegmentFrame extends FPGAReg {
+
+
+    public FPGAReg_SegmentFrame(){
+        super(FPGAReg.FPGA_SEGMENT_FRAME,4);
+    }
+    public void setFrameSpace(int val){
+        setVal(0,8,val);
+    }
+    public void setFrameNums(int val){
+        setVal(8,24,val);
+    }
+
+    @Override
+    public void onCommand() {
+        Scope scope = Scope.getInstance();
+        SegmentSample segmentSample = SegmentSample.getInstance();
+        int maxNums = 0;
+
+        long zun =  scope.zunMemDepth(scope.isRun(true));
+        if(zun <= SegmentSample.SEGMENT_16M){
+            int k = 0;
+            int val = 1;
+            while( val < zun){
+                val *= 2;
+                k++;
+            }
+            setFrameSpace(k);
+            maxNums = (int) (SegmentSample.SEGMENT_LENGTH / val);
+        } else {
+            int k = 1;
+            while (((long) k * SegmentSample.SEGMENT_16M) < zun) {
+                k++;
+            }
+            setFrameSpace(1 << 7 | k);
+            maxNums = (int) (SegmentSample.SEGMENT_LENGTH / (k * SegmentSample.SEGMENT_16M));
+        }
+        maxNums = maxNums * HwConfig.getInstance().getFpgaNums() / scope.getChannelSampOnCnt(scope.isRun(true));
+
+        int nums = segmentSample.getSegmentNums()+1;
+
+        if(nums < 1  || nums > maxNums){
+            nums = maxNums;
+        }
+        if(nums > SegmentSample.SEGMENT_MAX){
+            nums = SegmentSample.SEGMENT_MAX;
+        }
+        setFrameNums(nums);
+    }
+}

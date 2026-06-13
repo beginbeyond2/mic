@@ -1,0 +1,777 @@
+package com.micsig.tbook.tbookscope.structdata;
+
+import android.os.Handler;
+import android.os.Message;
+import android.os.SystemClock;
+import android.util.Log;
+import android.view.View;
+import android.widget.CheckBox;
+import android.widget.TextView;
+
+import com.micsig.tbook.scope.channel.Channel;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.vertical.VerticalAxis;
+import com.micsig.tbook.tbookscope.MainActivity;
+import com.micsig.tbook.tbookscope.MainViewGroup;
+import com.micsig.tbook.tbookscope.R;
+import com.micsig.tbook.tbookscope.main.ExKeysMsgRightCanPercent;
+import com.micsig.tbook.tbookscope.main.ExternalKeysMsgChannel;
+import com.micsig.tbook.tbookscope.main.ExternalKeysMsgCursor;
+import com.micsig.tbook.tbookscope.main.ExternalKeysMsgLevel;
+import com.micsig.tbook.tbookscope.main.ExternalKeysMsgTimeBase;
+import com.micsig.tbook.tbookscope.main.ExternalKeysMsgVScale;
+import com.micsig.tbook.tbookscope.main.mainbottom.MainHolderBottom;
+import com.micsig.tbook.tbookscope.main.maincenter.MainLayoutCenterChannel;
+import com.micsig.tbook.tbookscope.main.maincenter.MainMsgCenterMenuCommand;
+import com.micsig.tbook.tbookscope.rxjava.RxBus;
+import com.micsig.tbook.tbookscope.rxjava.RxEnum;
+import com.micsig.tbook.tbookscope.services.ExternalKeys.multifunctionKnob.ExternalKeysManager;
+import com.micsig.tbook.tbookscope.top.popwindow.TopLayoutPopWindow;
+import com.micsig.tbook.tbookscope.util.CacheUtil;
+import com.micsig.tbook.tbookscope.util.DToast;
+import com.micsig.tbook.tbookscope.wavezone.IWorkMode;
+import com.micsig.tbook.tbookscope.wavezone.WorkModeManage;
+import com.micsig.tbook.tbookscope.wavezone.display.CursorManage;
+import com.micsig.tbook.tbookscope.wavezone.trigger.TriggerTimebase;
+import com.micsig.tbook.tbookscope.wavezone.wave.WaveManage;
+import com.micsig.tbook.ui.top.view.scale.TopUtilScale;
+import com.micsig.tbook.ui.wavezone.TChan;
+
+/**
+ * Created by yangj on 2018/1/4.
+ */
+
+public class ExternalKeysCommand {
+    public static final int MCUTOARM_RUNSTOP = 1;
+    public static final int MCUTOARM_SEQ = 2;
+    public static final int MCUTOARM_AUTO = 3;
+    public static final int MCUTOARM_SCREENCAPTURE = 4;
+    public static final int MCUTOARM_ZOOM = 5;
+    public static final int MCUTOARM_HOME = 6;
+    public static final int MCUTOARM_QUICKSAVE = 7;
+
+    private static ExternalKeysCommand command;
+    private MainViewGroup mainViewGroup;
+    private MainActivity mainActivity;
+    private TopLayoutPopWindow topSlipMenuBar_Quick;
+
+
+
+    private ExternalKeysCommand() {
+    }
+
+    public static ExternalKeysCommand get() {
+        if (command == null) {
+            command = new ExternalKeysCommand();
+        }
+        return command;
+    }
+
+    public void init(MainActivity mainActivity, MainViewGroup mainViewGroup) {
+        this.mainActivity = mainActivity;
+        this.mainViewGroup = mainViewGroup;
+        this.handler = new Handler();
+    }
+
+    public boolean isUserTouch() {
+        return mainViewGroup.isUserTouch();
+    }
+
+    public boolean isDialogShow(@MainViewGroup.Dialog int dialog) {
+        return mainViewGroup.isDialogShow(dialog);
+    }
+    public boolean isDialogSegmentShow(){
+        return mainViewGroup.getCenterSegmentedLayout().getVisibility()== View.VISIBLE;
+    }
+    public boolean isDialogChListShow(){
+        return mainViewGroup.getChannelsLayout().getVisibility()==View.VISIBLE;
+    }
+
+    public boolean isRightLayoutLevel() {
+        return mainViewGroup.isLevelMenu();
+    }
+
+    public void hideRightLayoutLevel() {
+        mainViewGroup.hideLevelMenu();
+    }
+
+    public void EnterToYt(){
+        MainMsgCenterMenuCommand command= new MainMsgCenterMenuCommand(MainMsgCenterMenuCommand.CommandSerialText);
+        RxBus.getInstance().post(RxEnum.MainLeft_To_Menu_Command,command);
+    }
+    public boolean isKeyboradCandidatesWordShow() {
+        return mainViewGroup.isKeyboradCandidatesWordShow();
+    }
+
+    public boolean isDialogOkVisible() {
+        return mainViewGroup.isDialogOkVisible();
+    }
+
+    public void hideCenterMenuAndCenterHalf() {
+        mainViewGroup.hideCenterMenuAndCenterHalf();
+    }
+
+    private CheckBox cursorH, cursorV;
+
+    /**
+     * 查询光标是否显示
+     *
+     * @param isHor 水平方向true，垂直false
+     */
+    public boolean isCursorShow(boolean isHor) {
+        if (isHor) {
+            if (cursorH == null) {
+                cursorH = (CheckBox) mainViewGroup.findViewById(R.id.cursorH);
+            }
+            return cursorH.isChecked();
+        } else {
+            if (cursorV == null) {
+                cursorV = (CheckBox) mainViewGroup.findViewById(R.id.cursorV);
+            }
+            return cursorV.isChecked();
+        }
+    }
+
+    /**
+     * 打开关闭光标
+     *
+     * @param isHor 水平方向true，垂直false
+     * @param type  本次操作类型，在ExternalKeysMsgCursor类中定义
+     */
+    public void clickCursor(boolean isHor, int type) {
+//        if (mainViewGroup.isSlipShow(MainViewGroup.BOTTOMSLIP)) {
+//            mainViewGroup.hideSlip(MainViewGroup.BOTTOMSLIP);
+//        }
+//        mainViewGroup.hideAllDialogSlip();
+//        ExternalKeysUI.getInstance().onClick(isHor ? 600 : 650, 550);
+        RxBus.getInstance().post(RxEnum.EXTERNALKEYS_CURSOR, new ExternalKeysMsgCursor(isHor, type));
+    }
+
+    /**
+     * 切换光标
+     *
+     * @param isHor 水平方向true，垂直false
+     */
+    public void switchCursor(boolean isHor) {
+        mainViewGroup.hideAllDialogSlip();
+        if (isHor) {
+            CursorManage.getInstance().nextHorState();
+        } else {
+            CursorManage.getInstance().nextVerState();
+        }
+    }
+
+    public void setCursorSelected(boolean isHor, int iWaveCursor) {
+        mainViewGroup.hideAllDialogSlip();
+        if (isHor) {
+            CursorManage.getInstance().setHorCursorSelected(iWaveCursor);
+        } else {
+            CursorManage.getInstance().setVerCursorSelected(iWaveCursor);
+        }
+    }
+
+    public int getCursorSelected(boolean isHor) {
+        if (isHor) {
+            return CursorManage.getInstance().getHorCursorSelected();
+        } else {
+            return CursorManage.getInstance().getVerCursorSelected();
+        }
+    }
+
+    /**
+     * 移动光标
+     *
+     * @param isHor   水平方向true，垂直false
+     * @param isRight 顺时针true
+     * @param count   移动次数
+     */
+    public void moveCursor(boolean isHor, boolean isRight, int count) {
+        mainViewGroup.hideAllDialogSlip();
+        if (isHor) {
+            CursorManage.getInstance().moveHorCursor(isRight, count);
+        } else {
+            CursorManage.getInstance().moveVerCursor(isRight, count);
+        }
+    }
+
+    /**
+     * 移动聚拢光标
+     *
+     * @param isHor   水平方向true，垂直false
+     * @param isRight 聚拢true
+     * @param count   移动次数
+     */
+    public void moveZoomCursor(boolean isHor, boolean isRight, int count) {
+        mainViewGroup.hideAllDialogSlip();
+        if (isHor) {
+            CursorManage.getInstance().moveZoomHorCursor(isRight, count);
+        } else {
+            CursorManage.getInstance().moveZoomVerCursor(isRight, count);
+        }
+    }
+
+    /**
+     * 多功能按钮操作TopDialogScale
+     *
+     * @param isSmall 是位于上侧的微调，否位于下侧的粗调
+     * @param isRight 是向右滑动，否向左滑动
+     * @param count
+     */
+    public void moveTopDialogScale(boolean isSmall, boolean isRight, int count) {
+        if (isSmall) {
+            if (isRight) {
+                RxBus.getInstance().post(RxEnum.DIALOG_SCALE_CHANGED, TopUtilScale.ACTION_SCALE_SMALL_RIGHT);
+            } else {
+                RxBus.getInstance().post(RxEnum.DIALOG_SCALE_CHANGED, TopUtilScale.ACTION_SCALE_SMALL_LEFT);
+            }
+        } else {
+            if (isRight) {
+                RxBus.getInstance().post(RxEnum.DIALOG_SCALE_CHANGED, TopUtilScale.ACTION_SCALE_LARGE_RIGHT);
+            } else {
+                RxBus.getInstance().post(RxEnum.DIALOG_SCALE_CHANGED, TopUtilScale.ACTION_SCALE_LARGE_LEFT);
+            }
+        }
+    }
+
+    /**
+     * 多功能下旋钮操作refRecall
+     *
+     * @param refRecallFlag {ExternalKeysNode.ACTION_REFRECALL_UP + CommandMsgToUI.PARAM_SPLIT + TChan.R1} 向上移动<p/>
+     *                      {ExternalKeysNode.ACTION_REFRECALL_DOWN + CommandMsgToUI.PARAM_SPLIT + TChan.R1} 向下移动<p/>
+     *                      {ExternalKeysNode.ACTION_REFRECALL_FINISH + CommandMsgToUI.PARAM_SPLIT + TChan.R1} 选择并退出
+     * @param count
+     */
+    public void moveRefRecall(String refRecallFlag, int count) {
+        RxBus.getInstance().post(RxEnum.DIALOG_REFRECALL_CHANGED, refRecallFlag);
+    }
+
+    /**
+     * 多功能下键操作全键盘时的拼音预选框
+     *
+     * @param flag  {TopDialogCandidatesWord.ACTION_CANDIDATES_RIGHT} 向右移动<p/>
+     *              {TopDialogCandidatesWord.ACTION_CANDIDATES_LEFT}  向左移动<p/>
+     *              {TopDialogCandidatesWord.ACTION_CANDIDATES_FINISH} 选择并退出
+     * @param count
+     */
+    public void moveKeyBoardCandidatesWord(int flag, int count) {
+        RxBus.getInstance().post(RxEnum.DIALOG_CANDIDATE_CHANGED, flag);
+    }
+
+    public void moveSerialsWordList(int count) {
+        RxBus.getInstance().post(RxEnum.EXTERNALKEYS_SERIALSWORD, count);
+    }
+
+    public void moveRightCanPercent(boolean isS1, boolean isAdd, boolean isTop, int count) {
+        RxBus.getInstance().post(RxEnum.EXTERNALKEYS_RIGHTCAN_PERCENT
+                , new ExKeysMsgRightCanPercent(isS1, isAdd, isTop, count));
+    }
+
+    public boolean isSlip() {
+        return mainViewGroup.isSlipShow(MainViewGroup.TOPSLIP)
+                || mainViewGroup.isSlipShow(MainViewGroup.BOTTOMSLIP)
+                || mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_CH1)
+                || mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_CH2)
+                || mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_CH3)
+                || mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_CH4)
+                || mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_CH5)
+                || mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_CH6)
+                || mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_CH7)
+                || mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_CH8)
+                || mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_MATH1)
+                || mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_MATH2)
+                || mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_MATH3)
+                || mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_MATH4)
+                || mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_MATH5)
+                || mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_MATH6)
+                || mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_MATH7)
+                || mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_MATH8)
+                || mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_REF1)
+                || mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_REF2)
+                || mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_REF3)
+                || mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_REF4)
+                || mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_REF5)
+                || mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_REF6)
+                || mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_REF7)
+                || mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_REF8)
+                || mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_S1)
+                || mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_S2)
+                || mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_S3)
+                || mainViewGroup.isSlipShow(MainViewGroup.RIGHTSLIP_S4);
+    }
+
+    public boolean isDialog(){
+        return mainViewGroup.isDialogsShow();
+    }
+
+    public boolean isSlipShow(int slip) {
+        return mainViewGroup.isSlipShow(slip);
+    }
+    public void openTopSlip() {
+        if (!mainViewGroup.isSlipShow(MainViewGroup.TOPSLIP)) {
+            mainViewGroup.hideAllDialogSlip();
+            mainViewGroup.openSlip(MainViewGroup.TOPSLIP);
+        } else {
+            mainViewGroup.hideSlip(MainViewGroup.TOPSLIP);
+        }
+    }
+
+    public void openBottomSlip() {
+        if (mainViewGroup.isSlipShow(MainViewGroup.BOTTOMSLIP)) {
+            mainViewGroup.hideSlip(MainViewGroup.BOTTOMSLIP);
+        } else {
+            boolean isSerialsTxt = CacheUtil.get().getBoolean(CacheUtil.MAIN_BOTTOM_SLIP_SERIALBUSTXT);
+            if (isSerialsTxt) return;
+            mainViewGroup.hideAllDialogSlip();
+            mainViewGroup.openSlip(MainViewGroup.BOTTOMSLIP);
+        }
+    }
+
+    public void ClickMeasureBtn(){
+        mainViewGroup.OnBtnMeasureClick();
+    }
+    public void ClickChannelList(){
+        RxBus.getInstance().post(RxEnum.EXTERNALKEYS_CHANNEL_LIST_CLICK,new Object());
+
+    }
+
+    public void clickMeasureMenu() {
+        if (topSlipMenuBar_Quick == null) {
+            topSlipMenuBar_Quick = (TopLayoutPopWindow) mainViewGroup.findViewById(R.id.topSlipMenuBar_Quick);
+        }
+        if (!topSlipMenuBar_Quick.isCurYTMode()) {
+            return;
+        }
+        mainViewGroup.hideAllDialogsButDialogOkCancel();
+        if (!mainViewGroup.isSlipShow(MainViewGroup.TOPSLIP)) {
+            //如果通道选择框显示则关闭之
+            ExternalKeysManager.get().moveBackChannelsSelect();
+            mainViewGroup.hideAllDialogSlip();
+            //上菜单页面菜单选中measure页面
+            topSlipMenuBar_Quick.showLayoutMeasure();
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    //由于是按键反应，所以打开上菜单的同时需要把预选框也选中上菜单
+                    mainViewGroup.openSlip(MainViewGroup.TOPSLIP);
+                }
+            }, 200);//延时是给菜单的内部切换预留个时间完成
+        } else {
+            if (topSlipMenuBar_Quick.isShowLayoutMeasure()) {
+                mainViewGroup.hideSlip(MainViewGroup.TOPSLIP);
+            } else {
+                topSlipMenuBar_Quick.showLayoutMeasure();
+                ExternalKeysManager.get().showViewPlace(ExternalKeysManager.LISTTYPE_TOP);
+            }
+        }
+    }
+
+    public void clickTriggerMenu() {
+        if (topSlipMenuBar_Quick == null) {
+            topSlipMenuBar_Quick = (TopLayoutPopWindow) mainViewGroup.findViewById(R.id.topSlipMenuBar_Quick);
+        }
+        if (!topSlipMenuBar_Quick.isCurYTMode()) {
+            return;
+        }
+        mainViewGroup.hideAllDialogsButDialogOkCancel();
+        if (!mainViewGroup.isSlipShow(MainViewGroup.TOPSLIP)) {
+            //如果通道选择框显示则关闭之
+            ExternalKeysManager.get().moveBackChannelsSelect();
+            mainViewGroup.hideAllDialogSlip();
+            //上菜单页面菜单选中trigger页面
+            topSlipMenuBar_Quick.showLayoutTrigger();
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    //由于是按键反应，所以打开上菜单的同时需要把预选框也选中上菜单
+                    mainViewGroup.openSlip(MainViewGroup.TOPSLIP);
+                }
+            }, 200);//延时是给菜单的内部切换预留个时间完成
+        } else {
+            if (topSlipMenuBar_Quick.isShowLayoutTrigger()) {
+                mainViewGroup.hideSlip(MainViewGroup.TOPSLIP);
+            } else {
+                topSlipMenuBar_Quick.showLayoutTrigger();
+                ExternalKeysManager.get().showViewPlace(ExternalKeysManager.LISTTYPE_TOP);
+            }
+        }
+    }
+
+    public void clickTriggerEdge(){
+        if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) return;
+        RxBus.getInstance().post(RxEnum.EXTERNALKEYS_EDGE,true);
+    }
+
+    public void changeTriggerCommonMode() {
+        if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) return;
+        RxBus.getInstance().post(RxEnum.EXTERNALKEYS_MODE, new Object());
+    }
+
+    public void forceTrigger() {
+        if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) return;
+        RxBus.getInstance().post(RxEnum.EXTERNALKEYS_FORCE, new Object());
+    }
+
+    public void clickTriggerSource(boolean isTop) {
+        if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) return;
+        RxBus.getInstance().post(RxEnum.EXTERNALKEYS_LEVEL,
+                isTop ? new ExternalKeysMsgLevel(ExternalKeysMsgLevel.TYPE_TRIGGER_SOURCEUP, 1)
+                        : new ExternalKeysMsgLevel(ExternalKeysMsgLevel.TYPE_TRIGGER_SOURCEDOWN, 1));
+    }
+
+    public void clickTriggerLevelCenter() {
+        if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) return;
+        RxBus.getInstance().post(RxEnum.EXTERNALKEYS_LEVEL,
+                new ExternalKeysMsgLevel(ExternalKeysMsgLevel.TYPE_TRIGGER_MOVECENTER, 1));
+    }
+
+    public void moveTriggerLevel(final boolean isUp, int count) {
+        if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) return;
+        RxBus.getInstance().post(RxEnum.EXTERNALKEYS_LEVEL,
+                isUp ? new ExternalKeysMsgLevel(ExternalKeysMsgLevel.TYPE_TRIGGER_MOVEUP, count)
+                        : new ExternalKeysMsgLevel(ExternalKeysMsgLevel.TYPE_TRIGGER_MOVEDOMN, count));
+    }
+
+    public void clickValueSource(boolean isTop) {
+        if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) return;
+        RxBus.getInstance().post(RxEnum.EXTERNALKEYS_LEVEL,
+                isTop ? new ExternalKeysMsgLevel(ExternalKeysMsgLevel.TYPE_VALUE_SOURCEUP, 1)
+                        : new ExternalKeysMsgLevel(ExternalKeysMsgLevel.TYPE_VALUE_SOURCEDOWN, 1));
+    }
+
+    public void clickValueLevelCenter() {
+        if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) return;
+        RxBus.getInstance().post(RxEnum.EXTERNALKEYS_LEVEL,
+                new ExternalKeysMsgLevel(ExternalKeysMsgLevel.TYPE_VALUE_MOVECENTER, 1));
+    }
+
+    public void moveValueLevel(final boolean isUp, int count) {
+        if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) return;
+        RxBus.getInstance().post(RxEnum.EXTERNALKEYS_LEVEL,
+                isUp ? new ExternalKeysMsgLevel(ExternalKeysMsgLevel.TYPE_VALUE_MOVEUP, count)
+                        : new ExternalKeysMsgLevel(ExternalKeysMsgLevel.TYPE_VALUE_MOVEDOMN, count));
+    }
+
+
+    public void channelVernier(){
+        RxBus.getInstance().post(RxEnum.EXTERNALKEYS_VERNIER, true);
+    }
+
+    public void timeVernier(){
+        RxBus.getInstance().post(RxEnum.EXTERNALKEYS_HORIZONTAL_VERNIER, true);
+    }
+
+
+    /**
+     * @param channel ExternalKeysMsgChannel.CH1--ExternalKeysMsgChannel.CH8
+     */
+    public void clickRightChannel(int channel) {
+        RxBus.getInstance().post(RxEnum.EXTERNALKEYS_CHANNEL, new ExternalKeysMsgChannel(channel));
+        //mainRight切换为channel页面
+        RxBus.getInstance().post(RxEnum.SLIPRIGHTMENU, MainHolderBottom.SLIPRIGHTMENU_CHANNELS);
+
+    }
+
+    /**
+     * TODO 匹配新的math key协议
+     * @param mathChannel ExternalKeysMsgChannel.MATH1--ExternalKeysMsgChannel.MATH8
+     */
+    public void clickRightMath(int mathChannel) {
+        RxBus.getInstance().post(RxEnum.EXTERNALKEYS_CHANNEL, new ExternalKeysMsgChannel(mathChannel));
+        //mainRight切换为other页面
+        RxBus.getInstance().post(RxEnum.SLIPRIGHTMENU, MainHolderBottom.SLIPRIGHTMENU_OTHERS);
+    }
+
+    /**
+     * TODO 匹配新的ref key协议
+     * @param refChannel ExternalKeysMsgChannel.REF1--ExternalKeysMsgChannel.REF8
+     */
+    public void clickRightRef(int refChannel) {
+        RxBus.getInstance().post(RxEnum.EXTERNALKEYS_CHANNEL, new ExternalKeysMsgChannel(refChannel));
+        //mainRight切换为other页面
+        RxBus.getInstance().post(RxEnum.SLIPRIGHTMENU, MainHolderBottom.SLIPRIGHTMENU_OTHERS);
+    }
+
+    /**
+     * @param serialsNumber 1 - 4
+     */
+    public void clickRightSerials(int serialsNumber) {
+        int keysIndex = ExternalKeysMsgChannel.S1;
+        if (serialsNumber == 1) {
+            keysIndex = ExternalKeysMsgChannel.S1;
+        } else if (serialsNumber == 2) {
+            keysIndex = ExternalKeysMsgChannel.S2;
+        } else if (serialsNumber == 3) {
+            keysIndex = ExternalKeysMsgChannel.S3;
+        } else if (serialsNumber == 4) {
+            keysIndex = ExternalKeysMsgChannel.S4;
+        }
+        RxBus.getInstance().post(RxEnum.EXTERNALKEYS_CHANNEL, new ExternalKeysMsgChannel(keysIndex));
+        //mainRight切换为other页面
+        RxBus.getInstance().post(RxEnum.SLIPRIGHTMENU, MainHolderBottom.SLIPRIGHTMENU_OTHERS);
+    }
+
+    //打开 添加数学通道 菜单
+    public void clickAddRightMath() {
+        RxBus.getInstance().post(RxEnum.MQ_MSG_OPEN_ADD_CHANNEL_MENU, 0);//tabIndex=0
+    }
+
+    //打开 添加参考通道 菜单
+    public void clickAddRightRef() {
+        RxBus.getInstance().post(RxEnum.MQ_MSG_OPEN_ADD_CHANNEL_MENU, 1);//tabIndex=1
+    }
+
+    //打开 添加串口通道 菜单
+    public void clickAddRightSerials() {
+        RxBus.getInstance().post(RxEnum.MQ_MSG_OPEN_ADD_CHANNEL_MENU, 2);//tabIndex=2
+    }
+
+    public void clickHome() {
+        RxBus.getInstance().post(RxEnum.MCUTOARM, MCUTOARM_HOME);
+    }
+
+    public void clickSeq() {
+        RxBus.getInstance().post(RxEnum.MCUTOARM, MCUTOARM_SEQ);
+    }
+
+    public void clickAuto() {
+        RxBus.getInstance().post(RxEnum.MCUTOARM, MCUTOARM_AUTO);
+    }
+
+    public void clickRunStop() {
+        RxBus.getInstance().post(RxEnum.MCUTOARM, MCUTOARM_RUNSTOP);
+    }
+
+    public void clickScreenCapture() {
+        RxBus.getInstance().post(RxEnum.MCUTOARM, MCUTOARM_SCREENCAPTURE);
+    }
+
+    public void clickQuickSave() {
+        RxBus.getInstance().post(RxEnum.MCUTOARM, MCUTOARM_QUICKSAVE);
+    }
+
+    public void clickZoom() {
+        if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) {//xy模式下，zoom功能不能使用
+            return;
+        }
+        RxBus.getInstance().post(RxEnum.MCUTOARM, MCUTOARM_ZOOM);
+    }
+
+    public boolean isSerialsWordVisible(){
+        return CacheUtil.get().getBoolean(CacheUtil.MAIN_BOTTOM_SLIP_SERIALBUSTXT);
+    }
+
+    public boolean moveTimeBasePosition(boolean isRight, int count) {
+        if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) return false;
+        if (isRight) {
+            TriggerTimebase.getInstance().movePix(count);
+        } else {
+            TriggerTimebase.getInstance().movePix(count * -1);
+        }
+        return true;
+    }
+
+    public boolean moveTimeBasePosition50Percent() {
+        if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) return false;
+        TriggerTimebase.getInstance().rstX_50percentt();
+        return true;
+    }
+
+    public void moveTimeBaseScale(boolean isLeft, int count) {
+        RxBus.getInstance().post(RxEnum.EXTERNALKEYS_TIMEBASE, new ExternalKeysMsgTimeBase(isLeft, count));
+    }
+
+    private MainLayoutCenterChannel channels;
+
+    public void openRightCurSlip() {
+        if (channels == null) {
+            channels = (MainLayoutCenterChannel) mainViewGroup.findViewById(R.id.mainLayoutCenterChannels);
+        }
+        int index = channels.getChannelSelectIndex();
+        openRightSlip(index + 1);
+    }
+
+    public void openRightSlip(int index) {
+        if (index != -1) {
+            @MainViewGroup.Slip int slip = MainViewGroup.RIGHTSLIP_CH1;
+            switch (index) {
+                case TChan.Ch1:
+                    slip = MainViewGroup.RIGHTSLIP_CH1;
+                    break;
+                case TChan.Ch2:
+                    slip = MainViewGroup.RIGHTSLIP_CH2;
+                    break;
+                case TChan.Ch3:
+                    slip = MainViewGroup.RIGHTSLIP_CH3;
+                    break;
+                case TChan.Ch4:
+                    slip = MainViewGroup.RIGHTSLIP_CH4;
+                    break;
+                case TChan.Ch5:
+                    slip = MainViewGroup.RIGHTSLIP_CH5;
+                    break;
+                case TChan.Ch6:
+                    slip = MainViewGroup.RIGHTSLIP_CH6;
+                    break;
+                case TChan.Ch7:
+                    slip = MainViewGroup.RIGHTSLIP_CH7;
+                    break;
+                case TChan.Ch8:
+                    slip = MainViewGroup.RIGHTSLIP_CH8;
+                    break;
+                case TChan.Math1:
+                    slip = MainViewGroup.RIGHTSLIP_MATH1;
+                    break;
+                case TChan.Math2:
+                    slip = MainViewGroup.RIGHTSLIP_MATH2;
+                    break;
+                case TChan.Math3:
+                    slip = MainViewGroup.RIGHTSLIP_MATH3;
+                    break;
+                case TChan.Math4:
+                    slip = MainViewGroup.RIGHTSLIP_MATH4;
+                    break;
+                case TChan.Math5:
+                    slip = MainViewGroup.RIGHTSLIP_MATH5;
+                    break;
+                case TChan.Math6:
+                    slip = MainViewGroup.RIGHTSLIP_MATH6;
+                    break;
+                case TChan.Math7:
+                    slip = MainViewGroup.RIGHTSLIP_MATH7;
+                    break;
+                case TChan.Math8:
+                    slip = MainViewGroup.RIGHTSLIP_MATH8;
+                    break;
+
+                case TChan.R1:
+                    slip = MainViewGroup.RIGHTSLIP_REF1;
+                    break;
+                case TChan.R2:
+                    slip = MainViewGroup.RIGHTSLIP_REF2;
+                    break;
+                case TChan.R3:
+                    slip = MainViewGroup.RIGHTSLIP_REF3;
+                    break;
+                case TChan.R4:
+                    slip = MainViewGroup.RIGHTSLIP_REF4;
+                    break;
+                case TChan.R5:
+                    slip = MainViewGroup.RIGHTSLIP_REF5;
+                    break;
+                case TChan.R6:
+                    slip = MainViewGroup.RIGHTSLIP_REF6;
+                    break;
+                case TChan.R7:
+                    slip = MainViewGroup.RIGHTSLIP_REF7;
+                    break;
+                case TChan.R8:
+                    slip = MainViewGroup.RIGHTSLIP_REF8;
+                    break;
+                case TChan.S1:
+                    slip = MainViewGroup.RIGHTSLIP_S1;
+                    break;
+                case TChan.S2:
+                    slip = MainViewGroup.RIGHTSLIP_S2;
+                    break;
+            }
+            if (mainViewGroup.isSlipShow(slip)) {
+                mainViewGroup.hideSlip(slip);
+            } else {
+                mainViewGroup.hideAllDialogSlip();
+                mainViewGroup.openSlip(slip);
+            }
+        }
+    }
+
+    public void moveChannelPosition(boolean isDown, int count) {
+        CursorManage.getInstance().setCursorTrace(true);
+        if (isDown) {
+            WaveManage.get().movePix(count * -1);
+        } else {
+            WaveManage.get().movePix(count);
+        }
+        CursorManage.setCursorByScaleTrace();
+        CursorManage.getInstance().setCursorTrace(false);
+    }
+
+    private ExternalKeysMsgVScale msgVScale = new ExternalKeysMsgVScale();
+
+
+
+    public void moveChannelScale(boolean isAdd,int count) {
+        Log.d("TAG","调整-------------------------m" +isAdd + "c" + count);
+
+        if (channels == null) {
+            channels = (MainLayoutCenterChannel) mainViewGroup.findViewById(R.id.mainLayoutCenterChannels);
+        }
+
+        int index = channels.getChannelSelectIndex();
+        if (index == -1) return;
+
+        Channel channel = ChannelFactory.getDynamicChannel(index);
+        if(channel != null){
+            double v = channel.getVScaleVal()/channel.getProbeRate();
+            if( isAdd && v >= VerticalAxis.getScaleIdValById(channel.getMaxGear())){
+                return;
+            }else if (!isAdd && v <= VerticalAxis.getScaleIdValById(channel.getMinGear())){
+                return;
+            }
+        }
+
+        msgVScale.setChIndex(index);
+        msgVScale.setAdd(isAdd);
+        msgVScale.setCount(count);
+        RxBus.getInstance().post(RxEnum.EXTERNALKEYS_VSCALE, msgVScale);
+        if (TChan.isChan(TChan.toUiChNo(index))) {
+            RxBus.getInstance().post(RxEnum.SLIPRIGHTMENU, MainHolderBottom.SLIPRIGHTMENU_CHANNELS);
+        } else if (TChan.isMathToR8(TChan.toUiChNo(index))) {
+            RxBus.getInstance().post(RxEnum.SLIPRIGHTMENU, MainHolderBottom.SLIPRIGHTMENU_OTHERS);
+        }
+        if (ChannelFactory.isChActivate(index)) {
+            CursorManage.getInstance().setCursorTrace(true);
+            CursorManage.getInstance().curChannelMove();
+            CursorManage.getInstance().setCursorTrace(false);
+        }
+    }
+
+    public void changeGoHomeToast(boolean isOpen) {
+        handler.sendEmptyMessage(isOpen ? MSG_OPENTOAST : MSG_CLOSETOAST);
+//        if (isOpen) {
+//            DToast.get().show(R.string.msgForGoHomeWhenLockScreen);
+//        } else {
+//            DToast.get().hide();
+//        }
+    }
+
+    private TextView tvMsgGoHome;
+    private static final int MSG_OPENTOAST = 55;
+    private static final int MSG_CLOSETOAST = 56;
+
+    private static final int MSG_SCALE_DELAY = 0x20241125;
+    private Handler handler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            switch (msg.what){
+                case MSG_OPENTOAST:{
+                    if (handler.hasMessages(MSG_CLOSETOAST)) {
+                        DToast.get().hide();
+                        ExternalKeysCommand.get().clickHome();
+                    } else {
+                        DToast.get().show(R.string.msgForGoHomeWhenLockScreen);
+                        sendEmptyMessageDelayed(MSG_CLOSETOAST, 3000);
+                    }
+                }
+                break;
+                case MSG_CLOSETOAST:
+                    DToast.get().hide();
+                    break;
+                case MSG_SCALE_DELAY:
+                    Log.d("handler","调整-------------------------scale delay");
+                    moveChannelScale(false,0);
+                    break;
+            }
+
+        }
+    };
+}

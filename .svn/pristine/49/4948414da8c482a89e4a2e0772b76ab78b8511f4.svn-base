@@ -1,0 +1,408 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <AbsoluteLayout
+        android:layout_width="@dimen/mainCenterWidth"
+        android:layout_height="match_parent"
+        android:layout_x="0px"
+        >
+        <!--        android:background="@drawable/bg_mainmave_divider"-->
+
+        <include layout="@layout/middlebar_wave_xy" />
+
+        <include layout="@layout/middlebar_wave" />
+
+        <include layout="@layout/middlebar_wave_zoom" />
+
+        <include layout="@layout/middlebar_serialsword" />
+
+        <include layout="@layout/measures"/>
+
+        <View
+            android:id="@+id/waveXYOutView"
+            android:layout_width="match_parent"
+            android:layout_height="1000px" />
+
+        <View
+            android:id="@+id/mainSlipOutView"
+            android:layout_width="match_parent"
+            android:layout_height="1000px" />
+
+        <include layout="@layout/leftslipmenubar_quick" />
+
+        <ViewStub
+            android:id="@+id/topSlipMenuBar_Quick_viewStub"
+            android:layout_width="@dimen/topSlipWidth"
+            android:layout_height="@dimen/topSlipHeight"
+            android:layout_x="@dimen/topSlipX"
+            android:layout_y="@dimen/topSlipY"
+            android:clickable="true"
+            android:layout="@layout/topslipmenubar_quick" />
+
+        <ViewStub
+            android:id="@+id/rightSlipMenuBar_level_viewStub"
+            android:layout_width="@dimen/rightSlipLevelWidth"
+            android:layout_height="match_parent"
+            android:layout_x="@dimen/rightSlipX"
+            android:layout_y="0px"
+            android:background="@drawable/bg_rightslipmenu"
+            android:clickable="true"
+            android:layout="@layout/rightslipmenu_level"
+            android:paddingStart="@dimen/dividerSize"
+            android:paddingLeft="@dimen/dividerSize" />
+
+        <ViewStub
+            android:id="@+id/rightslipmenubar_channel1_viewStub"
+            android:layout_width="@dimen/rightSlipChannelWidth"
+            android:layout_height="@dimen/rightSlipChannelHeight"
+            android:layout_x="@dimen/rightSlipX"
+            android:layout_y="@dimen/rightSlipY"
+            android:background="@drawable/bg_rightslipmenu"
+            android:clickable="true"
+            android:layout="@layout/rightslipmenu_channel1"
+            android:paddingStart="@dimen/dividerSize"
+            android:paddingLeft="@dimen/dividerSize" />
+
+        <ViewStub
+            android:id="@+id/rightslipmenubar_channel2_viewStub"
+            android:layout_width="@dimen/rightSlipChannelWidth"
+            android:layout_height="@dimen/rightSlipChannelHeight"
+            android:layout_x="@dimen/rightSlipX"
+            android:layout_y="@dimen/rightSlipY"
+            android:background="@drawable/bg_rightslipmenu"
+            android:clickable="true"
+            android:layout="@layout/rightslipmenu_channel2"
+            android:paddingStart="@dimen/dividerSize"
+            android:paddingLeft="@dimen/dividerSize" />
+
+        <ViewStub
+            android:id="@+id/rightslipmenubar_channel3_viewStub"
+            android:layout_width="@dimen/rightSlipChannelWidth"
+            android:layout_height="@dimen/rightSlipChannelHeight"
+            android:layout_x="@dimen/rightSlipX"
+            android:layout_y="@dimen/rightSlipY"
+            android:background="@drawable/bg_rightslipmenu"
+            android:clickable="true"
+            android:layout="@layout/rightslipmenu_channel3"
+            android:paddingStart="@dimen/dividerSize"
+            android:paddingLeft="@dimen/dividerSize" />
+
+        <ViewStub
+            android:id="@+id/rightslipmenubar_channel4_viewStub"
+            android:layout_width="@dimen/rightSlipChannelWidth"
+            android:layout_height="@dimen/rightSlipChannelHeight"
+            android:layout_x="@dimen/rightSlipX"
+            android:layout_y="@dimen/rightSlipY"
+            android:background="@drawable/bg_rightslipmenu"
+            android:clickable="true"
+            android:layout="@layout/rightslipmenu_channel4"
+            android:paddingStart="@dimen/dividerSize"
+            android:paddingLeft="@dimen/dividerSize" />
+
+        <ViewStub
+            android:id="@+id/rightslipmenubar_channel5_viewStub"
+            android:layout_width="@dimen/rightSlipChannelWidth"
+            android:layout_height="@dimen/rightSlipChannelHeight"
+            android:layout_x="@dimen/rightSlipX"
+            android:layout_y="@dimen/rightSlipY"
+            android:background="@drawable/bg_rightslipmenu"
+            android:clickable="true"
+            android:layout="@layout/rightslipmenu_channel5"
+            android:paddingStart="@dimen/dividerSize"
+            android:paddingLeft="@dimen/dividerSize" />
+
+        <ViewStub
+            android:id="@+id/rightslipmenubar_channel6_viewStub"
+            android:layout_width="@dimen/rightSlipChannelWidth"
+            android:layout_height="@dimen/rightSlipChannelHeight"
+            android:layout_x="@dimen/rightSlipX"
+            android:layout_y="@dimen/rightSlipY"
+            android:background="@drawable/bg_rightslipmenu"
+            android:clickable="true"
+            android:layout="@layout/rightslipmenu_channel6"
+            android:paddingStart="@dimen/dividerSize"
+            android:paddingLeft="@dimen/dividerSize" />
+
+        <ViewStub
+            android:id="@+id/rightslipmenubar_channel7_viewStub"
+            android:layout_width="@dimen/rightSlipChannelWidth"
+            android:layout_height="@dimen/rightSlipChannelHeight"
+            android:layout_x="@dimen/rightSlipX"
+            android:layout_y="@dimen/rightSlipY"
+            android:background="@drawable/bg_rightslipmenu"
+            android:clickable="true"
+            android:layout="@layout/rightslipmenu_channel7"
+            android:paddingStart="@dimen/dividerSize"
+            android:paddingLeft="@dimen/dividerSize" />
+
+        <ViewStub
+            android:id="@+id/rightslipmenubar_channel8_viewStub"
+            android:layout_width="@dimen/rightSlipChannelWidth"
+            android:layout_height="@dimen/rightSlipChannelHeight"
+            android:layout_x="@dimen/rightSlipX"
+            android:layout_y="@dimen/rightSlipY"
+            android:background="@drawable/bg_rightslipmenu"
+            android:clickable="true"
+            android:layout="@layout/rightslipmenu_channel8"
+            android:paddingStart="@dimen/dividerSize"
+            android:paddingLeft="@dimen/dividerSize" />
+
+        <ViewStub
+            android:id="@+id/rightSlipMenuBar_math1_viewStub"
+            android:layout_width="819px"
+            android:layout_height="907px"
+            android:layout_x="1800px"
+            android:layout_y="@dimen/rightSlipOtherYMiddle"
+            android:background="@drawable/bg_rightslipmenu"
+            android:clickable="true"
+            android:layout="@layout/rightslipmenu_math1"
+            android:paddingStart="@dimen/dividerSize"
+            android:paddingLeft="@dimen/dividerSize" />
+
+        <ViewStub
+            android:id="@+id/rightSlipMenuBar_math2_viewStub"
+            android:layout_width="819px"
+            android:layout_height="907px"
+            android:layout_x="1800px"
+            android:layout_y="@dimen/rightSlipOtherYMiddle"
+            android:background="@drawable/bg_rightslipmenu"
+            android:clickable="true"
+            android:layout="@layout/rightslipmenu_math2"
+            android:paddingStart="@dimen/dividerSize"
+            android:paddingLeft="@dimen/dividerSize" />
+
+        <ViewStub
+            android:id="@+id/rightSlipMenuBar_math3_viewStub"
+            android:layout_width="819px"
+            android:layout_height="907px"
+            android:layout_x="1800px"
+            android:layout_y="@dimen/rightSlipOtherYMiddle"
+            android:background="@drawable/bg_rightslipmenu"
+            android:clickable="true"
+            android:layout="@layout/rightslipmenu_math3"
+            android:paddingStart="@dimen/dividerSize"
+            android:paddingLeft="@dimen/dividerSize" />
+
+        <ViewStub
+            android:id="@+id/rightSlipMenuBar_math4_viewStub"
+            android:layout_width="819px"
+            android:layout_height="907px"
+            android:layout_x="1800px"
+            android:layout_y="@dimen/rightSlipOtherYMiddle"
+            android:background="@drawable/bg_rightslipmenu"
+            android:clickable="true"
+            android:layout="@layout/rightslipmenu_math4"
+            android:paddingStart="@dimen/dividerSize"
+            android:paddingLeft="@dimen/dividerSize" />
+
+        <ViewStub
+            android:id="@+id/rightSlipMenuBar_math5_viewStub"
+            android:layout_width="819px"
+            android:layout_height="907px"
+            android:layout_x="1800px"
+            android:layout_y="@dimen/rightSlipOtherYMiddle"
+            android:background="@drawable/bg_rightslipmenu"
+            android:clickable="true"
+            android:layout="@layout/rightslipmenu_math5"
+            android:paddingStart="@dimen/dividerSize"
+            android:paddingLeft="@dimen/dividerSize" />
+
+        <ViewStub
+            android:id="@+id/rightSlipMenuBar_math6_viewStub"
+            android:layout_width="819px"
+            android:layout_height="907px"
+            android:layout_x="1800px"
+            android:layout_y="@dimen/rightSlipOtherYMiddle"
+            android:background="@drawable/bg_rightslipmenu"
+            android:clickable="true"
+            android:layout="@layout/rightslipmenu_math6"
+            android:paddingStart="@dimen/dividerSize"
+            android:paddingLeft="@dimen/dividerSize" />
+
+        <ViewStub
+            android:id="@+id/rightSlipMenuBar_math7_viewStub"
+            android:layout_width="819px"
+            android:layout_height="907px"
+            android:layout_x="1800px"
+            android:layout_y="@dimen/rightSlipOtherYMiddle"
+            android:background="@drawable/bg_rightslipmenu"
+            android:clickable="true"
+            android:layout="@layout/rightslipmenu_math7"
+            android:paddingStart="@dimen/dividerSize"
+            android:paddingLeft="@dimen/dividerSize" />
+
+        <ViewStub
+            android:id="@+id/rightSlipMenuBar_math8_viewStub"
+            android:layout_width="819px"
+            android:layout_height="907px"
+            android:layout_x="1800px"
+            android:layout_y="@dimen/rightSlipOtherYMiddle"
+            android:background="@drawable/bg_rightslipmenu"
+            android:clickable="true"
+            android:layout="@layout/rightslipmenu_math8"
+            android:paddingStart="@dimen/dividerSize"
+            android:paddingLeft="@dimen/dividerSize" />
+
+        <ViewStub
+            android:id="@+id/rightSlipMenuBar_ref1_viewStub"
+            android:layout_width="819px"
+            android:layout_height="907px"
+            android:layout_x="1800px"
+            android:layout_y="@dimen/rightSlipOtherYMiddle"
+            android:background="@drawable/bg_rightslipmenu"
+            android:clickable="true"
+            android:layout="@layout/rightslipmenu_ref1"
+            android:paddingStart="@dimen/dividerSize"
+            android:paddingLeft="@dimen/dividerSize" />
+
+        <ViewStub
+            android:id="@+id/rightSlipMenuBar_ref2_viewStub"
+            android:layout_width="819px"
+            android:layout_height="907px"
+            android:layout_x="1800px"
+            android:layout_y="@dimen/rightSlipOtherYMiddle"
+            android:background="@drawable/bg_rightslipmenu"
+            android:clickable="true"
+            android:layout="@layout/rightslipmenu_ref2"
+            android:paddingStart="@dimen/dividerSize"
+            android:paddingLeft="@dimen/dividerSize" />
+
+        <ViewStub
+            android:id="@+id/rightSlipMenuBar_ref3_viewStub"
+            android:layout_width="819px"
+            android:layout_height="907px"
+            android:layout_x="1800px"
+            android:layout_y="@dimen/rightSlipOtherYMiddle"
+            android:background="@drawable/bg_rightslipmenu"
+            android:clickable="true"
+            android:layout="@layout/rightslipmenu_ref3"
+            android:paddingStart="@dimen/dividerSize"
+            android:paddingLeft="@dimen/dividerSize" />
+
+        <ViewStub
+            android:id="@+id/rightSlipMenuBar_ref4_viewStub"
+            android:layout_width="819px"
+            android:layout_height="907px"
+            android:layout_x="1800px"
+            android:layout_y="@dimen/rightSlipOtherYMiddle"
+            android:background="@drawable/bg_rightslipmenu"
+            android:clickable="true"
+            android:layout="@layout/rightslipmenu_ref4"
+            android:paddingStart="@dimen/dividerSize"
+            android:paddingLeft="@dimen/dividerSize" />
+
+        <ViewStub
+            android:id="@+id/rightSlipMenuBar_ref5_viewStub"
+            android:layout_width="819px"
+            android:layout_height="907px"
+            android:layout_x="1800px"
+            android:layout_y="@dimen/rightSlipOtherYMiddle"
+            android:background="@drawable/bg_rightslipmenu"
+            android:clickable="true"
+            android:layout="@layout/rightslipmenu_ref5"
+            android:paddingStart="@dimen/dividerSize"
+            android:paddingLeft="@dimen/dividerSize" />
+
+        <ViewStub
+            android:id="@+id/rightSlipMenuBar_ref6_viewStub"
+            android:layout_width="819px"
+            android:layout_height="907px"
+            android:layout_x="1800px"
+            android:layout_y="@dimen/rightSlipOtherYMiddle"
+            android:background="@drawable/bg_rightslipmenu"
+            android:clickable="true"
+            android:layout="@layout/rightslipmenu_ref6"
+            android:paddingStart="@dimen/dividerSize"
+            android:paddingLeft="@dimen/dividerSize" />
+
+        <ViewStub
+            android:id="@+id/rightSlipMenuBar_ref7_viewStub"
+            android:layout_width="819px"
+            android:layout_height="907px"
+            android:layout_x="1800px"
+            android:layout_y="@dimen/rightSlipOtherYMiddle"
+            android:background="@drawable/bg_rightslipmenu"
+            android:clickable="true"
+            android:layout="@layout/rightslipmenu_ref7"
+            android:paddingStart="@dimen/dividerSize"
+            android:paddingLeft="@dimen/dividerSize" />
+
+        <ViewStub
+            android:id="@+id/rightSlipMenuBar_ref8_viewStub"
+            android:layout_width="819px"
+            android:layout_height="907px"
+            android:layout_x="1800px"
+            android:layout_y="@dimen/rightSlipOtherYMiddle"
+            android:background="@drawable/bg_rightslipmenu"
+            android:clickable="true"
+            android:layout="@layout/rightslipmenu_ref8"
+            android:paddingStart="@dimen/dividerSize"
+            android:paddingLeft="@dimen/dividerSize" />
+
+        <ViewStub
+            android:id="@+id/rightSlipMenuBar_serials1_viewStub"
+            android:layout_width="819px"
+            android:layout_height="907px"
+            android:layout_x="1800px"
+            android:layout_y="@dimen/rightSlipOtherYMiddle"
+            android:background="@drawable/bg_rightslipmenu"
+            android:clickable="true"
+            android:layout="@layout/rightslipmenu_serials1"
+            android:paddingStart="@dimen/dividerSize"
+            android:paddingLeft="@dimen/dividerSize" />
+
+        <ViewStub
+            android:id="@+id/rightSlipMenuBar_serials2_viewStub"
+            android:layout_width="819px"
+            android:layout_height="907px"
+            android:layout_x="1800px"
+            android:layout_y="@dimen/rightSlipOtherYMiddle"
+            android:background="@drawable/bg_rightslipmenu"
+            android:clickable="true"
+            android:layout="@layout/rightslipmenu_serials2"
+            android:paddingStart="@dimen/dividerSize"
+            android:paddingLeft="@dimen/dividerSize" />
+
+        <ViewStub
+            android:id="@+id/rightSlipMenuBar_serials3_viewStub"
+            android:layout_width="819px"
+            android:layout_height="907px"
+            android:layout_x="@dimen/rightSlipX"
+            android:layout_y="@dimen/rightSlipOtherYMiddle"
+            android:background="@drawable/bg_rightslipmenu"
+            android:clickable="true"
+            android:layout="@layout/rightslipmenu_serials3"
+            android:paddingStart="@dimen/dividerSize"
+            android:paddingLeft="@dimen/dividerSize" />
+
+        <ViewStub
+            android:id="@+id/rightSlipMenuBar_serials4_viewStub"
+            android:layout_width="819px"
+            android:layout_height="907px"
+            android:layout_x="@dimen/rightSlipX"
+            android:layout_y="@dimen/rightSlipOtherYMiddle"
+            android:background="@drawable/bg_rightslipmenu"
+            android:clickable="true"
+            android:layout="@layout/rightslipmenu_serials4"
+            android:paddingStart="@dimen/dividerSize"
+            android:paddingLeft="@dimen/dividerSize" />
+
+        <!-- 左边下边补上2个像素的空白 !-->
+        <View
+            android:layout_width="2px"
+            android:layout_height="match_parent"
+            android:layout_x="72px"
+            android:visibility="gone"
+            android:background="@color/color_Backcolor_MainMenu3"
+            />
+        <View
+            android:layout_width="1104px"
+            android:layout_height="2px"
+            android:layout_x="72px"
+            android:layout_y="650px"
+            android:visibility="gone"
+            android:background="@color/color_Backcolor_MainMenu3"
+            />
+
+    </AbsoluteLayout>
+</merge>

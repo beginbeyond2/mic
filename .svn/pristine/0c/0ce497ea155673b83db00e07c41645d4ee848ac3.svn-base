@@ -1,0 +1,12 @@
+package com.micsig.tbook.scope.fpga;
+
+public class FPGAReg_ExtTriggerLevel extends FPGAReg{
+
+    FPGAReg_ExtTriggerLevel(){
+        super(FPGAReg.FPGA_EXT_GRIGGER_LEVEL, 4);
+    }
+
+    void setLevel(int v){
+        setVal(0,16,v);
+    }
+}

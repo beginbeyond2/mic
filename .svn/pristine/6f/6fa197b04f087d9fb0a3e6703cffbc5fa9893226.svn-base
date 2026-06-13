@@ -1,0 +1,50 @@
+package com.micsig.tbook.scope.probe.bean;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+public class BeanFactory {
+    static BeanFactory instance;
+    public static BeanFactory getInstance(){
+        synchronized (BeanFactory.class) {
+            if (instance == null) {
+                instance = new BeanFactory();
+            }
+            return instance;
+        }
+    }
+    private Map<String,Class<?>> map = new LinkedHashMap<>();
+    public BeanFactory(){
+        initMap();
+    }
+    private void initMap(){
+        map.clear();
+        map.put(MSP500Bean.MSP500,MSP500Bean.class);
+        map.put(MDPBean.MDP, MDPBean.class);
+    }
+    public BaseBean getMatchBean(String name){
+
+        BaseBean bean = null;
+        for (Map.Entry<String,Class<?>> entry : map.entrySet()) {
+            if(name.startsWith(entry.getKey())){
+                bean = getBean(entry.getKey());
+                break;
+            }
+        }
+        return bean;
+    }
+    public BaseBean getBean(String name){
+        BaseBean probe = null;
+        if(name != null && !name.isEmpty()) {
+            Class<?> c = map.get(name);
+            if (c != null) {
+                try {
+                    probe = (BaseBean) c.newInstance();
+                } catch (IllegalAccessException | InstantiationException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return probe;
+    }
+}

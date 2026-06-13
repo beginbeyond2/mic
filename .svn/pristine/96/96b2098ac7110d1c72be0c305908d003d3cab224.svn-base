@@ -1,0 +1,213 @@
+package com.micsig.tbook.tbookscope.wavezone.wave;
+
+import android.graphics.Bitmap;
+
+import com.chillingvan.canvasgl.ICanvasGL;
+import com.micsig.tbook.scope.Display.DisplayXYService;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.tbookscope.GlobalVar;
+import com.micsig.tbook.tbookscope.util.CacheUtil;
+import com.micsig.tbook.tbookscope.wavezone.IWorkMode;
+import com.micsig.tbook.ui.wavezone.IWave;
+import com.micsig.tbook.ui.wavezone.TChan;
+
+
+/**
+ * Created by liwb on 2017/11/6.
+ */
+
+public class ChannelWaveManage_XY implements IWorkMode, IWaveManage {
+    private final String TAG = "ChannelWaveManage_XY";
+
+    //region
+    //横型通道
+    private ChannelWave channelWave;
+    //坚型通道
+    private ChannelWaveVertical channelWaveVertical;
+    //当前操作的通道号
+    private int selectChNo = -1;
+    private IWave.OnSelectChangeEvent onSelectChangeEvent;
+    private IWave.OnMovingWaveEvent onMovingWaveEvent;
+    //endregion
+
+    public ChannelWaveManage_XY(Bitmap[][] resBmp, IWave.OnMovingWaveEvent onMovingWaveEvent, IWave.OnSelectChangeEvent onSelectChangeEvent) {
+        Bitmap bmp = Bitmap.createBitmap(GlobalVar.get().getWaveZoneWidth_Pix(IWorkMode.WorkMode_XY),
+                GlobalVar.get().getWaveZoneHeight_Pix(IWorkMode.WorkMode_XY), Bitmap.Config.ARGB_8888);
+        int y = bmp.getWidth() / 2;
+
+
+        channelWaveVertical = new ChannelWaveVertical(resBmp[TChan.Ch1]);
+        channelWaveVertical.setLineNameID(TChan.Ch1);
+        channelWaveVertical.setX(Math.round(CacheUtil.get().getDouble(CacheUtil.MAIN_WAVE_CH_XY_POSITION + TChan.Ch1)));
+        DisplayXYService.getInstance().setX(ScopeBase.getXYWidth() / 2 - (int) channelWaveVertical.getX());
+        channelWaveVertical.setSelected(false);
+        channelWaveVertical.setOnSelectChangeEvent(onSelectChangeEvent);
+        channelWaveVertical.setOnMovingWaveEvent(onMovingWaveEvent);
+
+        channelWave = new ChannelWave(resBmp[TChan.Ch2]);
+        channelWave.setLineNameId(TChan.Ch2);
+        channelWave.setY(CacheUtil.get().getDouble(CacheUtil.MAIN_WAVE_CH_XY_POSITION + TChan.Ch2));
+        DisplayXYService.getInstance().setY(ScopeBase.getXYHeight() / 2 - (int) Math.round(channelWave.getPosY()));
+        channelWave.setSelected(true);
+        channelWave.setVisible(true);
+        channelWave.setOnSelectChangeEvent(onSelectChangeEvent);
+        channelWave.setOnMovingWaveEvent(onMovingWaveEvent);
+
+    }
+
+    //region interface IWorkMode
+
+    /**
+     * XY模式不用切换，就算需要也只需要将绘制的标志置True
+     *
+     * @param workMode
+     */
+    @Override
+    public void switchWorkMode(@WorkMode int workMode) {
+        channelWave.switchWorkMode(workMode);
+        channelWaveVertical.switchWorkMode(workMode);
+    }
+
+    //endregion
+
+    //region interface IWaveManage
+
+    @Override
+    public void draw(ICanvasGL canvas) {
+        channelWaveVertical.draw(canvas);
+        channelWave.draw(canvas);
+    }
+
+    /**
+     * XY模式下，通道只有显示
+     *
+     * @param ChNo
+     * @param visible
+     */
+    @Override
+    public void setVisible(int ChNo, boolean visible) {
+        channelWave.setVisible(true);
+    }
+
+    /**
+     * 波形的移动要进行区分是横条还是坚条
+     *
+     * @param offsetY 在横波形时表示：Y  在坚波形时表示X
+     */
+    @Override
+    public void setOffsetY(int offsetY) {
+        if (selectChNo == channelWave.getLineNameID()) {//ch2
+            channelWave.setY(channelWave.getPosY() - offsetY);
+        } else if (selectChNo == channelWaveVertical.getLineNameID()) {//ch1
+            channelWaveVertical.setX(channelWaveVertical.getX() - offsetY);
+        }
+    }
+
+    @Override
+    public void setPositionY(int chNo, double positionY) {
+        if (TChan.Ch2 == chNo) {//ch2
+            channelWave.setY(positionY);
+        } else if (TChan.Ch1 == chNo) {//ch1
+            channelWaveVertical.setX(Math.round(positionY));
+        }
+    }
+
+    public void setPositionYFromEventBus(int chNo, int positionY) {
+        if (TChan.Ch2 == chNo) {//ch2
+            channelWave.setYFromEventBus(positionY);
+        } else if (TChan.Ch1 == chNo) {//ch1
+            channelWaveVertical.setXFromEventBus(positionY);
+        }
+    }
+
+    @Override
+    public double getPositionY(int chNo) {
+        if (TChan.Ch2 == chNo) {//ch2
+            return channelWave.getPosY();
+        } else if (TChan.Ch1 == chNo) {//ch1
+            return channelWaveVertical.getX();
+        }
+        return 0;
+    }
+
+    /**
+     * 50%的显示
+     *
+     * @param chNo 这里没有作用
+     */
+    @Override
+    public void setCenterChY(int chNo) {
+        if (TChan.Ch1 == chNo || TChan.Ch2 == chNo) {
+            if (TChan.Ch2 == chNo) {//ch2
+                channelWave.setY(GlobalVar.get().getWaveZoneHeight_Pix(IWorkMode.WorkMode_XY) / 2);
+            } else {//ch1
+                channelWaveVertical.setX(GlobalVar.get().getWaveZoneWidth_Pix(IWorkMode.WorkMode_XY) / 2);
+            }
+        }
+    }
+
+    public void setCenterChY() {
+        channelWave.setY(GlobalVar.get().getWaveZoneHeight_Pix(IWorkMode.WorkMode_XY) / 2);
+        channelWaveVertical.setX(GlobalVar.get().getWaveZoneWidth_Pix(IWorkMode.WorkMode_XY) / 2);
+    }
+
+    /**
+     * XY模式下，通道默认为选中
+     *
+     * @param chNO
+     */
+    @Override
+    public void setSelectCursor(int chNO) {
+
+        this.selectChNo = chNO;
+        if (chNO == TChan.Ch1) {
+            channelWaveVertical.setSelected(true);
+            channelWave.setSelected(false);
+        } else {
+            channelWaveVertical.setSelected(false);
+            channelWave.setSelected(true);
+        }
+    }
+
+    /**
+     * XY 模式下应该没有用
+     *
+     * @param x
+     * @param y
+     * @return
+     */
+    @Override
+    public int selectCursor(int x, int y) {
+        int selectIndex = -1;
+        if (channelWaveVertical.selectCursor(x, y)) {
+            selectIndex = channelWaveVertical.getLineNameID();
+        } else if (channelWave.selectCursor(x, y)) {
+            selectIndex = channelWave.getLineNameID();
+        }
+        return selectIndex;
+    }
+
+    @Override
+    public void movePix(int px) {
+        if (selectChNo == channelWaveVertical.getLineNameID()) {
+            channelWaveVertical.movePix(px);
+        } else if (selectChNo == channelWave.getLineNameID()) {
+            channelWave.movePix(px);
+        }
+    }
+
+    @Override
+    public int getCurCh() {
+        return selectChNo;
+    }
+
+    public void setOnMovingWaveEvent(IWave.OnMovingWaveEvent onMovingWaveEvent) {
+        this.onMovingWaveEvent = onMovingWaveEvent;
+    }
+
+    public void setOnSelectChangeEvent(IWave.OnSelectChangeEvent onSelectChangeEvent) {
+        this.onSelectChangeEvent = onSelectChangeEvent;
+    }
+
+    //endregion
+}

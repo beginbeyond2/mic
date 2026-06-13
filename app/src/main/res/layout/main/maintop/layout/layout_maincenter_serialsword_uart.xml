@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/tipLayout"
+        style="@style/textStyle"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:text="@string/serialsWordUartTip" />
+
+<!--    <Button-->
+<!--        android:id="@+id/clear"-->
+<!--        style="@style/buttonStyle"-->
+<!--        android:layout_width="@dimen/formBtnClearWidth"-->
+<!--        android:layout_height="@dimen/formBtnClearHeight"-->
+<!--        android:layout_alignParentBottom="true"-->
+<!--        android:layout_alignParentEnd="true"-->
+<!--        android:layout_marginBottom="@dimen/formBtnClearMarginBottom"-->
+<!--        android:layout_marginEnd="@dimen/formBtnClearMarginEnd"-->
+<!--        android:text="@string/serialsWordClear"-->
+<!--        android:textAllCaps="false" />-->
+
+    <RelativeLayout
+        android:id="@+id/dataLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        >
+
+        <RelativeLayout
+            android:id="@+id/msgLayout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/formMsgHeight"
+            android:layout_alignParentBottom="true"
+            android:background="@drawable/shape_frame_bg_black" >
+
+            <TextView
+                android:id="@+id/uartFrameTitle"
+                style="@style/textStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:paddingStart="15px"
+                android:text="帧数:"/>
+
+            <TextView
+                android:id="@+id/uartFrameDetail"
+                style="@style/textStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_toEndOf="@+id/uartFrameTitle"
+                android:gravity="center"
+                android:text="0000000000"/>
+
+            <TextView
+                android:id="@+id/uartErrorTitle"
+                style="@style/textStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginStart="900px"
+                android:gravity="center"
+                android:text="Error:"/>
+
+            <TextView
+                android:id="@+id/uartErrorDetail"
+                style="@style/textStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_toEndOf="@+id/uartErrorTitle"
+                android:layout_marginEnd="15px"
+                android:gravity="center"
+                android:text="0000000000"/>
+
+            <Button
+                android:id="@+id/clear"
+                style="@style/buttonStyle"
+                android:layout_width="@dimen/formBtnClearWidth"
+                android:layout_height="@dimen/formBtnClearHeight"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:layout_marginEnd="@dimen/formBtnClearMarginEnd"
+                android:text="@string/serialsWordClear"
+                android:textAllCaps="false" />
+
+        </RelativeLayout>
+
+        <View
+            android:id="@+id/dividerY"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/serials_word_divider_width"
+            android:layout_marginTop="@dimen/formHeightTitle"
+            android:background="@color/color_division_line_41464D" />
+
+        <View
+            android:id="@+id/dividerX"
+            android:layout_width="@dimen/serials_word_divider_width"
+            android:layout_height="match_parent"
+            android:layout_above="@+id/msgLayout"
+            android:layout_marginStart="@dimen/uart_bin_width"
+            android:background="@color/color_division_line_41464D" />
+
+        <View
+            android:id="@+id/dividerY2"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/serials_word_divider_width"
+            android:layout_above="@+id/msgLayout"
+            android:background="@color/color_division_line_41464D" />
+
+        <TextView
+            android:id="@+id/title1"
+            style="@style/textStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/formHeightTitle"
+            android:layout_alignEnd="@+id/dividerX"
+            android:layout_alignParentStart="true"
+            android:gravity="center"
+            android:text="@string/serialsWordUartTitleBin" />
+
+        <TextView
+            android:id="@+id/title2"
+            style="@style/textStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/formHeightTitle"
+            android:layout_alignParentEnd="true"
+            android:layout_toEndOf="@+id/dividerX"
+            android:gravity="center"
+            android:text="@string/serialsWordUartTitleASCII" />
+
+        <TextView
+            android:id="@+id/title3"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/formHeightTitle"
+            android:layout_alignParentEnd="true"
+            android:gravity="center"
+            android:text="@string/serialsWordUartTitleASCII"
+            android:visibility="gone" />
+
+        <com.micsig.tbook.tbookscope.main.maincenter.serialsword.UnFlingRecyclerView
+            android:id="@+id/leftRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_above="@+id/msgLayout"
+            android:layout_below="@id/dividerY"
+            android:background="@android:color/transparent"
+            android:fadeScrollbars="false"
+            android:overScrollMode="never"
+            android:scrollbars="vertical"
+            android:scrollbarThumbVertical="@color/scaleDivider"
+            />
+
+        <com.micsig.tbook.tbookscope.main.maincenter.serialsword.SerialsWordUartSingleScreenTextView
+            android:id="@+id/singleScreenTextView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_above="@+id/msgLayout"
+            android:layout_below="@id/dividerY"
+            android:background="@android:color/transparent" />
+
+        <RelativeLayout
+            android:id="@+id/scrollBarLayout"
+            android:layout_width="50px"
+            android:layout_height="match_parent"
+            android:layout_above="@+id/msgLayout"
+            android:layout_below="@+id/dividerY"
+            android:layout_alignParentEnd="true"
+            android:clickable="true">
+
+            <View
+                android:id="@+id/scrollBarView"
+                android:layout_width="5px"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentBottom="true"
+                android:background="@android:color/darker_gray" />
+        </RelativeLayout>
+    </RelativeLayout>
+
+</RelativeLayout>

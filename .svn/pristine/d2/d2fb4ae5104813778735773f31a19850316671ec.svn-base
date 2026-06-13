@@ -1,0 +1,32 @@
+package com.micsig.tbook.tbookscope.wavezone.wave;
+
+import com.chillingvan.canvasgl.ICanvasGL;
+
+/**
+ * Created by liwb on 2017/11/6.
+ */
+
+public interface IWaveManage {
+    public void draw(ICanvasGL canvas);
+
+    public void setVisible(int ChNo, boolean visible);
+
+    public void setOffsetY(int offsetY);
+
+    /**
+     * @param chNo 1-9
+     */
+    public void setPositionY(int chNo, double positionY);
+
+    public double getPositionY(int chNo);
+
+    public void setCenterChY(int chNo);
+
+    public void setSelectCursor(int chNO);
+
+    public int selectCursor(int x, int y);
+
+    public void movePix(int px);
+
+    public int getCurCh();
+}

@@ -1,0 +1,178 @@
+package com.micsig.tbook.scope.math;
+
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.channel.Channel;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.channel.MathChannel;
+import com.micsig.tbook.scope.vertical.VerticalAxis;
+import com.micsig.tbook.scope.vertical.VerticalAxisMathDual;
+
+/**
+ * Created by zhuzh on 2018-4-13.
+ */
+
+public class MathDualWave extends MathWave{
+    private static final String TAG = "MathDualWave";
+    protected MathChannel mathChannel;
+    private int Operator = MathNative.MATH_ADD;
+    private int srcChIdx1 = ChannelFactory.CH1;
+    private int srcChIdx2 = ChannelFactory.CH1;
+    private final VerticalAxisMathDual verticalAxisMathDual;
+
+    public MathDualWave(MathChannel channel){
+        this(MATH_DUALWAVE,channel);
+    }
+    public MathDualWave(int mathType,MathChannel channel){
+        super(mathType);
+        mathChannel = channel;
+        verticalAxisMathDual = new VerticalAxisMathDual();
+    }
+
+    public int getOperator() {
+        return Operator;
+    }
+    public void setOperator(int operator) {
+
+        Operator = operator;
+        mathChannel.forceRefresh();
+    }
+    public void setSource1(int chIdx){
+        srcChIdx1 = chIdx;
+        mathChannel.chSampleChange();
+        mathChannel.forceRefresh();
+        sendEvent(EventFactory.EVENT_MATH_SOURCE,true);
+    }
+    public int getSource1(){
+        return srcChIdx1;
+    }
+    public void setSource2(int chIdx) {
+        srcChIdx2 = chIdx;
+        mathChannel.chSampleChange();
+        mathChannel.forceRefresh();
+        sendEvent(EventFactory.EVENT_MATH_SOURCE,true);
+    }
+    public int getSource2(){
+        return srcChIdx2;
+    }
+
+
+    public void sendEvent(int eventId){
+        EventFactory.sendEvent(new EventBase(eventId, mathChannel.getChId()), false);
+    }
+    public void sendEvent(int eventId,boolean async){
+        EventFactory.sendEvent(new EventBase(eventId, mathChannel.getChId()), async);
+    }
+    @Override
+    public boolean isChInSample(int chIdx) {
+        return srcChIdx1 == chIdx || srcChIdx2 == chIdx;
+    }
+    public double getVScaleVal() {
+        return verticalAxisMathDual.getScaleVal();
+    }
+    public int getVScaleVal(double scaleVal) {
+        return verticalAxisMathDual.getScaleVal(scaleVal);
+    }
+    public double getVScaleIdVal() {
+        return verticalAxisMathDual.getScaleIdVal();
+    }
+    public double getVScaleIdVal(int scaleId) {
+        return verticalAxisMathDual.getScaleIdVal(scaleId);
+    }
+    public int getVScaleId(double scaleVal) {//scaleVal为标准档位值
+        return verticalAxisMathDual.getScaleId(scaleVal);
+    }
+    public int getVScaleId() {
+        return verticalAxisMathDual.getScaleId();
+    }
+    public double getFineScale() {
+        return verticalAxisMathDual.getFineScale();
+    }
+    public int getVScaleIdMax() {
+        return VerticalAxisMathDual.DANG_DUAL_MAX;
+    }
+    public int getVScaleIdMin() {
+        return VerticalAxisMathDual.DANG_DUAL_MIN;
+    }
+    public void setVScaleId(int scaleId) {
+        if (VerticalAxisMathDual.isValidScaleId(scaleId)) {
+            verticalAxisMathDual.setScaleId(scaleId);
+            mathChannel.forceRefresh();
+        }
+    }
+    public int getDefaultVScaleId(){
+        double _vScale;
+        Channel src1 = ChannelFactory.getDynamicChannel(srcChIdx1);
+        Channel src2 = ChannelFactory.getDynamicChannel(srcChIdx2);
+        if (src1 == null || src2 == null) return VerticalAxisMathDual.DANG_DUAL_MAX;
+        switch (Operator) {
+            case MathNative.MATH_DIV:
+                _vScale = src1.getVScaleVal()/src2.getVScaleVal();
+                break;
+            case MathNative.MATH_MUL:
+                _vScale = src1.getVScaleVal()*src2.getVScaleVal();
+                break;
+            case MathNative.MATH_ADD:
+            case MathNative.MATH_SUB:
+            default:
+                _vScale = src1.getVScaleVal()+src2.getVScaleVal();
+                break;
+        }
+        return getVScaleVal(_vScale);
+    }
+    public void setVScaleVal(double scaleIdVal) {
+        setVScaleId(verticalAxisMathDual.getScaleId(scaleIdVal));
+    }
+    public void setFineScale(double fineScale) {
+        verticalAxisMathDual.setFineScale(fineScale);
+    }
+    public int generateProbeType() {
+        int probeType = 255;
+        Channel channel1 = ChannelFactory.getDynamicChannel(srcChIdx1);
+        Channel channel2 = ChannelFactory.getDynamicChannel(srcChIdx2);
+        if (channel1 == null || channel2 == null) return probeType;
+        int isCur1 = channel1.getProbeType();
+        int isCur2 = channel2.getProbeType();
+        switch (Operator) {
+            case 0:// operate +
+            case 1:// operate -
+                if (isCur1 == isCur2) probeType = isCur1;
+                else  probeType = VerticalAxis.PROBE_TYPE_WENHAO;//"?"
+                break;
+            case 2:// operate mul
+                if (isCur1 == 0 && isCur2 == 0) probeType = VerticalAxis.PROBE_TYPE_VV;//"VV"
+                else if (isCur1 == 1 && isCur2 == 1) probeType = VerticalAxis.PROBE_TYPE_AA;//"AA"
+                else if((isCur1== 0 && isCur2 == 1) || (isCur1== 1 && isCur2 == 0)) probeType = VerticalAxis.PROBE_TYPE_W;//"W"
+                else probeType = VerticalAxis.PROBE_TYPE_WENHAO;//"?"
+                break;
+            case 3:// operate div
+            {
+                if (isCur1 == 0 && isCur2 == 0) probeType = VerticalAxis.PROBE_TYPE_VTOV;//"V/V"
+                else if (isCur1 == 1 && isCur2 == 1) probeType = VerticalAxis.PROBE_TYPE_ATOA;//"A/A"
+                else if (isCur1 == 0 && isCur2 == 1) probeType = VerticalAxis.PROBE_TYPE_VA;//"V/A"
+                else if (isCur1 == 1 && isCur2 == 0) probeType = VerticalAxis.PROBE_TYPE_AV;//"A/V"
+                else probeType = VerticalAxis.PROBE_TYPE_EMPTY;
+                break;
+            }
+        }
+
+        return probeType;
+    }
+    public int getProbeType(){
+        return verticalAxisMathDual.getProbeType();
+    }
+    public void setProbeType(int probeType) {
+        verticalAxisMathDual.setProbeType(probeType);
+    }
+
+    @Override
+    public void setProbeStr(String probeStr) {
+        verticalAxisMathDual.setProbeStr(probeStr);
+    }
+
+    @Override
+    public String getProbeStr() {
+        return verticalAxisMathDual.getProbeStr();
+    }
+
+}

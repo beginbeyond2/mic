@@ -1,0 +1,738 @@
+package com.micsig.tbook.tbookscope.top.layout.trigger;
+
+import android.content.Context;
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.Event.EventUIObserver;
+import com.micsig.tbook.scope.Trigger.Trigger;
+import com.micsig.tbook.scope.Trigger.TriggerFactory;
+import com.micsig.tbook.scope.Trigger.TriggerLogic;
+import com.micsig.tbook.tbookscope.GlobalVar;
+import com.micsig.tbook.tbookscope.LoadCache;
+import com.micsig.tbook.tbookscope.MainActivity;
+import com.micsig.tbook.tbookscope.R;
+import com.micsig.tbook.tbookscope.middleware.command.Command;
+import com.micsig.tbook.tbookscope.middleware.command.CommandMsgToUI;
+import com.micsig.tbook.tbookscope.rxjava.RxBus;
+import com.micsig.tbook.tbookscope.rxjava.RxEnum;
+import com.micsig.tbook.tbookscope.tools.PlaySound;
+import com.micsig.tbook.tbookscope.tools.Tools;
+import com.micsig.tbook.tbookscope.top.OnDetailSendMsgListener;
+import com.micsig.tbook.tbookscope.top.popwindow.TopDialogScale;
+import com.micsig.tbook.tbookscope.util.CacheUtil;
+import com.micsig.tbook.ui.top.view.channel.TopBeanChannel;
+import com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup;
+import com.micsig.tbook.ui.top.view.scale.TopUtilScale;
+import com.micsig.tbook.ui.util.ScreenUtil;
+import com.micsig.tbook.ui.util.TBookUtil;
+
+import io.reactivex.rxjava3.annotations.NonNull;
+import io.reactivex.rxjava3.functions.Consumer;
+
+
+/**
+ * Created by Administrator on 2017/4/10.
+ */
+public class TopLayoutTriggerLogic extends Fragment {
+    private Context context;
+    private ViewGroup layout;
+    private TopDialogScale scaleDialog;
+    private TopViewRadioGroup rgCh1;
+    private TopViewRadioGroup rgCh2;
+    private TopViewRadioGroup rgCh3;
+    private TopViewRadioGroup rgCh4;
+    private TopViewRadioGroup rgCh5;
+    private TopViewRadioGroup rgCh6;
+    private TopViewRadioGroup rgCh7;
+    private TopViewRadioGroup rgCh8;
+    private TopViewRadioGroup rgTriggerLogic;
+    private TopViewRadioGroup rgCondition;
+
+    private TextView tvTime;
+    private TextView tvTimeHigh;
+    private TextView tvTimeLow;
+    private LinearLayout layoutTimeHigh;
+    private LinearLayout layoutTimeLow;
+
+    private TopMsgTriggerLogic triggerDetail;
+    private OnDetailSendMsgListener onDetailSendMsgListener;
+
+    private TriggerLogic triggerLogic;
+
+    private final int channelCount = GlobalVar.get().getChannelsCount();
+
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        return inflater.inflate(R.layout.layout_triggerlogic, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        this.context = getActivity();
+        layout = (ViewGroup) view;
+        initView(view);
+        initData();
+        initControl();
+    }
+
+    private void initView(View view) {
+        rgCh1 = (TopViewRadioGroup) view.findViewById(R.id.ch1);
+        rgCh1.setData(R.string.triggerCh1, R.array.triggerCh, onSelectChangedListener);
+        rgCh2 = (TopViewRadioGroup) view.findViewById(R.id.ch2);
+        rgCh2.setData(R.string.triggerCh2, R.array.triggerCh, onSelectChangedListener);
+        rgCh3 = (TopViewRadioGroup) view.findViewById(R.id.ch3);
+        rgCh3.setData(R.string.triggerCh3, R.array.triggerCh, onSelectChangedListener);
+        rgCh4 = (TopViewRadioGroup) view.findViewById(R.id.ch4);
+        rgCh4.setData(R.string.triggerCh4, R.array.triggerCh, onSelectChangedListener);
+        rgCh5 = (TopViewRadioGroup) view.findViewById(R.id.ch5);
+        rgCh5.setData(R.string.triggerCh5, R.array.triggerCh, onSelectChangedListener);
+        rgCh6 = (TopViewRadioGroup) view.findViewById(R.id.ch6);
+        rgCh6.setData(R.string.triggerCh6, R.array.triggerCh, onSelectChangedListener);
+        rgCh7 = (TopViewRadioGroup) view.findViewById(R.id.ch7);
+        rgCh7.setData(R.string.triggerCh7, R.array.triggerCh, onSelectChangedListener);
+        rgCh8 = (TopViewRadioGroup) view.findViewById(R.id.ch8);
+        rgCh8.setData(R.string.triggerCh8, R.array.triggerCh, onSelectChangedListener);
+        rgTriggerLogic = (TopViewRadioGroup) view.findViewById(R.id.triggerLogic);
+        rgTriggerLogic.setData(R.string.triggerLogic, R.array.triggerLogic, onSelectChangedListener);
+        rgCondition = (TopViewRadioGroup) view.findViewById(R.id.condition);
+        rgCondition.setData(R.string.triggerLogicCondition, R.array.triggerLogicCondition, onSelectChangedListener);
+        tvTime = (TextView) view.findViewById(R.id.tvLogic);
+        tvTime.setOnClickListener(onClickListener);
+        tvTimeHigh = (TextView) view.findViewById(R.id.timeHighDetail);
+        tvTimeLow = (TextView) view.findViewById(R.id.timeLowDetail);
+        layoutTimeHigh = (LinearLayout) view.findViewById(R.id.layoutLogicTimeHigh);
+        layoutTimeLow = (LinearLayout) view.findViewById(R.id.layoutLogicTimeLow);
+        tvTimeHigh.setOnClickListener(onClickListener);
+        tvTimeLow.setOnClickListener(onClickListener);
+        scaleDialog = (TopDialogScale) ((MainActivity) context).findViewById(R.id.dialogTopScale);
+
+        if (channelCount == GlobalVar.CHANNEL_COUNT_2) {
+            TopViewRadioGroup[] count2Views = {rgCh3, rgCh4, rgCh5, rgCh6, rgCh7, rgCh8};
+            setVisibilityAndSelectedIndex(count2Views, false, 2);
+        } else if (channelCount == GlobalVar.CHANNEL_COUNT_4) {
+            TopViewRadioGroup[] count4Views = {rgCh5, rgCh6, rgCh7, rgCh8};
+            rgCh3.setVisibility(View.VISIBLE);
+            rgCh4.setVisibility(View.VISIBLE);
+            setVisibilityAndSelectedIndex(count4Views, false, 2);
+        }
+        triggerLogic = (TriggerLogic) TriggerFactory.getInstance().getTrigger(Trigger.TRIG_TYPE_LOGIC);
+    }
+
+    private void setVisibilityAndSelectedIndex(TopViewRadioGroup[] views, boolean isVisible, int selectedIndex) {
+        for (TopViewRadioGroup view : views) {
+            view.setVisibility(isVisible ? View.VISIBLE : View.GONE);
+            view.setSelectedIndex(selectedIndex);
+            if (!isVisible) {
+                view.setOnListener(null);
+            }
+        }
+    }
+
+
+    private void initData() {
+        triggerDetail = new TopMsgTriggerLogic();
+        triggerDetail.setCh1(rgCh1.getSelected());
+        triggerDetail.setCh2(rgCh2.getSelected());
+        triggerDetail.setCh3(rgCh3.getSelected());
+        triggerDetail.setCh4(rgCh4.getSelected());
+        triggerDetail.setCh5(rgCh5.getSelected());
+        triggerDetail.setCh6(rgCh6.getSelected());
+        triggerDetail.setCh7(rgCh7.getSelected());
+        triggerDetail.setCh8(rgCh8.getSelected());
+        triggerDetail.setTriggerLogic(rgTriggerLogic.getSelected());
+        triggerDetail.setCondition(rgCondition.getSelected());
+        triggerDetail.setTimeHighDetail(tvTimeHigh.getText().toString());
+        triggerDetail.setTimeLowDetail(tvTimeLow.getText().toString());
+        triggerDetail.setLogic(tvTime.getText().toString());
+    }
+
+    private void initControl() {
+        RxBus.getInstance().getObservable(RxEnum.MAIN_LOAD_CACHE).subscribe(consumerLoadCache);
+        RxBus.getInstance().getObservable(RxEnum.COMMAND_TO_UI).subscribe(consumerCommandToUI);
+        EventFactory.addEventObserver(EventFactory.EVENT_TRIGGER_PARAM, eventUITriggerParam);
+    }
+
+    private void setCache() {
+        int ch1 = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_TRIGGER_LOGIC_CH1);
+        int ch2 = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_TRIGGER_LOGIC_CH2);
+        int ch3 = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_TRIGGER_LOGIC_CH3);
+        int ch4 = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_TRIGGER_LOGIC_CH4);
+        int ch5 = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_TRIGGER_LOGIC_CH5);
+        int ch6 = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_TRIGGER_LOGIC_CH6);
+        int ch7 = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_TRIGGER_LOGIC_CH7);
+        int ch8 = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_TRIGGER_LOGIC_CH8);
+        int logic = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_TRIGGER_LOGIC_LOGIC);
+        int condition = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_TRIGGER_LOGIC_CONDITION);
+        String tvLogic = CacheUtil.get().getString(CacheUtil.TOP_SLIP_TRIGGER_LOGIC_TVLOGIC);
+        String timeHigh = CacheUtil.get().getString(CacheUtil.TOP_SLIP_TRIGGER_LOGIC_TIME_HIGH);
+        String timeLow = CacheUtil.get().getString(CacheUtil.TOP_SLIP_TRIGGER_LOGIC_TIME_LOW);
+
+        this.rgCh1.setSelectedIndex(ch1);
+        this.rgCh2.setSelectedIndex(ch2);
+        if (channelCount == GlobalVar.CHANNEL_COUNT_8) {
+            this.rgCh3.setSelectedIndex(ch3);
+            this.rgCh4.setSelectedIndex(ch4);
+            this.rgCh5.setSelectedIndex(ch5);
+            this.rgCh6.setSelectedIndex(ch6);
+            this.rgCh7.setSelectedIndex(ch7);
+            this.rgCh8.setSelectedIndex(ch8);
+        } else if (channelCount == GlobalVar.CHANNEL_COUNT_4) {
+            this.rgCh3.setSelectedIndex(ch3);
+            this.rgCh4.setSelectedIndex(ch4);
+            this.rgCh5.setSelectedIndex(2);
+            this.rgCh6.setSelectedIndex(2);
+            this.rgCh7.setSelectedIndex(2);
+            this.rgCh8.setSelectedIndex(2);
+        } else {
+            this.rgCh3.setSelectedIndex(2);
+            this.rgCh4.setSelectedIndex(2);
+            this.rgCh5.setSelectedIndex(2);
+            this.rgCh6.setSelectedIndex(2);
+            this.rgCh7.setSelectedIndex(2);
+            this.rgCh8.setSelectedIndex(2);
+        }
+        this.rgTriggerLogic.setSelectedIndex(logic);
+        this.rgCondition.setSelectedIndex(condition);
+        this.tvTime.setText(tvLogic);
+        this.tvTimeHigh.setText(timeHigh);
+        this.tvTimeLow.setText(timeLow);
+        switch (condition) {
+            case 0:
+                tvTime.setVisibility(View.INVISIBLE);
+                layoutTimeHigh.setVisibility(View.VISIBLE);
+                layoutTimeLow.setVisibility(View.INVISIBLE);
+                break;
+            case 1:
+                tvTime.setVisibility(View.INVISIBLE);
+                layoutTimeHigh.setVisibility(View.INVISIBLE);
+                layoutTimeLow.setVisibility(View.VISIBLE);
+                break;
+            case 2:
+                tvTime.setVisibility(View.VISIBLE);
+                layoutTimeHigh.setVisibility(View.INVISIBLE);
+                layoutTimeLow.setVisibility(View.INVISIBLE);
+                break;
+            case 3:
+                tvTime.setVisibility(View.INVISIBLE);
+                layoutTimeHigh.setVisibility(View.VISIBLE);
+                layoutTimeLow.setVisibility(View.VISIBLE);
+                break;
+            default:
+                tvTime.setVisibility(View.INVISIBLE);
+                layoutTimeHigh.setVisibility(View.INVISIBLE);
+                layoutTimeLow.setVisibility(View.INVISIBLE);
+                break;
+        }
+
+        triggerDetail.setCh1(this.rgCh1.getSelected());
+        triggerDetail.setCh2(this.rgCh2.getSelected());
+        triggerDetail.setCh3(this.rgCh3.getSelected());
+        triggerDetail.setCh4(this.rgCh4.getSelected());
+        triggerDetail.setCh5(this.rgCh5.getSelected());
+        triggerDetail.setCh6(this.rgCh6.getSelected());
+        triggerDetail.setCh7(this.rgCh7.getSelected());
+        triggerDetail.setCh8(this.rgCh8.getSelected());
+        triggerDetail.setTriggerLogic(rgTriggerLogic.getSelected());
+        triggerDetail.setCondition(this.rgCondition.getSelected());
+        triggerDetail.setLogic(tvLogic);
+        triggerDetail.setTimeHighDetail(timeHigh);
+        triggerDetail.setTimeLowDetail(timeLow);
+        sendMsg(false);
+
+        Command.get().getTrigger_logic().Status(0, ch1, false);
+        Command.get().getTrigger_logic().Status(1, ch2, false);
+        Command.get().getTrigger_logic().Status(2, ch3, false);
+        Command.get().getTrigger_logic().Status(3, ch4, false);
+        Command.get().getTrigger_logic().Status(4, ch5, false);
+        Command.get().getTrigger_logic().Status(5, ch6, false);
+        Command.get().getTrigger_logic().Status(6, ch7, false);
+        Command.get().getTrigger_logic().Status(7, ch8, false);
+        Command.get().getTrigger_logic().Function(logic, false);
+        Command.get().getTrigger_logic().Condition(condition, false);
+        Command.get().getTrigger_logic().HTime(TBookUtil.getSFromTime(timeHigh), false);
+        Command.get().getTrigger_logic().LTime(TBookUtil.getSFromTime(timeLow), false);
+        Command.get().getTrigger_logic().Time(TBookUtil.getSFromTime(tvLogic), false);
+
+        triggerLogic.setLogicValids(0, TopMatchTrigger.triggerLogicChToScope(ch1));
+        triggerLogic.setLogicValids(1, TopMatchTrigger.triggerLogicChToScope(ch2));
+        if (channelCount == GlobalVar.CHANNEL_COUNT_8) {
+            triggerLogic.setLogicValids(2, TopMatchTrigger.triggerLogicChToScope(ch3));
+            triggerLogic.setLogicValids(3, TopMatchTrigger.triggerLogicChToScope(ch4));
+            triggerLogic.setLogicValids(4, TopMatchTrigger.triggerLogicChToScope(ch5));
+            triggerLogic.setLogicValids(5, TopMatchTrigger.triggerLogicChToScope(ch6));
+            triggerLogic.setLogicValids(6, TopMatchTrigger.triggerLogicChToScope(ch7));
+            triggerLogic.setLogicValids(7, TopMatchTrigger.triggerLogicChToScope(ch8));
+        } else if (channelCount == GlobalVar.CHANNEL_COUNT_4) {
+            triggerLogic.setLogicValids(2, TopMatchTrigger.triggerLogicChToScope(ch3));
+            triggerLogic.setLogicValids(3, TopMatchTrigger.triggerLogicChToScope(ch4));
+            triggerLogic.setLogicValids(4, TriggerLogic.LOGIC_NONE);
+            triggerLogic.setLogicValids(5, TriggerLogic.LOGIC_NONE);
+            triggerLogic.setLogicValids(6, TriggerLogic.LOGIC_NONE);
+            triggerLogic.setLogicValids(7, TriggerLogic.LOGIC_NONE);
+        } else {
+            triggerLogic.setLogicValids(2, TriggerLogic.LOGIC_NONE);
+            triggerLogic.setLogicValids(3, TriggerLogic.LOGIC_NONE);
+            triggerLogic.setLogicValids(4, TriggerLogic.LOGIC_NONE);
+            triggerLogic.setLogicValids(5, TriggerLogic.LOGIC_NONE);
+            triggerLogic.setLogicValids(6, TriggerLogic.LOGIC_NONE);
+            triggerLogic.setLogicValids(7, TriggerLogic.LOGIC_NONE);
+        }
+        triggerLogic.setLogic(logic);
+        triggerLogic.setTimeHigh(TBookUtil.getPsFromTime(timeHigh) / 1000);
+        triggerLogic.setTimeLow(TBookUtil.getPsFromTime(timeLow) / 1000);
+        triggerLogic.setCondition(TopMatchTrigger.triggerConditionToScope(condition));
+        triggerLogic.setLogicTime(TBookUtil.getPsFromTime(tvLogic) / 1000);
+    }
+
+    public TopMsgTriggerLogic getTriggerDetail() {
+        return triggerDetail;
+    }
+
+    public void setOnDetailSendMsgListener(OnDetailSendMsgListener onDetailSendMsgListener) {
+        this.onDetailSendMsgListener = onDetailSendMsgListener;
+    }
+
+    private void sendMsg(boolean isFromEventBus) {
+        if (onDetailSendMsgListener != null) {
+            onDetailSendMsgListener.onClick(this, isFromEventBus);
+        }
+    }
+
+    private Consumer<LoadCache> consumerLoadCache = new Consumer<LoadCache>() {
+        @Override
+        public void accept(@NonNull LoadCache loadCache) throws Exception {
+            setCache();
+            CacheUtil.get().setLoadMenuState(CacheUtil.LOAD_TopLayoutTriggerLogic, true);
+        }
+    };
+
+    private Consumer<CommandMsgToUI> consumerCommandToUI = new Consumer<CommandMsgToUI>() {
+        @Override
+        public void accept(CommandMsgToUI commandMsgToUI) throws Exception {
+            switch (commandMsgToUI.getFlag()) {
+                case CommandMsgToUI.FLAG_TRIGGERLOGIC_STATUS: {
+                    String[] params = commandMsgToUI.getParam().split(CommandMsgToUI.PARAM_SPLIT);
+                    switch (Integer.parseInt(params[0])) {
+                        case 0:
+                            if (rgCh1.getSelected().getIndex() != Integer.parseInt(params[1])) {
+                                rgCh1.setSelectedIndex(Integer.parseInt(params[1]));
+                                onSelectChanged(rgCh1, rgCh1.getSelected(), false);
+                            }
+                            break;
+                        case 1:
+                            if (rgCh2.getSelected().getIndex() != Integer.parseInt(params[1])) {
+                                rgCh2.setSelectedIndex(Integer.parseInt(params[1]));
+                                onSelectChanged(rgCh2, rgCh2.getSelected(), false);
+                            }
+                            break;
+                        case 2:
+                            if (rgCh3.getSelected().getIndex() != Integer.parseInt(params[1])) {
+                                rgCh3.setSelectedIndex(Integer.parseInt(params[1]));
+                                onSelectChanged(rgCh3, rgCh3.getSelected(), false);
+                            }
+                            break;
+                        case 3:
+                            if (rgCh4.getSelected().getIndex() != Integer.parseInt(params[1])) {
+                                rgCh4.setSelectedIndex(Integer.parseInt(params[1]));
+                                onSelectChanged(rgCh4, rgCh4.getSelected(), false);
+                            }
+                            break;
+                        case 4:
+                            if (rgCh5.getSelected().getIndex() != Integer.parseInt(params[1])) {
+                                rgCh5.setSelectedIndex(Integer.parseInt(params[1]));
+                                onSelectChanged(rgCh5, rgCh5.getSelected(), false);
+                            }
+                            break;
+                        case 5:
+                            if (rgCh6.getSelected().getIndex() != Integer.parseInt(params[1])) {
+                                rgCh6.setSelectedIndex(Integer.parseInt(params[1]));
+                                onSelectChanged(rgCh6, rgCh6.getSelected(), false);
+                            }
+                            break;
+                        case 6:
+                            if (rgCh7.getSelected().getIndex() != Integer.parseInt(params[1])) {
+                                rgCh7.setSelectedIndex(Integer.parseInt(params[1]));
+                                onSelectChanged(rgCh7, rgCh7.getSelected(), false);
+                            }
+                            break;
+                        case 7:
+                            if (rgCh8.getSelected().getIndex() != Integer.parseInt(params[1])) {
+                                rgCh8.setSelectedIndex(Integer.parseInt(params[1]));
+                                onSelectChanged(rgCh8, rgCh8.getSelected(), false);
+                            }
+                            break;
+                    }
+                    break;
+                }
+                case CommandMsgToUI.FLAG_TRIGGERLOGIC_FUNCTION:
+                    if (rgTriggerLogic.getSelected().getIndex() != Integer.parseInt(commandMsgToUI.getParam())) {
+                        rgTriggerLogic.setSelectedIndex(Integer.parseInt(commandMsgToUI.getParam()));
+                        onSelectChanged(rgTriggerLogic, rgTriggerLogic.getSelected(), false);
+                    }
+                    break;
+                case CommandMsgToUI.FLAG_TRIGGERLOGIC_CONDITION:
+                    if (rgCondition.getSelected().getIndex() != Integer.parseInt(commandMsgToUI.getParam())) {
+                        rgCondition.setSelectedIndex(Integer.parseInt(commandMsgToUI.getParam()));
+                        onSelectChanged(rgCondition, rgCondition.getSelected(), false);
+                    }
+                    break;
+                case CommandMsgToUI.FLAG_TRIGGERLOGIC_HTIME:
+                    double checkBeforeHigh = Double.parseDouble(commandMsgToUI.getParam());
+                    long checkTimeHigh = TopUtilScale.checkTime((long) (checkBeforeHigh * TopUtilScale.TIME_S2NS)
+                            , TopUtilScale.TIME_LOGIC_MIN, TopUtilScale.TIME_LOGIC_MAX);
+                    String timeHigh = TBookUtil.getTimeFromS(checkTimeHigh * 1.0 / TopUtilScale.TIME_S2NS);
+                    onTextChanged(tvTimeHigh, timeHigh, false);
+                    break;
+                case CommandMsgToUI.FLAG_TRIGGERLOGIC_LOWTIME:
+                    double checkBeforeLow = Double.parseDouble(commandMsgToUI.getParam());
+                    long checkTimeLow = TopUtilScale.checkTime((long) (checkBeforeLow * TopUtilScale.TIME_S2NS)
+                            , TopUtilScale.TIME_LOGIC_MIN, TopUtilScale.TIME_LOGIC_MAX);
+                    String timeLow = TBookUtil.getTimeFromS(checkTimeLow * 1.0 / TopUtilScale.TIME_S2NS);
+                    onTextChanged(tvTimeLow, timeLow, false);
+                    break;
+                case CommandMsgToUI.FLAG_TRIGGERLOGIC_BTIME:
+                    String[] param = commandMsgToUI.getParam().split(CommandMsgToUI.PARAM_SPLIT);
+                    double checkBeforeBHigh = Double.parseDouble(param[0]);
+                    long checkTimeBHigh = TopUtilScale.checkTime((long) (checkBeforeBHigh * TopUtilScale.TIME_S2NS)
+                            , TopUtilScale.TIME_LOGIC_MIN, TopUtilScale.TIME_LOGIC_MAX);
+                    String timeBHigh = TBookUtil.getTimeFromS(checkTimeBHigh * 1.0 / TopUtilScale.TIME_S2NS);
+                    double checkBeforeBLow = Double.parseDouble(param[1]);
+                    long checkTimeBLow = TopUtilScale.checkTime((long) (checkBeforeBLow * TopUtilScale.TIME_S2NS)
+                            , TopUtilScale.TIME_LOGIC_MIN, TopUtilScale.TIME_LOGIC_MAX);
+                    String timeBLow = TBookUtil.getTimeFromS(checkTimeBLow * 1.0 / TopUtilScale.TIME_S2NS);
+                    onTextChanged(tvTimeHigh, timeBHigh, false);
+                    onTextChanged(tvTimeLow, timeBLow, false);
+                    break;
+                case CommandMsgToUI.FLAG_TRIGGERLOGIC_TIME:
+                    double checkBefore = Double.parseDouble(commandMsgToUI.getParam());
+                    long checkTime = TopUtilScale.checkTime((long) (checkBefore * TopUtilScale.TIME_S2NS)
+                            , TopUtilScale.TIME_LOGIC_MIN, TopUtilScale.TIME_LOGIC_MAX);
+                    String time = TBookUtil.getTimeFromS(checkTime * 1.0 / TopUtilScale.TIME_S2NS);
+//                    if (!tvTime.getText().toString().equals(time)) {
+                        onTextChanged(time, false);
+//                    }
+                    break;
+            }
+        }
+    };
+
+    private EventUIObserver eventUITriggerParam = new EventUIObserver() {
+        @Override
+        public void update(Object data) {
+            EventBase eventBase = (EventBase) data;
+            if (eventBase.getId() == EventFactory.EVENT_TRIGGER_PARAM) {
+                int ch1Index = TopMatchTrigger.triggerLogicChFromScope(triggerLogic.getLogicValid(0));
+                if (ch1Index != rgCh1.getSelected().getIndex()) {
+                    rgCh1.setSelectedIndex(ch1Index);
+                    onSelectChanged(rgCh1, rgCh1.getSelected(), true);
+                }
+                int ch2Index = TopMatchTrigger.triggerLogicChFromScope(triggerLogic.getLogicValid(1));
+                if (ch2Index != rgCh2.getSelected().getIndex()) {
+                    rgCh2.setSelectedIndex(ch2Index);
+                    onSelectChanged(rgCh2, rgCh2.getSelected(), true);
+                }
+                int ch3Index = TopMatchTrigger.triggerLogicChFromScope(triggerLogic.getLogicValid(2));
+                if (ch3Index != rgCh3.getSelected().getIndex()) {
+                    rgCh3.setSelectedIndex(ch3Index);
+                    onSelectChanged(rgCh3, rgCh3.getSelected(), true);
+                }
+                int ch4Index = TopMatchTrigger.triggerLogicChFromScope(triggerLogic.getLogicValid(3));
+                if (ch4Index != rgCh4.getSelected().getIndex()) {
+                    rgCh4.setSelectedIndex(ch4Index);
+                    onSelectChanged(rgCh4, rgCh4.getSelected(), true);
+                }
+                int ch5Index = TopMatchTrigger.triggerLogicChFromScope(triggerLogic.getLogicValid(4));
+                if (ch5Index != rgCh5.getSelected().getIndex()) {
+                    rgCh5.setSelectedIndex(ch5Index);
+                    onSelectChanged(rgCh5, rgCh5.getSelected(), true);
+                }
+                int ch6Index = TopMatchTrigger.triggerLogicChFromScope(triggerLogic.getLogicValid(5));
+                if (ch6Index != rgCh6.getSelected().getIndex()) {
+                    rgCh6.setSelectedIndex(ch6Index);
+                    onSelectChanged(rgCh6, rgCh6.getSelected(), true);
+                }
+                int ch7Index = TopMatchTrigger.triggerLogicChFromScope(triggerLogic.getLogicValid(6));
+                if (ch7Index != rgCh7.getSelected().getIndex()) {
+                    rgCh7.setSelectedIndex(ch7Index);
+                    onSelectChanged(rgCh7, rgCh7.getSelected(), true);
+                }
+                int ch8Index = TopMatchTrigger.triggerLogicChFromScope(triggerLogic.getLogicValid(7));
+                if (ch8Index != rgCh8.getSelected().getIndex()) {
+                    rgCh8.setSelectedIndex(ch8Index);
+                    onSelectChanged(rgCh8, rgCh8.getSelected(), true);
+                }
+                int logic = triggerLogic.getLogic();
+                if (logic != rgTriggerLogic.getSelected().getIndex()) {
+                    rgTriggerLogic.setSelectedIndex(logic);
+                    onSelectChanged(rgTriggerLogic, rgTriggerLogic.getSelected(), true);
+                }
+                int condition = TopMatchTrigger.triggerConditionFromScope(triggerLogic.getCondition());
+                if (condition != rgCondition.getSelected().getIndex()) {
+                    rgCondition.setSelectedIndex(condition);
+                    onSelectChanged(rgCondition, rgCondition.getSelected(), true);
+                }
+                long checkTime = TopUtilScale.checkTime(triggerLogic.getLogicTime()
+                        , TopUtilScale.TIME_LOGIC_MIN, TopUtilScale.TIME_LOGIC_MAX);
+                String time = TBookUtil.getTime3FromPs(checkTime * 1000 * 10);
+                if (!tvTime.getText().toString().equals(time)) {
+                    tvTime.setText(time);
+                    onTextChanged(time, true);
+                }
+                long checkTimeHigh = TopUtilScale.checkTime(triggerLogic.getTimeHigh()
+                        , TopUtilScale.TIME_LOGIC_MIN, TopUtilScale.TIME_LOGIC_MAX);
+                String timeHigh = TBookUtil.getTime3FromPs(checkTimeHigh * 1000 * 10);
+                if (!tvTimeHigh.getText().toString().equals(timeHigh)) {
+                    onTextChanged(tvTimeHigh, timeHigh, true);
+                }
+                long checkTimeLow = TopUtilScale.checkTime(triggerLogic.getTimeLow()
+                        , TopUtilScale.TIME_LOGIC_MIN, TopUtilScale.TIME_LOGIC_MAX);
+                String timeLow = TBookUtil.getTime3FromPs(checkTimeLow * 1000 * 10);
+                if (!tvTimeLow.getText().toString().equals(timeLow)) {
+                    onTextChanged(tvTimeLow, timeLow, true);
+                }
+            }
+        }
+    };
+
+    private TopDialogScale.OnDismissListener onDismissListener = new TopDialogScale.OnDismissListener() {
+        @Override
+        public void onDismiss(String result) {
+            onTextChanged(result, false);
+        }
+    };
+
+    private TopDialogScale.OnDismissListener onHighDismissListener = new TopDialogScale.OnDismissListener() {
+        @Override
+        public void onDismiss(String result) {
+            onTextChanged(tvTimeHigh, result, false);
+        }
+    };
+
+    private TopDialogScale.OnDismissListener onLowDismissListener = new TopDialogScale.OnDismissListener() {
+        @Override
+        public void onDismiss(String result) {
+            onTextChanged(tvTimeLow, result, false);
+        }
+    };
+
+
+    private View.OnClickListener onClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            PlaySound.getInstance().playButton();
+            ScreenUtil.getViewLocation(v);
+            switch (v.getId()) {
+                case R.id.timeHighDetail:
+                    scaleDialog.setValue(context.getString(R.string.triggerlogic_timehigh), tvTimeHigh.getText().toString(),
+                            TopUtilScale.TIME_LOGIC_MIN, TopUtilScale.TIME_LOGIC_MAX, onHighDismissListener);
+                    break;
+                case R.id.timeLowDetail:
+                    scaleDialog.setValue(context.getString(R.string.triggerlogic_timelow), tvTimeLow.getText().toString(),
+                            TopUtilScale.TIME_LOGIC_MIN, TopUtilScale.TIME_LOGIC_MAX, onLowDismissListener);
+                    break;
+                case R.id.tvLogic:
+                    scaleDialog.setValue(context.getString(R.string.triggerLogic), tvTime.getText().toString()
+                            , TopUtilScale.TIME_LOGIC_MIN, TopUtilScale.TIME_LOGIC_MAX, onDismissListener);
+                    break;
+            }
+        }
+    };
+
+
+    private TopViewRadioGroup.OnCheckChangedListener onSelectChangedListener = new TopViewRadioGroup.OnCheckChangedListener() {
+        @Override
+        public void onClickSound(boolean isCheckedSuccess) {
+            PlaySound.getInstance().playButton();
+        }
+
+        @Override
+        public void onPrompt(TopViewRadioGroup view) {
+
+        }
+
+        @Override
+        public void onClick(TopViewRadioGroup view, TopBeanChannel item) {
+            onSelectChanged(view, item, false);
+        }
+    };
+
+    private void onSelectChanged(TopViewRadioGroup view, TopBeanChannel item, boolean isFromEventBus) {
+        Tools.PrintControlsLocation("TopLayoutTriggerLogic", layout);
+        if (view.getId() == R.id.ch1) {
+            Command.get().getTrigger_logic().Status(0, item.getIndex(), false);
+            CacheUtil.get().putMap(CacheUtil.TOP_SLIP_TRIGGER_LOGIC_CH1, String.valueOf(item.getIndex()));
+            if (!isFromEventBus) {
+                triggerLogic.setLogicValids(0, TopMatchTrigger.triggerLogicChToScope(item.getIndex()));
+            }
+            triggerDetail.setCh1(item);
+            sendMsg(isFromEventBus);
+        } else if (view.getId() == R.id.ch2) {
+            Command.get().getTrigger_logic().Status(1, item.getIndex(), false);
+            CacheUtil.get().putMap(CacheUtil.TOP_SLIP_TRIGGER_LOGIC_CH2, String.valueOf(item.getIndex()));
+            if (!isFromEventBus) {
+                triggerLogic.setLogicValids(1, TopMatchTrigger.triggerLogicChToScope(item.getIndex()));
+            }
+            triggerDetail.setCh2(item);
+            sendMsg(isFromEventBus);
+        } else if (view.getId() == R.id.ch3) {
+            Command.get().getTrigger_logic().Status(2, item.getIndex(), false);
+            CacheUtil.get().putMap(CacheUtil.TOP_SLIP_TRIGGER_LOGIC_CH3, String.valueOf(item.getIndex()));
+            if (!isFromEventBus) {
+                triggerLogic.setLogicValids(2, TopMatchTrigger.triggerLogicChToScope(item.getIndex()));
+            }
+            triggerDetail.setCh3(item);
+            sendMsg(isFromEventBus);
+        } else if (view.getId() == R.id.ch4) {
+            Command.get().getTrigger_logic().Status(3, item.getIndex(), false);
+            CacheUtil.get().putMap(CacheUtil.TOP_SLIP_TRIGGER_LOGIC_CH4, String.valueOf(item.getIndex()));
+            if (!isFromEventBus) {
+                triggerLogic.setLogicValids(3, TopMatchTrigger.triggerLogicChToScope(item.getIndex()));
+            }
+            triggerDetail.setCh4(item);
+            sendMsg(isFromEventBus);
+        } else if (view.getId() == R.id.ch5) {
+            Command.get().getTrigger_logic().Status(4, item.getIndex(), false);
+            CacheUtil.get().putMap(CacheUtil.TOP_SLIP_TRIGGER_LOGIC_CH5, String.valueOf(item.getIndex()));
+            if (!isFromEventBus) {
+                triggerLogic.setLogicValids(4, TopMatchTrigger.triggerLogicChToScope(item.getIndex()));
+            }
+            triggerDetail.setCh5(item);
+            sendMsg(isFromEventBus);
+        } else if (view.getId() == R.id.ch6) {
+            Command.get().getTrigger_logic().Status(5, item.getIndex(), false);
+            CacheUtil.get().putMap(CacheUtil.TOP_SLIP_TRIGGER_LOGIC_CH6, String.valueOf(item.getIndex()));
+            if (!isFromEventBus) {
+                triggerLogic.setLogicValids(5, TopMatchTrigger.triggerLogicChToScope(item.getIndex()));
+            }
+            triggerDetail.setCh6(item);
+            sendMsg(isFromEventBus);
+        } else if (view.getId() == R.id.ch7) {
+            Command.get().getTrigger_logic().Status(6, item.getIndex(), false);
+            CacheUtil.get().putMap(CacheUtil.TOP_SLIP_TRIGGER_LOGIC_CH7, String.valueOf(item.getIndex()));
+            if (!isFromEventBus) {
+                triggerLogic.setLogicValids(6, TopMatchTrigger.triggerLogicChToScope(item.getIndex()));
+            }
+            triggerDetail.setCh7(item);
+            sendMsg(isFromEventBus);
+        } else if (view.getId() == R.id.ch8) {
+            Command.get().getTrigger_logic().Status(7, item.getIndex(), false);
+            CacheUtil.get().putMap(CacheUtil.TOP_SLIP_TRIGGER_LOGIC_CH8, String.valueOf(item.getIndex()));
+            if (!isFromEventBus) {
+                triggerLogic.setLogicValids(7, TopMatchTrigger.triggerLogicChToScope(item.getIndex()));
+            }
+            triggerDetail.setCh8(item);
+            sendMsg(isFromEventBus);
+        } else if (view.getId() == R.id.triggerLogic) {
+            Command.get().getTrigger_logic().Function(item.getIndex(), false);
+            CacheUtil.get().putMap(CacheUtil.TOP_SLIP_TRIGGER_LOGIC_LOGIC, String.valueOf(item.getIndex()));
+            if (!isFromEventBus) {
+                triggerLogic.setLogic(TopMatchTrigger.triggerLogicRelationToScope(item.getIndex()));
+            }
+            triggerDetail.setTriggerLogic(item);
+            sendMsg(isFromEventBus);
+        } else if (view.getId() == R.id.condition) {
+            Command.get().getTrigger_logic().Condition(item.getIndex(), false);
+            CacheUtil.get().putMap(CacheUtil.TOP_SLIP_TRIGGER_LOGIC_CONDITION, String.valueOf(item.getIndex()));
+            if (!isFromEventBus) {
+                triggerLogic.setCondition(TopMatchTrigger.triggerConditionToScope(item.getIndex()));
+            }
+            triggerDetail.setCondition(item);
+            sendMsg(isFromEventBus);
+
+            switch (item.getIndex()) {
+                case 0:
+                    tvTime.setVisibility(View.INVISIBLE);
+                    layoutTimeHigh.setVisibility(View.VISIBLE);
+                    layoutTimeLow.setVisibility(View.INVISIBLE);
+                    break;
+                case 1:
+                    tvTime.setVisibility(View.INVISIBLE);
+                    layoutTimeHigh.setVisibility(View.INVISIBLE);
+                    layoutTimeLow.setVisibility(View.VISIBLE);
+                    break;
+                case 2:
+                    tvTime.setVisibility(View.VISIBLE);
+                    layoutTimeHigh.setVisibility(View.INVISIBLE);
+                    layoutTimeLow.setVisibility(View.INVISIBLE);
+                    break;
+                case 3:
+                    tvTime.setVisibility(View.INVISIBLE);
+                    layoutTimeHigh.setVisibility(View.VISIBLE);
+                    layoutTimeLow.setVisibility(View.VISIBLE);
+                    break;
+                default:
+                    tvTime.setVisibility(View.INVISIBLE);
+                    layoutTimeHigh.setVisibility(View.INVISIBLE);
+                    layoutTimeLow.setVisibility(View.INVISIBLE);
+                    break;
+            }
+
+        }
+    }
+
+    private void onTextChanged(String result, boolean isFromEventBus) {
+        Command.get().getTrigger_logic().Time(TBookUtil.getSFromTime(result), false);
+        CacheUtil.get().putMap(CacheUtil.TOP_SLIP_TRIGGER_LOGIC_TVLOGIC, result);
+        if (!isFromEventBus) {
+            triggerLogic.setLogicTime(TBookUtil.getPsFromTime(result) / 1000);
+        }
+        tvTime.setText(result);
+        triggerDetail.setLogic(result);
+        sendMsg(isFromEventBus);
+    }
+
+    private void onTextChanged(TextView tv, String result, boolean isFromEventBus) {
+        if (tv.getId() == tvTimeHigh.getId()) {
+            long ht = TBookUtil.getPsFromTime(result) / 1000;
+            long lt = TBookUtil.getPsFromTime(tvTimeLow.getText().toString()) / 1000;
+            if (ht < lt) {
+                CacheUtil.get().putMap(CacheUtil.TOP_SLIP_TRIGGER_LOGIC_TIME_LOW, result);
+                if (!isFromEventBus) {
+                    triggerLogic.setTimeLow(ht);
+                }
+                tvTimeLow.setText(result);
+                Command.get().getTrigger_logic().LTime(TBookUtil.getSFromTime(result), false);
+                triggerDetail.setTimeLowDetail(result);
+            }
+            CacheUtil.get().putMap(CacheUtil.TOP_SLIP_TRIGGER_LOGIC_TIME_HIGH, result);
+            if (!isFromEventBus) {
+                triggerLogic.setTimeHigh(ht);
+            }
+            tvTimeHigh.setText(result);
+            Command.get().getTrigger_logic().HTime(TBookUtil.getSFromTime(result), false);
+            triggerDetail.setTimeHighDetail(result);
+            sendMsg(isFromEventBus);
+        } else if (tv.getId() == tvTimeLow.getId()) {
+            long lt = TBookUtil.getPsFromTime(result) / 1000;
+            long ht = TBookUtil.getPsFromTime(tvTimeHigh.getText().toString()) / 1000;
+            if (ht < lt) {
+                CacheUtil.get().putMap(CacheUtil.TOP_SLIP_TRIGGER_LOGIC_TIME_HIGH, result);
+                if (!isFromEventBus) {
+                    triggerLogic.setTimeHigh(ht);
+                }
+                tvTimeHigh.setText(result);
+                Command.get().getTrigger_logic().HTime(TBookUtil.getSFromTime(result), false);
+                triggerDetail.setTimeHighDetail(result);
+            }
+            CacheUtil.get().putMap(CacheUtil.TOP_SLIP_TRIGGER_LOGIC_TIME_LOW, result);
+            if (!isFromEventBus) {
+                triggerLogic.setTimeLow(TBookUtil.getPsFromTime(result) / 1000);
+            }
+            tvTimeLow.setText(result);
+            Command.get().getTrigger_logic().LTime(TBookUtil.getSFromTime(result), false);
+            triggerDetail.setTimeLowDetail(result);
+            sendMsg(isFromEventBus);
+        }
+    }
+}

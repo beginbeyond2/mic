@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/dialogFitLayout"
+        android:layout_width="160px"
+        android:layout_height="60px"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:background="@android:color/black">
+
+        <TextView
+            android:id="@+id/dialogFitFrame"
+            style="@style/textStyle"
+            android:layout_width="match_parent"
+            android:layout_height="0px"
+            android:layout_weight="6"
+            android:gravity="center"
+            android:text="125679"
+            android:textColor="@color/textColorNewTopViewEnable"
+            android:textSize="24px"/>
+
+        <TextView
+            android:id="@+id/dialogFitTime"
+            style="@style/textStyle"
+            android:layout_width="match_parent"
+            android:layout_height="0px"
+            android:layout_weight="5"
+            android:gravity="center"
+            android:text="35.2365ms"
+            android:textColor="@color/textColorNewTopViewEnable"
+            android:textSize="20px"/>
+    </LinearLayout>

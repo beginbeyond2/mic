@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--通道颜色-->
+    <color name="color_Ch1">@color/colorCh1</color>
+    <color name="color_Ch2">@color/colorCh2</color>
+    <color name="color_Ch3">@color/colorCh3</color>
+    <color name="color_Ch4">@color/colorCh4</color>
+    <color name="color_Ch5">@color/colorCh5</color>
+    <color name="color_Ch6">@color/colorCh6</color>
+    <color name="color_Ch7">@color/colorCh7</color>
+    <color name="color_Ch8">@color/colorCh8</color>
+    <color name="color_Math">@color/colorMath</color>
+    <color name="color_R_text">#807FFF</color>
+    <color name="color_R1">#807FFF</color>
+    <color name="color_R2">#807FFF</color>
+    <color name="color_R3">#807FFF</color>
+    <color name="color_R4">#807FFF</color>
+    <color name="color_S1">#806040</color>
+    <color name="color_S2">#A4DBDD</color>
+    <color name="color_S3">#406080</color>
+    <color name="color_S4">#408040</color>
+
+    <color name="color_btn_ch1">#B0B000</color>
+    <color name="color_btn_ch2">#00B0B0</color>
+    <color name="color_btn_ch3">#B000B0</color>
+    <color name="color_btn_ch4">#00B000</color>
+    <color name="color_btn_math">#B00000</color>
+    <color name="color_btn_ref">#6666cc</color>
+    <color name="color_btn_s1">#cc6666</color>
+    <color name="color_btn_s2">#cc6600</color>
+    <!--文本颜色-->
+<!--    <color name="color_Text_white">#D9D9D9</color>-->
+    <color name="color_Text_white">#adbdcc</color>
+    <color name="color_Time_Text_whiter">#AEB3B8</color>
+    <color name="color_Text_bottomquick">#BAEDF0</color>
+    <color name="color_Text_blue">#88034F71</color>
+    <color name="main_text_color">#ADBDCC</color>
+    <color name="main_text_color_select">#FF00AFFF</color>
+    <color name="main_text_color_disable">#414344</color>
+    <color name="frame_color">#41474d</color>
+    <!--背景颜色-->
+    <!--<color name="color_Backcolor_Main">#ff030712</color>-->
+    <color name="color_backcolor_mainMenu_title">#FF0B0C0D</color>
+    <color name="color_backcolor_mainMenu_center">#363a40</color>
+
+    <color name="color_Backcolor_MainMenu1">#ff000000</color>
+    <color name="color_Backcolor_MainMenu1_half">#FF262626</color>
+    <color name="color_Backcolor_MainMenu2">#000000</color>
+    <color name="color_Backcolor_MainMenu3">@color/bg_slip_backcolor</color>
+    <color name="color_Backcolor_MainMenu4">@color/bg_slip_backcolor</color>
+    <color name="divider_topviewtitle_color">@color/textColorTopSelect</color>
+    <color name="divider_topmenu_color">@color/bg_topmenu_color</color>
+    <color name="bg_topmenu_color">#1A1A1A</color>
+    <color name="bg_main_outside">#000000</color>
+    <color name="bg_slip_backcolor">#000000</color>
+    <color name="color_divider_mainwave">@color/dividerBtn</color>
+
+    <color name="divider_right_top">#000000</color>
+    <color name="divider_right_bottom">#41464D</color>
+
+    <color name="color_rightslipmenu_divider">#FF383838</color>
+    <color name="color_rightslipmenu_radiocolor">@color/bgNewRightAllLayout</color>
+
+    <color name="color_maincenter_divider">@color/divider</color>
+
+    <!-- mainTopLeft -->
+    <color name="color_maintopleft_state_run">#00FF00</color>
+    <color name="color_maintopleft_state_stop">#FF0000</color>
+    <color name="color_maintopleft_state_wait">#FFFF00</color>
+    <color name="color_maintopleft_state_auto">#00FF00</color>
+
+    <color name="textColor">@color/color_Text_white</color>
+    <color name="textColorTop">@color/textColor</color>
+    <color name="textColorTopSelect">#FF00AEFF</color>
+    <color name="textColorPrompt">#ff409AA4</color>
+    <color name="divider">#3C3C3C</color>
+
+    <color name="textcolorTopTitleSelect">#8CB4BB</color>
+    <color name="textcolorTopTitleUnSelect">@color/textColor</color>
+    <color name="bglinecolorTopTitle">@color/divider</color>
+    <color name="dividerTopPopWindow">#6c7480</color>
+    <color name="textcolorRadioTitle">@color/textColor</color>
+    <color name="textcolorRadioSelect">@android:color/black</color>
+    <color name="textcolorRadioUnSelect">@color/bgcolorRadioUnEnable</color>
+    <color name="textcolorRadioUnEnable">@color/textColor</color>
+    <color name="bgcolorRadioSelect">#0298be</color>
+    <color name="bgcolorRadioUnSelect">#081E43</color>
+    <color name="bgcolorRadioUnEnable">#335258</color>
+    <color name="bgcolorRadioStroke">#323232</color>
+    <color name="bgButtonPress">#6D8788</color>
+    <color name="bgButtonCommon">@color/color_Backcolor_MainMenu3</color>
+    <color name="bgButtonPressHalf">#CC6D8788</color>
+    <color name="bgButtonCommonHalf">#CC091426</color>
+    <color name="bgButtonDivider">@color/divider</color>
+    <color name="textcolorButtonPress">#BAEDF0</color>
+    <color name="textcolorButtonCommon">@color/textColor</color>
+    <color name="bgEdittextDivider">@color/divider</color>
+    <color name="textcolorHorizontalpickerSelect">@color/textcolorRadioSelect</color>
+    <color name="textcolorHorizontalpickerUnSelect">@color/textColor</color>
+    <color name="bgHorizontallistDivider">@color/divider</color>
+    <color name="scaleDivider">#6c7480</color>
+    <color name="measureColorCommon">@android:color/white</color>
+    <color name="colorChCommon">@color/textColor</color>
+    <color name="colorCh1">#FFFFFF00</color>
+    <color name="colorCh2">#FF00FFFF</color>
+    <color name="colorCh3">#FFFF00FF</color>
+    <color name="colorCh4">#FF00FF00</color>
+    <color name="colorCh5">#FFFF8000</color>
+    <color name="colorCh6">#FF0055FF</color>
+    <color name="colorCh7">#FFFF667F</color>
+    <color name="colorCh8">#FF00AAFF</color>
+    <color name="colorMath">#FFFF0000</color>
+    <color name="colorMathNoActive1">#FFFF0000</color>
+    <color name="colorMathNoActive2">#FFFF7F65</color>
+    <color name="colorMathNoActive3">#FFFF7632</color>
+    <color name="colorMathNoActive4">#FFFFAA00</color>
+    <color name="colorMathNoActive5">#FFAAFF00</color>
+    <color name="colorMathNoActive6">#FFAEFF5E</color>
+    <color name="colorMathNoActive7">#FF7DFFA8</color>
+    <color name="colorMathNoActive8">#FF00FF80</color>
+    <color name="colorRefActive">#FF8080FF</color>
+    <color name="colorRefNoActive1">#FF8080FF</color>
+    <color name="colorRefNoActive2">#FF00FFD4</color>
+    <color name="colorRefNoActive3">#FF4EA6FF</color>
+    <color name="colorRefNoActive4">#FF617BFF</color>
+    <color name="colorRefNoActive5">#FF6F52FF</color>
+    <color name="colorRefNoActive6">#FF8000FF</color>
+    <color name="colorRefNoActive7">#FFDf3dFF</color>
+    <color name="colorRefNoActive8">#FFFF38bd</color>
+    <color name="colorSerialNoActive1">#806040</color>
+    <color name="colorSerialNoActive2">#A4DBDD</color>
+    <color name="colorSerialNoActive3">#406080</color>
+    <color name="colorSerialNoActive4">#408040</color>
+    <color name="colorCh1Half">#CCFFFF00</color>
+    <color name="colorCh2Half">#CC00FFFF</color>
+    <color name="colorCh3Half">#CCFF00FF</color>
+    <color name="colorCh4Half">#CC00FF00</color>
+    <color name="colorRefActiveHalf">#CC7D7DE1</color>
+    <color name="colorMathHalf">#CCFF0000</color>
+    <color name="colorRef1Half">#CC323261</color>
+    <color name="colorRef2Half">#CC323262</color>
+    <color name="colorRef3Half">#CC323263</color>
+    <color name="colorRef4Half">#CC323264</color>
+
+    <color name="red">@android:color/holo_red_dark</color>
+    <color name="blue">@android:color/holo_blue_dark</color>
+
+    <color name="bgSerialsWordbg">@color/bg_slip_backcolor</color>
+    <color name="dividerSerialsWord">@color/bg_slip_backcolor</color>
+    <color name="bgSerialsWordMsg">#FF2B2F33</color>
+    <color name="textSerialsWordMsg">@color/textColor</color>
+    
+    <color name="textColorNewRightViewEnable">@color/textColor</color>
+    <color name="textColorNewRightViewSelect">#FF00AEFE</color>
+    <color name="textColorNewRightViewDisable">@color/textColorNewTopViewDisable</color>
+    <color name="bgNewRightViewSelect">#FF00AEFE</color>
+    <color name="bgNewRightViewUnSelect">#012c4e</color>
+    <color name="bgNewRightAllLayout">@color/bg_slip_backcolor</color>
+    <color name="bgNewRightViewDisable">@color/textColorNewTopViewDisable</color>
+    <color name="bgNewRightSecondLayout">#034363</color>
+
+    <color name="textColorNewTopTitleSelect">@color/textColorTopSelect</color>
+    <color name="textColorNewTopTitleUnSelect">@color/textColorTop</color>
+    <color name="textColorNewTopViewEnable">@color/textColor</color>
+    <color name="textColorNewTopViewDisable">#414344</color>
+    <color name="bgNewTopAllLayout">@color/color_backcolor_mainMenu_title</color>
+    <color name="bgNewTopViewSelect">#012c4e</color>
+    <color name="dividerNewTopTitle">@color/divider</color>
+    <color name="dividerNewTopView">@color/divider</color>
+<!--    <color name="bgDialog">#000410</color>-->
+    <color name="bgDialog">@color/bg_slip_backcolor</color>
+    <color name="dividerBtn">@color/divider</color>
+    <color name="bgToast">#80012c4e</color>
+    <color name="colorBattery">#0298be</color>
+
+    <color name="bgCenterSegmentHalf">#33026998</color>
+    <color name="textColorCenterSegment">#00AEFF</color>
+    <color name="dividerDialogRefRecall">@color/textColorNewTopTitleSelect</color>
+    <color name="color_Division_Line_595959">#FF595959</color>
+    <color name="color_division_line_41464D">#FF41464D</color>
+    <color name="color_division_line_1f1f1f">#FF1F1F1F</color>
+    <color name="color_Enable">#80000000</color>
+    <color name="color_dialog_background">#FF1A1A1A</color>
+
+    <color name="textColorSelect">#FF00AEFF</color>
+    <color name="textColorEnable">@color/textColor</color>
+    <color name="textColorDisable">#414344</color>
+</resources>

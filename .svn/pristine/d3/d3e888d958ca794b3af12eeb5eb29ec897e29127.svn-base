@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <com.micsig.tbook.ui.MMainMenuChannel
+        android:id="@+id/chanAutoSave"
+        android:layout_width="match_parent"
+        android:layout_height="90px"
+        android:overScrollMode="never"
+        android:layout_marginStart="33px"
+        android:layout_marginEnd="33px"
+        android:scrollbars="none" />
+
+    <LinearLayout
+        android:id="@+id/startTimeSelectorLayout"
+        android:layout_below="@+id/chanAutoSave"
+        android:layout_alignLeft="@+id/interval"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <com.micsig.tbook.ui.MTextView
+            android:id="@+id/timeSelectorHead"
+            style="@style/textStyle"
+            android:layout_width="100px"
+            android:layout_height="match_parent"
+            android:text="@string/startCondition"
+            android:textColor="@color/textColorNewTopViewEnable" />
+        <com.micsig.tbook.tbookscope.util.TopViewTimeSelector
+            android:id="@+id/startCondition"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16px"
+            android:layout_alignTop="@id/timeSelectorHead"
+            android:layout_alignBottom="@id/timeSelectorHead"
+            app:type="start"
+            />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/stopCondition"
+        android:layout_width="match_parent"
+        android:layout_below="@+id/startTimeSelectorLayout"
+        android:layout_height="wrap_content">
+        <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+            android:id = "@+id/stopRadioGroup"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignLeft="@+id/interval"
+            android:layout_marginStart="45px"
+            android:layout_marginTop="10px"
+            app:array="@array/stopCondition"
+            app:head="@string/stopCondition" />
+
+        <com.micsig.tbook.tbookscope.util.TopViewTimeSelector
+            android:id="@+id/stopTimeCondition"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_marginStart="16px"
+            android:layout_marginTop="12px"
+            android:layout_alignBottom="@+id/stopRadioGroup"
+            app:type="stop"
+            android:visibility="gone"
+            />
+
+        <TextView
+            android:id="@+id/stopFrameCondition"
+            style="@style/editTextStyle"
+            android:layout_width="120px"
+            android:layout_height="54px"
+            android:layout_marginStart="26px"
+            android:layout_marginTop="12px"
+            android:layout_toRightOf="@+id/stopRadioGroup"
+            android:gravity="center"
+            android:maxLines="1"
+            android:visibility="gone"
+            android:text="0000001" />
+    </LinearLayout>
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/interval"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/stopCondition"
+        android:layout_marginStart="45px"
+        android:layout_marginTop="10px"
+        app:array="@array/intervalTime"
+        app:head="@string/interval" />
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/saveMode"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/interval"
+        android:layout_marginStart="45px"
+        android:layout_marginTop="10px"
+        app:array="@array/autoSaveMode"
+        app:head="@string/autoSaveMode" />
+
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/saveMode"
+        android:layout_marginTop="10px"
+        android:layout_alignLeft="@+id/interval"
+        android:id = "@+id/saveTypeMulti">
+
+        <com.micsig.tbook.ui.MTextView
+            android:id="@+id/multiSelectHead"
+            style="@style/textStyle"
+            android:layout_width="100px"
+            android:layout_marginTop="12px"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="@string/saveType"
+            android:textColor="@color/textColorNewTopViewEnable" />
+
+        <CheckBox
+            android:id="@+id/check_wav"
+            android:layout_width="120px"
+            android:layout_height="60px"
+            android:layout_marginStart="115px"
+            android:background="@drawable/selector_rightslip_button"
+            android:button="@null"
+            android:gravity="center"
+            android:text="WAV"
+            android:textColor="@drawable/selector_text_color"
+            android:textSize="@dimen/textSizeCur" />
+        <CheckBox
+            android:id="@+id/check_csv"
+            android:layout_width="120px"
+            android:layout_height="60px"
+            android:layout_marginStart="5px"
+            android:layout_toRightOf="@+id/check_wav"
+            android:background="@drawable/selector_rightslip_button"
+            android:button="@null"
+            android:gravity="center"
+            android:text="CSV"
+            android:textColor="@drawable/selector_text_color"
+            android:textSize="@dimen/textSizeCur" />
+
+        <CheckBox
+            android:id="@+id/check_bin"
+            android:layout_width="120px"
+            android:layout_height="60px"
+            android:layout_marginStart="5px"
+            android:layout_toRightOf="@+id/check_csv"
+            android:background="@drawable/selector_rightslip_button"
+            android:button="@null"
+            android:gravity="center"
+            android:text="BIN"
+            android:textColor="@drawable/selector_text_color"
+            android:textSize="@dimen/textSizeCur" />
+
+        <CheckBox
+            android:id="@+id/check_picture"
+            android:layout_width="120px"
+            android:layout_height="60px"
+            android:layout_marginStart="5px"
+            android:layout_toRightOf="@+id/check_bin"
+            android:background="@drawable/selector_rightslip_button"
+            android:button="@null"
+            android:gravity="center"
+            android:text="@string/savePicture"
+            android:textColor="@drawable/selector_text_color"
+            android:textSize="@dimen/textSizeCur" />
+        <CheckBox
+            android:id="@+id/check_session"
+            android:layout_width="120px"
+            android:layout_height="60px"
+            android:layout_marginStart="5px"
+            android:layout_toRightOf="@+id/check_picture"
+            android:background="@drawable/selector_rightslip_button"
+            android:button="@null"
+            android:gravity="center"
+            android:text="@string/saveSession"
+            android:textColor="@drawable/selector_text_color"
+            android:textSize="@dimen/textSizeCur" />
+
+    </RelativeLayout>
+
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/color_Backcolor_MainMenu3"
+        android:layout_below="@+id/saveTypeMulti"
+        android:paddingTop="10px"
+        android:paddingRight="10px"
+        android:layout_marginStart="13dp"
+        >
+
+
+        <com.micsig.tbook.ui.top.view.TopViewSpinner
+            android:id="@+id/topSpinner"
+            android:layout_width="wrap_content"
+            android:layout_height="60px"
+            android:layout_marginStart="20px"
+            app:editWidth="600px"
+            app:headWidth="100px" />
+
+        <Button
+            android:id="@+id/btn_browse"
+            style="@style/buttonStyleTop"
+            android:layout_width="120px"
+            android:layout_height="60px"
+            android:layout_toRightOf="@+id/topSpinner"
+            android:layout_alignTop="@+id/topSpinner"
+            android:layout_alignBottom="@+id/topSpinner"
+            android:layout_marginStart="50px"
+            android:background="@drawable/selector_rightslip_button"
+
+            android:text="@string/top_save_browse" />
+        <TextView
+            style="@style/textStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="60px"
+            android:layout_toRightOf="@+id/btn_browse"
+            android:gravity="center"
+            android:text="@string/autoSaveTips"
+            android:layout_marginStart="25px" />
+
+        <com.micsig.tbook.ui.top.view.TopViewEdit
+            android:id="@+id/saveName"
+            android:layout_width="wrap_content"
+            android:layout_height="54px"
+            android:layout_below="@id/topSpinner"
+            android:layout_marginStart="46px"
+            android:layout_marginTop="12px"
+            android:layout_marginBottom="10px"
+            app:editCenter="true"
+            app:editWidth="360px"
+            app:head="@string/view_savewithhead_title"
+            app:headViewGravityLeft="false"
+            app:headTextSize="20px"
+            app:headWidth="90px" />
+
+
+        <CheckBox
+            android:id="@+id/check_file_name_add"
+            android:layout_width="214px"
+            android:layout_height="54px"
+            android:textColor="@color/textColor"
+            android:textSize="@dimen/textSizeCur"
+            android:button="@null"
+            android:drawablePadding="10px"
+            android:gravity="center_vertical"
+            android:checked="true"
+            android:layout_marginStart="50px"
+            android:layout_toRightOf="@+id/saveName"
+            android:layout_alignTop="@+id/saveName"
+            android:layout_alignBottom="@+id/saveName"
+            android:text="@string/top_save_file_name_add" />
+
+        <TextView
+            android:id="@+id/txt_index_num"
+            style="@style/editTextStyle"
+            android:layout_width="120px"
+            android:layout_height="54px"
+            android:layout_marginStart="26px"
+            android:gravity="center"
+            android:maxLines="1"
+            android:text="0000000"
+            android:layout_toRightOf="@+id/check_file_name_add"
+            android:layout_alignTop="@+id/saveName"
+            android:layout_alignBottom="@+id/saveName"
+            />
+
+        <Button
+            android:id="@+id/btnStart"
+            style="@style/buttonStyleTop"
+            android:layout_width="120px"
+            android:layout_height="60px"
+            android:layout_alignTop="@+id/saveName"
+            android:layout_alignBottom="@+id/saveName"
+            android:layout_toRightOf="@+id/txt_index_num"
+            android:background="@drawable/selector_rightslip_button"
+            android:text="@string/start"
+            android:layout_marginStart="50px"
+            android:visibility="visible"
+            android:textAllCaps="false" />
+
+        <Button
+            android:id="@+id/btnStop"
+            style="@style/buttonStyleTop"
+            android:layout_width="120px"
+            android:layout_height="60px"
+            android:layout_alignTop="@+id/saveName"
+            android:layout_alignBottom="@+id/saveName"
+            android:layout_toRightOf="@+id/txt_index_num"
+            android:background="@drawable/selector_rightslip_button"
+            android:text="@string/mainTopLeftStateStop"
+            android:visibility="gone"
+            android:layout_marginStart="50px"
+            android:textAllCaps="false" />
+
+    </RelativeLayout>
+</RelativeLayout>

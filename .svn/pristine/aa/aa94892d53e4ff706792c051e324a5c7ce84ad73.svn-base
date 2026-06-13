@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:ignore="MissingDefaultResource">
+
+    <View
+        android:id="@+id/outView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <LinearLayout
+        android:id="@+id/ll_content"
+        android:layout_width="450px"
+        android:layout_height="wrap_content"
+        android:background="@drawable/shape_frame_bg_black"
+        android:clickable="true"
+        android:orientation="vertical"
+        android:paddingStart="19px"
+        android:paddingEnd="31px"
+        android:paddingTop="20px"
+        android:paddingBottom="20px"
+        android:gravity="center_horizontal"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/channel_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:text="CH1"
+            android:layout_marginBottom="15px"
+            android:textColor="@color/white_mlh" />
+
+
+        <com.micsig.tbook.ui.top.view.TopViewEdit
+            android:id="@+id/ver_scale"
+            android:layout_width="wrap_content"
+            android:layout_height="54px"
+            android:layout_marginTop="10px"
+            android:layout_marginBottom="5px"
+            app:editCenter="true"
+            app:editWidth="230px"
+            app:head="垂直档位"
+            app:headPlace="left"
+            app:headWidth="125px" />
+
+        <com.micsig.tbook.ui.top.view.TopViewEdit
+            android:id="@+id/ver_position"
+            android:layout_width="wrap_content"
+            android:layout_height="54px"
+            android:layout_marginTop="10px"
+            android:layout_marginBottom="5px"
+            app:editCenter="true"
+            app:editWidth="230px"
+            app:head="垂直位置"
+            app:headPlace="left"
+            app:headWidth="125px" />
+
+        <com.micsig.tbook.ui.top.view.TopViewEdit
+            android:id="@+id/hor_scale"
+            android:layout_width="wrap_content"
+            android:layout_height="54px"
+            android:layout_marginTop="10px"
+            android:layout_marginBottom="5px"
+            app:editCenter="true"
+            app:editWidth="230px"
+            app:head="水平档位"
+            app:headPlace="left"
+            app:headWidth="125px" />
+
+
+        <com.micsig.tbook.ui.top.view.TopViewEdit
+            android:id="@+id/hor_position"
+            android:layout_width="wrap_content"
+            android:layout_height="54px"
+            android:layout_marginTop="10px"
+            android:layout_marginBottom="5px"
+            app:editCenter="true"
+            app:editWidth="230px"
+            app:head="水平位置"
+            app:headPlace="left"
+            app:headWidth="125px" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

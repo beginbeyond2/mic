@@ -1,0 +1,16 @@
+package com.micsig.tbook.scope.fpga;
+
+/**
+ * Created by zhuzh on 2018-7-11.
+ */
+
+public class FPGAReg_STATUS_FREQ extends FPGAReg {
+    private FPGAReg recvReg;
+    public FPGAReg_STATUS_FREQ(int addr) {
+        super(addr, 4, true);
+        recvReg = new FPGAReg(addr,4);
+    }
+    public FPGAReg getRecvReg(){
+        return recvReg;
+    }
+}

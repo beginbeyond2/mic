@@ -1,0 +1,63 @@
+package com.micsig.tbook.scope.Sample;
+
+
+import com.micsig.tbook.scope.Scope;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Created by zhuzh on 2018/3/13.
+ */
+
+public abstract class MemDepth implements IMemDepth {
+    private int memDepth = 0;
+    private int memDepthItemIdx = 0;
+    private MemDepthAction memDepthAction;
+    private List<String> ItemName = new ArrayList();
+    public MemDepth(int memDepth){
+        this.memDepth = memDepth;
+        memDepthAction = new MemDepthAction(this);
+    }
+    @Override
+    public int getMemDepth() {
+        return memDepth;
+    }
+
+    @Override
+    public int getMemDepthItemNum() {
+        return ItemName.size();
+    }
+
+    @Override
+    public List<String> getMemDepthItemName() {
+        return ItemName;
+    }
+
+    @Override
+    public String getMemDepthInitName() {
+        return "";
+    }
+
+    @Override
+    public void setMemDepthItem(int idx) {
+        memDepthItemIdx = idx;
+        memDepthAction.memDepthChange();
+    }
+
+    @Override
+    public int getMemDepthItem() {
+        return memDepthItemIdx;
+    }
+    protected int getChNums(){
+        return Scope.getInstance().getChNum();
+    }
+    public void addItem(String itemName){
+        ItemName.add(itemName);
+    }
+
+    @Override
+    public void forceMemDepthChange() {
+        memDepthAction.memDepthChange();
+    }
+}

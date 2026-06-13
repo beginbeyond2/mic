@@ -1,0 +1,373 @@
+package com.micsig.tbook.tbookscope.middleware.command;
+
+import com.micsig.tbook.tbookscope.rxjava.RxBus;
+import com.micsig.tbook.tbookscope.rxjava.RxEnum;
+import com.micsig.tbook.tbookscope.scpi.ToolsSCPI;
+import com.micsig.tbook.tbookscope.tools.Tools;
+
+/**
+ * Created by liwb on 2018/1/17.
+ */
+
+public class Command_Display {
+    //      new SCPICommandStruct(":DISPlay:WAVeform","SCPI_Display","WaveForm"),//设置屏幕中波形的显示方式
+//            new SCPICommandStruct(":DISPlay:WAVeform?","SCPI_Display","WaveFormQ"),//查询屏幕中波形的显示方式
+//            new SCPICommandStruct(":DISPlay:BRIGhtness","SCPI_Display","Brightness"),//设置屏幕中波形显示的亮度
+//            new SCPICommandStruct(":DISPlay:BRIGhtness?","SCPI_Display","BrightnessQ"),//查询屏幕中波形显示的亮度
+//            new SCPICommandStruct(":DISPlay:GRATicule","SCPI_Display","Graticule"),//设置屏幕显示的网格类型
+//            new SCPICommandStruct(":DISPlay:GRATicule?","SCPI_Display","GraticuleQ"),//查询屏幕显示的网格类型
+//            new SCPICommandStruct(":DISPlay:INTensity","SCPI_Display","Intensity"),//设置屏幕中网格显示的亮度
+//            new SCPICommandStruct(":DISPlay:INTensity?","SCPI_Display","IntensityQ"),//查询屏幕中网格显示的亮度
+//            new SCPICommandStruct(":DISPlay:PERSist:MODE","SCPI_Display","Persist_Mode"),//设置余辉显示模式
+//            new SCPICommandStruct(":DISPlay:PERSist:MODE?","SCPI_Display","Persist_ModeQ"),//查询余辉显示模式
+//            new SCPICommandStruct(":DISPlay:PERSist:ADJust","SCPI_Display","Persist_Adjust"),//设置余辉普通显示模式下余辉时间
+//            new SCPICommandStruct(":DISPlay:PERSist:ADJust?","SCPI_Display","Persist_AdjustQ"),//查询余辉普通显示模式下余辉时间
+//            new SCPICommandStruct(":DISPlay:PERSist:CLEar","SCPI_Display","Persist_Clear"),//清除余辉显示
+//            new SCPICommandStruct(":DISPlay:HIGH","SCPI_Display","High"),//打开或关闭高刷新
+//            new SCPICommandStruct(":DISPlay:HIGH?","SCPI_Display","HighQ"),//查询高刷新打开或关闭
+//            new SCPICommandStruct(":DISPlay:HORRef","SCPI_Display","horRef"),//设置屏幕水平展开中心模式
+//            new SCPICommandStruct(":DISPlay:HORRef?","SCPI_Display","HorRefQ"),//查询屏幕水平展开中心模式
+//            new SCPICommandStruct(":DISPlay:ZOOM","SCPI_Display","Zoom"),//打开或关闭ZOOM
+//            new SCPICommandStruct(":DISPlay:ZOOM?","SCPI_Display","ZoomQ"),//查询ZOOM打开或关闭
+//            new SCPICommandStruct(":DISPlay:CCT","SCPI_Display","CCT"),//打开或关闭ZOOM
+//            new SCPICommandStruct(":DISPlay:CCT?","SCPI_Display","CCTQ"),//查询ZOOM打开或关闭
+
+    //常规   routineTimeBaseRef()    时基参考  （中心，触发位置）
+    //常规   routineTimbaseMode()    时基模式  （YT，XY）
+    //常规   routineRollingScreen()  滚屏      （开启，关闭）
+
+    public static final int RoutineTimeBaseMode_YT = 0;
+    public static final int RoutineTimeBaseMode_XY = 1;
+
+    //时基模式
+    private int routineTimebaseMode = 0;
+    //滚屏
+    private int routineRollingScreen = 0;
+
+    private int waveForm;
+    private int brightness;
+    private int graticule;
+    private int intensity;
+    private int persistMode, fftPersistMode;
+    private int persistAdjust, fftPersistAdjust;
+    private boolean isHigh;
+    //时基参考
+    private int horRef;
+    private boolean cct;
+    private boolean isZoom;
+
+    /**
+     * 设置屏幕中波形的显示方式 点 线
+     */
+    public void WaveForm(int index, boolean isUpdateUI) {
+        if (waveForm == index) return;
+        this.waveForm = index;
+        if (isUpdateUI) {
+            CommandMsgToUI msgToUI = Command.get().getMsgToUI();
+            msgToUI.setFlag(CommandMsgToUI.FLAG_DISPLAY_WAVEFORM);
+            msgToUI.setParam(String.valueOf(index));
+            RxBus.getInstance().post(RxEnum.COMMAND_TO_UI, msgToUI);
+        }
+    }
+
+    /**
+     * 查询屏幕中波形的显示方式
+     */
+    public int WaveFormQ() {
+        return this.waveForm;
+    }
+
+    /**
+     * 设置屏幕中波形显示的亮度
+     */
+    public void Brightness(int brightness, boolean isUpdateUI) {
+        if (this.brightness == brightness) return;
+        this.brightness = brightness;
+        if (isUpdateUI) {
+            CommandMsgToUI msgToUI = Command.get().getMsgToUI();
+            msgToUI.setFlag(CommandMsgToUI.FLAG_DISPLAY_BRIGHTNESS);
+            msgToUI.setParam(String.valueOf(brightness));
+            RxBus.getInstance().post(RxEnum.COMMAND_TO_UI, msgToUI);
+        }
+    }
+
+    /**
+     * 查询屏幕中波形显示的亮度
+     */
+    public int BrightnessQ() {
+        return this.brightness;
+    }
+
+    /**
+     * 设置屏幕显示的网格类型
+     */
+    public void Graticule(int graticule, boolean isUpdateUI) {
+        if (this.graticule == graticule) return;
+        this.graticule = graticule;
+        if (isUpdateUI) {
+            CommandMsgToUI msgToUI = Command.get().getMsgToUI();
+            msgToUI.setFlag(CommandMsgToUI.FLAG_DISPLAY_GRATICULE);
+            msgToUI.setParam(String.valueOf(graticule));
+            RxBus.getInstance().post(RxEnum.COMMAND_TO_UI, msgToUI);
+        }
+    }
+
+    /**
+     * 查询屏幕显示的网格类型
+     */
+    public int GraticuleQ() {
+        return this.graticule;
+    }
+
+    /**
+     * 设置屏幕中网格显示的亮度
+     */
+    public void Intensity(int intensity, boolean isUpdateUI) {
+        if (this.intensity == intensity) return;
+        this.intensity = intensity;
+        if (isUpdateUI) {
+            CommandMsgToUI msgToUI = Command.get().getMsgToUI();
+            msgToUI.setFlag(CommandMsgToUI.FLAG_DISPLAY_INTENSITY);
+            msgToUI.setParam(String.valueOf(intensity));
+            RxBus.getInstance().post(RxEnum.COMMAND_TO_UI, msgToUI);
+        }
+    }
+
+    /**
+     * 查询屏幕中网格显示的亮度
+     */
+    public int IntensityQ() {
+        return this.intensity;
+    }
+
+    /**
+     * 设置余辉显示模式
+     */
+    public void Persist_Mode(int index, boolean isUpdateUI) {
+        if (this.persistMode == index) return;
+        this.persistMode = index;
+        if (isUpdateUI) {
+            CommandMsgToUI msgToUI = Command.get().getMsgToUI();
+            msgToUI.setFlag(CommandMsgToUI.FLAG_DISPLAY_PERSISTMODE);
+            msgToUI.setParam(String.valueOf(index));
+            RxBus.getInstance().post(RxEnum.COMMAND_TO_UI, msgToUI);
+        }
+    }
+
+    /**
+     * 查询余辉显示模式
+     */
+    public int Persist_ModeQ() {
+        return this.persistMode;
+    }
+
+    /**
+     * 设置FFT余辉显示模式
+     */
+    public void FftPersist_Mode(int index, boolean isUpdateUI) {
+        if (this.fftPersistMode == index) return;
+        this.fftPersistMode = index;
+        if (isUpdateUI) {
+            CommandMsgToUI msgToUI = Command.get().getMsgToUI();
+            msgToUI.setFlag(CommandMsgToUI.FLAG_DISPLAY_FFT_PERSISTMODE);
+            msgToUI.setParam(String.valueOf(index));
+            RxBus.getInstance().post(RxEnum.COMMAND_TO_UI, msgToUI);
+        }
+    }
+
+    /**
+     * 查询FFT余辉显示模式
+     */
+    public int FftPersist_ModeQ() {
+        return this.fftPersistMode;
+    }
+
+    /**
+     * 设置余辉普通显示模式下余辉时间
+     * index: 是数值，不是索引
+     */
+    public void Persist_Adjust(int index, boolean isUpdateUI) {
+//        if (persistAdjust == index) return;
+        if ( Tools.indexOf(ToolsSCPI.displayPersistAdjust, s->index==s)==-1 ) return;
+        this.persistAdjust = index;
+        if (isUpdateUI) {
+            CommandMsgToUI msgToUI = Command.get().getMsgToUI();
+            msgToUI.setFlag(CommandMsgToUI.FLAG_DISPLAY_PERSISTADJUST);
+            msgToUI.setParam(String.valueOf(index));
+            RxBus.getInstance().post(RxEnum.COMMAND_TO_UI, msgToUI);
+        }
+    }
+
+    /**
+     * 查询余辉普通显示模式下余辉时间
+     */
+    public int Persist_AdjustQ() {
+        return this.persistAdjust;
+    }
+
+    /**
+     * 设置FFT余辉普通显示模式下余辉时间
+     * index: 是数值，不是索引
+     */
+    public void FftPersist_Adjust(int index, boolean isUpdateUI) {
+        if ( Tools.indexOf(ToolsSCPI.displayFftPersistAdjust, s->index==s)==-1 ) return;
+        this.fftPersistAdjust = index;
+        if (isUpdateUI) {
+            CommandMsgToUI msgToUI = Command.get().getMsgToUI();
+            msgToUI.setFlag(CommandMsgToUI.FLAG_DISPLAY_FFT_PERSISTADJUST);
+            msgToUI.setParam(String.valueOf(index));
+            RxBus.getInstance().post(RxEnum.COMMAND_TO_UI, msgToUI);
+        }
+    }
+
+    /**
+     * 查询FFT余辉普通显示模式下余辉时间
+     */
+    public int FftPersist_AdjustQ() {
+        return this.fftPersistAdjust;
+    }
+
+
+    /**
+     * 清除余辉显示
+     */
+    public void Persist_Clear(boolean isUpdateUI) {
+        if (isUpdateUI) {//由于是个btn，不需要修改UI
+            CommandMsgToUI msgToUI = Command.get().getMsgToUI();
+            msgToUI.setFlag(CommandMsgToUI.FLAG_DISPLAY_PERSIST_CLEAR);
+            RxBus.getInstance().post(RxEnum.COMMAND_TO_UI, msgToUI);
+        }
+    }
+
+    /**
+     * 清除FFT余辉显示
+     */
+    public void FftPersist_Clear(boolean isUpdateUI) {
+        if (isUpdateUI) {//由于是个btn，不需要修改UI
+            CommandMsgToUI msgToUI = Command.get().getMsgToUI();
+            msgToUI.setFlag(CommandMsgToUI.FLAG_DISPLAY_FFT_PERSIST_CLEAR);
+            RxBus.getInstance().post(RxEnum.COMMAND_TO_UI, msgToUI);
+        }
+    }
+
+    /**
+     * 打开或关闭高刷新
+     */
+    public void High(boolean isHigh, boolean isUpdateUI) {
+//        if (this.isHigh == isHigh) return;
+        this.isHigh = isHigh;
+        if (isUpdateUI) {
+            CommandMsgToUI msgToUI = Command.get().getMsgToUI();
+            msgToUI.setFlag(CommandMsgToUI.FLAG_DISPLAY_HIGHREFRESH);
+            msgToUI.setParam(String.valueOf(isHigh));
+            RxBus.getInstance().post(RxEnum.COMMAND_TO_UI, msgToUI);
+        }
+    }
+
+    /**
+     * 查询高刷新打开或关闭
+     */
+    public boolean HighQ() {
+        return this.isHigh;
+    }
+
+    /**
+     * 设置屏幕水平展开中心模式
+     */
+    public void HorRef(int index, boolean isUpdateUI) {
+//        if (this.horRef == index) return;
+        this.horRef = index;
+        if (isUpdateUI) {
+            CommandMsgToUI msgToUI = Command.get().getMsgToUI();
+            msgToUI.setFlag(CommandMsgToUI.FLAG_DISPLAY_HORREF);
+            msgToUI.setParam(String.valueOf(index));
+            RxBus.getInstance().post(RxEnum.COMMAND_TO_UI, msgToUI);
+        }
+    }
+
+    /**
+     * 查询屏幕水平展开中心模式
+     */
+    public int HorRefQ() {
+        return this.horRef;
+    }
+
+
+    /**
+     * 设置色温
+     */
+    public void Cct(boolean isCCT, boolean isUpdateUI) {
+//        if (this.cct == index) return;
+        this.cct = isCCT;
+        if (isUpdateUI) {
+            CommandMsgToUI msgToUI = Command.get().getMsgToUI();
+            msgToUI.setFlag(CommandMsgToUI.FLAG_DISPLAY_CCT);
+            msgToUI.setParam(String.valueOf(isCCT));
+            RxBus.getInstance().post(RxEnum.COMMAND_TO_UI, msgToUI);
+        }
+    }
+
+    /**
+     * 查询色温
+     */
+    public boolean CctQ() {
+        return this.cct;
+    }
+
+    /**
+     * 打开或关闭ZOOM
+     */
+    public void Zoom(boolean isZoom, boolean isUpdateUI) {
+//        if (this.isZoom == isZoom) return;
+        this.isZoom = isZoom;
+        if (isUpdateUI) {
+            CommandMsgToUI msgToUI = Command.get().getMsgToUI();
+            msgToUI.setFlag(CommandMsgToUI.FLAG_DISPLAY_ZOOM);
+            msgToUI.setParam(String.valueOf(isZoom));
+            RxBus.getInstance().post(RxEnum.COMMAND_TO_UI, msgToUI);
+        }
+    }
+
+    /**
+     * 查询ZOOM打开或关闭
+     */
+    public boolean ZoomQ() {
+        return this.isZoom;
+    }
+
+    /**
+     * 常规   routineTimebaseMode()    时基模式  （YT，XY）
+     */
+    public void setRoutineTimeBaseMode(int index, boolean isUpdateUI) {
+        if (routineTimebaseMode == index) return;
+        this.routineTimebaseMode = index;
+        if (isUpdateUI) {
+            CommandMsgToUI msgToUI=Command.get().getMsgToUI();
+            msgToUI.setFlag(CommandMsgToUI.FLAG_DISPLAY_TIMEBASE);
+            msgToUI.setParam(String.valueOf(this.routineTimebaseMode));
+            RxBus.getInstance().post(RxEnum.COMMAND_TO_UI,msgToUI);
+        }
+    }
+
+    public int getRoutineTimeBaseModeQ() {
+        return this.routineTimebaseMode;
+    }
+
+    public static int RollingScreen_true = 0;
+    public static int RollingScreen_false = 1;
+
+    /**
+     * 常规   routineRollingScreen()  滚屏      （开启，关闭）
+     */
+    public void setRoutineRollingScreen(int index, boolean isUpdateUI) {
+        if (this.routineRollingScreen == index) return;
+        this.routineRollingScreen = index;
+        if (isUpdateUI) {
+        }
+    }
+
+    public int getRoutineRollingScreen() {
+        return this.routineRollingScreen;
+    }
+
+}

@@ -1,0 +1,19 @@
+package com.micsig.tbook.scope.fpga;
+
+public class FPGAReg_PROBE extends FPGAReg{
+    private FPGAReg recvReg;
+    public FPGAReg_PROBE() {
+        super(FPGAReg.FPGA_PROBE, 4,true);
+        recvReg = new FPGAReg(FPGA_PROBE,4);
+    }
+    public FPGAReg getRecvReg(){
+        return recvReg;
+    }
+    public boolean isProbeAlive(int chIdx){
+        return (recvReg.getVal() & (1<<chIdx)) != 0;
+    }
+    public int getProbeFifoSize(int chIdx){
+        return (recvReg.getVal() >>> (4 + chIdx * 7)) & 0x7F;
+    }
+
+}

@@ -1,0 +1,2 @@
+include ':app', ':ui', ':canvasgl', ':hardware', ':scope', ':base', ':smartproperty'
+include ':app', ':ui', ':canvasgl', ':hardware', ':scope', ':base', ':smartproperty', ':pathselector',':AndroidUtilCode'

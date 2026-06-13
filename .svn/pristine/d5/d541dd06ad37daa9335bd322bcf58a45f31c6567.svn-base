@@ -1,0 +1,63 @@
+package com.micsig.tbook.scope.horizontal;
+
+import com.micsig.base.FilterThread;
+import com.micsig.tbook.scope.Action.FPGAMessage;
+import com.micsig.tbook.scope.Action.UiMessage;
+import com.micsig.tbook.scope.Action.XAction;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.Scope;
+
+/**
+ * Created by zhuzh on 2018-4-9.
+ */
+
+public class HorizontalAxisAction extends XAction {
+    private static final String TAG = "HorizontalAxisAction";
+    private HorizontalAxis horizontalAxis;
+    private FilterThread filterThread;
+    public HorizontalAxisAction(HorizontalAxis horizontalAxis){
+        this.horizontalAxis = horizontalAxis;
+        filterThread = new FilterThread(TAG);
+        filterThread.setDelayMillis(75);
+        filterThread.setRunnable(new Runnable() {
+            @Override
+            public void run() {
+                timePosMove();
+            }
+        });
+    }
+    public void timeScaleIdChange(){
+        if(Scope.getInstance().isZoom()){
+            int mainID = HorizontalAxis.getInstance().getTimeScaleIdOfView(HorizontalAxis.WPI_STANDARD);
+            if(mainID > HorizontalAxis.getInstance().getTimeScaleIdOfView(HorizontalAxis.WPI_LARGE)){
+                HorizontalAxis.getInstance().setTimeScaleIdOfView(mainID);
+            }
+            sendUiMsg(UiMessage.UI_MESSAGE_TIME_SCALE_CHANGE);
+        }
+        int cmd = FPGAMessage.FPGA_CMD_DIS | FPGAMessage.FPGA_CMD_TRIG_OFFSET;
+        if(Scope.getInstance().isRun()){
+            cmd |= FPGAMessage.FPGA_CMD_SAMP_MODE|FPGAMessage.FPGA_CMD_SAMP_PLACE
+                    | FPGAMessage.FPGA_CMD_TRIG_HUICHA
+                    |FPGAMessage.FPGA_CMD_SAMP_ZUN_DEPTH/*存储深度可能会变*/
+                    |FPGAMessage.FPGA_CMD_COUY|FPGAMessage.FPGA_CMD_AUTO_TRIG_T
+                    |FPGAMessage.FPGA_CMD_SERIAL_CODE_DEPTH;
+        }
+        sendFpgaMsg(cmd,FPGAMessage.FPGA_CMD_EXT_CHAZHI_COEF);
+        sendEvent(EventFactory.EVENT_TIME_SCALE);
+        sendUiMsg(UiMessage.UI_MESSAGE_DEPTH_SAMPFRE);
+        sendUiMsg(UiMessage.UI_MESSAGE_SIMPLE_WIN_DIS);
+    }
+    private void timePosMove(){
+        int cmd = FPGAMessage.FPGA_CMD_DIS;
+        if(Scope.getInstance().isRun()){
+            cmd |=  FPGAMessage.FPGA_CMD_SAMP_PLACE;
+        }
+        sendFpgaMsg(cmd);
+    }
+    public void timePosChange(){
+        filterThread.run();
+        //发送给界面的不需要延时
+        sendEvent(EventFactory.EVENT_TIME_POS);
+        sendUiMsg(UiMessage.UI_MESSAGE_SIMPLE_WIN_DIS);
+    }
+}

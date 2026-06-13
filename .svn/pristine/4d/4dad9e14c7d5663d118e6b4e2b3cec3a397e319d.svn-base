@@ -1,0 +1,237 @@
+package com.micsig.tbook.scope.fpga;
+
+import android.util.Log;
+
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.Calibrate.HwConfig;
+import com.micsig.tbook.scope.Trigger.TriggerAction;
+
+import java.nio.ShortBuffer;
+
+/**
+ * Created by zhuzh on 2018-3-23.
+ */
+
+public class FPGAReg_DOT_MATRIX extends FPGAReg{
+    private ShortBuffer shortBuffer;
+    public MatrixParam matrixParam;
+
+    private  HwConfig hwConfig;
+    public FPGAReg_DOT_MATRIX(){
+        super(FPGAReg.FPGA_DOT_MATRIX,2052);
+        shortBuffer = byteBuffer.asShortBuffer();
+        matrixParam = new MatrixParam();
+        hwConfig = HwConfig.getInstance();
+    }
+
+
+    //1: 更新缩略视图；0：更新主视图
+    public void setUpDisSuolue(int val){
+        setVal(0,0,1,val);
+    }
+    //0：放大；1：缩小；
+    public void setSuoxiao(int val){
+        setVal(0,1,1,val);
+    }
+    //=1<<channel;
+    public void setChannel(int val){
+        setVal(0,4,4,val);
+    }
+    private int getOffset(){
+        return (FPGAReg.FPGA_REG_HEADER_LEN + 4)/2;
+    }
+    //计算点阵放大时的表格
+    int calTable_fangda(double a, double b, double upLimit,double dowLimit) {
+        upLimit -= 0.01;
+        dowLimit += 0.01;
+
+        int tableLen = 1024;
+        int idx = getOffset();
+
+        for(int i=0,j=-512; i<tableLen; i++,j++)
+        {
+            double k=(double)j*a+b;
+            if(k<dowLimit || k>upLimit)
+                //table[i] =(short) (1<<15); //超出原始值范围的，全映射到这个值
+                shortBuffer.put(i+idx,(short)(1<<15));
+            else
+                shortBuffer.put(i+idx,(short)Math.round(k));
+                //table[i] =(short) k;
+        }
+        return tableLen*2;
+    }
+    //计算点阵缩小时的表格
+    int calTable_suoxiao(double a, double b, double upLimit,double dowLimit) {
+        upLimit -= 0.01;
+        dowLimit += 0.01;
+        int tableLen = hwConfig.getAdMaxVal()+1;
+        int idx = getOffset();
+
+        for(int i=0,j=-(tableLen/2); i<tableLen; i++,j++)
+        {
+            double k=(double)j*a+b;
+            if(k<dowLimit || k>upLimit)
+                //table[i] = (short)(1<<15); //超出原始值范围的，全映射到这个值
+                shortBuffer.put(i+idx,(short)(1<<15));
+            else
+                //table[i] = (short)k;
+                shortBuffer.put(i+idx,(short)Math.round(k));
+        }
+
+        return tableLen*2;
+    }
+    //direct=true放大，false缩小
+    int dotMatrix(MatrixParam parm, int upLimit,int downLimit,boolean direct)
+    {
+        double judge=parm.x0*parm.x1*parm.k;
+        if(direct)
+        {
+            //放大
+            //a = (16)/(X0*X1*K)；
+            //b =16*(128+ Z/K- Y0/(X0*K)- Y1/(X0*X1*K))；
+            double a = (double)(16.0/judge);
+            double b = (double)(16.0*((hwConfig.getAdMaxVal()/2 + 1) + parm.z/parm.k- parm.y0/(parm.x0*parm.k) - parm.y1/judge));
+            return calTable_fangda(a, b, upLimit*16+15, downLimit*16);
+        }
+        else
+        {
+            //缩小
+            //a = 16*X0*X1*K；
+            //b = 16*(256+Y0*X1+Y1-Z*X0*X1)；
+            double a=(double)(16.0*judge);
+            double b=(double)(16.0*(512+parm.y0*parm.x1+parm.y1-parm.z*parm.x0*parm.x1));
+            return calTable_suoxiao(a, b, upLimit*16+15, downLimit*16);
+        }
+    }
+
+    boolean equ_double(double a, double b)
+    {
+        if(Math.abs(a-b) < 1e-10)
+            return true;
+        else
+            return false;
+    }
+
+    int table_ch_serch(int ch)
+    {
+        switch(ch){
+            case 1:
+                return 0;
+            case 2:
+                return 1;
+            case 4:
+                return 2;
+            case 8:
+            default:
+                return 3;
+        }
+
+    }
+    MatrixParam [][] parmBakStore = {
+            {new MatrixParam(),new MatrixParam()},
+            {new MatrixParam(),new MatrixParam()},
+            {new MatrixParam(),new MatrixParam()},
+            {new MatrixParam(),new MatrixParam()},
+            {new MatrixParam(),new MatrixParam()},
+            {new MatrixParam(),new MatrixParam()},
+            {new MatrixParam(),new MatrixParam()},
+            {new MatrixParam(),new MatrixParam()}
+    };
+    public void resetBak(){
+        for(int i=0;i<parmBakStore.length;i++){
+            for(int j=0;j<parmBakStore[i].length;j++){
+                parmBakStore[i][j].bChange = true ;
+            }
+        }
+    }
+
+    public void dotMatrixChange(int chIdx){
+        parmBakStore[chIdx][0].bChange = true;
+        parmBakStore[chIdx][1].bChange = true;
+    }
+
+
+    public boolean judgeDotMatrixChange(MatrixParam parm,  int sel, int sendCh)
+    {
+        //备份fpga的4个tale的信息
+
+        MatrixParam parmBak = parmBakStore[sendCh][sel];//parmBakStore[table_ch_serch(sendCh)][sel];
+
+        if(equ_double(parmBak.x0,parm.x0)         && equ_double(parmBak.x1,parm.x1)
+                && equ_double(parmBak.y0,parm.y0) && equ_double(parmBak.y1,parm.y1)
+                && equ_double(parmBak.z,parm.z)   && equ_double(parmBak.k,parm.k)
+                && !parmBak.bChange)
+        {
+            return false;
+        }
+        else
+        {
+            parmBak.bChange = false;
+            parmBak.x0 = parm.x0;
+            parmBak.x1 = parm.x1;
+            parmBak.y0 = parm.y0;
+            parmBak.y1 = parm.y1;
+            parmBak.z  = parm.z;
+            parmBak.k  = parm.k;
+
+
+//            Logger.d("judgeDotMatrixChange: ch = " + sendCh
+//                    + ",sel = " + sel
+//                    + ",k = " + parm.k
+//                    + ",x0 = " + parm.x0
+//                    + ",x1 = " + parm.x1
+//                    + ",y0 = " + parm.y0
+//                    + ",y1 = " + parm.y1
+//                    + ",z = " + parm.z);
+
+            return true;
+        }
+    }
+
+    public int  dotMatrixCal(MatrixParam matrixParm,
+                      int sourceTop, int sourceBom, int objTop, int objBom)
+    {
+        int len;
+
+        double judge=matrixParm.x0*matrixParm.x1*matrixParm.k;
+        if(judge > 0.99999)
+        {
+            //放大
+            len = dotMatrix(matrixParm, sourceTop, sourceBom, true);
+            //sendParm.suoxiao = 0;
+            setSuoxiao(0);
+
+        }
+        else
+        {
+            //缩小
+            len = dotMatrix(matrixParm, objTop, objBom, false);
+            //sendParm.suoxiao = 1;
+            setSuoxiao(1);
+
+        }
+
+        return len + 4;
+        //memcpy(buf, &sendParm, 4);//拷贝0xA1命令信息到数据列中
+        //Firmware_Ctrl->fpga_seri_ctrl.SendCmdToFpga(FPGA_DOT_MATRIX, buf, len+4);
+    }
+
+    class MatrixParam{
+        public boolean bChange;
+        public double x0;//静态时档位调节引起的缩放
+        public double x1;//放大镜引起的衰减
+        public double y0;//现在通道位置
+        public double y1;//放大镜引起的零点偏移
+        public double z;//通道原始位置
+        public double k;//AD与屏幕对应关系
+
+
+        public MatrixParam(boolean bChange){
+            this.bChange = bChange;
+            x1 = 0;
+        }
+        public MatrixParam(){
+            this(true);
+        }
+    }
+}

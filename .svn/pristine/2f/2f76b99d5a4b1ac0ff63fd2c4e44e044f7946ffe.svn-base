@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/uartData"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="10px">
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/uartDataCondition"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_marginStart="10px"
+        app:array="@array/triggerSerialsUARTCondition"
+        app:head="@string/topSerialsHeadCondition" />
+
+    <com.micsig.tbook.ui.top.view.TopViewEdit
+        android:id="@+id/uartDataEdit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_toEndOf="@+id/uartDataCondition"
+        app:editHint="00"
+        app:head="@string/topSerialsHeadData"
+        android:layout_marginStart="102px" />
+</RelativeLayout>

@@ -1,0 +1,80 @@
+package com.micsig.tbook.scope.Calibrate;
+
+import java.util.Arrays;
+
+public class ADC_MXT2022 extends ADC {
+    public ADC_MXT2022() {
+
+    }
+
+    @Override
+    public void Init() {
+
+    }
+
+    @Override
+    public void setGain(int fpgaIdx,int adIdx, int i0_q1, int vol) {
+        int addr = 0;
+        if(i0_q1 == 0)
+            addr = 0x03; //i通道
+        else
+            addr = 0x0B; //q通道
+
+        addr  = (addr<<1) | 1<<6;
+
+        SendADData(fpgaIdx,adIdx,addr,vol & 0x7FFF);
+    }
+
+    @Override
+    public void setChannel(int cnt, boolean[] sel) {
+        int addr = 1<<6;
+        int val =  (1<<13) | (1<<14);
+        switch (cnt){
+            case 2:
+            case 4:
+                for(int i=0;i<sel.length;i+=2) {
+                    SendADData(i/4,(i % 4) / 2,addr, val | (1<<7) | (sel[i] ? (1<<6) : 0));
+                }
+                break;
+            case 8:
+            default:
+                for(int i=0;i<2;i++){
+                    for(int j=0;j<2;j++){
+                        SendADData(i, j,addr, val); //双通道模式
+                    }
+                }
+                break;
+        }
+    }
+
+    @Override
+    public void setCalibrate() {
+        if(fpgaCommand != null){
+            fpgaCommand.forceAdCablition(1);
+            fpgaCommand.forceAdCablition(0);
+        }
+    }
+
+
+    @Override
+    public int getSampleChannel(boolean[] sel) {
+        int nums = 0;
+        if ((sel[0] && sel[1])
+                || (sel[2] && sel[3])
+                || (sel[4] && sel[5])
+                || (sel[6] && sel[7])) {
+            Arrays.fill(sel, true);
+            nums = 8;
+        } else {
+
+            for(int i=0;i<sel.length;i+=2){
+                if((!sel[i]) && (!sel[i + 1])){
+                    sel[i] = true;
+                }
+            }
+            nums = 4;
+        }
+
+        return nums;
+    }
+}

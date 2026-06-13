@@ -1,0 +1,506 @@
+package com.micsig.tbook.scope.probe;
+
+
+import android.util.Log;
+
+import com.micsig.base.DoubleUtil;
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.ScopeMessage;
+import com.micsig.tbook.scope.Trigger.TriggerAction;
+import com.micsig.tbook.scope.channel.Channel;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.probe.bean.BaseBean;
+import com.micsig.tbook.scope.vertical.VerticalAxis;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+public abstract class BaseProbe {
+    protected int chIdx = 0;
+    protected double probeRate = 1.0;
+    protected int zeroVal = 0;
+
+    public void setChIdx(int chIdx){
+        this.chIdx = chIdx;
+    }
+    public int getChIdx(){return chIdx;}
+    protected BaseBean baseBean;
+    public BaseProbe(BaseBean baseBean){
+        this.baseBean = baseBean;
+    }
+
+    public String getProbeName() {
+        return getType();
+    }
+    public String getModeName(){
+        return baseBean.getPrefix();
+    }
+    protected void setProbeType(int probeType){
+        if(baseBean != null){
+            baseBean.setProbeUnit(probeType);
+        }
+        EventFactory.sendEvent(new EventBase(EventFactory.EVENT_PROBE_EVENT,chIdx),true);
+    }
+    public int getProbeType() {
+        if(baseBean != null){
+            return baseBean.getProbeUnit();
+        }
+        return VerticalAxis.PROBE_TYPE_VOL;
+    }
+
+    protected void setBandWidth(long bandWidth){
+        if(baseBean != null){
+            baseBean.setBandwidth(bandWidth);
+            EventFactory.sendEvent(new EventBase(EventFactory.EVENT_PROBE_EVENT,chIdx),true);
+        }
+    }
+    protected boolean bImped50 = false;
+    public void setImped50( boolean bImped50){
+        if(bImped50 != this.bImped50) {
+            this.bImped50 = bImped50;
+            sendCommand(ProbeCommand.probeImpedCommand(bImped50));
+        }
+    }
+    public boolean isImped50(){
+        return this.bImped50;
+    }
+    public boolean isSupportImped50(){
+        return false;
+    }
+    public boolean isMustAC(){
+        if(baseBean != null) {
+            return baseBean.isMustAc();
+        }
+        return false;
+    }
+    public boolean isScopeImpedence50(){
+        if(baseBean != null) {
+            return baseBean.isScopeImpedence50();
+        }
+        return false;
+    }
+
+    public boolean isScopeAdjust(){
+        if(baseBean != null){
+            return baseBean.isScopeAdjust();
+        }
+        return false;
+    }
+    public boolean isDa(){
+        if(baseBean != null){
+            return baseBean.isDa();
+        }
+        return false;
+    }
+    public long getBandWidth(){
+        if (baseBean!=null){
+            return baseBean.getBandwidth();
+        }
+        return 0;
+    }
+    public List<String> getScaleNames(){
+        if (baseBean!=null){
+            return baseBean.getScaleNames();
+        }
+        return null;
+    }
+    public List<Double> getScaleValues(){
+        if (baseBean!=null){
+            return baseBean.getScaleValues();
+        }
+        return null;
+    }
+
+    protected void clearScale(){
+        if(baseBean != null){
+            baseBean.clearScales();
+        }
+    }
+    protected void addScale(double val){
+        if(baseBean != null){
+            baseBean.addScale(val);
+        }
+    }
+
+    public boolean isSupportProbeRateCtrl(){
+        if(baseBean != null){
+            return baseBean.isAutoProbeRate();
+        }
+        return false;
+    }
+    protected void clearAutoRate(){
+        if(baseBean != null){
+            baseBean.clearAutoProbeRate();
+        }
+    }
+    protected void addAutoRate(int val){
+        if(baseBean != null){
+            baseBean.addAutoProbeRate(val);
+        }
+    }
+
+    private int daValue = 0;
+    public int getDaValue(){
+        return daValue;
+    }
+    public void setDaValue(int val){
+
+        daValue = val;
+        Channel channel = ChannelFactory.getDynamicChannel(this.chIdx);
+        if(channel != null){
+            channel.changeProbeDa();
+        }
+    }
+    public void remove(){
+        if(bAutoZero) {
+            zero(ProbeNotifyInfo.ZERO_FAIL1);
+        }
+        setDaValue(0);
+    }
+
+    boolean bAutoRateCtrl = false;
+    public boolean isAutoRateCtrl(){
+        return bAutoRateCtrl;
+    }
+    public void setAutoRateCtrl(boolean bEnable){
+        if(isSupportProbeRateCtrl()) {
+            bAutoRateCtrl = bEnable;
+            sendCommand(ProbeCommand.probeRateCtrlCommand(!bAutoRateCtrl));
+            if(bAutoRateCtrl){
+                Channel channel = ChannelFactory.getDynamicChannel(chIdx);
+                if(channel != null){
+                    setVScaleVal(channel.getVScaleVal());
+                }
+            }
+        }
+    }
+
+    public void setVScaleVal(double vScaleVal){
+        if(bAutoRateCtrl){
+            if(baseBean != null){
+                List<Integer> list = baseBean.getAutoProbeRate();
+                List<Double> ls = getScaleValues();
+                int i = 0;
+                for(i=0;i<list.size() && i < ls.size();i++){
+                    double v = list.get(i) * ls.get(i)/1000;
+                    if(vScaleVal <= v){
+                        break;
+                    }
+                }
+                if(i < ls.size()){
+                    setProbeRate(ls.get(i));
+                }
+            }
+        }
+    }
+
+    public int getProbeXIndex(){
+        return -1;
+    }
+    public List<String> getProbeX(){
+        return new ArrayList<>();
+    }
+    public double getProbeXValue(String probeX){
+        return 0;
+    }
+    public String getProbeXName(){
+        return "";
+    }
+
+    protected int byte2Int(byte [] cmd,int offset){
+        int val = 0;
+        val |= (cmd[offset] & 0xFF) << 24;
+        val |= (cmd[offset + 1] & 0xFF)<< 16;
+        val |= (cmd[offset + 2] & 0xFF)<< 8;
+        val |= (cmd[offset + 3] & 0xFF);
+        return val;
+    }
+
+    protected int byte2Short(byte [] cmd,int offset){
+        short val = 0;
+        val |= (cmd[offset] & 0xFF) << 8;
+        val |= (cmd[offset + 1] & 0xFF);
+        return val;
+    }
+
+    protected long byte2StringLong(byte [] cmd,int offset,int len){
+        if(len > 0) {
+            byte[] bytes = new byte[len + 1];
+            System.arraycopy(cmd, offset, bytes, 0, len);
+            String str = new String(bytes).trim().toUpperCase();
+            if(str.length() > 0) {
+                return Long.parseLong(str);
+            }
+        }
+        return 0;
+    }
+
+    private void alarm(int val){
+
+        EventFactory.sendEvent(new EventBase(EventFactory.EVENT_PROBE_ALARM,new ProbeNotifyInfo(chIdx,val)),true);
+    }
+    private void zero(int val){
+        EventFactory.sendEvent(new EventBase(EventFactory.EVENT_PROBE_ZERO,new ProbeNotifyInfo(chIdx,val)),true);
+        if(val != ProbeNotifyInfo.ZERO_ING){
+            if (bAutoZero) {
+                bAutoZero = false;
+            }
+            sendCommand(ProbeCommand.QueryProbeZeroCommand());
+        }
+    }
+
+    protected void gain(int val){
+        EventFactory.sendEvent(new EventBase(EventFactory.EVENT_PROBE_ZERO,new ProbeNotifyInfo(chIdx,val)),true);
+    }
+
+    public void parserCommand(byte [] cmd,int offset){
+        if(cmd[offset] == (byte) 0xAA){
+            byte type = cmd[offset + 1];
+
+            int len = cmd[offset + 2] & 0xFF;
+            switch (type){
+                case ProbeCommand.TYPE_PROBE_RATE: {
+                    int val = byte2Int(cmd, offset + 3);
+                    if(val != 0) {
+                        if ((val & (1 << 31)) != 0) {
+                            val &= 0x7FFFFFFF;
+                            setProbeRate(1.0 / val, false);
+                        } else {
+                            setProbeRate(val, false);
+                        }
+                    }
+                    break;
+                }
+
+                case ProbeCommand.TYPE_PROBE_IMPED: {
+
+                    if (cmd[offset + 3] == 2) {
+                        bImped50 = true;
+                    } else {
+                        bImped50 = false;
+                    }
+                    Channel channel = ChannelFactory.getDynamicChannel(this.chIdx);
+                    if(channel != null){
+                        channel.setResistanceType(bImped50?Channel.RESISTANCE_50:Channel.RESISTANCE_1M);
+                    }
+                }
+                    break;
+                case ProbeCommand.TYPE_PROBE_UNIT:         //探头单位
+                {
+                    switch (cmd[offset + 3] & 0xFF){
+                        case 0x76:
+                        case 0x56:
+                            setProbeType(VerticalAxis.PROBE_TYPE_VOL);
+                            break;
+                        case 0x41:
+                        case 0x61:
+                            setProbeType(VerticalAxis.PROBE_TYPE_CUR);
+                            break;
+                    }
+                }
+                    break;
+                case ProbeCommand.TYPE_PROBE_RATE_DOT:
+                {
+                    offset += 3;
+                    clearAutoRate();
+                    int i = 0;
+                    while(i<len){
+                        int val = byte2Short(cmd,offset);
+                        if(val != 0){
+                            addAutoRate(val);
+                        }
+                        offset += 3;
+                        i+= 3;
+                    }
+                    EventFactory.sendEvent(new EventBase(EventFactory.EVENT_PROBE_EVENT, chIdx), true);
+                }
+                break;
+                case ProbeCommand.TYPE_PROBE_RATE_LIST: {
+                    offset += 3;
+                    int i = 0;
+                    clearScale();
+                    while (i < len) {
+                        int val = byte2Int(cmd, offset);
+                        if (val != 0) {
+                            if ((val & (1 << 31)) != 0) {
+                                val &= 0x7FFFFFFF;
+                                addScale(1.0/val);
+                            } else {
+                                addScale(val);
+                            }
+                        }
+                        offset += 5;
+                        i += 5;
+                    }
+                    EventFactory.sendEvent(new EventBase(EventFactory.EVENT_PROBE_EVENT, chIdx), true);
+                }
+                    break;
+                case ProbeCommand.TYPE_BANDWIDTH:
+                {
+                    long bandwidth = byte2StringLong(cmd,offset+3,len);
+
+                    if(bandwidth != 0) {
+                        setBandWidth(bandwidth * 1000);
+                    }
+                }
+                    break;
+                case ProbeCommand.TYPE_PROBE_ALARM:
+                    alarm(cmd[offset + 3] & 0xFF);
+                    break;
+                case (byte) 0xFF: {
+                    boolean bSuccess = false;
+                    if (cmd[offset + 3] == 1) {
+                        bSuccess = true;
+                    } else if (cmd[offset + 3] == 0) {
+                        bSuccess = false;
+                    }
+                    if (bAutoZero) {
+                        bAutoZero = false;
+                        zero(bSuccess?ProbeNotifyInfo.ZERO_SUCCESS:ProbeNotifyInfo.ZERO_FAIL1);
+                    }
+                }
+                default:
+                    commandPrivate(cmd,offset);
+                    break;
+            }
+        }
+
+    }
+
+    protected void commandPrivate(byte[] cmd,int offset){
+
+        if(cmd[offset] == (byte) 0xAA){
+            byte type = cmd[offset + 1];
+            int len = cmd[offset + 2] & 0xFF;
+            switch (type) {
+                case ProbeCommand.TYPE_PROBE_ZERO: {
+                    if(len == 2) {
+                        zeroVal = byte2Short(cmd, offset + 3);
+                    }else if(len == 1){
+                        zero(cmd[3 + offset]&0xFF);
+
+                    }
+                    break;
+                }
+                case ProbeCommand.TYPE_PROBE_ADJUST:{
+                    if(len == 1){
+                        gain(cmd[3 + offset]&0xFF);
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    public void resume(){
+        sendCommand(ProbeCommand.probeCommand(ProbeCommand.TYPE_PROBE_INFO));
+    }
+
+    protected  void defaultParam(){
+        sendCommand(ProbeCommand.QueryProbeVersion(),1000);
+    }
+
+
+    private volatile boolean  bAutoZero = false;
+    public void autoZero(){
+        synchronized (this) {
+            bAutoZero = true;
+        }
+        sendCommand(ProbeCommand.probeAutoZeroCommand());
+    }
+
+    public void autoGain(){
+        sendCommand(ProbeCommand.probeCommand(ProbeCommand.TYPE_PROBE_ADJUST));
+    }
+
+    public void zeroAdd(){
+        zeroVal++;
+        sendCommand(ProbeCommand.probeZeroCommand(zeroVal));
+    }
+
+    public void zeroSub(){
+        zeroVal--;
+        sendCommand(ProbeCommand.probeZeroCommand(zeroVal));
+    }
+
+    public void zeroAdd( int val){
+        zeroVal+= val;
+        sendCommand(ProbeCommand.probeZeroCommand(zeroVal));
+    }
+
+    public void standby(boolean bStandby){
+        sendCommand(ProbeCommand.probeStandByCommand(bStandby?1:2));
+    }
+
+    public synchronized double getProbeRate(){
+        return probeRate;
+    }
+    public void setProbeRate(double probeRate){
+        if(baseBean != null && baseBean.getScaleIndex(probeRate) >= 0) {
+            if(!DoubleUtil.FuzzyCompare(probeRate,this.probeRate)) {
+                setProbeRate(probeRate, true);
+                int val = 0;
+                if (probeRate >= 1) {
+                    val = (int) (probeRate + 0.0000001);
+                } else {
+                    val = (int) (1.0 / probeRate + 0.0000001);
+                    val |= 1 << 31;
+                }
+                sendCommand(ProbeCommand.probeRateCommand(val));
+            }
+        }
+    }
+    public void setProbeRate(double probeRate,boolean bUser){
+
+        synchronized (this) {
+            this.probeRate = probeRate;
+        }
+        if(!bUser){
+            EventFactory.sendEvent(new EventBase(EventFactory.EVENT_CHANNEL_VSCALE,chIdx),true);
+        }
+    }
+
+    protected void sendCommand(byte [] bytes){
+        sendCommand(bytes,0);
+    }
+    protected void sendCommand(byte [] bytes,long ms){
+        ScopeMessage scopeMessage = ScopeMessage.getInstance();
+        scopeMessage.sendProbe(chIdx,bytes,ms);
+    }
+
+    private Map<String, String> infoMap = null;
+
+    public void setInfoMap(Map<String, String> infoMap) {
+        this.infoMap = infoMap;
+
+    }
+    public String getValue(String key){
+        String s = "";
+        if(infoMap != null){
+            if(infoMap.containsKey(key)){
+                s = infoMap.get(key);
+            }
+        }
+        return s;
+    }
+    public String getType(){return getValue(PROBE_TYPE_KEY);}
+    public String getSN(){
+        return getValue(PROBE_SN_KEY);
+    }
+    public String getVersion(){
+        return getValue(PROBE_VER_KEY);
+    }
+    public static final String PROBE_TYPE_KEY = "TYPE";
+    public static final String PROBE_SN_KEY = "SN";
+    public static final String PROBE_VER_KEY = "VER";
+    public static final String [] PROBE_INFO_KEYS = {
+            PROBE_TYPE_KEY,PROBE_SN_KEY,PROBE_VER_KEY
+    };
+
+    public int getMcuNums(){
+        return 1;
+    }
+}

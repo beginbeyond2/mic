@@ -1,0 +1,78 @@
+package com.micsig.tbook.scope.fpga;
+
+import com.micsig.tbook.scope.Bus.I2CBus;
+import com.micsig.tbook.scope.Bus.IBus;
+
+/**
+ * Created by zhuzh on 2018-5-30.
+ */
+
+public class FPGAReg_BUS_I2C extends FPGAReg_BUS {
+    public FPGAReg_BUS_I2C(int addr) {
+        super(addr, 20);
+    }
+    public void setScl(int val){
+        setVal(0,2,val);
+    }
+    public void setSda(int val){
+        setVal(2,2,val);
+    }
+    public void setTriggerMode(int val){
+        setVal(1,0,4,val);
+    }
+    public void setAddr(int val){
+        setVal(1,8,7,val);
+    }
+    public void setData(int idx,int val){
+        setVal(1,16 + idx * 8,8,val);
+    }
+
+    @Override
+    public void configBus(int fpgaIdx,IBus iBus) {
+
+        I2CBus bus = (I2CBus)iBus;
+        int scl = (bus.getSclChIdx());
+        int sda = (bus.getSdaChIdx());
+        FPGAReg_BUS_LEVEL busLevel = (FPGAReg_BUS_LEVEL) FPGACommand.getReg(fpgaIdx,FPGA_BUS_LEVEL);
+        setScl(chIdx2BusSrc(scl));
+        setSda(chIdx2BusSrc(sda));
+        busLevel.setBusSrcExt(getBusIdx(),((scl>>2)&0x1) | ((sda>>1) &0x2));
+        int triggerType = bus.getTriggerType();
+        int addr = bus.getTriggerAddr(triggerType);
+        switch (triggerType){
+
+            case I2CBus.I2C_TRIGGER_ADDRESS_NO_ACK:
+                setAddr(addr&0x7F);
+                break;
+            case I2CBus.I2C_TRIGGER_EEPROM_READ_DATA:
+                setData(0,bus.getTriggerRelation());
+                setData(1,bus.getTriggerData1(triggerType));
+
+                break;
+            case I2CBus.I2C_TRIGGER_FRAME1:
+                setAddr(addr&0x7F);
+                setData(1,bus.getTriggerData1(triggerType));
+                break;
+            case I2CBus.I2C_TRIGGER_FRAME2:
+                setAddr(addr&0x7F);
+                setData(0,bus.getTriggerData1(triggerType));
+                setData(1,bus.getTriggerData2());
+
+                break;
+            case I2CBus.I2C_TRIGGER_WRITE_FRAME:
+                setAddr((addr & 0x3FF) >>> 8);
+                setData(0,addr & 0xFF);
+                setData(1,bus.getTriggerData1());
+                break;
+            default:
+                break;
+        }
+        setTriggerMode(triggerType);
+        setLevel(busLevel,scl,IBus.IDLE_LEVEL_HIGH);
+        setLevel(busLevel,sda,IBus.IDLE_LEVEL_HIGH);
+        FPGACommand.sendCmd(busLevel);
+
+
+
+    }
+}

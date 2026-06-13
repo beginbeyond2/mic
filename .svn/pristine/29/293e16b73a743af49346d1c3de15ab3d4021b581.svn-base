@@ -1,0 +1,247 @@
+<resources>
+
+    <!--底部菜单-->
+    <string name="menu_bottom_adjust">微調整</string>
+    <string name="menu_bottom_save">高速\r\n保存</string>
+    <string name="menu_bottom_cursor">カーソル</string>
+    <string name="menu_bottom_time">10時13分</string>
+    <string name="menu_bottom_qiuck_screen">画面キャプチャー</string>
+    <string name="menu_bottom_qiuck_zoom">ズーム</string>
+    <string name="menu_bottom_qiuck_all_measure">すべての測定</string>
+    <string name="menu_bottom_qiuck_serials_txt">シリアルテキスト</string>
+    <string name="menu_bottom_qiuck_center_menu">メニュー</string>
+    <string name="dialog_center_menu_half_timebase">タイムベース</string>
+    <string name="dialog_center_menu_half_level">レベル</string>
+    <string name="dialog_center_menu_half_hor_cursor">水平カーソル</string>
+    <string name="dialog_center_menu_half_ver_cursor">垂直カーソル</string>
+    <string name="dialog_center_menu_half_channels">チャンネル</string>
+    <string name="internal_storage">内部ストレージ</string>
+    <string name="new_folder"> 新規フォルダー</string>
+    <string name="seleced_folder"> 選択したフォルダー</string>
+    <string name="file_selection_not_supported"> ファイルの選択はサポートされていません</string>
+    <string name="label_folder">フォルダー</string>
+    <string name="toast_create_success">作成に成功しました</string>
+    <string name="toast_create_failure">作成に失敗しました</string>
+    <string name="error_already_exists">すでに存在します</string>
+    <string name="label_file">ファイル</string>
+    <!-- TopTriggerSerials -->
+    <string name="topSerialsHeadData">データ</string>
+    <string name="topSerialsHeadData1">データ1</string>
+    <string name="topSerialsHeadData2">データ2</string>
+    <string name="topSerialsHeadLabel">ラベル</string>
+    <string name="topSerialsHeadSdi">SDI</string>
+    <string name="topSerialsHeadSsm">SSM</string>
+    <string name="topSerialsHeadId">ID</string>
+    <string name="topSerialsHeadDlc">DLC</string>
+    <string name="topSerialsHeadAddr">住所</string>
+    <string name="topSerialsHeadCondition">状態</string>
+
+    <string name="m1553bCsWordCsWordHead">命令/ステータスワード</string>
+    <string name="m1553bDataWordDataHead">データワード</string>
+    <string name="m1553bRtAddrRtAddrHead">リモート端末アドレス</string>
+    <string name="spiDataDataHead">ビットを設定する</string>
+
+    <string name="mainTopLeftStateRun">ランニング</string>
+    <string name="mainTopLeftStateStop">やめる</string>
+    <string name="mainTopLeftStateWait">待っている</string>
+    <string name="mainTopLeftStateAuto">自動</string>
+    <string name="mainTopLeftSD">SD</string>
+    <string name="mainTopLeftLength">87.5K</string>
+    <string name="mainTopLeftRate">3.13MSa/s</string>
+    <string name="mainTopCenterShow">0ps</string>
+    <string name="mainRightSample">256平均</string>
+
+    <string name="view_savewithhead_title">お名前</string>
+    <string name="view_savewithhead_input">1704060001</string>
+    <string name="view_savewithhead_confirm">保存する</string>
+    <string name="view_seekbarwithhead_title">明るさ</string>
+    <string name="view_seekbarwithhead_show">66％</string>
+    <string name="view_display_brightness">明るさ</string>
+    <string name="view_display_transparency">Transparency</string>
+    <string name="view_display_intensity">強度</string>
+    <string name="view_afterglow_clearup">クリア</string>
+    <string name="view_horizontallist_title">調整</string>
+    <string name="view_display_adjust">調整</string>
+    <string name="view_horizontallist_show">100ms</string>
+    <string name="view_trigger_inhibitiontimetitle">抑制時間</string>
+    <string name="view_trigger_inhibitiontimevalue">200ns</string>
+    <string name="view_trigger_pulsewidth">1us</string>
+    <string name="view_trigger_logic">1us</string>
+    <string name="trigger_pulsewidth">パルス幅</string>
+    <string name="trigger_overTime">タイムアウト</string>
+    <string name="triggervideo_linehead">行</string>
+    <string name="triggervideo_linedetail">1</string>
+    <string name="triggeruart_datatitle">データ</string>
+    <string name="triggeruart_datadetail">56</string>
+    <string name="triggerslope_timehighhead">最大時間</string>
+    <string name="triggerslope_timelowhead">最短時間</string>
+    <string name="triggerrunt_timehigh">最大時間</string>
+    <string name="triggerrunt_timelow">最短時間</string>
+    <string name="triggerlogic_timehigh">最大時間</string>
+    <string name="triggerlogic_timelow">最短時間</string>
+    <string name="triggerpulsewidth_timehigh">最大時間</string>
+    <string name="triggerpulsewidth_timelow">最短時間</string>
+    <string name="triggernedge_time">時間</string>
+    <string name="triggernedge_edge">端</string>
+    <string name="triggernedge_edgevalue">345</string>
+    <string name="settingoscillograph_saveas">に保存</string>
+    <string name="settingfactory_pleasesure">工場出荷時の設定に戻すかどうかを確認してください。</string>
+    <string name="settingfactory_sure">はい</string>
+    <string name="settingcalibration_pleasesure">校正の前に必ずプローブを外してください。</string>
+    <string name="settingcalibration_sure">決定する</string>
+    <string name="autosetting_levelhead">しきい値レベル</string>
+    <string name="autosetting_leveldetail">10年</string>
+    <string name="oscillograpg_storage">保管</string>
+    <string name="oscillograpg_recovery">回復</string>
+    <string name="measure_clear">クリア</string>
+    <string name="measure_relationto">に相対的</string>
+    <string name="sure">決定する</string>
+    <string name="save_saveto">に保存</string>
+    <string name="save_r1">R1</string>
+    <string name="save_r2">R2</string>
+    <string name="save_r3">R3</string>
+    <string name="save_r4">R4</string>
+
+    <string name="dialogcount_title">Nエッジ</string>
+    <string name="dialogcount_x1">1倍</string>
+    <string name="dialogcount_x100">100倍</string>
+    <string name="dialogcount_subtract"> - </string>
+    <string name="dialogcount_add">+</string>
+    <string name="dialogmeasuredelay_head">Ch1</string>
+    <string name="dialogmeasurephase_head">Ch1</string>
+    <string name="dialogscale_head">ロジック</string>
+    <string name="dialogscale_show">9.00ms</string>
+
+    <string name="serialsUserDefine">習慣</string>
+
+    <string name="mainBottomScreenRecorderStart">ビデオの録画を開始します。</string>
+    <string name="mainBottomScreenRecorderEnd">ビデオの録画を終了してください。</string>
+    <string name="mainBottomScreenShot">スクリーンキャプチャの成功：</string>
+
+    <string name="topSlipUsersetSaveRecoveryDefaultName">デフォルト</string>
+    <string name="topSlipUsersetSaveRecoveryStorage">保存しました</string>
+    <string name="topSlipUsersetSaveRecoveryRecovery">成功した回復</string>
+    <string name="msgForGoHomeWhenLockScreen">現在のタッチ機能はオフになっています
+        \nデスクトップに入る場合は、タッチ機能が開きます
+        \nデスクトップに入ることを確認し、もう一度[ホーム]ボタンを押します
+        \n他のキーを押すと戻ります。
+    </string>
+
+    <string name="topBtn">上半分</string>
+    <string name="bottomBtn">下半分</string>
+    <string name="topZeroTitle">ゼロ校正</string>
+    <string name="topADGainTitle">ADゲインキャリブレーション</string>
+    <string name="topADZeroTitle">ADゼロ校正</string>
+    <string name="centerChGain">チャネルゲイン校正（校正信号が必要）</string>
+    <string name="bottomZeroTitle">ゼロ校正</string>
+    <string name="bottomOffsetTitle">オフセット係数校正</string>
+    <string name="bottomChDiffTitle">チャンネル差校正</string>
+    <string name="calibration">（校正済み）</string>
+    <string name="unCalibration">（未校正）</string>
+
+    <string name="topSaveSaveInToast">Uディスクが検出されない</string>
+
+    <string name="dialogMsgExitToHome">あなたはホームページに戻ってもよろしいですか？</string>
+    <string name="dialogMsgInSlowTimeBase">スクロールモードに切り替えると、FFTは終了します。</string>
+    <string name="keyBoardMsgBeyond">入力制限を超えています</string>
+    <string name="msgClickFFTInRoll">スクロールモードでは、fft状態に設定することはできません。</string>
+    <string name="msgBatteryLow">電池が消耗しています。アダプタを接続してください。</string>
+    <string name="msgParameterLimited">パラメータ制限！</string>
+    <string name="msgOpenMathInModeXY">XYモードでは、Mathチャンネルはサポートされていません。</string>
+
+    <string name="msgSelfAdjustRun">自己校正が進行中です...</string>
+    <string name="msgSelfAdjustSuccess">自己校正は成功しました！</string>
+    <string name="msgSelfAdjustFail">自己校正に失敗しました。エラーコード：%1$s</string>
+
+    <string name="msgTopSaveNameExisted">ファイル名%1$sは既に存在します。</string>
+    <string name="msgTopSaveBinNoSupport">チャンネルをビンデータとして保存することはサポートされていません。</string>
+    <string name="msgTopSaveBinSuccess">波形%1$sは正常に保存されました。</string>
+    <string name="msgTopSaveBinFailed">波形%1$sの保存に失敗しました。</string>
+
+    <string name="serialsWordTitleS1">S1</string>
+    <string name="serialsWordTitleS2">S2</string>
+    <string name="serialsWordTitleS3">S3</string>
+    <string name="serialsWordTitleS4">S4</string>
+    <string name="serialsWordTitleS12">S1とS2</string>
+    <string name="serialsWordClear">クリア</string>
+    <string name="serialsWordTip">最初にチャンネルを開いてください。</string>
+    <string name="serialsWordUartTitleBin">バイナリ</string>
+    <string name="serialsWordUartTitleHex">16進数</string>
+    <string name="serialsWordUartTitleASCII">ASCII</string>
+    <string name="serialsWordUartTip">最初にs1とs2の設定を同じにしてください。</string>
+    <string name="serialsWordLinTitleCh">Ch</string>
+    <string name="serialsWordLinTitleTime">時間</string>
+    <string name="serialsWordLinTitleId">ID</string>
+    <string name="serialsWordLinTitleData">データ</string>
+    <string name="serialsWordLinTitleError">エラー</string>
+    <string name="serialsWordLinTitleCheck">チェックする</string>
+    <string name="serialsWordLinTitleTrigger">トリガー</string>
+    <string name="serialsWordCanTitleCh">Ch</string>
+    <string name="serialsWordCanTitleTime">時間</string>
+    <string name="serialsWordCanTitleId">ID</string>
+    <string name="serialsWordCanTitleType">タイプ</string>
+    <string name="serialsWordCanTitleDlc">DLC</string>
+    <string name="serialsWordCanTitleData">データ</string>
+    <string name="serialsWordCanTitleCrc">CRC</string>
+    <string name="serialsWordCanTitleError">エラー</string>
+    <string name="serialsWordCanTitleTrigger">トリガー</string>
+    <string name="serialsWordSpiTitleCh">Ch</string>
+    <string name="serialsWordSpiTitleTime">時間</string>
+    <string name="serialsWordSpiTitleData">データ</string>
+    <string name="serialsWordSpiTitleTrigger">トリガー</string>
+    <string name="serialsWordI2cTitleCh">Ch</string>
+    <string name="serialsWordI2cTitleTime">時間</string>
+    <string name="serialsWordI2cTitleAddr">住所</string>
+    <string name="serialsWordI2cTitleData">データ</string>
+    <string name="serialsWordI2cTitleConfirm">確認する</string>
+    <string name="serialsWordI2cTitleTrigger">トリガー</string>
+    <string name="serialsWordI2cTitleRestart">再起動</string>
+    <string name="serialsWordM429TitleCh">Ch</string>
+    <string name="serialsWordM429TitleTime">時間</string>
+    <string name="serialsWordM429TitleLabel">LABEL</string>
+    <string name="serialsWordM429TitleSdi">SDI</string>
+    <string name="serialsWordM429TitleData">データ</string>
+    <string name="serialsWordM429TitleSsm">SSM</string>
+    <string name="serialsWordM429TitleError">エラー</string>
+    <string name="serialsWordM429TitleTrigger">トリガー</string>
+    <string name="serialsWordM1553bTitleCh">Ch</string>
+    <string name="serialsWordM1553bTitleTime">時間</string>
+    <string name="serialsWordM1553bTitleType">タイプ</string>
+    <string name="serialsWordM1553bTitleRAdr">RAdr</string>
+    <string name="serialsWordM1553bTitleData">データ</string>
+    <string name="serialsWordM1553bTitleTrigger">トリガー</string>
+    <string name="serialsWordM1553bTitleError">エラー</string>
+    <string name="serialsWordUartMsg">送信枠：%1$s\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tERR：%2$s（%3$s）</string>
+    <string name="serialsWordCanMsg">フレーム：%1$s\t\t\t\t\t\t\t\t\t\t\t\tSPEC：%2$s\t\t\t\t\t\t\t\t\t\t\t\tER FR：%3$s（%4$s）</string>
+    <string name="serialsWordM429Msg">単語：%1$s\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tエラー：%2$s（%3$s）</string>
+
+    <string name="rightMathMenuFftMeasure_DC">DC</string>
+    <string name="rightMathMenuFftMeasure_Freq">頻度</string>
+    <string name="rightMathMenuFftMeasure_Amp">振幅</string>
+
+    <string name="screenShotSuccess">スクリーンキャプチャの成功：</string>
+    <string name="saveRecoveryFileIsNotExist">ファイルが存在しません！デフォルト設定をロードしてください。</string>
+    <string name="rightMathAxbUnitTitle">単位</string>
+
+    <string name="msgNumberFormatException">入力は違法です</string>
+    <string name="mainCenterMenuAuto">自動</string>
+    <string name="mainCenterMenuRunStop">実行を停止</string>
+    <string name="mainCenterMenuSEQ">単一シーケンス</string>
+    <string name="sysNoSupport">システムバージョンが低すぎるため、この機能をサポートできません。</string>
+
+    <string name="msgMathAdvanceFormulaError">場所 %1$s で %2$s エラー</string>
+    <string name="msgMathAdvanceFormulaNull">式を空にすることはできません</string>
+    <string name="dialog_ok">もちろん</string>
+    <string name="dialog_cancel">キャンセル</string>
+    <string name="menu_bottom_qiuck_home">家</string>
+    <string name="menu_bottom_qiuck_segment">セグメント化されたナビゲーション</string>
+    <string name="mainCenterMenuAutoRange">自動\\n範囲</string>
+    <string name="mainCenterMenuZero">ゼロ</string>
+    <string name="mainTopLeftStateNormal">正常</string>
+    <string name="serials">連載</string>
+    <string name="msgAutoZeroRunning">自動ゼロキャリブレーションが進行中</string>
+    <string name="msgAutoZeroSuccess">自動ゼロ校正が完了しました</string>
+    <string name="msgAutoZeroFailed">自動ゼロキャリブレーションに失敗しました</string>
+
+    <string name="mathRefSerialsSlip_display">表示</string>
+</resources>

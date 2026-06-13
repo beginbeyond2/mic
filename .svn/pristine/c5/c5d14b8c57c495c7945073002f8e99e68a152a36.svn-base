@@ -1,0 +1,108 @@
+package com.micsig.tbook.scope.Sample;
+
+import com.micsig.tbook.scope.Calibrate.HwConfig;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.horizontal.HorizontalAxis;
+
+
+public class MemDepth18M extends MemDepth {
+    public MemDepth18M(int memDepth) {
+        super(memDepth);
+        addItem("Auto");
+        addItem("18/9/4.5M");
+        addItem("1800/900/450K");
+        addItem("180/90/45K");
+//        addItem("18/9/4.5K");
+    }
+    @Override
+    public int getSampleMemDepth(int chCnt) {
+
+        SegmentSample segmentSample = SegmentSample.getInstance();
+        int cfg = 1800 ;
+        int coef = chCnt / 2;
+        switch(getMemDepthItem()){
+            case 1: return cfg * 1000 * 10 / coef;
+            case 2: return cfg * 1000 / coef;
+            case 3: return cfg * 100 / coef;
+//            case 4: return cfg * 10 / coef;
+            default:
+            case 0:
+            {
+                int a = getAuto(cfg,coef);
+                if(segmentSample.isSegmentEnable()){
+                    int s = getSegment(cfg,coef);
+                    if(s > a){
+                        s = a;
+                    }
+                    return s;
+                }
+                return a;
+            }
+        }
+    }
+    @Override
+    public int getSampleMemDepth() {
+        Scope scope = Scope.getInstance();
+        return getSampleMemDepth(scope.getChannelSampOnCnt());
+    }
+
+
+    private int getSegment(int cfg,int coef){
+
+        SegmentSample segmentSample = SegmentSample.getInstance();
+        int num = segmentSample.getSegmentNums() + 1;
+        int [] zunArray = {18_000_000,1_800_000,180_000};
+        for (int j : zunArray) {
+            int cnt = segmentSample.getSegmentSample(j/coef);
+            if (num <= cnt/coef) {
+                return j / coef;
+            }
+        }
+        return zunArray[zunArray.length - 1]/coef;
+    }
+
+    private int getAuto(int cfg,int coef){
+        cfg = 18_000_000;
+        HorizontalAxis xAxis = HorizontalAxis.getInstance();
+
+        int mainScaleId = xAxis.getTimeScaleIdOfView(HorizontalAxis.WPI_STANDARD);
+        if(mainScaleId < HorizontalAxis.TSI_50mS ){
+            return cfg / coef;
+        }
+        long l = (long)(HorizontalAxis.stdTimeScaleIdVal(mainScaleId)
+                * ScopeBase.getHorizonGridCnt()
+                * HwConfig.getMaxAdInClk()
+                * 1e6 + 0.01);
+        if(l <= cfg){
+            long n = l/coef;
+            if(n < ScopeBase.getWidth()){
+                return ScopeBase.getWidth();
+            }else{
+                return (int)n;
+            }
+        }else{
+            return cfg/coef;
+        }
+    }
+
+    @Override
+    public double getTimeScaleRatio(int timeScaleId) {
+        return 1.0;
+    }
+
+    @Override
+    public double getTimeScaleRatio(int timeScaleId, int memDepthItemIdx) {
+        return 1.0;
+    }
+
+    @Override
+    public boolean isSpecialTimeScale() {
+        return true;
+    }
+
+    @Override
+    public int[] getMathCouArray() {
+        return new int[]{360000};
+    }
+}

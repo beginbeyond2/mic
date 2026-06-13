@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+
+    <com.micsig.tbook.ui.MTriggerTime
+        android:id="@+id/slider"
+        android:layout_width="wrap_content"
+        android:layout_height="35px"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="8px"
+        android:layout_marginStart="20px"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+</merge>-->
+
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <com.micsig.tbook.ui.MTriggerTime
+        android:id="@+id/slider"
+        android:layout_width="320px"
+        android:layout_height="68px"
+        android:layout_marginTop="4px"
+        android:layout_centerHorizontal="true"
+        />
+</merge>

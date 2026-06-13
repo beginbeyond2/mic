@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AbsoluteLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_main_outside"
+    android:clickable="true">
+
+    <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemOthers
+        android:id="@+id/mathLayout"
+        android:layout_width="@dimen/mainRightOtherItemWidth"
+        android:layout_height="@dimen/mainRightOtherItemHeight"
+        android:layout_x="@dimen/mainRightOtherMathX"
+        android:layout_y="@dimen/mainRightOtherMathY"
+        app:bgLeftChecked="@drawable/l_math"
+        app:bgLeftUnChecked="@drawable/l_unclick"
+        app:bgRightBottomTouchDown="@drawable/math_v_1"
+        app:bgRightBottomTouchUp="@drawable/math_v"
+        app:bgRightTopTouchDown="@drawable/math_mv_1"
+        app:bgRightTopTouchUp="@drawable/math_mv"
+        app:checked="false"
+        app:isSerials="false"
+        app:text="MATH" />
+
+    <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemOthers
+        android:id="@+id/refLayout"
+        android:layout_width="@dimen/mainRightOtherItemWidth"
+        android:layout_height="@dimen/mainRightOtherItemHeight"
+        android:layout_x="@dimen/mainRightOtherRefX"
+        android:layout_y="@dimen/mainRightOtherRefY"
+        app:bgLeftChecked="@drawable/l_ref"
+        app:bgLeftUnChecked="@drawable/l_unclick"
+        app:bgRightBottomTouchDown="@drawable/ref_v_1"
+        app:bgRightBottomTouchUp="@drawable/ref_v"
+        app:bgRightTopTouchDown="@drawable/ref_mv_1"
+        app:bgRightTopTouchUp="@drawable/ref_mv"
+        app:checked="false"
+        app:isSerials="false"
+        app:text="REF"
+        app:text_x="@dimen/mainRightOtherRefTextX" />
+
+    <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemOthers
+        android:id="@+id/s1Layout"
+        android:layout_width="@dimen/mainRightOtherItemWidth"
+        android:layout_height="@dimen/mainRightOtherItemHeight"
+        android:layout_x="@dimen/mainRightOtherSerials1X"
+        android:layout_y="@dimen/mainRightOtherSerials1Y"
+        app:bgLeftChecked="@drawable/l_s1"
+        app:bgLeftUnChecked="@drawable/l_unclick"
+        app:checked="false"
+        app:isSerials="true"
+        app:text="S1"
+        app:text_x="@dimen/mainRightOtherSerials1TextX" />
+
+    <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemOthers
+        android:id="@+id/s2Layout"
+        android:layout_width="@dimen/mainRightOtherItemWidth"
+        android:layout_height="@dimen/mainRightOtherItemHeight"
+        android:layout_x="@dimen/mainRightOtherSerials2X"
+        android:layout_y="@dimen/mainRightOtherSerials2Y"
+        app:bgLeftChecked="@drawable/l_s2"
+        app:bgLeftUnChecked="@drawable/l_unclick"
+        app:checked="false"
+        app:isSerials="true"
+        app:text="S2"
+        app:text_x="@dimen/mainRightOtherSerials2TextX" />
+</AbsoluteLayout>

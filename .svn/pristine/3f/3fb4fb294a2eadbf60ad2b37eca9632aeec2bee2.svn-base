@@ -1,0 +1,76 @@
+package com.micsig.tbook.scope.probe;
+
+import android.util.Log;
+
+import com.micsig.tbook.scope.Scope;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.FormBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+
+public class PushProbeInfo {
+    private static String TAG = "PushProbeInfo";
+
+
+    final static String url= ProbeUtils.getBaseUrl() + ":8088/devInfo/add";
+    public static void postDevInfo(BaseProbe baseProbe)  {
+
+        Scope s = Scope.getInstance();
+        DevInfoBean devInfoBean = new DevInfoBean();
+        devInfoBean.setDevSn(baseProbe.getSN());
+        devInfoBean.setDevType(baseProbe.getProbeName());
+        devInfoBean.setDevUuid(baseProbe.getSN());
+
+        JSONObject jsonObject = new JSONObject();
+
+        try {
+
+            jsonObject.put("scopeType", s.getProduct());
+            jsonObject.put("scopeSn", s.getSn());
+            jsonObject.put("ver",baseProbe.getVersion());
+
+        }catch (JSONException e){
+            e.printStackTrace();
+        }
+        devInfoBean.setRemark(jsonObject.toString());
+        Log.d(TAG,devInfoBean.toString());
+        postDevInfo(devInfoBean, new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Log.d(TAG, "onFailure() called with: call = [" + call + "], e = [" + e + "]");
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                Log.d(TAG, "onResponse() called with: call = [" + call + "], response = [" + response + "]");
+                if(response.isSuccessful()){
+
+                }
+            }
+        });
+    }
+    private static void postDevInfo(DevInfoBean devInfoBean , Callback callback){
+        FormBody formBody = new FormBody.Builder()
+                .add("devType", devInfoBean.getDevType())
+                .add("devSn", devInfoBean.getDevSn())
+                .add("devUuid", devInfoBean.getDevUuid())
+                .add("remark", devInfoBean.getRemark())
+                .build();
+        //1.创建OkHttpClient对象
+        OkHttpClient okHttpClient = new OkHttpClient();
+        Request request = new Request.Builder()
+                .url(url)
+                .post(formBody)
+                .build();
+        //2.创建一个call对象,参数就是Request请求对象
+        okHttpClient.newCall(request).enqueue(callback);
+    }
+}

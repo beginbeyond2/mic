@@ -1,0 +1,62 @@
+package com.micsig.tbook.scope.fpga;
+
+
+import android.util.Log;
+
+import com.micsig.tbook.scope.Bus.CanBus;
+import com.micsig.tbook.scope.Bus.IBus;
+
+/**
+ * Created by limh on 2024-12-23.
+ * CAN FD波特率
+ * 辅助0X32发送给FPGA CAN解码的配置信息
+ */
+
+public class FPGAReg_BUS_CAN_EXT extends FPGAReg {
+
+    public FPGAReg_BUS_CAN_EXT(int addr) {
+        super(addr, 20);
+    }
+
+    public void setSamplePlace(int val) {
+        setVal(0, 14, val);
+    }
+
+    public void setBaud(int val) {
+        setVal(14, 14, val);
+    }
+
+    public void setBaudN3(int val) {
+        setVal(24, 4, val);
+    }
+
+    public void setSel(int val) {
+        setVal(28, 4, val);
+    }
+
+    public void configBus(int fpgaIdx, IBus iBus) {
+        int busType = iBus.getBusType();
+        if (iBus instanceof CanBus && IBus.isValid(busType)) {
+            CanBus bus = (CanBus) iBus;
+            Bus_Can_setBaudRate(bus.getFDBandRate(), 2, bus.getSamplePlace2());
+            Log.d("FPGAReg","fpgaIdx:" + fpgaIdx + ",bus:" + Integer.toHexString(this.getAddr()));
+            this.Dump();
+            FPGACommand.sendCmd(this);
+        }
+    }
+
+    private void Bus_Can_setBaudRate(int bit_rate, int val, double s) {
+        int baud = 0, samplePlace = 0, baudN = 0;
+        if (bit_rate > 0) {
+            baud = ((int) (125000000.0 / bit_rate)) - 1;
+            samplePlace = ((int) (125000000.0 / bit_rate * s)) - 1;
+            baudN = (int) (16 * (125000000.0 / bit_rate - baud - 1));
+        }
+        setBaud(baud);
+        setSamplePlace(samplePlace);
+//        setBaudN3(baudN);
+        setSel(val);
+    }
+
+
+}

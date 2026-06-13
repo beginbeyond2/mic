@@ -1,0 +1,87 @@
+package com.micsig.tbook.scope.Trigger;
+
+import com.micsig.tbook.scope.channel.ChannelFactory;
+
+/**
+ * Created by zhuzh on 2018/3/20.
+ */
+
+public class TriggerFactory {
+    private static volatile TriggerFactory instance = null;
+
+    public static TriggerFactory getInstance() {
+        if (instance == null) {
+            synchronized (TriggerFactory.class) {
+                if (instance == null) {
+                    instance = new TriggerFactory();
+                }
+            }
+        }
+        return instance;
+    }
+    private TriggerCommon triggerCommon;
+    private Trigger [] triggers = new Trigger[Trigger.TRIG_TYPE_MAX_ID];
+
+    private TriggerFactory(){
+        triggerCommon = new TriggerCommon();
+        triggers[Trigger.TRIG_TYPE_EDGE] = new TriggerEdge();
+        triggers[Trigger.TRIG_TYPE_LOW_PULSE] = new TriggerRunt();
+        triggers[Trigger.TRIG_TYPE_PULSE] = new TriggerPulseWidth();
+        triggers[Trigger.TRIG_TYPE_LOGIC] = new TriggerLogic();
+        triggers[Trigger.TRIG_TYPE_TIMEOUT] = new TriggerTimeOut();
+        triggers[Trigger.TRIG_TYPE_VIDEO] = new TriggerVideo();
+        triggers[Trigger.TRIG_TYPE_SLOPE] = new TriggerSlope();
+        triggers[Trigger.TRIG_TYPE_NEDGE] = new TriggerNEdge();
+
+        int maxIdx = ChannelFactory.getMaxSerialIdx();
+        for (int i = ChannelFactory.S1; i < maxIdx; i++) {
+            int j = i - ChannelFactory.S1;
+            triggers[Trigger.TRIG_TYPE_SERIAL1 + j] = new TriggerBus(Trigger.TRIG_TYPE_SERIAL1 + j);
+        }
+    }
+    public TriggerCommon getTriggerCommon(){
+        return triggerCommon;
+    }
+    public Trigger getTrigger(){
+        int triggerType = triggerCommon.getTriggerType();
+        return getTrigger(triggerType);
+    }
+    public Trigger getTrigger(int triggerType){
+        Trigger trigger = null;
+        if(isValidTriggerType(triggerType)){
+            trigger = triggers[triggerType];
+        }
+        return trigger;
+    }
+    public void setTriggerType(int triggerType){
+        if(isValidTriggerType(triggerType)){
+            triggerCommon.setTriggerType(triggerType);
+        }
+    }
+
+    public static boolean isValidTriggerType(int triggerType){
+        return (triggerType>=Trigger.TRIG_TYPE_START_ID && triggerType <= Trigger.TRIG_TYPE_MAX_ID);
+    }
+
+    public static Trigger getTriggerObj(int triggerType){
+        return getInstance().getTrigger(triggerType);
+    }
+    public static Trigger getTriggerObj(){
+        return getInstance().getTrigger();
+    }
+    public static int getTriggerType(){
+        return getInstance().getTriggerCommon().getTriggerType();
+    }
+
+    public static boolean isTriggerSource(int chIdx){
+        Trigger trigger = getInstance().getTrigger();
+        for(int i=0;i<trigger.getTriggerSourceCnt();i++){
+            if(trigger.getTriggerSource(i) == chIdx){
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+}

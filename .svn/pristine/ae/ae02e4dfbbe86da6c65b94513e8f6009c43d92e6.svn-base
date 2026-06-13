@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="819px"
+    android:layout_height="907px"
+    android:orientation="vertical">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/top_channel_title"
+        android:layout_width="match_parent"
+        android:layout_height="70px"
+        android:orientation="horizontal"
+        android:visibility="invisible"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+
+        <TextView
+            android:id="@+id/channel_title"
+            android:layout_width="185px"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="S1"
+            android:textSize="24px"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <View
+            android:layout_width="2px"
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_right_layout_divider"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/channel_title" />
+
+        <TextView
+            android:id="@+id/btn_delete_channel"
+            style="@style/buttonStyle"
+            android:layout_width="108px"
+            android:layout_height="48px"
+            android:layout_marginEnd="28px"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:text="@string/mathRefSerialsSlip_delete"
+            android:textSize="18px"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/cl_top_channel_group"
+        android:layout_width="match_parent"
+        android:layout_height="70px"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <RadioGroup
+            android:id="@+id/top_channel_group"
+            android:layout_width="wrap_content"
+            android:layout_height="70px"
+            android:orientation="horizontal"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <RadioButton
+                android:id="@+id/channelMath"
+                android:layout_width="185px"
+                android:layout_height="match_parent"
+                android:button="@null"
+                android:checked="false"
+                android:gravity="center"
+                android:text="@string/mathRefSerialsSlip_math"
+                android:textColor="@color/textcolor_radiobutton_channel_math"
+                android:textSize="24px" />
+
+            <RadioButton
+                android:id="@+id/channelRef"
+                android:layout_width="185px"
+                android:layout_height="match_parent"
+                android:button="@null"
+                android:checked="false"
+                android:gravity="center"
+                android:text="@string/mathRefSerialsSlip_ref"
+                android:textColor="@color/textcolor_radiobutton_channel_ref"
+                android:textSize="24px" />
+
+            <RadioButton
+                android:id="@+id/channelSerials"
+                android:layout_width="185px"
+                android:layout_height="match_parent"
+                android:button="@null"
+                android:checked="true"
+                android:gravity="center"
+                android:text="@string/mathRefSerialsSlip_serials"
+                android:textColor="@color/textcolor_radiobutton_channel_bus"
+                android:textSize="24px" />
+
+        </RadioGroup>
+
+        <TextView
+            android:id="@+id/btn_add_channel"
+            style="@style/buttonStyle"
+            android:layout_width="54px"
+            android:layout_height="54px"
+            android:layout_marginTop="8px"
+            android:layout_marginEnd="28px"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:text="+"
+            android:textSize="30px"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <View
+        android:id="@+id/driver1"
+        android:layout_width="match_parent"
+        android:layout_height="2px"
+        android:background="@drawable/bg_right_layout_divider"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/top_channel_title" />
+
+
+    <com.micsig.tbook.ui.rightslipmenu.RightViewSelect
+        android:id="@+id/serialsType"
+        android:layout_width="185px"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="21px"
+        android:gravity="center"
+        android:orientation="vertical"
+        app:array="@array/serialsType"
+        app:arrayOrientation="vertical"
+        app:itemHeight="54px"
+        app:itemMargin="7px"
+        app:itemWidth="108px"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/driver1" />
+
+    <LinearLayout
+        android:id="@+id/ll_display_switch"
+        android:layout_width="185px"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="195px"
+        android:gravity="center"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toTopOf="@+id/space"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <TextView
+            android:id="@+id/channelVisibleHead"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="@string/mathRefSerialsSlip_display"
+            android:textColor="@color/textColorNewRightViewEnable"
+            android:textSize="20px" />
+
+        <com.micsig.tbook.ui.MSwitchBox
+            android:id="@+id/serialsCheckDetail"
+            android:layout_width="72px"
+            android:layout_height="36px"
+            android:layout_marginTop="10px"
+            app:switchHeight="36px"
+            app:switchWidth="72px" />
+
+    </LinearLayout>
+
+    <View
+        android:id="@+id/driver2"
+        android:layout_width="2px"
+        android:layout_height="0dp"
+        android:background="@drawable/bg_right_layout_divider"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/serialsType"
+        app:layout_constraintTop_toBottomOf="@+id/driver1" />
+
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/detail"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:paddingStart="28px"
+        android:paddingTop="22px"
+        android:paddingEnd="22px"
+        app:layout_constraintBottom_toTopOf="@+id/space"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/driver2"
+        app:layout_constraintTop_toBottomOf="@+id/driver1">
+
+        <com.micsig.tbook.tbookscope.rightslipmenu.serials.RightLayoutSerialsUart
+            android:id="@+id/uartRightSerials"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <com.micsig.tbook.tbookscope.rightslipmenu.serials.RightLayoutSerialsLin
+            android:id="@+id/linRightSerials"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <com.micsig.tbook.tbookscope.rightslipmenu.serials.RightLayoutSerialsCan
+            android:id="@+id/canRightSerials"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <com.micsig.tbook.tbookscope.rightslipmenu.serials.RightLayoutSerialsSpi
+            android:id="@+id/spiRightSerials"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <com.micsig.tbook.tbookscope.rightslipmenu.serials.RightLayoutSerialsI2c
+            android:id="@+id/i2cRightSerials"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <com.micsig.tbook.tbookscope.rightslipmenu.serials.RightLayoutSerialsM429
+            android:id="@+id/m429RightSerials"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <com.micsig.tbook.tbookscope.rightslipmenu.serials.RightLayoutSerialsM1553B
+            android:id="@+id/m1553bRightSerials"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <View
+        android:id="@+id/space"
+        android:layout_width="match_parent"
+        android:layout_height="70px"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

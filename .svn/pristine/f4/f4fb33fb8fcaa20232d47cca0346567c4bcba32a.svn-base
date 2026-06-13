@@ -1,0 +1,150 @@
+package com.micsig.tbook.scope.fpga;
+
+import com.micsig.tbook.scope.Bus.CanBus;
+import com.micsig.tbook.scope.Bus.IBus;
+
+/**
+ * Created by zhuzh on 2018-5-30.
+ */
+
+public class FPGAReg_BUS_CAN extends FPGAReg_BUS {
+    public FPGAReg_BUS_CAN(int addr) {
+        super(addr,20);
+    }
+    public void setSrc(int val){
+        setVal(0,2,val);
+    }
+    public void setISO(boolean bISO) { setVal(2,1,bISO?0:1);}
+    public void setDlc(int val){
+        setVal(4,4,val);
+    }
+    public void setTriggerMode(int val){
+        setVal(8,4,val);
+    }
+    public void setBaudN(int val){
+        setVal(16,4,val);
+    }
+    public void setBaudN2(int val){
+        setVal(20,4,val);
+    }
+    public void setBaudN3(int val){
+        setVal(24,4,val);
+    }
+    public void setId(int val){
+        setVal(1,val);
+    }
+    public void setData(int idx,int val){
+        setVal(idx+2,val);
+    }
+    public void setSamplePlace(int val){
+        setVal(4,0,14,val);
+    }
+    public void setBaud(int val){
+        setVal(4,14,14,val);
+    }
+    public void setSel(int val) { setVal(4,28,4,val); }
+    public void setFDData(int idx,int val){
+        setVal(2,0,16,val);
+        setVal(2,16,16,idx);
+    }
+    public void setFDMask(int idx,int val){
+        setVal(3,0,16,val);
+        setVal(3,0,16,val);
+    }
+
+/*    void Bus_Can_setBaudRate(int bit_rate,int val,double s){
+
+        int baud = 0,samplePlace = 0,baudN = 0;
+        if(bit_rate > 0) {
+            baud = ((int) (125000000.0 / bit_rate)) - 1;
+            samplePlace = ((int) (125000000.0 / bit_rate * s)) - 1;
+            baudN = (int) (16 * (125000000.0 / bit_rate - baud - 1));
+        }
+        setBaud(baud);
+        setSamplePlace(samplePlace);
+        switch (val) {
+            case 0:
+                setBaudN(baudN);
+                break;
+            case 1:
+                setBaudN2(baudN);
+                break;
+            case 2:
+                setBaudN3(baudN);
+                break;
+        }
+        setSel(val);
+    }*/
+
+    private void Bus_Can_setBaudRate(int val, CanBus bus) {
+        int bit_rate = bus.getBaudRate(), samplePlace = 0, baud = 0, baudN = 0;
+        double s1 = bus.getSamplePlace1();
+        if (bit_rate > 0) {
+            baud = ((int) (125000000.0 / bit_rate)) - 1;
+            samplePlace = ((int) (125000000.0 / bit_rate * s1)) - 1;
+            baudN = (int) (16 * (125000000.0 / bit_rate - baud - 1));
+        }
+
+        setBaud(baud);
+        setSamplePlace(samplePlace);
+        setBaudN(baudN);
+        setBaudN2(baudN);
+
+        int fd_bit_rate = bus.getFDBandRate(), fdBand = 0, bandN3 = 0;
+        if (fd_bit_rate > 0) {
+            fdBand = ((int) (125000000.0 / fd_bit_rate)) - 1;
+            bandN3 = (int) (16 * (125000000.0 / fd_bit_rate - fdBand - 1));
+        }
+
+        setBaudN3(bandN3);
+        setSel(val);
+    }
+
+
+    private void ms_sleep( long ms){
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    @Override
+    public void configBus(int fpgaIdx,IBus iBus) {
+
+        CanBus bus = (CanBus)iBus;
+        int idleLevel = IBus.IDLE_LEVEL_HIGH;
+        long data = bus.getData();
+        int triggerType = bus.getTriggerType();
+        int src = (bus.getSrcChIdx());
+        setSrc(chIdx2BusSrc(src));
+        setISO(bus.isISO());
+        setTriggerMode(triggerType);
+        setDlc(bus.getDlc());
+        setId(bus.getFrameId(triggerType));
+        FPGAReg_BUS_LEVEL busLevel = (FPGAReg_BUS_LEVEL) FPGACommand.getReg(fpgaIdx,FPGA_BUS_LEVEL);
+
+        busLevel.setBusSrcExt(getBusIdx(),(src>>2) & 1);
+
+        Bus_Can_setBaudRate(0, bus);
+//        FPGACommand.sendCmd(this);FPGACommand.getInstance().updataRegEx(fpgaIdx);ms_sleep(20);
+//        Bus_Can_setBaudRate(bus.getBaudRate(),1,bus.getSamplePlace1());
+//        FPGACommand.sendCmd(this);FPGACommand.getInstance().updataRegEx(fpgaIdx);ms_sleep(20);
+//        Bus_Can_setBaudRate(bus.getFDBandRate(),2,bus.getSamplePlace2());
+//        FPGACommand.sendCmd(this);FPGACommand.getInstance().updataRegEx(fpgaIdx);ms_sleep(20);
+
+        setData(0,(int)data);
+        setData(1,(int)(data>>>32));
+
+        switch (bus.getSignal()){
+            case CanBus.CAN_H:
+            case CanBus.CAN_H_L:
+                idleLevel = IBus.IDLE_LEVEL_LOW;
+                break;
+            default:
+                idleLevel = IBus.IDLE_LEVEL_HIGH;
+                break;
+        }
+        setLevel(busLevel,src,idleLevel);
+        FPGACommand.sendCmd(busLevel);
+    }
+}

@@ -1,0 +1,22 @@
+package com.micsig.tbook.scope.Calibrate;
+
+public interface IADC {
+    void Init();
+//    void setOffset(int adIdx,int i0_q1, int vol);
+    void setOffset(int fpgaIdx,int adIdx,int i0_q1, int vol);
+//    void setGain(int adIdx,int i0_q1, int vol);
+    void setGain(int fpgaIdx,int adIdx,int i0_q1, int vol);
+    void setChannel(int cnt,boolean [] sel);
+    void setChannel(boolean [] sel);
+
+    void setCalibrate();
+
+    int getSampleChannel(boolean [] sel);
+
+    int getMaxAdInClk();
+
+    int getMaxChNums();
+
+    boolean isChChangeReset();
+
+}

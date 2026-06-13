@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/m1553bCsWord"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="10px">
+
+    <com.micsig.tbook.ui.top.view.TopViewEdit
+        android:id="@+id/m1553bCsWordCsWord"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_marginStart="10px"
+        app:editHint="0"
+        app:head="@string/m1553bCsWordCsWordHead"
+        app:editWidth="400px"
+        app:headWidth="150px" />
+</RelativeLayout>

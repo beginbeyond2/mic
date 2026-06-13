@@ -1,0 +1,439 @@
+package com.micsig.tbook.tbookscope.wavezone;
+
+import android.animation.Animator;
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.view.View;
+import android.widget.AbsoluteLayout;
+
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.tbookscope.GlobalVar;
+import com.micsig.tbook.tbookscope.MainViewGroup;
+import com.micsig.tbook.tbookscope.R;
+import com.micsig.tbook.tbookscope.rxjava.RxBus;
+import com.micsig.tbook.tbookscope.rxjava.RxEnum;
+import com.micsig.tbook.tbookscope.util.CacheUtil;
+
+/**
+ * Created by liwb on 2017/6/15.
+ * 模式管理类：负责切换模式，屏蔽XXX模式下的XXX功能等
+ */
+
+public class WorkModeManage implements IWorkMode {
+    private static final String TAG = "WorkModeManage";
+
+    public static final int WorkModeManage_BeginSwitchMode = 0x01;
+    public static final int WorkModeManage_EndSwitchMode = 0x02;
+    public static final int WorkModeManage_Ready = WorkModeManage_BeginSwitchMode | WorkModeManage_EndSwitchMode;
+    public static final int WorkModeManage_Init = 0x00;
+
+    //region  单例类
+    private static class WorkModeManageHolder {
+        public static final WorkModeManage instance = new WorkModeManage();
+    }
+
+    public static WorkModeManage getInstance() {
+        return WorkModeManage.WorkModeManageHolder.instance;
+    }
+    //endregion
+
+
+//region 属性
+    /**
+     * 状态切换过程
+     */
+    private int WorkModeManageState = 0;
+
+    public int getWorkModeManageState() {
+        return WorkModeManageState;
+    }
+
+    public synchronized void setWorkModeManageState(int workModeManageState) {
+        WorkModeManageState = workModeManageState;
+    }
+
+    /**
+     * 工作模式切换
+     */
+    private boolean WorkModeChange = false;
+
+    public boolean isWorkModeChange() {
+        return WorkModeChange;
+    }
+
+    public synchronized void setWorkModeChange(boolean workModeChange) {
+        WorkModeChange = workModeChange;
+    }
+
+    private
+    @IWorkMode.WorkMode
+    int mWorkMode = IWorkMode.WorkMode_YT;
+
+    public
+    @IWorkMode.WorkMode
+    int getmWorkMode() {
+        return mWorkMode;
+    }
+
+    /**
+     * 仅用于初始化时外部调用使用，实际此时不做处理，所以需要成对使用，改变后再改回原来的值
+     */
+    public void setWorkModeOnlyChangeData(@IWorkMode.WorkMode int nextWorkMode) {
+        this.mWorkMode = nextWorkMode;
+    }
+
+    public void setWorkMode(@IWorkMode.WorkMode int nextWorkMode, boolean isFromEventBus) {
+        if (nextWorkMode == this.mWorkMode) return;
+        int preWorkMode = this.mWorkMode;
+        Logger.i(TAG, "setWorkMode,preWorkMode:" + preWorkMode + ",nextWorkMode:" + nextWorkMode);
+        this.mWorkMode = nextWorkMode;
+        absoluteLayout_xy.setVisibility(View.GONE);
+        absoluteLayout_yt.setVisibility(View.GONE);
+        absoluteLayout_zoom.setVisibility(View.GONE);
+
+        switch (nextWorkMode) {
+            case IWorkMode.WorkMode_XY: {
+                waveZoneDisplay_xy.switchWorkMode(nextWorkMode);
+                waveZoneDisplay_ytZoom.onPause();
+                waveZoneDisplay_xy.onResume();
+                waveZoneDisplay_yt.onPause();
+
+                absoluteLayout_xy.setTranslationZ(40f);
+                absoluteLayout_yt.setTranslationZ(20f);
+                absoluteLayout_zoom.setTranslationZ(10f);
+                changeXYSpace();
+            }
+            break;
+            case IWorkMode.WorkMode_YT: {
+                waveZoneDisplay_yt.switchWorkMode(nextWorkMode);
+                waveZoneDisplay_ytZoom.onPause();
+                waveZoneDisplay_xy.onPause();
+                waveZoneDisplay_yt.onResume();
+
+                absoluteLayout_yt.setTranslationZ(40f);
+                absoluteLayout_zoom.setTranslationZ(10f);
+                absoluteLayout_xy.setTranslationZ(20f);
+                if (absoluteLayout_yt.getY() != 0) {
+                    waveZoneDisplay_yt.forceClearGlCanvas();
+                    absoluteLayout_yt.setY(0);
+                    waveZoneDisplay_yt.forceDrawGlCanvas();
+                }
+            }
+            break;
+            case IWorkMode.WorkMode_YTZOOM: {
+                waveZoneDisplay_yt.switchWorkMode(nextWorkMode);
+                waveZoneDisplay_ytZoom.onResume();
+                waveZoneDisplay_xy.onPause();
+                waveZoneDisplay_yt.onResume();
+
+                absoluteLayout_zoom.setTranslationZ(40f);
+                absoluteLayout_yt.setTranslationZ(30f);
+                absoluteLayout_xy.setTranslationZ(0f);
+                waveZoneDisplay_yt.forceClearGlCanvas();
+                absoluteLayout_yt.setY(GlobalVar.get().getRectZoom().height());
+                waveZoneDisplay_yt.forceDrawGlCanvas();
+            }
+            break;
+        }
+        setWaveZoneVisible(nextWorkMode);
+        RxBus.getInstance().post(RxEnum.WAVEZONE_WORKMODE_CHANGE, new WorkModeBean(preWorkMode, nextWorkMode, isFromEventBus));
+    }
+
+    private void setWaveZoneVisible(@IWorkMode.WorkMode int mWorkMode) {
+        switch (mWorkMode) {
+            case IWorkMode.WorkMode_XY:
+                absoluteLayout_xy.setVisibility(View.VISIBLE);
+                absoluteLayout_yt.setVisibility(View.GONE);
+                absoluteLayout_zoom.setVisibility(View.GONE);
+                break;
+            case IWorkMode.WorkMode_YT:
+                absoluteLayout_xy.setVisibility(View.GONE);
+                absoluteLayout_yt.setVisibility(View.VISIBLE);
+                absoluteLayout_zoom.setVisibility(View.GONE);
+                break;
+            case IWorkMode.WorkMode_YTZOOM:
+                absoluteLayout_xy.setVisibility(View.GONE);
+                absoluteLayout_yt.setVisibility(View.VISIBLE);
+                absoluteLayout_zoom.setVisibility(View.VISIBLE);
+                break;
+        }
+    }
+    //endregion
+
+    //region 三个模式的初始化
+    private WaveZoneDisplay_YT waveZoneDisplay_yt = null;
+    private WaveZoneDisplay_XY waveZoneDisplay_xy = null;
+    private WaveZoneDisplay_YTZoom waveZoneDisplay_ytZoom = null;
+    private AbsoluteLayout absoluteLayout_yt, absoluteLayout_xy, absoluteLayout_zoom;
+
+    public WaveZoneDisplay_YT getWaveZoneDisplay_yt() {
+        return waveZoneDisplay_yt;
+    }
+
+    public WaveZoneDisplay_XY getWaveZoneDisplay_xy() {
+        return waveZoneDisplay_xy;
+    }
+
+    public WaveZoneDisplay_YTZoom getWaveZoneDisplay_ytZoom() {
+        return waveZoneDisplay_ytZoom;
+    }
+    //endregion
+
+    public void init() {
+
+    }
+
+    /**
+     * 初始化显示区域 ，默认显示YT模式
+     *
+     * @param context
+     * @param mainViewGroup
+     */
+    public void initWaveZoneDisplay(Context context, MainViewGroup mainViewGroup) {
+        absoluteLayout_yt = (AbsoluteLayout) mainViewGroup.findViewById(R.id.middlebar_wave_zone);
+        absoluteLayout_xy = (AbsoluteLayout) mainViewGroup.findViewById(R.id.middlebar_wave_zone_xy);
+        absoluteLayout_zoom = (AbsoluteLayout) mainViewGroup.findViewById(R.id.middlebar_wave_zoom);
+        waveZoneDisplay_yt = new WaveZoneDisplay_YT(context, mainViewGroup);
+        waveZoneDisplay_ytZoom = new WaveZoneDisplay_YTZoom(context);
+        waveZoneDisplay_yt.setWaveZoneDisplayYtZoom(waveZoneDisplay_ytZoom);
+        waveZoneDisplay_xy = new WaveZoneDisplay_XY(context,mainViewGroup);
+
+        waveZoneDisplay_xy.onPause();
+        waveZoneDisplay_ytZoom.onPause();
+
+//        AbsoluteLayout.LayoutParams layoutParams = new AbsoluteLayout.LayoutParams(550, 450, 150, 50);
+//        absoluteLayout_xy.addView(waveZoneDisplay_xy, layoutParams);
+        absoluteLayout_xy.addView(waveZoneDisplay_xy);
+        absoluteLayout_zoom.addView(waveZoneDisplay_ytZoom);
+        absoluteLayout_yt.addView(waveZoneDisplay_yt);
+        changeXYSpace();
+    }
+    public void refresh(){
+        waveZoneDisplay_yt.requestRender();
+        waveZoneDisplay_xy.requestRender();
+        waveZoneDisplay_ytZoom.requestRender();
+    }
+
+    public void changeWaveZoneSize(int newH) {
+        AbsoluteLayout.LayoutParams layoutParams = (AbsoluteLayout.LayoutParams) absoluteLayout_yt.getLayoutParams();
+        layoutParams.height = newH;
+        absoluteLayout_yt.setLayoutParams(layoutParams);
+
+        AbsoluteLayout.LayoutParams zoomLayoutParams = (AbsoluteLayout.LayoutParams) absoluteLayout_zoom.getLayoutParams();
+        zoomLayoutParams.height = newH >> 2;
+        absoluteLayout_zoom.setLayoutParams(zoomLayoutParams);
+
+        waveZoneDisplay_yt.forceClearGlCanvas();
+        if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_YTZOOM) {
+            absoluteLayout_yt.setY(newH >> 2);
+        } else {
+            absoluteLayout_yt.setY(0);
+        }
+        waveZoneDisplay_yt.forceDrawGlCanvas();
+
+//        AbsoluteLayout.LayoutParams xyLayoutParams = (AbsoluteLayout.LayoutParams) absoluteLayout_xy.getLayoutParams();
+//        xyLayoutParams.height = newH / 10 * 8;
+//        xyLayoutParams.width = newH / 10 * 8;
+//        absoluteLayout_xy.setLayoutParams(xyLayoutParams);
+        changeXYSpace();
+
+    }
+
+    public boolean isXyMode(){
+        return this.mWorkMode==IWorkMode.WorkMode_XY;
+    }
+    public boolean isYTMode(){ return this.mWorkMode==IWorkMode.WorkMode_YT;}
+    public boolean isZoom(){
+        return this.mWorkMode==IWorkMode.WorkMode_YTZOOM;
+    }
+    public boolean isSerialTextMode(){
+        boolean isSerialsTxt = CacheUtil.get().getBoolean(CacheUtil.MAIN_BOTTOM_SLIP_SERIALBUSTXT);
+        return isSerialsTxt;
+    }
+
+    public void getLocationOnScreen( int[] outLocation){
+
+        switch (mWorkMode){
+            case IWorkMode.WorkMode_XY:
+                waveZoneDisplay_xy.getLocationOnScreen(outLocation);
+                break;
+            case IWorkMode.WorkMode_YT:
+                waveZoneDisplay_yt.getLocationOnScreen(outLocation);
+                break;
+            case IWorkMode.WorkMode_YTZOOM:
+                waveZoneDisplay_ytZoom.getLocationOnScreen(outLocation);
+                break;
+            default:
+                outLocation[0] = 0;
+                outLocation[1] = 0;
+                break;
+        }
+    }
+    public Bitmap getBitmap(){
+        Bitmap bitmap = null;
+        switch (mWorkMode){
+            case IWorkMode.WorkMode_XY:
+                bitmap = waveZoneDisplay_xy.getBitmap();
+                break;
+            case IWorkMode.WorkMode_YT:
+                bitmap = waveZoneDisplay_yt.getBitmap();
+                break;
+            case IWorkMode.WorkMode_YTZOOM:
+            {
+
+
+                bitmap = Bitmap.createBitmap(waveZoneDisplay_yt.getWidth(),waveZoneDisplay_yt.getHeight(), Bitmap.Config.ARGB_8888);
+                Canvas canvas = new Canvas(bitmap);
+                Bitmap bp = waveZoneDisplay_ytZoom.getBitmap();
+                canvas.drawBitmap(bp,0, 0,null);
+                bp.recycle();
+                bp = waveZoneDisplay_yt.getBitmap();
+                canvas.drawBitmap(bp,0, waveZoneDisplay_ytZoom.getHeight(),null);
+                bp.recycle();
+                canvas.save();
+                canvas.restore();
+            }
+                break;
+        }
+        return bitmap;
+    }
+    public void stopRefresh() {
+        waveZoneDisplay_yt.onPause();
+        waveZoneDisplay_ytZoom.onPause();
+        waveZoneDisplay_xy.onPause();
+    }
+
+    /**
+     * 会在刷新的线程中被调用，改变模式的函数是setmWorkMode();
+     * 此函数是一步到位的将模式切换过来，没有动画。
+     *
+     * @param workMode
+     */
+    @Override
+    public void switchWorkMode(@IWorkMode.WorkMode int workMode) {
+        switch (workMode) {
+            case IWorkMode.WorkMode_XY: {
+                waveZoneDisplay_ytZoom.onPause();
+                waveZoneDisplay_xy.onResume();
+                waveZoneDisplay_yt.onPause();
+
+                absoluteLayout_xy.setTranslationZ(40f);
+                absoluteLayout_yt.setTranslationZ(20f);
+                absoluteLayout_zoom.setTranslationZ(10f);
+                changeXYSpace();
+            }
+            break;
+            case IWorkMode.WorkMode_YT: {
+                waveZoneDisplay_ytZoom.onPause();
+                waveZoneDisplay_xy.onPause();
+                waveZoneDisplay_yt.onResume();
+
+                absoluteLayout_yt.setTranslationZ(40f);
+                absoluteLayout_zoom.setTranslationZ(10f);
+                absoluteLayout_xy.setTranslationZ(20f);
+                if (absoluteLayout_yt.getY() != 0) {
+                    waveZoneDisplay_yt.forceClearGlCanvas();
+                    // waveZoneDisplay_yt.setY(0);
+                    absoluteLayout_yt.setY(0);
+                    waveZoneDisplay_yt.forceDrawGlCanvas();
+                }
+
+            }
+            break;
+            case IWorkMode.WorkMode_YTZOOM: {
+                waveZoneDisplay_ytZoom.onResume();
+                waveZoneDisplay_xy.onPause();
+                waveZoneDisplay_yt.onResume();
+
+                absoluteLayout_zoom.setTranslationZ(40f);
+                absoluteLayout_yt.setTranslationZ(30f);
+                absoluteLayout_xy.setTranslationZ(0f);
+                waveZoneDisplay_yt.forceClearGlCanvas();
+//                waveZoneDisplay_yt.setY(100);
+                absoluteLayout_yt.setY(GlobalVar.get().getRectZoom().height());
+                waveZoneDisplay_yt.forceDrawGlCanvas();
+
+            }
+            break;
+        }
+        WorkModeManage.getInstance().setWorkModeChange(false);
+        WorkModeManage.getInstance().setWorkModeManageState(WorkModeManage.WorkModeManage_Init);
+    }
+
+    public void onResume() {
+        switch (mWorkMode) {
+            case IWorkMode.WorkMode_XY: {
+                waveZoneDisplay_xy.onResume();
+            }
+            break;
+            case IWorkMode.WorkMode_YT: {
+                waveZoneDisplay_yt.onResume();
+            }
+            break;
+            case IWorkMode.WorkMode_YTZOOM: {
+                waveZoneDisplay_yt.onResume();
+                waveZoneDisplay_yt.getWaveZoneDisplayYtZoom().onResume();
+            }
+            break;
+        }
+    }
+
+    public void onPause() {
+        switch (mWorkMode) {
+            case IWorkMode.WorkMode_XY: {
+                waveZoneDisplay_xy.onPause();
+            }
+            break;
+            case IWorkMode.WorkMode_YT: {
+                waveZoneDisplay_yt.onPause();
+            }
+            break;
+            case IWorkMode.WorkMode_YTZOOM: {
+                waveZoneDisplay_xy.onPause();
+                waveZoneDisplay_yt.getWaveZoneDisplayYtZoom().onPause();
+            }
+            break;
+        }
+    }
+
+
+    public void changeXYSpace() {
+        int temp = (GlobalVar.get().getMainWave().y - GlobalVar.get().getWaveZoneHeight_Pix(IWorkMode.WorkMode_XY)) / 2;
+        AbsoluteLayout.LayoutParams layoutParams = (AbsoluteLayout.LayoutParams) absoluteLayout_xy.getLayoutParams();
+        if (layoutParams.y != temp) {
+            layoutParams.y = temp;
+            absoluteLayout_xy.setLayoutParams(layoutParams);
+        }
+    }
+
+    //region 动画处理
+    // 动画的处理应该包括几个方向 ：从YT到YTZOOM，从YTZOOM到YT，从YT到XY，从XY到YT
+    //XY到YT 可以简单一点，左右移动，YT到YTZOOM可以上下拉伸
+    //
+
+
+    class AnimatorStateListener implements Animator.AnimatorListener {
+        @Override
+        public void onAnimationStart(Animator animation) {
+
+        }
+
+        @Override
+        public void onAnimationEnd(Animator animation) {
+
+        }
+
+        @Override
+        public void onAnimationCancel(Animator animation) {
+
+        }
+
+        @Override
+        public void onAnimationRepeat(Animator animation) {
+
+        }
+    }
+    //endregion
+}

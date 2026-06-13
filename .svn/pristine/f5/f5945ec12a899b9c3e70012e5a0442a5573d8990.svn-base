@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/color_Backcolor_MainMenu3"
+    android:paddingTop="10px"
+    android:paddingHorizontal="10px">
+
+
+    <com.micsig.tbook.ui.top.view.TopViewSpinner
+        android:id="@+id/topSpinner"
+        android:layout_width="wrap_content"
+        android:layout_height="60px"
+        android:layout_marginTop="12px"
+        android:layout_marginStart="28px"
+        app:editWidth="600px"
+        app:headWidth="100px" />
+
+    <Button
+        android:id="@+id/btn_browse"
+        style="@style/buttonStyleTop"
+        android:layout_width="120px"
+        android:layout_height="60px"
+        android:layout_toRightOf="@+id/topSpinner"
+        android:layout_alignTop="@+id/topSpinner"
+        android:layout_alignBottom="@+id/topSpinner"
+        android:layout_marginStart="50px"
+        android:background="@drawable/selector_rightslip_button"
+        android:text="@string/top_save_browse" />
+
+    <com.micsig.tbook.ui.top.view.TopViewEdit
+        android:id="@+id/saveName"
+        android:layout_width="wrap_content"
+        android:layout_height="54px"
+        android:layout_below="@id/topSpinner"
+        android:layout_marginStart="54px"
+        android:layout_marginTop="12px"
+        app:editCenter="true"
+        app:editWidth="360px"
+        app:head="@string/view_savewithhead_title"
+        app:headViewGravityLeft="false"
+        app:headTextSize="20px"
+        app:headWidth="90px" />
+
+    <CheckBox
+        android:id="@+id/check_file_name_add"
+        android:layout_width="214px"
+        android:layout_height="54px"
+        android:layout_alignTop="@+id/saveName"
+        android:layout_alignBottom="@+id/saveName"
+        android:layout_marginStart="50px"
+        android:layout_toRightOf="@+id/saveName"
+        android:button="@null"
+        android:checked="true"
+        android:drawablePadding="10px"
+        android:gravity="center_vertical"
+        android:text="@string/top_save_file_name_add"
+        android:textColor="@color/textColor"
+        android:textSize="@dimen/textSizeCur" />
+
+    <TextView
+        android:id="@+id/txt_index_num"
+        style="@style/editTextStyle"
+        android:layout_width="120px"
+        android:layout_height="54px"
+        android:layout_marginStart="26px"
+        android:gravity="center"
+        android:maxLines="1"
+        android:text="999"
+        android:layout_toRightOf="@+id/check_file_name_add"
+        android:layout_alignTop="@+id/saveName"
+        android:layout_alignBottom="@+id/saveName"
+        />
+
+
+    <Button
+        android:id="@+id/btn_save"
+        style="@style/buttonStyleTop"
+        android:layout_width="120px"
+        android:layout_height="60px"
+        android:layout_alignTop="@+id/saveName"
+        android:layout_alignBottom="@+id/saveName"
+        android:layout_toRightOf="@+id/txt_index_num"
+        android:background="@drawable/selector_rightslip_button"
+        android:text="@string/view_savewithhead_confirm"
+        android:layout_marginStart="50px"
+        android:textAllCaps="false" />
+
+
+</RelativeLayout>

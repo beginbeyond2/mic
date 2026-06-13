@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <Switch
+        android:id="@+id/centerAuto"
+        android:layout_width="65px"
+        android:layout_height="59px"
+        android:background="@drawable/bg_centermenu_itemtop"
+        android:gravity="center"
+        android:text="@string/mainCenterMenuAuto"
+        android:textColor="@color/textcolor_centermenu_item"
+        android:textSize="14px"
+        android:thumb="@null"
+        android:track="@null" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="1px"
+        android:background="@drawable/ic_centermenu_divider" />
+
+    <Switch
+        android:id="@+id/centerRunStop"
+        android:layout_width="65px"
+        android:layout_height="59px"
+        android:layout_below="@id/centerAuto"
+        android:background="@drawable/bg_centermenu_itemcenter"
+        android:gravity="center"
+        android:lineSpacingExtra="-0px"
+        android:text="@string/mainCenterMenuRunStop"
+        android:textColor="@color/textcolor_centermenu_runstop"
+        android:textSize="14px"
+        android:thumb="@null"
+        android:track="@null" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="1px"
+        android:background="@drawable/ic_centermenu_divider" />
+
+    <Switch
+        android:id="@+id/centerSeq"
+        android:layout_width="65px"
+        android:layout_height="59px"
+        android:layout_below="@id/centerRunStop"
+        android:background="@drawable/bg_centermenu_itemcenter"
+        android:gravity="center"
+        android:lineSpacingExtra="-3px"
+        android:text="@string/mainCenterMenuSEQ"
+        android:textColor="@color/textcolor_centermenu_item"
+        android:textSize="14px"
+        android:thumb="@null"
+        android:track="@null" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="1px"
+        android:background="@drawable/ic_centermenu_divider" />
+
+    <Button
+        android:id="@+id/centerHalf"
+        android:layout_width="65px"
+        android:layout_height="59px"
+        android:layout_below="@id/centerSeq"
+        android:background="@drawable/bg_centermenu_itemcenter"
+        android:gravity="center"
+        android:text="50%"
+        android:textAllCaps="false"
+        android:textColor="@color/textcolor_centermenu_item"
+        android:textSize="14px" />
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="1px"
+        android:background="@drawable/ic_centermenu_divider" />
+
+    <Button
+        android:id="@+id/zeroCalibrate"
+        android:layout_width="65px"
+        android:layout_height="59px"
+        android:layout_below="@id/centerSeq"
+        android:background="@drawable/bg_centermenu_itemcenter"
+        android:gravity="center"
+        android:text="@string/mainCenterMenuZero"
+        android:textAllCaps="false"
+        android:textColor="@color/textcolor_centermenu_item"
+        android:textSize="14px" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="1px"
+        android:background="@drawable/ic_centermenu_divider" />
+
+    <ImageButton
+        android:id="@+id/centerHome"
+        android:layout_width="65px"
+        android:layout_height="59px"
+        android:layout_below="@id/centerHalf"
+        android:background="@drawable/bg_centermenu_itembottom"
+        android:gravity="center"
+        android:src="@drawable/ic_home" />
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="1px"
+        android:background="@drawable/ic_centermenu_divider" />
+
+</merge>

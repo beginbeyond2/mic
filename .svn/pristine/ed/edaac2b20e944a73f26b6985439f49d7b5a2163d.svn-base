@@ -1,0 +1,41 @@
+package com.micsig.tbook.scope.mem;
+
+import java.nio.ByteBuffer;
+
+/**
+ * Created by zhuzh on 2018-4-11.
+ */
+
+public class Memory {
+
+    public static void Memcpy(ByteBuffer dst,ByteBuffer src,int length){
+
+        Memcpy(dst,0,src,0,length);
+    }
+    public static void Memset(ByteBuffer dst,int offset,int length){
+        Memset(dst,offset,length,0);
+    }
+    public static void Memset(ByteBuffer dst, int offset,int length,int val){
+        if(dst.isDirect()){
+            memset(dst,offset,length,val);
+        }
+    }
+    public static void Memcpy(ByteBuffer dst,int dstOffset,ByteBuffer src,int srcOffset,int length){
+        if(dst.isDirect() && src.isDirect()) {
+            memcpy(dst, dstOffset, src, srcOffset, length);
+        }
+    }
+    public static void Convert16to32(ByteBuffer dst,int dstOffset,ByteBuffer src,int srcOffset,int val,int length){
+        if(dst.isDirect() && src.isDirect()){
+            convert16to32(dst,dstOffset,src,srcOffset,val,length);
+        }
+    }
+    public static void Sync(){
+        sync();
+    }
+
+    private static native void memcpy(ByteBuffer dst,int dstOffset,ByteBuffer src,int srcOffset,int length);
+    private static native void memset(ByteBuffer dst,int dstOffset,int length,int val);
+    private static native void convert16to32(ByteBuffer dst,int dstOffset,ByteBuffer src,int srcOffset,int val,int length);
+    private static native void sync();
+}

@@ -1,0 +1,331 @@
+package com.micsig.tbook.tbookscope.wavezone.wave;
+
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Rect;
+
+import com.chillingvan.canvasgl.ICanvasGL;
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.tbookscope.GlobalVar;
+import com.micsig.tbook.tbookscope.tools.Tools;
+import com.micsig.tbook.tbookscope.util.CacheUtil;
+import com.micsig.tbook.tbookscope.wavezone.IWorkMode;
+import com.micsig.tbook.tbookscope.wavezone.WorkModeManage;
+import com.micsig.tbook.ui.wavezone.IWave;
+import com.micsig.tbook.ui.wavezone.TChan;
+
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Created by liwb on 2017/5/19.
+ */
+
+public class ChannelWaveManage_YT implements IWaveShowManage, IWorkMode {
+    private static final String TAG="ChannelWaveManage_YT";
+
+    //region
+    private Map<Integer, ChannelWave> mapChannel = new HashMap<>();
+//    private Bitmap bmp;
+    //endregion
+
+    public ChannelWaveManage_YT(Bitmap[][] resBmp, IWave.OnMovingWaveEvent onMovingWaveEvent, IWave.OnSelectChangeEvent onSelectChangeEvent) {
+//        bmp = Bitmap.createBitmap(GlobalVar.get().getWaveZoneWidth_Pix(WorkModeManage.getInstance().getmWorkMode()),
+//                GlobalVar.get().getWaveZoneHeight_Pix(WorkModeManage.getInstance().getmWorkMode()), Bitmap.Config.ARGB_8888);
+
+        TChan.foreachChan((chNo) -> {
+            ChannelWave channelWave = new ChannelWave(resBmp[chNo]);
+            channelWave.setLineNameId(chNo);
+            channelWave.setY(Tools.getYTChannelPositionUI(chNo));
+            channelWave.setSelected(false);
+            channelWave.setVisible(true);
+            channelWave.setOnMovingWaveEvent(onMovingWaveEvent);
+            channelWave.setOnSelectChangeEvent(onSelectChangeEvent);
+            channelWave.initLabelRect();
+            mapChannel.put(chNo, channelWave);
+        });
+    }
+
+    public void setWaveChange(int height) {
+//        bmp = Bitmap.createScaledBitmap(bmp, GlobalVar.get().getWaveZoneWidth_Pix(WorkModeManage.getInstance().getmWorkMode()), height, true);
+        updateChannelPosCache();
+        refresh();
+    }
+
+    public void updateChannelPosCache() {
+        for (Integer i : mapChannel.keySet()) {
+            ChannelWave tem = mapChannel.get(i);
+            if (tem == null) continue;
+            tem.changeLabelPos(tem.getLabelRect().left);
+            if (CacheUtil.get().isClickFactoryReset()) {//这个值时是初始值
+//                tem.setYFromEventBus((int) Math.round(108 * (tem.getLineNameID() - 2 - (tem.getLineNameID() - 9) * 1.5)));
+            } else {
+
+
+                Tools.putChannelPosition(tem.getLineNameID(), ScopeBase.changeAccuracy(tem.getPosY() * ScopeBase.getToUICoff()));
+            }
+        }
+    }
+
+//    private void setBmpPixs(int[] pixs) {
+//        synchronized (bmp) {
+//            bmp.setPixels(pixs, 0, bmp.getWidth(), 0, 0, bmp.getWidth(), bmp.getHeight());
+//        }
+//    }
+//
+//    //region IWaveShowManange接口
+//    @Override
+//    public Bitmap getWavesBitmap() {
+//        return bmp;
+//    }
+
+    /***
+     * 返回所选通道
+     * @return
+     */
+    @Override
+    public int isSelected() {
+        int flag = -1;
+        for (Integer i : mapChannel.keySet()) {
+            ChannelWave tem = mapChannel.get(i);
+            if (tem != null && tem.isSelected()) {
+                flag = i;
+                return flag;
+            }
+        }
+        return flag;
+    }
+
+    /**
+     * 返回指定通道可见性
+     *
+     * @param chNo
+     * @return
+     */
+    public boolean isVisible(int chNo) {
+        for (Integer i : mapChannel.keySet()) {
+            ChannelWave tem = mapChannel.get(i);
+            if (tem != null && tem.getLineNameID() == chNo) {
+                return tem.getVisible();
+            }
+        }
+        return false;
+    }
+
+    /***
+     *移动波形
+     * @param offsetY
+     */
+    @Override
+    public void setOffsetY(int offsetY) {
+        for (ChannelWave c : mapChannel.values()) {
+            if (c.isSelected()) {
+                c.setY(c.getY() - offsetY);
+            }
+        }
+    }
+
+
+    public void setY(int chNo, double y) {
+        for (ChannelWave c : mapChannel.values()) {
+            if (c.getLineNameID() == chNo) {
+                c.setY(y);
+            }
+        }
+    }
+
+
+    public void setYFromEventBus(int chNo, double y) {
+        for (ChannelWave c : mapChannel.values()) {
+            if (c.getLineNameID() == chNo) {
+                c.setYFromEventBus(y);
+            }
+        }
+    }
+
+    public double getY(int chNo) {
+        for (ChannelWave c : mapChannel.values()) {
+            if (c.getLineNameID() == chNo) {
+                return c.getY();
+            }
+        }
+        return 0;
+    }
+
+    public double getUIY(int chNo) {
+        for (ChannelWave c : mapChannel.values()) {
+            if (c.getLineNameID() == chNo) {
+                return ScopeBase.changeAccuracy(c.getPosY() * ScopeBase.getToUICoff());
+            }
+        }
+        return 0;
+    }
+
+    @Override
+    public void draw(Canvas canvas) {
+        for (ChannelWave c : mapChannel.values()) {
+            c.draw(canvas);
+        }
+        int flag = isSelected();
+        if (flag != -1) {
+            mapChannel.get(flag).draw(canvas);
+        }
+    }
+
+    @Override
+    public void draw(ICanvasGL canvas) {
+        for (ChannelWave c : mapChannel.values()) {
+            if (c.getVisible()) c.draw(canvas);
+        }
+        int flag = isSelected();
+        if (flag != -1) {
+            mapChannel.get(flag).draw(canvas);
+        }
+    }
+
+    //region IWorkMode接口
+
+    @Override
+    public void switchWorkMode(@WorkMode int workMode) {
+        for (ChannelWave c : mapChannel.values()) {
+            c.switchWorkMode(workMode);
+        }
+    }
+
+    //endregion
+
+    /**
+     * 设置是否显示波形
+     *
+     * @param visible
+     */
+    public void setVisible(int ChNo, boolean visible) {
+        for (ChannelWave c : mapChannel.values()) {
+            if (c.getLineNameID() == ChNo) {
+                c.setVisible(visible);
+            }
+        }
+    }
+
+    /**
+     * 设置波形Label
+     */
+    public void setChannelLabel(int ChNo, String label) {
+        for (ChannelWave c : mapChannel.values()) {
+            if (c.getLineNameID() == ChNo) {
+                c.setLabel(label);
+            }
+        }
+    }
+
+    public String getChannelLabel(int chNo) {
+        String label = "";
+        for (ChannelWave c : mapChannel.values()) {
+            if (c.getLineNameID() != chNo) continue;
+            label = c.getLabel();
+            break;
+        }
+        return label;
+    }
+
+    public Rect getLabelRect(int chNo) {
+        Rect rect = new Rect();
+        for (ChannelWave c : mapChannel.values()) {
+            if (c.getLineNameID() != chNo) continue;
+            rect = c.getLabelRect();
+            break;
+        }
+        return rect;
+    }
+
+    private int labelSelectChan = -1;
+    public boolean contains(int x, int y) {
+        boolean isContains = false;
+        for (ChannelWave c : mapChannel.values()) {
+            if (c.getVisible() && c.getLabelRect().contains(x, y)) {
+                labelSelectChan = c.getLineNameID();
+                isContains = true;
+                break;
+            }
+        }
+        return isContains;
+    }
+
+    public int getLabelSelectChan() {
+        return labelSelectChan;
+    }
+
+    public void changeLabelPos(int selectChan, int x) {
+        for (ChannelWave c : mapChannel.values()) {
+            if (selectChan == c.getLineNameID()) {
+                c.changeLabelPos(x);
+                break;
+            }
+        }
+    }
+
+    public int selectCursor(int x, int y) {
+        int selectIndex = -1;
+        for (int i : mapChannel.keySet()) {
+            ChannelWave c = mapChannel.get(i);
+//            Logger.i(TAG,"c.name:"+c.getLineNameID()+"  c.visible:"+c.getVisible());
+            if (c == null || !c.getVisible()) continue;
+            if (c.selectCursor(x, y)) {
+                c.setSelected(true);
+                selectIndex = i;
+                return selectIndex;
+            }else{
+                c.setSelected(false);
+            }
+        }
+//        Logger.i(TAG,"selectIndex:"+selectIndex);
+        return selectIndex;
+    }
+    public int selectCursor(int x,int y,int curChan){
+        int selectIndex = -1;
+        for (int i : mapChannel.keySet()) {
+            ChannelWave c = mapChannel.get(i);
+            if (c.getVisible() == false) continue;
+            if (c.selectCursor(x, y) && i!=curChan) {
+                c.setSelected(true);
+                selectIndex = i;
+                return selectIndex;
+            }else if (c.selectCursor(x, y)){
+                selectIndex=i;
+                return selectIndex;
+            }
+            else{
+                c.setSelected(false);
+            }
+        }
+        return selectIndex;
+    }
+    public void setSelectCursor(int ChNo) {
+        for (Integer i : mapChannel.keySet()) {
+            ChannelWave tem = mapChannel.get(i);
+            if (tem == null) continue;
+            tem.setSelected(tem.getLineNameID() == ChNo);
+        }
+    }
+
+    public void movePix(int px) {
+        for (Integer i : mapChannel.keySet()) {
+            ChannelWave tem = mapChannel.get(i);
+            if (tem == null) continue;
+            if (tem.isSelected()) {
+                tem.movePix(px);
+                break;
+            }
+        }
+    }
+    //endregion
+
+    public void refresh() {
+        for (Integer i : mapChannel.keySet()) {
+            ChannelWave tem = mapChannel.get(i);
+            if (tem == null) continue;
+            tem.refresh();
+        }
+    }
+}

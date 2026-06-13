@@ -1,0 +1,572 @@
+package com.micsig.tbook.scope.channel;
+
+
+
+import com.micsig.tbook.hardware.Hardware;
+import com.micsig.tbook.hardware.HardwareProduct;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.math.MathWave;
+import com.micsig.tbook.scope.vertical.VerticalAxis;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Consumer;
+
+/**
+ * Created by zhuzh on 2018/3/14.
+ */
+
+public class ChannelFactory {
+    private static final String TAG = "ChannelFactory";
+    private static volatile ChannelFactory instance = null;
+
+    public static ChannelFactory getInstance() {
+
+        if (instance == null) {
+            synchronized (ChannelFactory.class) {
+                if (instance == null) {
+                    initChFactory();
+                    instance = new ChannelFactory();
+                }
+            }
+        }
+        return instance;
+    }
+
+    public static void initChFactory(){
+        chNums = Hardware.getInstance().getChNum();
+
+        mathChNums = MATH_CNT;
+        refChNums = REF_CNT;
+        serialChNums = SERIAL_CNT;
+
+        maxChIdx = chNums + CH1;
+        maxMathIdx = mathChNums + MATH1;
+        maxRefIdx = refChNums + REF1;
+        maxSerialIdx = serialChNums + S1;
+    }
+
+    public static final int CH1 = 0;
+    public static final int CH2 = CH1 + 1;
+    public static final int CH3 = CH2 + 1;
+    public static final int CH4 = CH3 + 1;
+    public static final int CH5 = CH4 + 1;
+    public static final int CH6 = CH5 + 1;
+    public static final int CH7 = CH6 + 1;
+    public static final int CH8 = CH7 + 1;
+
+    public static final int CH_MAX = CH8 + 1;
+    public static final int CH_CNT = CH_MAX - CH1;
+
+
+    public static final int MATH1 = CH_MAX;
+    public static final int MATH2 = MATH1 + 1;
+    public static final int MATH3 = MATH2 + 1;
+    public static final int MATH4 = MATH3 + 1;
+    public static final int MATH5 = MATH4 + 1;
+    public static final int MATH6 = MATH5 + 1;
+    public static final int MATH7 = MATH6 + 1;
+    public static final int MATH8 = MATH7 + 1;
+
+    public static final int MATH_MAX = MATH8 + 1;
+    public static final int MATH_CNT = MATH_MAX - MATH1;
+
+    public static final int REF1 = MATH_MAX;
+    public static final int REF2 = REF1 + 1;
+    public static final int REF3 = REF2 + 1;
+    public static final int REF4 = REF3 + 1;
+    public static final int REF5 = REF4 + 1;
+    public static final int REF6 = REF5 + 1;
+    public static final int REF7 = REF6 + 1;
+    public static final int REF8 = REF7 + 1;
+    public static final int REF_MAX = REF8 + 1;
+    public static final int REF_CNT = REF_MAX - REF1;
+
+    public static final int S1 = REF_MAX;
+    public static final int S2 = S1 + 1;
+    public static final int S3 = S2 + 1;
+    public static final int S4 = S3 + 1;
+    private static final int SERIAL_MAX = S4 + 1;
+    public static final int SERIAL_CNT = SERIAL_MAX - S1;
+    public static final int CHANNEL_CNT = CH_CNT + MATH_CNT + REF_CNT + SERIAL_CNT;
+
+
+
+    private final List<IChannel> channelList = new ArrayList<>();
+    private final IChannel [] channels = new IChannel[CHANNEL_CNT];
+
+
+    private static final int [] refColor = new int[REF_CNT];
+
+    private static final int [] mathColor = new int[MATH_CNT];
+
+
+    private static int chNums = CH_CNT;
+    private static int mathChNums = MATH_CNT;
+    private static int refChNums = REF_CNT;
+
+    private static int serialChNums = SERIAL_CNT;
+
+
+    private static int maxChIdx = CH_MAX;
+    private static int maxMathIdx = MATH_MAX;
+    private static int maxRefIdx = REF_MAX;
+    private static int maxSerialIdx = SERIAL_MAX;
+
+
+    public static int getMaxChIdx(){
+        return maxChIdx;
+    }
+    public static int getMaxMathIdx(){
+        return maxMathIdx;
+    }
+    public static int getMaxRefIdx(){
+        return maxRefIdx;
+    }
+    public static int getMaxSerialIdx(){
+        return maxSerialIdx;
+    }
+    public static int getChNums(){
+        return chNums;
+    }
+    public static int getMathChNums(){
+        return mathChNums;
+    }
+    public static int getRefChNums(){
+        return refChNums;
+    }
+    public static int getSerialChNums(){
+        return serialChNums;
+    }
+
+    public static void forEachCh(Consumer<Channel> action){
+        Objects.requireNonNull(action);
+        Channel channel;
+        for(int i=ChannelFactory.CH1;i<maxChIdx;i++){
+            channel = ChannelFactory.getDynamicChannel(i);
+            if(channel != null) {
+                action.accept(channel);
+            }
+        }
+    }
+    public static void forEachMath(Consumer<MathChannel> action){
+        Objects.requireNonNull(action);
+        MathChannel channel;
+        for(int i=ChannelFactory.MATH1;i<maxMathIdx;i++){
+            channel = ChannelFactory.getMathChannel(i);
+            if(channel != null) {
+                action.accept(channel);
+            }
+        }
+    }
+
+    public static void forEachRef(Consumer<RefChannel> action){
+        Objects.requireNonNull(action);
+        RefChannel channel;
+        for(int i=ChannelFactory.REF1;i<maxRefIdx;i++){
+            channel = ChannelFactory.getRefChannel(i);
+            if(channel != null) {
+                action.accept(channel);
+            }
+        }
+    }
+    public static void forEachSerial(Consumer<SerialChannel> action){
+        Objects.requireNonNull(action);
+        SerialChannel channel;
+        for(int i=ChannelFactory.S1;i<maxSerialIdx;i++){
+            channel = ChannelFactory.getSerialChannel(i);
+            if(channel != null) {
+                action.accept(channel);
+            }
+        }
+    }
+
+
+    private ChannelFactory() {
+        init1();
+    }
+    private void init1() {
+        for(int i=CH1;i<maxChIdx;i++){
+            channels[i] = new Channel(i);
+            channelList.add(channels[i]);
+        }
+        for(int i=MATH1;i<maxMathIdx;i++){
+            channels[i] = new MathChannel(i);
+            channelList.add(channels[i]);
+        }
+        for(int i=REF1;i<maxRefIdx;i++){
+            channels[i] = new RefChannel(i);
+            channelList.add(channels[i]);
+        }
+        for(int i=S1;i<maxSerialIdx;i++){
+            channels[i] = new SerialChannel(i);
+            channelList.add(channels[i]);
+        }
+        int cnt = channelList.size();
+        for(int i=0;i<cnt;i++){
+            IChannel channel = channelList.get(i);
+            channel.setzOrder(cnt- i);
+        }
+    }
+    public static void initRef(int [] refColor){
+        System.arraycopy(refColor, 0, ChannelFactory.refColor, 0, ChannelFactory.refColor.length);
+    }
+    public static void initMath(int [] mathColor){
+        System.arraycopy(mathColor, 0, ChannelFactory.mathColor, 0, ChannelFactory.mathColor.length);
+    }
+
+    public void changeChannelColor(int chIndex) {
+        int tempIndex = chIndex - 1;
+        IChannel channel = getChannel(tempIndex);
+        if (channel == null) return;
+        if (ChannelFactory.isRefCh(tempIndex)) {
+            ((RefChannel) channel).setForegroundColor(refColor[tempIndex - REF1]);
+        }
+        if (ChannelFactory.isMathCh(tempIndex)) {
+            ((MathChannel) channel).setForegroundColor(mathColor[tempIndex - MATH1]);
+        }
+    }
+
+    public IChannel getChannel() {
+        return channelList.get(0);
+    }
+
+    public IChannel getTopRefChannel() {
+        for(int i=0; i<channelList.size(); i++) {
+            if(isRefCh(channelList.get(i).getChId())) {
+                return channelList.get(i);
+            }
+        }
+        return null;
+    }
+
+    public IChannel getChannel(int idx) {
+        if(isValidCh(idx)){
+            return channels[idx];
+        }
+        return null;
+    }
+    public IChannel getWaveChannel() {
+        for(IChannel c:channelList){
+            if(c.getChId() < S1){
+                return c;
+            }
+        }
+        return null;
+    }
+
+    public static void setRefActive(int refIdx) {
+        forEachRef((refChannel -> {
+            int color;
+            int chIdx = refChannel.getChId();
+            color = refColor[chIdx - REF1];
+            refChannel.setForegroundColor(color);
+        }));
+
+    }
+    public static void setMathActive(int mathIdx){
+        forEachMath((mathChannel -> {
+            int color;
+            int chIdx;
+            chIdx = mathChannel.getChId();
+            color =  mathColor[chIdx - MATH1];
+            mathChannel.setForegroundColor(color);
+        }));
+    }
+
+    public static boolean isValidCh(int idx) {
+        return (idx >= CH1 && idx < SERIAL_MAX);
+    }
+
+    public static boolean isDynamicCh(int idx) {
+        return (idx >= CH1 && idx < maxChIdx);
+    }
+
+    public static boolean isDynamic_or_math_Ch(int idx) {
+        return isDynamicCh(idx) || isMathCh(idx);
+    }
+
+    public static boolean isSerialCh(int idx) {
+        return (idx >= S1 && idx < maxSerialIdx);
+    }
+
+    public static boolean isMathCh(int idx) {
+        return (idx >= MATH1 && idx < maxMathIdx);
+    }
+    public static boolean isRefCh(int idx) {
+        return (idx >= REF1 && idx < maxRefIdx);
+    }
+
+    public static boolean isMath_FFT_Ch(int idx) {
+        return isMathCh(idx) && getMathChannel(idx).getMathType() == MathWave.MATH_FFTWAVE;
+    }
+
+    public void open(int idx) {
+        IChannel channel = getChannel(idx);
+        if(channel != null){
+            if(!channel.isOpen()){
+                toTopLayer(channel);
+                channel.open();
+                channel.activate();
+            }
+        }
+    }
+
+    public void activate(int idx) {
+        IChannel channel = getChannel(idx);
+        if(channel != null){
+            if(channel.isOpen()){
+                toTopLayer(channel);
+                channel.activate();
+            }
+        }
+    }
+
+    public void close(int idx) {
+        IChannel channel = getChannel(idx);
+        if (channel != null) {
+            if(!channel.isOpen()) return;
+            toBottomLayer(channel);
+            channel.close();
+            boolean bActive = false;
+            if(channelList.get(0).isOpen() ){
+                if(!isSerialCh(channelList.get(0).getChId())) {
+                    channelList.get(0).activate();
+                    bActive = true;
+                }
+            } else {
+                toTopLayer(channel);
+            }
+            if(!bActive){
+                EventFactory.sendEvent(EventFactory.EVENT_CHANNEL_ACTIVE);
+            }
+        }
+    }
+
+    public boolean isOpen(int idx) {
+        IChannel channel = getChannel(idx);
+        boolean b = false;
+        if (channel != null) {
+            b = channel.isOpen();
+        }
+        return b;
+    }
+
+    private void zOrder() {
+        int cnt = channelList.size();
+        for (int i = 0; i < cnt; i++) {
+            channelList.get(i).setzOrder(cnt-i);
+        }
+    }
+
+    private synchronized void toZorder(IChannel channel,boolean toTop){
+        channelList.remove(channel);
+        if(toTop) {
+            channelList.add(0, channel);
+        }else {
+            channelList.add(channel);
+        }
+        zOrder();
+    }
+    private void toTopLayer(IChannel channel) {
+        toZorder(channel,true);
+    }
+
+    private void toBottomLayer(IChannel channel) {
+        toZorder(channel,false);
+    }
+
+    public boolean isActive(int chIdx){
+        return getValidChannel().getChId() == chIdx;
+    }
+
+
+
+    public static IChannel getValidChannel(int idx) {
+        return getInstance().getChannel(idx);
+    }
+
+    public static IChannel getValidChannel() {
+        return getInstance().getChannel();
+    }
+
+    /**
+     * @param idx 0~CH_MAX
+     * @return
+     */
+    public static Channel getDynamicChannel(int idx) {
+        if (isDynamicCh(idx))
+            return (Channel) getValidChannel(idx);
+        return null;
+    }
+
+    public static SerialChannel getSerialChannel(int idx) {
+        if (isSerialCh(idx))
+            return (SerialChannel) getValidChannel(idx);
+        return null;
+    }
+
+    public static int getDynamicChannelOpenCount() {
+        int nums = 0;
+        for (int i = CH1; i < maxChIdx; i++) {
+            if (getValidChannel(i).isOpen()) {
+                nums++;
+            }
+        }
+        return nums;
+    }
+
+
+
+    public static MathChannel getMathChannel(int idx) {
+        if(isMathCh(idx)) {
+            return (MathChannel) getValidChannel(idx);
+        }
+        return null;
+    }
+
+    public static RefChannel getRefChannel(int idx) {
+        if (isRefCh(idx)) {
+            return (RefChannel) getValidChannel(idx);
+        }
+        return null;
+    }
+
+    public static void chOpen(int idx) {
+        getInstance().open(idx);
+    }
+
+    public static boolean isChOpen(int idx) {
+        return getInstance().isOpen(idx);
+    }
+
+
+
+    public static int getChActivate() {
+        return getValidChannel().getChId();
+    }
+
+    public static boolean isChActivate(int chIdx){
+        return getValidChannel().getChId() == chIdx;
+    }
+
+    public static void chActivate(int chIdx){
+        if(!isChActivate(chIdx)) {
+            getInstance().activate(chIdx);
+        }
+    }
+
+    public static void chClose(int idx) {
+        getInstance().close(idx);
+    }
+
+    public static void chEnable(int idx, boolean isOpen) {
+        if (isOpen) {
+            chOpen(idx);
+        } else {
+            chClose(idx);
+        }
+    }
+
+    public static String getProbeType(int ch){
+        if(ch < CH1 || ch >= REF_MAX)
+            return "";
+
+        int prbType = VerticalAxis.PROBE_TYPE_VOL;
+        if(isMathCh(ch)){
+            prbType = getMathChannel(ch).getProbeType();
+        }
+        else if(isRefCh(ch)){
+            prbType = getRefChannel(ch).getProbeType();
+        }
+        else if(isDynamicCh(ch)){
+            prbType = getDynamicChannel(ch).getProbeType();
+        }
+        if(prbType == VerticalAxis.PROBE_TYPE_CUSTOM){
+            return getProbeString(ch,VerticalAxis.PROBE_TYPE_CUSTOM);
+        }
+        return getProbeString(prbType);
+    }
+    public static String getProbeString(int ch,int probeType){
+        String probeString="";
+        if(probeType == VerticalAxis.PROBE_TYPE_CUSTOM){
+            if(isMathCh(ch)){
+                probeString = getMathChannel(ch).getProbeStr();
+            }
+            else if(isRefCh(ch)){
+                probeString = getRefChannel(ch).getProbeStr();
+            }
+            else if(isDynamicCh(ch)){
+                probeString = getDynamicChannel(ch).getProbeStr();
+            }
+        }else {
+            probeString = getProbeType(ch);
+        }
+        return probeString;
+    }
+    public static String getProbeString(int prbType){
+        switch (prbType){
+            case VerticalAxis.PROBE_TYPE_VOL:       return "V";
+            case VerticalAxis.PROBE_TYPE_CUR:       return "A";
+            case VerticalAxis.PROBE_TYPE_VA :       return "V/A";
+            case VerticalAxis.PROBE_TYPE_AV :       return "A/V";
+            case VerticalAxis.PROBE_TYPE_W :        return "W";
+            case VerticalAxis.PROBE_TYPE_DB :       return "dB";
+            case VerticalAxis.PROBE_TYPE_AA :       return "AA";
+            case VerticalAxis.PROBE_TYPE_VV :       return "VV";
+            case VerticalAxis.PROBE_TYPE_WENHAO:    return "?";
+            case VerticalAxis.PROBE_TYPE_VTOV:      return "V/V";
+            case VerticalAxis.PROBE_TYPE_ATOA:      return "A/A";
+            case VerticalAxis.PROBE_TYPE_EMPTY :
+            default:                                 return "";
+        }
+    }
+
+    public static String getChannelName(int idx) {
+        IChannel channel = getValidChannel(idx);
+        if(channel != null){
+            return channel.getName();
+        }
+        return "";
+    }
+
+    public static boolean isMathEnable(){
+        boolean bEnable = false;
+        for (int i=MATH1;i<maxMathIdx;i++){
+            MathChannel mathChannel = ChannelFactory.getMathChannel(i);
+            if(mathChannel != null) {
+                bEnable = mathChannel.isOpen();
+                if(bEnable){
+                    break;
+                }
+            }
+        }
+        return bEnable;
+    }
+
+    /**
+     * @param serialChNums 1--4
+     * @return ChannelFactory.S1--ChannelFactory.S4
+     */
+    public static int toFactorySerial(int serialChNums) {
+        return serialChNums + ChannelFactory.REF8;
+    }
+
+    public static String getLabel(int chIdx) {
+        String label = "";
+        IChannel channel = ChannelFactory.getValidChannel(chIdx);
+        if (channel == null) return label;
+        return channel.getLabel();
+    }
+
+    public static double getChannelOffset(int idx) {
+        IChannel channel = ChannelFactory.getValidChannel(idx);
+        if (channel != null) {
+            return channel.getPosUI() * channel.getADVerticalPerPix();
+        } else {
+            return 0;
+        }
+    }
+
+}

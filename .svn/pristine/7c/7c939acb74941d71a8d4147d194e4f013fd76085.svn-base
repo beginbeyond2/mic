@@ -1,0 +1,37 @@
+package com.micsig.tbook.scope.probe;
+
+public class ProbeNotifyInfo {
+    public static final int ALARM_RANGE_OUT = 0x01;
+    public static final int ALARM_BATTERY_LOW = 0x02;
+    public static final int ALARM_COMM_ABNORMAL = 0x03;
+    public static final int ALARM_50_SWITCH = 0x04;
+    public static final int ALARM_CONV_HIGH_TEMP = 0x05;
+    public static final int ALARM_COMP_HIGH_TEMP = 0x06;
+    public static final int ALARM_ACDC_ABNORMAL = 0x07;
+    public static final int ALARM_REPLACE_BATTERY = 0x0A;
+    public static final int ALARM_MISMATCH = 0x0B;
+    public static final int ALARM_ATTENUATOR_ERROR = 0x0C;
+
+    public static final int ADJUST_SQUAREWAVE_CLOSE = 0x02; //探头方波关闭
+    public static final int ADJUST_SQUAREWAVE_OPEN = 0x01;  //探头方波
+    public static final int ADJUST_REQ = 0x00;      //探头校准请求
+
+    public static final int ADJUST_SUCCESS = 0xA1;  //校准成功
+    public static final int ADJUST_FAIL1 = 0xA2;    //校准失败1
+    public static final int ADJUST_FAIL2 = 0xA3;    //校准失败2
+    public static final int ADJUST_ING = 0xA0; //校准进行中
+
+    public static final int ZERO_SUCCESS = 0xA1;
+    public static final int ZERO_FAIL1 = 0xA2;
+    public static final int ZERO_FAIL2 = 0xA3;
+    public static final int ZERO_ING = 0xA0;
+
+
+    public volatile int chIdx = 0;
+    public volatile int Id = 0;
+
+    public ProbeNotifyInfo(int chIdx, int Id){
+        this.chIdx = chIdx;
+        this.Id = Id;
+    }
+}

@@ -1,0 +1,44 @@
+package com.micsig.tbook.scope.fpga;
+
+
+import com.micsig.tbook.scope.Bus.IBus;
+
+/**
+ * Created by zhuzh on 2018-5-30.
+ */
+
+public class FPGAReg_BUS_ADDR extends FPGAReg {
+    private FPGAReg_BUS []bus = new FPGAReg_BUS[IBus.BUS_CNT];
+    public FPGAReg_BUS_ADDR(int addr) {
+        super(addr, 0);
+        bus[IBus.UART] = new FPGAReg_BUS_UART(addr);
+        bus[IBus.LIN] = new FPGAReg_BUS_LIN(addr);
+        bus[IBus.CAN] = new FPGAReg_BUS_CAN(addr);
+        bus[IBus.SPI] = new FPGAReg_BUS_SPI(addr);
+        bus[IBus.I2C] = new FPGAReg_BUS_I2C(addr);
+        bus[IBus.ARINC429] = new FPGAReg_BUS_429(addr);
+        bus[IBus.MILSTD1553B] = new FPGAReg_BUS_1553B(addr);
+    }
+    public FPGAReg getFPGAReg(int busType){
+        if(IBus.isValid(busType))
+            return bus[busType];
+        return null;
+    }
+    public void configBus(int fpgaIdx,IBus iBus){
+        int busType = iBus.getBusType();
+        if(IBus.isValid(busType)){
+            bus[busType].configBus(fpgaIdx,iBus);
+            FPGACommand.sendCmd(bus[busType]);
+        }
+    }
+
+    @Override
+    public void setFpgaIdx(int fpgaIdx) {
+        super.setFpgaIdx(fpgaIdx);
+        for (FPGAReg_BUS fpgaRegBus : bus) {
+            if(fpgaRegBus != null) {
+                fpgaRegBus.setFpgaIdx(fpgaIdx);
+            }
+        }
+    }
+}

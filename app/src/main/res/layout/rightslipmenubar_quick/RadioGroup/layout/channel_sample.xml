@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AbsoluteLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:ui="http://schemas.android.com/apk/res-auto"
+    android:layout_width="262px"
+    android:layout_height="150px"
+    android:layout_x="0px"
+    android:layout_y="0px"
+    android:id="@+id/rightSlipMenuBar_math"
+
+    >
+
+    <com.micsig.tbook.ui.MButton_CheckBox
+        android:id="@+id/sample_normal"
+        android:layout_x="0px"
+        android:layout_y="0px"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Normal"
+        android:textColor="#ffffff"
+        android:textSize="16px"
+        ui:checkedBitmap="@drawable/channel_button_check"
+        ui:unCheckedBitmap="@drawable/channel_button_uncheck"
+        ui:text_x="15px"
+        ui:text_y="15px"
+        />
+
+    <com.micsig.tbook.ui.MButton_CheckBox
+        android:id="@+id/sample_Average"
+        android:layout_x="80px"
+        android:layout_y="0px"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Average"
+        android:textColor="#ffffff"
+        android:textSize="16px"
+        ui:checkedBitmap="@drawable/channel_button_check"
+        ui:unCheckedBitmap="@drawable/channel_button_uncheck"
+        ui:text_x="15px"
+        ui:text_y="15px"
+        />
+    <com.micsig.tbook.ui.MButton_CheckBox
+        android:id="@+id/sample_envel"
+        android:layout_x="160px"
+        android:layout_y="0px"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Envel"
+        android:textColor="#ffffff"
+        android:textSize="16px"
+        ui:checkedBitmap="@drawable/channel_button_check"
+        ui:unCheckedBitmap="@drawable/channel_button_uncheck"
+        ui:text_x="15px"
+        ui:text_y="15px"
+        />
+
+    <com.micsig.tbook.ui.MButton_CheckBox
+        android:id="@+id/sample_Peak"
+        android:layout_x="0px"
+        android:layout_y="55px"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Peak"
+        android:textColor="#ffffff"
+        android:textSize="16px"
+        ui:checkedBitmap="@drawable/channel_button_check"
+        ui:unCheckedBitmap="@drawable/channel_button_uncheck"
+        ui:text_x="15px"
+        ui:text_y="15px"
+        />
+
+
+</AbsoluteLayout>

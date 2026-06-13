@@ -1,0 +1,278 @@
+package com.micsig.tbook.scope.probe;
+
+import android.os.SystemClock;
+
+public class ProbeCommand {
+
+    public final static byte TYPE_PROBE_INFO = (byte) 0x00;         //查询
+    public final static byte TYPE_PROBE_RATE = (byte) 0x04;         //探头衰减比
+    public final static byte TYPE_PROBE_ZERO = (byte) 0x05;         //零点
+
+    public final static byte TYPE_PROBE_ADJUST = (byte) 0x09;       //自动补偿
+
+    public final static byte TYPE_PROBE_DAGAIN = (byte)0x0C;        //增益
+
+    public final static byte TYPE_PROBE_RATE_LIST = (byte) 0x0D;    //衰减比 列表
+
+    public final static byte TYPE_PROBE_RATE_CTRL = (byte) 0x10;
+
+    public final static byte TYPE_PROBE_RATE_DOT = (byte) 0x11;
+    public final static byte TYPE_PROBE_IMPED =  (byte) 0x31;         //输入电阻
+    public final static byte TYPE_PROBE_VRANGE = (byte) 0xA1;       //垂直量程
+    public final static byte TYPE_PROBE_UNIT = (byte) 0xA3;         //探头单位
+
+    public final static byte TYPE_BANDWIDTH = (byte) 0xA4;          //带宽
+
+    public final static byte TYPE_PROBE_VERSION = (byte) 0xC4;      //固件版本
+    public final static byte TYPE_JUMPBOOT = (byte) 0xC5;
+    public final static byte TYPE_PROBE_UPGRADE_BEGIN = (byte) 0xC1;  //开始升级
+    public final static byte TYPE_PROBE_UPGRADE_DATA = (byte) 0xC2;   //升级
+    public final static byte TYPE_PROBE_UPGRADE_END = (byte) 0xC3;    //升级结束
+    public final static byte TYPE_PROBE_UPGRADE_SS = (byte) 0xC6;
+
+    public final static byte TYPE_PROBE_STANDBY = (byte) 0xC8;      //待机唤醒
+
+    public final static byte TYPE_PROBE_ACK = (byte) 0xFE;//
+    public final static byte TYPE_PROBE_ALARM = (byte) 0xFA;
+
+    public static byte checkSum_Command(byte[] bytes,int offset,int len){
+        byte checkSum = 0;
+        for(int i=0;i<len;i++)
+            checkSum += bytes[offset + i];
+        return checkSum;
+    }
+    private static byte checkSum_Command(byte[] b){
+        byte checkSum = 0;
+        for(int i=1;i<b.length-1;i++)
+            checkSum += b[i];
+        checkSum = (byte) (~checkSum+1);
+        return checkSum;
+    }
+
+    public static byte [] probeCommand(byte type){
+        byte[] bytes = new byte[4];
+        bytes[0]=(byte) 0xAA;
+        bytes[1]=type;
+        bytes[2]=(byte) 0x00;
+        bytes[3]=checkSum_Command(bytes);
+        return bytes;
+    }
+
+    public static byte [] ProbeSquareWave(boolean bEnable){
+        byte[] bytes = new byte[8];
+        bytes[0]=(byte) 0xAA;
+        bytes[1]=TYPE_PROBE_ADJUST;
+        bytes[2]=(byte) 0x01;
+        bytes[3]=(byte) (bEnable ? 0x01 : 0x02);
+        bytes[4]=checkSum_Command(bytes);
+        return bytes;
+    }
+
+    public static byte [] QueryProbeVersion(){return probeCommand(TYPE_PROBE_VERSION);}
+    public static byte [] QueryProbeImpedCommand() { return probeCommand(TYPE_PROBE_IMPED);}
+    public static byte [] QueryProbeRateCommand(){
+        return probeCommand(TYPE_PROBE_RATE);
+    }
+    public static byte [] QueryProbeZeroCommand(){
+        return probeCommand(TYPE_PROBE_ZERO);
+    }
+    public static byte [] QueryProbeDAGainCommand(){
+        byte[] bytes = new byte[8];
+        bytes[0]=(byte) 0xAA;
+        bytes[1]=TYPE_PROBE_DAGAIN;
+        bytes[2]=(byte) 0x01;
+        bytes[3]=(byte) 0x01;
+        bytes[4]=checkSum_Command(bytes);
+        return bytes;
+    }
+
+    public static byte[] probeDAGainCommand(int val){
+        byte[] bytes = new byte[8];
+        bytes[0]=(byte) 0xAA;
+        bytes[1]=TYPE_PROBE_DAGAIN;
+        bytes[2]=(byte) 0x03;
+        bytes[3]=(byte) 0x01;
+        bytes[4]=(byte) ((val >>> 8) & 0xFF);
+        bytes[5]=(byte) ((val) & 0xFF);
+        bytes[6]=checkSum_Command(bytes);
+        return bytes;
+    }
+
+    public static byte [] probeZeroCommand(int val){
+
+        byte[] bytes = new byte[8];
+        bytes[0]=(byte) 0xAA;
+        bytes[1]=TYPE_PROBE_ZERO;
+        bytes[2]=2;
+        bytes[3] =(byte) ((val>>>8) & 0xFF);
+        bytes[4] =(byte) (val & 0xFF);
+        bytes[5] = checkSum_Command(bytes);
+        return bytes;
+    }
+    public static byte [] probeZeroCommand(int [] vals){
+        int len = vals.length * 2 + 1 + 4;
+        len = (len + 3)/4;
+        len *= 4;
+        byte[] bytes = new byte[len];
+        bytes[0]=(byte) 0xAA;
+        bytes[1]=TYPE_PROBE_ZERO;
+        bytes[2]=(byte) ((vals.length * 2 + 1) & 0xFF);
+        bytes[3]=(byte) (vals.length & 0xFF);
+        for(int i=0;i<vals.length;i++)
+        {
+            bytes[4 + i * 2] =(byte) ((vals[i]>>>8) & 0xFF);
+            bytes[5 + i * 2] =(byte) ((vals[i]) & 0xFF);
+        }
+        bytes[4 + vals.length * 2] = checkSum_Command(bytes);
+        return bytes;
+    }
+    public static byte [] probeImpedCommand(boolean bImped50){
+        byte[] bytes = new byte[8];
+        bytes[0]=(byte) 0xAA;
+        bytes[1]=TYPE_PROBE_IMPED;
+        bytes[2]=(byte) 1;
+        bytes[3]=(byte) (bImped50 ? 2 : 1);
+        bytes[4]=checkSum_Command(bytes);
+
+        return bytes;
+    }
+    public static byte [] probeRateCtrlCommand(boolean bCtrl){
+        byte[] bytes = new byte[8];
+        bytes[0]=(byte) 0xAA;
+        bytes[1]=TYPE_PROBE_RATE_CTRL;
+        bytes[2]=(byte) 1;
+        bytes[3]=(byte) (bCtrl ? 1 : 2);
+        bytes[4]=checkSum_Command(bytes);
+        return bytes;
+    }
+    public static byte [] probeAutoZeroCommand(){
+        byte[] bytes = new byte[8];
+        bytes[0]=(byte) 0xAA;
+        bytes[1]=TYPE_PROBE_ZERO;
+        bytes[2]=(byte) 1;
+        bytes[3]=(byte) 0;
+        bytes[4]=checkSum_Command(bytes);
+
+        return bytes;
+    }
+    public static byte [] probeRateCommand(int val){
+
+        byte[] bytes = new byte[8];
+        bytes[0]=(byte) 0xAA;
+        bytes[1]=TYPE_PROBE_RATE;
+        bytes[2]=(byte) 4;
+        bytes[3]=(byte) ((val >>>24) & 0xFF);
+        bytes[4]=(byte) ((val >>>16) & 0xFF);
+        bytes[5]=(byte) ((val >>>8) & 0xFF);
+        bytes[6]=(byte) (val & 0xFF);
+        bytes[7]=checkSum_Command(bytes);
+
+        return bytes;
+    }
+
+    public static byte [] jumpBootCommand(){
+        byte[] bytes=new byte[8];
+        bytes[0]=(byte) 0xAA;
+        bytes[1]=TYPE_JUMPBOOT;
+        bytes[2]=(byte) 0x02;
+        bytes[3]=(byte) 0x55;
+        bytes[4]=(byte) 0xAA;
+        bytes[5]=checkSum_Command(bytes);
+        return bytes;
+    }
+
+
+    public static byte [] probeUpgradeBeginCommand(int n, byte crc){
+        byte[] bytes=new byte[8];
+        bytes[0]=(byte) 0xAA;
+        bytes[1]=TYPE_PROBE_UPGRADE_BEGIN;
+        bytes[2]=(byte) 0x03;
+        bytes[3]=(byte) ((n >>> 8) & 0xFF);
+        bytes[4]=(byte) (n & 0xFF);
+        bytes[5]=crc;
+        bytes[6]=checkSum_Command(bytes);
+        return bytes;
+    }
+
+    public static byte [] probeUpgradeCommand(int n,byte[] datas,int offset,int len){
+        byte[] bytes=new byte[136];
+        bytes[0]=(byte) 0xAA;
+        bytes[1]=TYPE_PROBE_UPGRADE_DATA;
+        bytes[2]=(byte) (len + 2);
+        bytes[3]=(byte) ((n >>> 8) & 0xFF);
+        bytes[4]=(byte) (n & 0xFF);
+        for(int i=0;i<len;i++){
+            bytes[5 + i] = datas[offset + i];
+        }
+        bytes[5 + len]=checkSum_Command(bytes);
+        return bytes;
+    }
+
+    public static byte [] probeUpgradeSSCommand(int mcuIdx){
+        byte[] bytes=new byte[8];
+        bytes[0]=(byte) 0xAA;
+        bytes[1]=TYPE_PROBE_UPGRADE_SS;
+        bytes[2]=(byte) (1);
+        bytes[3]=(byte) (mcuIdx & 0xFF);
+        bytes[4]=checkSum_Command(bytes);
+        return bytes;
+    }
+
+    public static byte [] probeStandByCommand(int val){
+        byte[] bytes=new byte[8];
+        bytes[0]=(byte) 0xAA;
+        bytes[1]=TYPE_PROBE_STANDBY;
+        bytes[2]=(byte) (1);
+        bytes[3]=(byte) (val & 0xFF);
+        bytes[4]=checkSum_Command(bytes);
+        return bytes;
+    }
+
+    private int chIdx;
+    private byte[] cmd;
+    private volatile long timestamp;
+
+    private int counter;
+
+
+    public ProbeCommand(int chIdx,byte[] cmd){
+        this.cmd = cmd;
+        this.chIdx = chIdx;
+        this.timestamp = SystemClock.elapsedRealtime();
+        counter=1;
+    }
+
+    public int getChIdx() {
+        return chIdx;
+    }
+
+    public byte[] getCmd() {
+        return cmd;
+    }
+
+    public void setCmd(byte[] cmd){
+        this.cmd = cmd;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public synchronized int getCounter(){
+        return counter;
+    }
+    public synchronized void addCounter(){
+        counter++;
+    }
+
+    public byte getCmdType(){
+        return cmd[1];
+    }
+    public interface ProbeCommandlistener{
+        void onProbeCommand(ProbeCommand command);
+    }
+
+
+
+
+}

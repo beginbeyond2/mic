@@ -1,0 +1,708 @@
+package com.micsig.tbook.tbookscope.wavezone.wave;
+
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
+
+import com.chillingvan.canvasgl.ICanvasGL;
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.surface.PreviewTextureView;
+import com.micsig.tbook.tbookscope.GlobalVar;
+import com.micsig.tbook.ui.util.svg.SvgManager;
+import com.micsig.tbook.ui.util.svg.SvgNodeInfo;
+import com.micsig.tbook.tbookscope.wavezone.IWorkMode;
+import com.micsig.tbook.tbookscope.wavezone.WorkModeManage;
+import com.micsig.tbook.tbookscope.wavezone.display.CursorManage;
+import com.micsig.tbook.tbookscope.wavezone.measure.MeasureManage;
+import com.micsig.tbook.ui.wavezone.IChan;
+import com.micsig.tbook.ui.wavezone.IWave;
+import com.micsig.tbook.ui.wavezone.TChan;
+
+import java.nio.ByteBuffer;
+
+/**
+ * Created by liwb on 2017/5/19.
+ */
+
+public class WaveManage_YT implements IWorkMode, IWaveManage {
+    private static final String TAG="WaveManage_YT";
+
+    private Bitmap[][] resBmp = new Bitmap[TChan.MaxChan + 1][6];
+
+
+    private void initResBmp() {
+        resBmp[TChan.Ch1][0] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Ch1), SvgNodeInfo.getNColors(TChan.Ch1), 32, 24);
+        resBmp[TChan.Ch1][1] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Ch1), SvgNodeInfo.getNColors(TChan.Ch1), 24, 32);
+        resBmp[TChan.Ch1][2] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Ch1), SvgNodeInfo.getNColors(TChan.Ch1), 24, 32);
+        resBmp[TChan.Ch1][3] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Ch1), SvgNodeInfo.getSColors(TChan.Ch1), 32, 24);
+        resBmp[TChan.Ch1][4] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Ch1), SvgNodeInfo.getSColors(TChan.Ch1), 24, 32);
+        resBmp[TChan.Ch1][5] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Ch1), SvgNodeInfo.getSColors(TChan.Ch1), 24, 32);
+
+        resBmp[TChan.Ch2][0] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Ch2), SvgNodeInfo.getNColors(TChan.Ch2), 32, 24);
+        resBmp[TChan.Ch2][1] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Ch2), SvgNodeInfo.getNColors(TChan.Ch2), 24, 32);
+        resBmp[TChan.Ch2][2] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Ch2), SvgNodeInfo.getNColors(TChan.Ch2), 24, 32);
+        resBmp[TChan.Ch2][3] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Ch2), SvgNodeInfo.getSColors(TChan.Ch2), 32, 24);
+        resBmp[TChan.Ch2][4] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Ch2), SvgNodeInfo.getSColors(TChan.Ch2), 24, 32);
+        resBmp[TChan.Ch2][5] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Ch2), SvgNodeInfo.getSColors(TChan.Ch2), 24, 32);
+
+        resBmp[TChan.Ch3][0] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Ch3), SvgNodeInfo.getNColors(TChan.Ch3), 32, 24);
+        resBmp[TChan.Ch3][1] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Ch3), SvgNodeInfo.getNColors(TChan.Ch3), 24, 32);
+        resBmp[TChan.Ch3][2] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Ch3), SvgNodeInfo.getNColors(TChan.Ch3), 24, 32);
+        resBmp[TChan.Ch3][3] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Ch3), SvgNodeInfo.getSColors(TChan.Ch3), 32, 24);
+        resBmp[TChan.Ch3][4] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Ch3), SvgNodeInfo.getSColors(TChan.Ch3), 24, 32);
+        resBmp[TChan.Ch3][5] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Ch3), SvgNodeInfo.getSColors(TChan.Ch3), 24, 32);
+
+        resBmp[TChan.Ch4][0] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Ch4), SvgNodeInfo.getNColors(TChan.Ch4), 32, 24);
+        resBmp[TChan.Ch4][1] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Ch4), SvgNodeInfo.getNColors(TChan.Ch4), 24, 32);
+        resBmp[TChan.Ch4][2] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Ch4), SvgNodeInfo.getNColors(TChan.Ch4), 24, 32);
+        resBmp[TChan.Ch4][3] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Ch4), SvgNodeInfo.getSColors(TChan.Ch4), 32, 24);
+        resBmp[TChan.Ch4][4] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Ch4), SvgNodeInfo.getSColors(TChan.Ch4), 24, 32);
+        resBmp[TChan.Ch4][5] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Ch4), SvgNodeInfo.getSColors(TChan.Ch4), 24, 32);
+
+        resBmp[TChan.Ch5][0] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Ch5), SvgNodeInfo.getNColors(TChan.Ch5), 32, 24);
+        resBmp[TChan.Ch5][1] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Ch5), SvgNodeInfo.getNColors(TChan.Ch5), 24, 32);
+        resBmp[TChan.Ch5][2] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Ch5), SvgNodeInfo.getNColors(TChan.Ch5), 24, 32);
+        resBmp[TChan.Ch5][3] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Ch5), SvgNodeInfo.getSColors(TChan.Ch5), 32, 24);
+        resBmp[TChan.Ch5][4] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Ch5), SvgNodeInfo.getSColors(TChan.Ch5), 24, 32);
+        resBmp[TChan.Ch5][5] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Ch5), SvgNodeInfo.getSColors(TChan.Ch5), 24, 32);
+
+        resBmp[TChan.Ch6][0] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Ch6), SvgNodeInfo.getNColors(TChan.Ch6), 32, 24);
+        resBmp[TChan.Ch6][1] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Ch6), SvgNodeInfo.getNColors(TChan.Ch6), 24, 32);
+        resBmp[TChan.Ch6][2] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Ch6), SvgNodeInfo.getNColors(TChan.Ch6), 24, 32);
+        resBmp[TChan.Ch6][3] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Ch6), SvgNodeInfo.getSColors(TChan.Ch6), 32, 24);
+        resBmp[TChan.Ch6][4] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Ch6), SvgNodeInfo.getSColors(TChan.Ch6), 24, 32);
+        resBmp[TChan.Ch6][5] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Ch6), SvgNodeInfo.getSColors(TChan.Ch6), 24, 32);
+
+        resBmp[TChan.Ch7][0] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Ch7), SvgNodeInfo.getNColors(TChan.Ch7), 32, 24);
+        resBmp[TChan.Ch7][1] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Ch7), SvgNodeInfo.getNColors(TChan.Ch7), 24, 32);
+        resBmp[TChan.Ch7][2] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Ch7), SvgNodeInfo.getNColors(TChan.Ch7), 24, 32);
+        resBmp[TChan.Ch7][3] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Ch7), SvgNodeInfo.getSColors(TChan.Ch7), 32, 24);
+        resBmp[TChan.Ch7][4] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Ch7), SvgNodeInfo.getSColors(TChan.Ch7), 24, 32);
+        resBmp[TChan.Ch7][5] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Ch7), SvgNodeInfo.getSColors(TChan.Ch7), 24, 32);
+
+        resBmp[TChan.Ch8][0] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Ch8), SvgNodeInfo.getNColors(TChan.Ch8), 32, 24);
+        resBmp[TChan.Ch8][1] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Ch8), SvgNodeInfo.getNColors(TChan.Ch8), 24, 32);
+        resBmp[TChan.Ch8][2] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Ch8), SvgNodeInfo.getNColors(TChan.Ch8), 24, 32);
+        resBmp[TChan.Ch8][3] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Ch8), SvgNodeInfo.getSColors(TChan.Ch8), 32, 24);
+        resBmp[TChan.Ch8][4] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Ch8), SvgNodeInfo.getSColors(TChan.Ch8), 24, 32);
+        resBmp[TChan.Ch8][5] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Ch8), SvgNodeInfo.getSColors(TChan.Ch8), 24, 32);
+
+        resBmp[TChan.Math1][0] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Math1), SvgNodeInfo.getNColors(TChan.Math1), 32, 24);
+        resBmp[TChan.Math1][1] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Math1), SvgNodeInfo.getNColors(TChan.Math1), 24, 32);
+        resBmp[TChan.Math1][2] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Math1), SvgNodeInfo.getNColors(TChan.Math1), 24, 32);
+        resBmp[TChan.Math1][3] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Math1), SvgNodeInfo.getSColors(TChan.Math1), 32, 24);
+        resBmp[TChan.Math1][4] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Math1), SvgNodeInfo.getSColors(TChan.Math1), 24, 32);
+        resBmp[TChan.Math1][5] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Math1), SvgNodeInfo.getSColors(TChan.Math1), 24, 32);
+
+        resBmp[TChan.Math2][0] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Math2), SvgNodeInfo.getNColors(TChan.Math2), 32, 24);
+        resBmp[TChan.Math2][1] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Math2), SvgNodeInfo.getNColors(TChan.Math2), 24, 32);
+        resBmp[TChan.Math2][2] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Math2), SvgNodeInfo.getNColors(TChan.Math2), 24, 32);
+        resBmp[TChan.Math2][3] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Math2), SvgNodeInfo.getSColors(TChan.Math2), 32, 24);
+        resBmp[TChan.Math2][4] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Math2), SvgNodeInfo.getSColors(TChan.Math2), 24, 32);
+        resBmp[TChan.Math2][5] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Math2), SvgNodeInfo.getSColors(TChan.Math2), 24, 32);
+
+        resBmp[TChan.Math3][0] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Math3), SvgNodeInfo.getNColors(TChan.Math3), 32, 24);
+        resBmp[TChan.Math3][1] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Math3), SvgNodeInfo.getNColors(TChan.Math3), 24, 32);
+        resBmp[TChan.Math3][2] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Math3), SvgNodeInfo.getNColors(TChan.Math3), 24, 32);
+        resBmp[TChan.Math3][3] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Math3), SvgNodeInfo.getSColors(TChan.Math3), 32, 24);
+        resBmp[TChan.Math3][4] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Math3), SvgNodeInfo.getSColors(TChan.Math3), 24, 32);
+        resBmp[TChan.Math3][5] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Math3), SvgNodeInfo.getSColors(TChan.Math3), 24, 32);
+
+        resBmp[TChan.Math4][0] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Math4), SvgNodeInfo.getNColors(TChan.Math4), 32, 24);
+        resBmp[TChan.Math4][1] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Math4), SvgNodeInfo.getNColors(TChan.Math4), 24, 32);
+        resBmp[TChan.Math4][2] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Math4), SvgNodeInfo.getNColors(TChan.Math4), 24, 32);
+        resBmp[TChan.Math4][3] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Math4), SvgNodeInfo.getSColors(TChan.Math4), 32, 24);
+        resBmp[TChan.Math4][4] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Math4), SvgNodeInfo.getSColors(TChan.Math4), 24, 32);
+        resBmp[TChan.Math4][5] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Math4), SvgNodeInfo.getSColors(TChan.Math4), 24, 32);
+
+        resBmp[TChan.Math5][0] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Math5), SvgNodeInfo.getNColors(TChan.Math5), 32, 24);
+        resBmp[TChan.Math5][1] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Math5), SvgNodeInfo.getNColors(TChan.Math5), 24, 32);
+        resBmp[TChan.Math5][2] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Math5), SvgNodeInfo.getNColors(TChan.Math5), 24, 32);
+        resBmp[TChan.Math5][3] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Math5), SvgNodeInfo.getSColors(TChan.Math5), 32, 24);
+        resBmp[TChan.Math5][4] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Math5), SvgNodeInfo.getSColors(TChan.Math5), 24, 32);
+        resBmp[TChan.Math5][5] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Math5), SvgNodeInfo.getSColors(TChan.Math5), 24, 32);
+
+        resBmp[TChan.Math6][0] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Math6), SvgNodeInfo.getNColors(TChan.Math6), 32, 24);
+        resBmp[TChan.Math6][1] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Math6), SvgNodeInfo.getNColors(TChan.Math6), 24, 32);
+        resBmp[TChan.Math6][2] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Math6), SvgNodeInfo.getNColors(TChan.Math6), 24, 32);
+        resBmp[TChan.Math6][3] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Math6), SvgNodeInfo.getSColors(TChan.Math6), 32, 24);
+        resBmp[TChan.Math6][4] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Math6), SvgNodeInfo.getSColors(TChan.Math6), 24, 32);
+        resBmp[TChan.Math6][5] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Math6), SvgNodeInfo.getSColors(TChan.Math6), 24, 32);
+
+        resBmp[TChan.Math7][0] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Math7), SvgNodeInfo.getNColors(TChan.Math7), 32, 24);
+        resBmp[TChan.Math7][1] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Math7), SvgNodeInfo.getNColors(TChan.Math7), 24, 32);
+        resBmp[TChan.Math7][2] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Math7), SvgNodeInfo.getNColors(TChan.Math7), 24, 32);
+        resBmp[TChan.Math7][3] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Math7), SvgNodeInfo.getSColors(TChan.Math7), 32, 24);
+        resBmp[TChan.Math7][4] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Math7), SvgNodeInfo.getSColors(TChan.Math7), 24, 32);
+        resBmp[TChan.Math7][5] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Math7), SvgNodeInfo.getSColors(TChan.Math7), 24, 32);
+
+        resBmp[TChan.Math8][0] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Math8), SvgNodeInfo.getNColors(TChan.Math8), 32, 24);
+        resBmp[TChan.Math8][1] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Math8), SvgNodeInfo.getNColors(TChan.Math8), 24, 32);
+        resBmp[TChan.Math8][2] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Math8), SvgNodeInfo.getNColors(TChan.Math8), 24, 32);
+        resBmp[TChan.Math8][3] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.Math8), SvgNodeInfo.getSColors(TChan.Math8), 32, 24);
+        resBmp[TChan.Math8][4] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.Math8), SvgNodeInfo.getSColors(TChan.Math8), 24, 32);
+        resBmp[TChan.Math8][5] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.Math8), SvgNodeInfo.getSColors(TChan.Math8), 24, 32);
+
+        resBmp[TChan.R1][0] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.R1), SvgNodeInfo.getNColors(TChan.R1), 32, 24);
+        resBmp[TChan.R1][1] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.R1), SvgNodeInfo.getNColors(TChan.R1), 24, 32);
+        resBmp[TChan.R1][2] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.R1), SvgNodeInfo.getNColors(TChan.R1), 24, 32);
+        resBmp[TChan.R1][3] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.R1), SvgNodeInfo.getSColors(TChan.R1), 32, 24);
+        resBmp[TChan.R1][4] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.R1), SvgNodeInfo.getSColors(TChan.R1), 24, 32);
+        resBmp[TChan.R1][5] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.R1), SvgNodeInfo.getSColors(TChan.R1), 24, 32);
+
+        resBmp[TChan.R2][0] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.R2), SvgNodeInfo.getNColors(TChan.R2), 32, 24);
+        resBmp[TChan.R2][1] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.R2), SvgNodeInfo.getNColors(TChan.R2), 24, 32);
+        resBmp[TChan.R2][2] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.R2), SvgNodeInfo.getNColors(TChan.R2), 24, 32);
+        resBmp[TChan.R2][3] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.R2), SvgNodeInfo.getSColors(TChan.R2), 32, 24);
+        resBmp[TChan.R2][4] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.R2), SvgNodeInfo.getSColors(TChan.R2), 24, 32);
+        resBmp[TChan.R2][5] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.R2), SvgNodeInfo.getSColors(TChan.R2), 24, 32);
+
+        resBmp[TChan.R3][0] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.R3), SvgNodeInfo.getNColors(TChan.R3), 32, 24);
+        resBmp[TChan.R3][1] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.R3), SvgNodeInfo.getNColors(TChan.R3), 24, 32);
+        resBmp[TChan.R3][2] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.R3), SvgNodeInfo.getNColors(TChan.R3), 24, 32);
+        resBmp[TChan.R3][3] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.R3), SvgNodeInfo.getSColors(TChan.R3), 32, 24);
+        resBmp[TChan.R3][4] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.R3), SvgNodeInfo.getSColors(TChan.R3), 24, 32);
+        resBmp[TChan.R3][5] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.R3), SvgNodeInfo.getSColors(TChan.R3), 24, 32);
+
+        resBmp[TChan.R4][0] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.R4), SvgNodeInfo.getNColors(TChan.R4), 32, 24);
+        resBmp[TChan.R4][1] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.R4), SvgNodeInfo.getNColors(TChan.R4), 24, 32);
+        resBmp[TChan.R4][2] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.R4), SvgNodeInfo.getNColors(TChan.R4), 24, 32);
+        resBmp[TChan.R4][3] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.R4), SvgNodeInfo.getSColors(TChan.R4), 32, 24);
+        resBmp[TChan.R4][4] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.R4), SvgNodeInfo.getSColors(TChan.R4), 24, 32);
+        resBmp[TChan.R4][5] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.R4), SvgNodeInfo.getSColors(TChan.R4), 24, 32);
+
+        resBmp[TChan.R5][0] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.R5), SvgNodeInfo.getNColors(TChan.R5), 32, 24);
+        resBmp[TChan.R5][1] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.R5), SvgNodeInfo.getNColors(TChan.R5), 24, 32);
+        resBmp[TChan.R5][2] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.R5), SvgNodeInfo.getNColors(TChan.R5), 24, 32);
+        resBmp[TChan.R5][3] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.R5), SvgNodeInfo.getSColors(TChan.R5), 32, 24);
+        resBmp[TChan.R5][4] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.R5), SvgNodeInfo.getSColors(TChan.R5), 24, 32);
+        resBmp[TChan.R5][5] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.R5), SvgNodeInfo.getSColors(TChan.R5), 24, 32);
+
+        resBmp[TChan.R6][0] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.R6), SvgNodeInfo.getNColors(TChan.R6), 32, 24);
+        resBmp[TChan.R6][1] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.R6), SvgNodeInfo.getNColors(TChan.R6), 24, 32);
+        resBmp[TChan.R6][2] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.R6), SvgNodeInfo.getNColors(TChan.R6), 24, 32);
+        resBmp[TChan.R6][3] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.R6), SvgNodeInfo.getSColors(TChan.R6), 32, 24);
+        resBmp[TChan.R6][4] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.R6), SvgNodeInfo.getSColors(TChan.R6), 24, 32);
+        resBmp[TChan.R6][5] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.R6), SvgNodeInfo.getSColors(TChan.R6), 24, 32);
+
+        resBmp[TChan.R7][0] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.R7), SvgNodeInfo.getNColors(TChan.R7), 32, 24);
+        resBmp[TChan.R7][1] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.R7), SvgNodeInfo.getNColors(TChan.R7), 24, 32);
+        resBmp[TChan.R7][2] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.R7), SvgNodeInfo.getNColors(TChan.R7), 24, 32);
+        resBmp[TChan.R7][3] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.R7), SvgNodeInfo.getSColors(TChan.R7), 32, 24);
+        resBmp[TChan.R7][4] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.R7), SvgNodeInfo.getSColors(TChan.R7), 24, 32);
+        resBmp[TChan.R7][5] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.R7), SvgNodeInfo.getSColors(TChan.R7), 24, 32);
+
+        resBmp[TChan.R8][0] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.R8), SvgNodeInfo.getNColors(TChan.R8), 32, 24);
+        resBmp[TChan.R8][1] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.R8), SvgNodeInfo.getNColors(TChan.R8), 24, 32);
+        resBmp[TChan.R8][2] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.R8), SvgNodeInfo.getNColors(TChan.R8), 24, 32);
+        resBmp[TChan.R8][3] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(TChan.R8), SvgNodeInfo.getSColors(TChan.R8), 32, 24);
+        resBmp[TChan.R8][4] = SvgManager.createSvg(SvgNodeInfo.getDownPath(TChan.R8), SvgNodeInfo.getSColors(TChan.R8), 24, 32);
+        resBmp[TChan.R8][5] = SvgManager.createSvg(SvgNodeInfo.getUpPath(TChan.R8), SvgNodeInfo.getSColors(TChan.R8), 24, 32);
+
+
+        handleColor();
+    }
+
+    int[] chArrayColorId = new int[24];
+    private float[][] chColorHSV;
+
+
+    //region 对应图片数组的序号
+    public static final int CH_N = 0;
+    public static final int CH_N_DOWN = 1;
+    public static final int CH_N_UP = 2;
+    public static final int CH_S = 3;
+    public static final int CH_S_DOWN = 4;
+    public static final int CH_S_UP = 5;
+    //endregion
+
+    //region 单例
+//    private static final class WaveManage_YTHolder {
+//        public static final WaveManage_YT instance = new WaveManage_YT();
+//    }
+//
+//    public static final WaveManage_YT get() {
+//        return WaveManage_YTHolder.instance;
+//    }
+    //endregion
+
+    private ChannelWaveManage_YT channelWaveManage;
+    private MathRefWaveManage mathRefWaveManage;
+    /** 波形数据 */
+    private PreviewTextureView waveTextureView;
+    //bmp 就是波形图片，还要获得点阵数据为了选择波形用。
+
+    /** 点选功能 */
+    private boolean clickSelectEnable=false;
+
+    public WaveManage_YT(IWave.OnMovingWaveEvent onMovingWaveEvent, IWave.OnSelectChangeEvent onSelectChangeEvent) {
+        initResBmp();
+
+        channelWaveManage = new ChannelWaveManage_YT(resBmp, onMovingWaveEvent, onSelectChangeEvent);
+        mathRefWaveManage = new MathRefWaveManage(resBmp, onMovingWaveEvent, onSelectChangeEvent);
+
+    }
+
+    private void handleColor() {
+        System.arraycopy(SvgNodeInfo.getColorsIntForView(), 0, chArrayColorId, 0, 24);
+        int color;
+        float[] hsv = {0, 0, 0};
+        chColorHSV = new float[chArrayColorId.length][hsv.length];
+        for (int i = 0; i < chArrayColorId.length; i++) {
+            color = chArrayColorId[i];
+            Color.colorToHSV(color, hsv);
+            System.arraycopy(hsv, 0, chColorHSV[i], 0, hsv.length);
+        }
+    }
+
+    public void setWaveChange(int height) {
+        channelWaveManage.setWaveChange(height);
+        mathRefWaveManage.setWaveChange(height);
+        SerialBusManage.getInstance().changeSerialRect();
+        refresh();
+    }
+
+    public void changeColor(int chIndex, String colorStr) {
+        if (!TChan.isCh1ToR8(chIndex)) return;
+        resBmp[chIndex][0] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(chIndex), SvgNodeInfo.getNColors(chIndex), 32, 24);
+        resBmp[chIndex][1] = SvgManager.createSvg(SvgNodeInfo.getDownPath(chIndex), SvgNodeInfo.getNColors(chIndex), 24, 32);
+        resBmp[chIndex][2] = SvgManager.createSvg(SvgNodeInfo.getUpPath(chIndex), SvgNodeInfo.getNColors(chIndex), 24, 32);
+        resBmp[chIndex][3] = SvgManager.createSvg(SvgNodeInfo.getStandardPath(chIndex), SvgNodeInfo.getSColors(chIndex), 32, 24);
+        resBmp[chIndex][4] = SvgManager.createSvg(SvgNodeInfo.getDownPath(chIndex), SvgNodeInfo.getSColors(chIndex), 24, 32);
+        resBmp[chIndex][5] = SvgManager.createSvg(SvgNodeInfo.getUpPath(chIndex), SvgNodeInfo.getSColors(chIndex), 24, 32);
+        mathRefWaveManage.updateResBmp(chIndex, resBmp);
+        handleColor();
+    }
+
+    //region IWorkMode接口
+    private
+    @WorkMode
+    int mWorkMode = IWorkMode.WorkMode_YT;
+
+    @Override
+    public void switchWorkMode(@WorkMode int workMode) {
+        if (mWorkMode == workMode) return;
+        this.mWorkMode = workMode;
+        channelWaveManage.switchWorkMode(workMode);
+        mathRefWaveManage.switchWorkMode(workMode);
+    }
+
+    //endregion
+
+    public void draw(Canvas canvas) {
+//        synchronized (this) {
+//            paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
+//            mCanvas.drawPaint(paint);
+//            paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC));
+//
+//            if (channelWaveManage.isSelected() != -1) {
+//                synchronized (mathRefWaveManage.getWavesBitmap()) {
+//                    mCanvas.drawBitmap(mathRefWaveManage.getWavesBitmap(), 0, 0, paint);
+//                }
+//                synchronized (channelWaveManage.getWavesBitmap()) {
+//                    mCanvas.drawBitmap(channelWaveManage.getWavesBitmap(), 0, 0, paint);
+//                }
+////                mCanvas.drawBitmap(tempBmp, 0, 0, paint);
+//
+////                canvas.drawBitmap(bmp, 0, 0, null);
+//                mathRefWaveManage.draw(canvas);
+//                channelWaveManage.draw(canvas);
+//            } else {
+//                synchronized (channelWaveManage.getWavesBitmap()) {
+//                    mCanvas.drawBitmap(channelWaveManage.getWavesBitmap(), 0, 0, paint);
+//                }
+//                synchronized (mathRefWaveManage.getWavesBitmap()) {
+//                    mCanvas.drawBitmap(mathRefWaveManage.getWavesBitmap(), 0, 0, paint);
+//                }
+////                mCanvas.drawBitmap(tempBmp, 0, 0, paint);
+////                canvas.drawBitmap(bmp, 0, 0, null);
+//                channelWaveManage.draw(canvas);
+//                mathRefWaveManage.draw(canvas);
+//            }
+//        }
+    }
+
+    @Override
+    public void draw(ICanvasGL canvas) {
+        synchronized (this) {
+            if (channelWaveManage.isSelected() != -1) {
+                //canvas.drawBitmap(bmp, 0, 0, false);
+                mathRefWaveManage.draw(canvas);
+                channelWaveManage.draw(canvas);
+            } else {
+                //canvas.drawBitmap(bmp, 0, 0, false);
+                channelWaveManage.draw(canvas);
+                mathRefWaveManage.draw(canvas);
+            }
+        }
+    }
+
+    @Override
+    public void setVisible(int ChNo, boolean visible) {
+        channelWaveManage.setVisible(ChNo, visible);
+        mathRefWaveManage.setVisible(ChNo, visible);
+    }
+
+    public void setChannelLabel(int ChNo, String label) {
+        channelWaveManage.setChannelLabel(ChNo, label);
+        mathRefWaveManage.setChannelLabel(ChNo, label);
+    }
+
+    public String getChannelLabel(int chNo) {
+        if (TChan.isChan(chNo)) {
+            return channelWaveManage.getChannelLabel(chNo);
+        } else {
+            return mathRefWaveManage.getChannelLabel(chNo);
+        }
+    }
+
+    public Rect getLabelRect(int chNo) {
+        if (TChan.isChan(chNo)) {
+            return channelWaveManage.getLabelRect(chNo);
+        } else {
+            return mathRefWaveManage.getLabelRect(chNo);
+        }
+    }
+
+    @Override
+    public void setOffsetY(int offsetY) {
+        if (channelWaveManage.isSelected() != -1) {
+            channelWaveManage.setOffsetY(offsetY);
+        } else if (mathRefWaveManage.isSelected() != -1) {
+            mathRefWaveManage.setOffsetY(offsetY);
+        }
+    }
+
+    @Override
+    public void setPositionY(int chNo, double positionY) {
+        if (TChan.isChan(chNo)) {
+            channelWaveManage.setY(chNo, positionY);
+        } else if (TChan.isMathToR8(chNo)) {
+            mathRefWaveManage.setY(chNo, positionY);
+        }
+    }
+
+    public void setPositionYFromEventBus(int chNo, double positionY) {
+        if (TChan.isChan(chNo)) {
+            channelWaveManage.setYFromEventBus(chNo, positionY);
+        } else if (TChan.isMathToR8(chNo)) {
+            mathRefWaveManage.setYFromEventBus(chNo, positionY);
+        }
+    }
+
+    @Override
+    public double getPositionY(int chNo) {
+        if (TChan.isChan(chNo)) {
+            return channelWaveManage.getY(chNo);
+        } else if (TChan.isMathToR8(chNo)) {
+            return mathRefWaveManage.getY(chNo);
+        }
+        return 0;
+    }
+
+    public double getUIPositionY(int chNo) {
+        if (TChan.isChan(chNo)) {
+            return channelWaveManage.getUIY(chNo);
+        } else if (TChan.isMathToR8(chNo)) {
+            return mathRefWaveManage.getUIY(chNo);
+        }
+        return 0;
+    }
+
+    @Override
+    public void setCenterChY(int chNo) {
+        //if (chNo != IWave.Ch1 && chNo != IWave.Ch2 && chNo != IWave.Ch3 && chNo != IWave.Ch4) {
+        //    return;
+        //}
+        int centerY = GlobalVar.get().getWaveZoneHeight_Pix(WorkModeManage.getInstance().getmWorkMode()) / 2;
+        Logger.e(TAG, "WaveManage_YT setCenterY= " + centerY);
+        if (TChan.isChan(chNo)) {
+            if (channelWaveManage.isVisible(chNo)) {
+                channelWaveManage.setY(chNo, centerY);
+            }
+        }
+        else if(TChan.isMathToR8(chNo)) {
+            if (mathRefWaveManage.isVisible(chNo)) {
+                mathRefWaveManage.setY(chNo, centerY);
+            }
+        }
+    }
+
+
+    private PorterDuffXfermode clearMode = new PorterDuffXfermode(PorterDuff.Mode.CLEAR);
+    private PorterDuffXfermode srcMode = new PorterDuffXfermode(PorterDuff.Mode.SRC);
+
+    /**
+     * 设置波形层次
+     * 根据选择的通道不同，确定波形通道在上，还是数据参考在上。
+     */
+    private void setWaveLayer() {
+//        synchronized (bmp) {
+//            paint.setXfermode(clearMode);
+//            mCanvas.drawPaint(paint);
+//            paint.setXfermode(srcMode);
+//            if (channelWaveManage.isSelected() != -1) {
+//                synchronized (mathRefWaveManage.getWavesBitmap()) {
+//                    mCanvas.drawBitmap(mathRefWaveManage.getWavesBitmap(), 0, 0, paint);
+//                }
+//                synchronized (channelWaveManage.getWavesBitmap()) {
+//                    mCanvas.drawBitmap(channelWaveManage.getWavesBitmap(), 0, 0, paint);
+//                }
+//            } else {
+//                synchronized (channelWaveManage.getWavesBitmap()) {
+//                    mCanvas.drawBitmap(channelWaveManage.getWavesBitmap(), 0, 0, paint);
+//                }
+//                synchronized (mathRefWaveManage.getWavesBitmap()) {
+//                    mCanvas.drawBitmap(mathRefWaveManage.getWavesBitmap(), 0, 0, paint);
+//                }
+//            }
+//
+//        }
+    }
+
+    /***
+     * 设置通道号
+     * @param chNO
+     */
+    @Override
+    public void setSelectCursor(int chNO) {
+        channelWaveManage.setSelectCursor(chNO);
+        mathRefWaveManage.setSelectCursor(chNO);
+        // TODO: 2023-9-7 光标测量值是否切换
+        MeasureManage.getInstance().setAllMeasureChannelColor(chNO);
+        if (CursorManage.isAutoSwitchChannel()) {
+            CursorManage.getInstance().setCursorChannelColor(chNO);
+            MeasureManage.getInstance().setCursorChannelColor(chNO);
+        }
+    }
+
+    /***
+     * 在波形通道选择器中选择前，先判断通道选择器是否打开。
+     * 首先在波形通道选择器中选择，再从图片中进行选择。
+     *
+     * @param x
+     * @param y
+     * @return 返回通道号  -1为没有选择
+     */
+    @Override
+    public int selectCursor(int x, int y) {
+        int selectIndex = -1;
+        selectIndex = channelWaveManage.selectCursor(x, y);
+        if (selectIndex < 0) selectIndex = mathRefWaveManage.selectCursor(x, y);
+        //if (selectIndex < 0) selectIndex = this.selectCursorTobmp(x, y);
+        if (selectIndex < 0) selectIndex = this.selectCursorByBmp(x, y);
+        //if (selectIndex != -1) setWaveLayer();
+
+        return selectIndex;
+    }
+    public int selectCursor(int x,int y,int curChan){
+        int selectIndex = -1;
+        selectIndex = channelWaveManage.selectCursor(x, y,curChan);
+        if (selectIndex < 0) selectIndex = mathRefWaveManage.selectCursor(x, y,curChan);
+        if (selectIndex < 0) selectIndex = this.selectCursorByBmp(x, y,curChan);
+        return selectIndex;
+    }
+    @Override
+    public void movePix(int px) {
+        channelWaveManage.movePix(px);
+        mathRefWaveManage.movePix(px);
+    }
+
+    @Override
+    public int getCurCh() {
+
+        return channelWaveManage.isSelected() == -1 ? mathRefWaveManage.isSelected() : channelWaveManage.isSelected();
+    }
+
+    public void setWaveTextureView(PreviewTextureView waveTextureView){
+        this.waveTextureView=waveTextureView;
+    }
+
+    /**
+     *  从bmp中返回选择的通道号
+     * @param x 点击的位置 X
+     * @param y  点击的位置 Y
+     * @return  返回通道号  返回-1说明没有选择
+     */
+    private  int selectCursorByBmp(int x,int y){
+        if (!clickSelectEnable) return -1;
+        int selectIndex = -1;
+
+        ByteBuffer byteBuffer = this.waveTextureView.getBuffer();
+        if(byteBuffer != null && chColorHSV != null){
+            int stride = waveTextureView.getStride();
+            int T = 0;
+            if(WorkModeManage.getInstance().getmWorkMode()==IWorkMode.WorkMode_YTZOOM){
+                T = GlobalVar.get().getRectZoom().height();
+            }
+            selectIndex = selectCursorTobmp(byteBuffer,ScopeBase.getWidth(),ScopeBase.getNewHeight(),stride,x, y+T,T);
+            Logger.d(TAG,"selectIndex:" + selectIndex);
+        }
+
+        if (selectIndex == TChan.RefActive || selectIndex == TChan.MathActive) selectIndex = getCurCh();
+
+        if (TChan.isChan(selectIndex)) channelWaveManage.setSelectCursor(selectIndex);
+        if (TChan.isMathToR8(selectIndex)) mathRefWaveManage.setSelectCursor(selectIndex);
+        return selectIndex;
+    }
+    private  int selectCursorByBmp(int x,int y,int curChan){
+        if (!clickSelectEnable) return -1;
+        int selectIndex = -1;
+
+        ByteBuffer byteBuffer = this.waveTextureView.getBuffer();
+        if(byteBuffer != null){
+            int stride = waveTextureView.getStride();
+            int T = 0;
+            if(WorkModeManage.getInstance().getmWorkMode()==IWorkMode.WorkMode_YTZOOM){
+                T = GlobalVar.get().getRectZoom().height();
+            }
+            selectIndex = selectCursorTobmp(byteBuffer, ScopeBase.getWidth(), ScopeBase.getNewHeight(), stride, x, y + T, T);
+        }
+
+        if (selectIndex == TChan.RefActive || selectIndex == TChan.MathActive) selectIndex = getCurCh();
+
+        if (TChan.isChan(selectIndex) && curChan!=selectIndex) channelWaveManage.setSelectCursor(selectIndex);
+        if (TChan.isMathToR8(selectIndex) && curChan!=selectIndex) mathRefWaveManage.setSelectCursor(selectIndex);
+        return selectIndex;
+    }
+    /***
+     * 如果在波形通道选择器中，没有选到，就在图片中进行选择。
+     * @param x
+     * @param y
+     * @return
+     */
+    private int selectCursorTobmp(ByteBuffer byteBuffer,int width,int height,int stride,int x, int y,int T) {
+
+        //y=GlobalVar.get().getWaveZoneHeight_Pix(WorkModeManage.getInstance().getmWorkMode())-y;
+        int selectIndex = -1;
+        int N, S, W, E;
+        if (x <= 0 || y <= 0 || x >= width || y >= height) return selectIndex;
+        N = S = y;
+        E = W = x;
+        if (N <= 1) N = 1;
+        if (S >= height - 1) S = height - 1;
+        if (W <= 1) W = 1;
+        if (E >= width - 1) E = height - 1;
+        if(S < T) S = T + 1;
+        int nums = 0;
+        while (N > 1 || S < height - 1 || W > 1 || E < width - 1) {
+
+            if(++nums > 100){
+                break;
+            }
+
+            if(N < T) N = T + 1;
+
+
+            if ((selectIndex = cacl_Channel(byteBuffer, stride, N, x)) > 0) return selectIndex;
+            if ((selectIndex = cacl_Channel(byteBuffer, stride, S, x)) > 0) return selectIndex;
+            if ((selectIndex = cacl_Channel(byteBuffer, stride, y, W)) > 0) return selectIndex;
+            if ((selectIndex = cacl_Channel(byteBuffer, stride, y, E)) > 0) return selectIndex;
+            if ((selectIndex = cacl_Channel(byteBuffer, stride, N, W)) > 0) return selectIndex;
+            if ((selectIndex = cacl_Channel(byteBuffer, stride, N, E)) > 0) return selectIndex;
+            if ((selectIndex = cacl_Channel(byteBuffer, stride, S, W)) > 0) return selectIndex;
+            if ((selectIndex = cacl_Channel(byteBuffer, stride, S, E)) > 0) return selectIndex;
+
+
+            N--;
+            W--;
+            E++;
+            S++;
+            if (N <= 1) N = 1;
+            if (S >= height - 1) S = height - 1;
+            if (W <= 1) W = 1;
+            if (E >= width - 1) E = width - 1;
+        }
+        return selectIndex;
+    }
+
+    private boolean isRef(int idx){
+       return  idx >= IChan.R1.getValue()  && idx <= IChan.R8.getValue();
+    }
+    private boolean isMath(int idx){
+        return  idx >= IChan.Math1.getValue()  && idx <= IChan.Math8.getValue();
+    }
+    private boolean isCh(int idx){
+        return idx >= IChan.CH1.getValue() && idx <= IChan.CH8.getValue();
+    }
+
+
+    private int cacl_Channel(ByteBuffer byteBuffer, int rowWidth, int row, int col) {
+        int selectIndex = -1;
+        int pix = byteBuffer.getInt((rowWidth * row + col) * 4);
+        pix = (pix & 0xFF) << 24 | ((pix >> 8) & 0xFFFFFF);
+        if(pix != 0) {
+            float[] hsv = {0, 0, 0};
+            Color.colorToHSV(pix, hsv);
+//            Logger.d(TAG,"pix:" + Integer.toHexString(pix&0xFFFFFF) + ",h:"
+//                    + hsv[0] + ",s:" + hsv[1] + ",v:" + hsv[2]);
+            if (hsv[2] > 0.3 && hsv[1] > 0.3){
+                for(int i=0;i<chColorHSV.length;i++){
+//                    Logger.d(TAG,"i:" + i + ",h:" + chColorHSV[i][0] + ",s:" + chColorHSV[i][1] + ",v:" + chColorHSV[i][2]);
+                    if(Math.abs(hsv[0] - chColorHSV[i][0]) < 3){
+                        if(isCh(i)){
+                            return TChan.Ch1 + i;
+                        }else {
+                            int idx = SvgNodeInfo.getHsv2Ch(hsv);
+                            if(idx > 0){
+                                return idx;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return selectIndex;
+    }
+
+
+
+
+    public void refresh(){
+        channelWaveManage.refresh();
+        mathRefWaveManage.refresh();
+    }
+
+    //region
+    public boolean isClickSelectEnable() {
+        return clickSelectEnable;
+    }
+
+    public void setClickSelectEnable(boolean clickSelectEnable) {
+        this.clickSelectEnable = clickSelectEnable;
+    }
+
+    private int labelSelectChan = -1;
+
+    public boolean isLabelContains(int x, int y) {
+        if (channelWaveManage.contains(x, y) || mathRefWaveManage.contains(x, y)) {
+            if (channelWaveManage.contains(x, y)) {
+                labelSelectChan = channelWaveManage.getLabelSelectChan();
+            }
+            if (mathRefWaveManage.contains(x, y)) {
+                labelSelectChan = mathRefWaveManage.getLabelSelectChan();
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public int getLabelSelectChan() {
+        return labelSelectChan;
+    }
+
+
+    public void changeLabelPos(int selectChan, int x) {
+        if (labelSelectChan < 0 ) return;
+        channelWaveManage.changeLabelPos(selectChan, x);
+        mathRefWaveManage.changeLabelPos(selectChan, x);
+    }
+
+    //endregion
+}

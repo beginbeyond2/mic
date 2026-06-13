@@ -1,0 +1,21 @@
+package com.micsig.tbook.scope.channel;
+
+import com.micsig.tbook.scope.Action.FPGAMessage;
+import com.micsig.tbook.scope.Action.XAction;
+import com.micsig.tbook.scope.Event.EventFactory;
+
+/**
+ * Created by zhuzh on 2018-5-29.
+ */
+
+public class SerialChannelAction extends XAction {
+    private SerialChannel channel;
+    public SerialChannelAction(SerialChannel channel){
+        this.channel = channel;
+    }
+    public void busTypeChange(){
+        sendChSample();
+        sendFpgaMsg(0, FPGAMessage.FPGA_CMD_BUS_TYPE);
+        sendEvent(EventFactory.EVENT_BUS_TYPE_UPDATE);
+    }
+}

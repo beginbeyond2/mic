@@ -1,0 +1,25 @@
+package com.micsig.tbook.scope.fpga;
+
+/**
+ * Created by zhuzh on 2018-4-8.
+ */
+
+public class FPGAReg_PRE_SAMP extends FPGAReg{
+
+    public FPGAReg_PRE_SAMP() {
+        super(FPGA_PRE_SAMP, 12);
+    }
+
+    public void setPreVol(int val){
+        setVal(0,val);
+    }
+    public void setPostVolL(int val){
+        setVal(1,val);
+    }
+    public void setPostVolH(int val){
+        setVal(2,val);
+    }
+    public int getPreVol(){
+        return getVal();
+    }
+}

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <TextView
+        android:id="@+id/headView"
+        style="@style/textStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:paddingEnd="16px"
+        android:paddingStart="10px" />
+
+    <TextView
+        android:id="@+id/editView"
+        style="@style/editTextStyleRight"
+        android:layout_width="150px"
+        android:layout_height="54px"
+        android:lines="1"
+        android:ellipsize="end"
+        android:background="@drawable/shape_frame_bg_black"
+        />
+</merge>

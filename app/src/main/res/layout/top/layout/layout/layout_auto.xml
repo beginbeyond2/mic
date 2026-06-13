@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <com.micsig.tbook.ui.top.view.title.TopViewTitleWithScroll
+        android:id="@+id/autoTitle"
+        android:layout_width="match_parent"
+        android:layout_height="70px"
+        app:itemBgViewFlag="twoTitle" />
+
+    <RelativeLayout
+        android:id="@+id/autoDetail"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/autoTitle"
+        android:background="@color/color_Backcolor_MainMenu3"
+        android:paddingBottom="15px"
+        android:paddingTop="15px" />
+</RelativeLayout>

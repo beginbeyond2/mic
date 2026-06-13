@@ -1,0 +1,719 @@
+package com.micsig.tbook.scope.Action;
+
+import android.os.SystemClock;
+import android.util.Log;
+
+import com.micsig.tbook.scope.Calibrate.HwConfig;
+import com.micsig.tbook.scope.Data.SyncHeader;
+import com.micsig.tbook.scope.Sample.Sample;
+import com.micsig.tbook.scope.Sample.SegmentSample;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.ScopeFrozen;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.fpga.FPGACommand;
+import com.micsig.tbook.scope.fpga.FPGA_Status;
+import com.micsig.tbook.scope.horizontal.HorizontalAxis;
+import com.micsig.tbook.scope.probe.ProbeCommand;
+import com.micsig.tbook.scope.probe.ProbeFactory;
+
+import java.nio.ByteBuffer;
+import java.util.List;
+
+/**
+ * Created by zhuzh on 2018/3/13.
+ */
+
+public class FPGAMessage {
+    private static final String TAG = "FPGAMessage";
+    public static final int FPGA_CMD_MASK_SAMP = 0xFFFF;//(0~15)
+    public static final int FPGA_CMD_SAMP_MODE = 1<<0;//自动、YT、滚屏、慢时基、相位、单双通道、采样模式、通道耦合方式；
+    public static final int FPGA_CMD_PJBL_NUM = 1<<1;//修改平均包络次数
+    public static final int FPGA_CMD_SAMP_ZUN_DEPTH = 1<<2;//修改准存储深度
+    public static final int FPGA_CMD_SAMP_PLACE = 1<<3;//采样的位置相关
+    public static final int FPGA_CMD_COUY = 1<<4;//对AD实际采样数据进行抽样（会有10ms的同步时间）
+    public static final int FPGA_CMD_SERIAL_CODE_DEPTH = 1<<5;//串口码字的采样深度
+    public static final int FPGA_CMD_Y_PLACE = 1<<6;//Y轴波形偏移量
+    public static final int FPGA_CMD_TRIG = 1<<7;//触发参数
+    public static final int FPGA_CMD_TRIG_RETRAIN = 1<<8;//触发抑制时间参数
+    public static final int FPGA_CMD_AUTO_TRIG_T = 1<<9;//启动自动触发的时间设置
+    public static final int FPGA_CMD_TRIG_OFFSET = 1<<10;//精确触发参数(tBook)
+    public static final int FPGA_CMD_CH_OFFSET = 1<<11; //mini 通道偏移
+    public static final int FPGA_CMD_TRIG_LEVEL = 1<<12; //mini 触发电平修改
+    public static final int FPGA_CMD_TRIG_COUPLE = 1<<13; //mini 触发耦合修改
+    public static final int FPGA_CMD_AD_CH_CHANGE = 1<<14; //mini 单双四通道切换时给AD发命令
+    public static final int FPGA_CMD_TRIG_HUICHA = 1<<15;//触发回差修改
+
+    //以下是显示寄存器设置，运行状态和停止状态都需要用到
+    public static final int FPGA_CMD_MASK_DIS = 0x0FFF0000;//(16~27)
+    public static final int FPGA_CMD_DIS_MODE = 1<<16;//波形亮度、放大镜、点线模式、需要点阵、需要波形、图层变化、通道显示开启和关闭
+    public static final int FPGA_CMD_DIS = 1<<17;//显示会有变化时均需要设置(插值、显示波形取数位置、静态波形抽样)
+    public static final int FPGA_CMD_GET_DATA = 1<<18;//获取数据
+
+    //FPGA_CMD_DIS_YDIVISOR = 1<<21,//mini 纵轴缩放因子
+    //mini：zoom，通道上下移动，电压档位变化，开启通道电源
+    public static final int FPGA_CMD_DIS_PIX_ch1 = 1<<19; //mini通道上下移动，或y轴缩放
+    public static final int FPGA_CMD_DIS_PIX_ch2 = 1<<20; //mini通道上下移动，或y轴缩放
+    public static final int FPGA_CMD_DIS_PIX_ch3 = 1<<21; //mini通道上下移动，或y轴缩放
+    public static final int FPGA_CMD_DIS_PIX_ch4 = 1<<22; //mini通道上下移动，或y轴缩放
+
+    public static final int FPGA_CMD_DIS_PIX_ch5 = 1<<23; //mini通道上下移动，或y轴缩放
+    public static final int FPGA_CMD_DIS_PIX_ch6 = 1<<24; //mini通道上下移动，或y轴缩放
+    public static final int FPGA_CMD_DIS_PIX_ch7 = 1<<25; //mini通道上下移动，或y轴缩放
+    public static final int FPGA_CMD_DIS_PIX_ch8 = 1<<26; //mini通道上下移动，或y轴缩放
+    public static final int FPGA_CMD_DIS_PIX = 0xFF<<19; //all channel
+
+
+
+    //特殊操作
+    public static final int FPGA_CMD_MASK_T = 0xF0000000;
+    public static final int FPGA_CMD_RUN_STOP = 1<<28;//操作了运行/停止键
+    public static final int FPGA_CMD_SINGLE = 1<<29;//单序列
+    public static final int FPGA_CMD_DEVICE = 1<<30;//操作外设，不再使用此命令
+    public static final int FPGA_CMD_SEGMENT= 1<<31;//更新命令，以使fpga重新发一笔数据（特别是静态）
+
+    public static final int FPGA_CMD_EXT_MASK_SAMP = 0xFFFF;//(0~15)
+    public static final int FPGA_CMD_EXT_CHAZHI_COEF =1<<0;//重载插值系数：单双四通道变化
+    public static final int FPGA_CMD_EXT_AD_COEF = 1<<1;//重载AD前置滤波系数
+
+    public static final int FPGA_CMD_EXT_vScale_CHANGE_CH1 = 1<<2;//通道1电压档位发生变化
+    public static final int FPGA_CMD_EXT_vScale_CHANGE_CH2 = 1<<3;
+    public static final int FPGA_CMD_EXT_vScale_CHANGE_CH3 = 1<<4;
+    public static final int FPGA_CMD_EXT_vScale_CHANGE_CH4 = 1<<5;
+
+    public static final int FPGA_CMD_EXT_vScale_CHANGE_CH5 = 1<<6;//通道1电压档位发生变化
+    public static final int FPGA_CMD_EXT_vScale_CHANGE_CH6 = 1<<7;
+    public static final int FPGA_CMD_EXT_vScale_CHANGE_CH7 = 1<<8;
+    public static final int FPGA_CMD_EXT_vScale_CHANGE_CH8 = 1<<9;
+    public static final int FPGA_CMD_EXT_vScale_CHANGE = 0xFF<<2;//因修改电压档位，而重载AD前置滤波系数
+    public static final int FPGA_CMD_EXT_AD_ZERO = 1<<10;//AD零点
+    public static final int FPGA_CMD_EXT_RESISTANCE = 1<<11;
+    public static final int FPGA_CMD_EXT_PROBE_DA = (1<<12);
+    public static final int FPGA_CMD_EXT_TRIGGER_LEVEL = (1<<13);
+
+    //特殊操作
+    public static final int FPGA_CMD_EXT_MASK_T = 0xFC000000;
+    public static final int FPGA_CMD_BUS_S1 = 1<<26;
+    public static final int FPGA_CMD_BUS_S2 = 1<<27;
+    public static final int FPGA_CMD_BUS_S3 = 1<<28;
+    public static final int FPGA_CMD_BUS_S4 = 1<<29;
+    public static final int FPGA_CMD_BUS_TYPE = 1<<30;
+    public static final int FPGA_CMD_BUS_LEVEL = 1<<31;
+
+    private int [] FPGA_CMD = new int[2];
+
+    private int mNum = 0;
+
+    private int fpgaNums = 1;
+
+    private FPGACommand fpgaCommand;
+
+    public FPGAMessage(){
+        FPGA_CMD[0] = 0;
+        FPGA_CMD[1] = 0;
+        mNum = 0;
+        fpgaCommand = FPGACommand.getInstance();
+        fpgaNums = HwConfig.getInstance().getFpgaNums();
+    }
+
+    public boolean isValid(){
+        return isMask(FPGA_CMD[0]) || isMask(FPGA_CMD[1]);
+    }
+
+    public  int getCmdNum(){
+        return mNum;
+    }
+
+    private void clr_Cmd(int n){
+        Log.d(TAG,"clr_Cmd() ==>"
+                +" FPGA_CMD[0]=0x" + Integer.toHexString(FPGA_CMD[0])
+                +",FPGA_CMD[1]=0x" + Integer.toHexString(FPGA_CMD[1]));
+        if(n == getCmdNum()) {
+            FPGA_CMD[0] = 0;
+            FPGA_CMD[1] = 0;
+            bakNum = mNum = 0;
+        }
+        clearWave();
+    }
+
+    public void add(int arg1,int arg2){
+        FPGA_CMD[0] |= arg1;
+        FPGA_CMD[1] |= arg2;
+        mNum++;
+    }
+
+    private void clearWave(){
+
+        Sample sample = Sample.getInstance();
+        int s = sample.getSampleState();
+
+        Log.d(TAG, "clearWave() called :" + s);
+        if(s == Sample.SAMPLE_RUN) {
+            Scope.getInstance().clearWave();
+        }else if(s > Sample.SAMPLE_RUN){
+            Scope.getInstance().clearPersist();
+        }
+    }
+
+    private void cmdRun(){
+        Log.i(TAG,"cmdRun() ==>"+" cmdRun start");
+        HorizontalAxis.getInstance().correctTimePose();
+        int beginIdx,endIdx;
+        for(int i=0;i<fpgaNums;i++) {
+            beginIdx = FPGACommand.beginChIdx(i);
+            endIdx = FPGACommand.endChIdx(i);
+            fpgaCommand.gntR_sampMode(i);
+            fpgaCommand.gntR_pinJ_baoL(i);
+            fpgaCommand.gntR_zun_depth(i);
+            fpgaCommand.cmdSegment(i);
+            fpgaCommand.update_v_Zoom(i);
+            //采样位置计算: 预采样时间、后采样时间
+            fpgaCommand.gntR_samp_place(i);
+            //抽样计算
+            fpgaCommand.gntR_CouY(i);
+            //串行码字存储深度
+            fpgaCommand.gntR_serial_dec_depth(i);
+            //通道指示器位置
+            fpgaCommand.gntR_ch_y_place(i);
+            //触发模式
+            fpgaCommand.gntR_trigMode(i);
+            //cmd.gntR_trigHuiCha();
+            fpgaCommand.gntR_trigLevel(i);
+            fpgaCommand.gntR_trigCouple(i);
+            fpgaCommand.gntR_trigRestrainTime(i);
+            //自动触发时间控制: 设置fpga在连续多少时间内均没有检测到触发条件时，进入自动强制触发
+            fpgaCommand.gntR_trigAutoTime(i);
+            fpgaCommand.gntR_ChOffsetDa(i);
+            fpgaCommand.SendAdc_ch_change(i);
+            //运行状态下显示寄存器设置
+            fpgaCommand.gntR_disMode(i);
+            fpgaCommand.gntR_Dis(i);
+            fpgaCommand.gntR_yuHui(i);
+
+            for(int j=beginIdx;j<endIdx;j++) {
+                fpgaCommand.cmdFpgaDotMatrix(j);
+            }
+            //扩展命令
+            fpgaCommand.cmdFpgaReloadChazhiCoef(i);
+            fpgaCommand.cmdReload_AD_coef(i);
+            for(int j=beginIdx;j<endIdx;j++) {
+                fpgaCommand.cmdReload_AD_coef_VOL_dangChange(j);
+            }
+            fpgaCommand.cmdChNoise(i);
+//            fpgaCommand.changeAD_Zero(i);
+            fpgaCommand.gntR_Bus(i);
+            fpgaCommand.ChangeProbeDa(i);
+            fpgaCommand.ChangeResistance(i);
+
+            fpgaCommand.updataReg(i);
+        }
+        Log.i(TAG,"cmdRun() ==>"+" cmdRun end");
+    }
+
+    private boolean isMask(int val){
+        return val != 0;
+    }
+    public void resume(){
+        fpgaCommand.resume();
+        cmdRun();
+        for(int i=0;i<fpgaNums;i++) {
+            fpgaCommand.cmdFpgaRun(i);
+        }
+        fpgaCommand.adSync();
+    }
+    public void stop(){
+        fpgaCommand.cmdFpgaStop(1);
+        fpgaCommand.cmdFpgaStop(0);
+    }
+    public void pause(){
+        for(int i=0;i<fpgaNums;i++) {
+            fpgaCommand.cmdFpgaPause(i);
+        }
+    }
+    public void cmdInit(){
+        fpgaCommand.resume();
+        fpgaCommand.cmdInit();
+    }
+
+    public void touchPause(){
+        for(int i=0;i<fpgaNums;i++) {
+             if(Scope.getInstance().isRun()) {
+            	fpgaCommand.cmdFpgaPause(i);
+        	}else{
+            	fpgaCommand.cmdFpgaStop(i);
+        	}
+        }
+    }
+
+    public void touchResume(){
+        Log.d(TAG, "touchResume() called");
+    }
+
+    public void ADCalibrate(){
+        fpgaCommand.ADCalibrate();
+    }
+
+    private int bakNum = 0;
+    private void displayCmd(){
+        displayCmd(false);
+    }
+    private void displayCmd(boolean bStop){
+
+        int beginIdx,endIdx;
+        ScopeFrozen scopeFrozen = ScopeFrozen.getInstance();
+        int [] val = bStop ? fpgaCommand.cmdFpgaStop(0) : fpgaCommand.cmdFpgaPause(0);
+
+        Log.d(TAG, "fpga SyncHeader:" + val[0] + ",syncheader:" + SyncHeader.getSyncHeader() + "," + val[1]);
+        ScopeFrozen.ScopeFrozenBean bean = scopeFrozen.getScopeBean(val[0]);
+        scopeFrozen.doFrozenEx(bean, val);
+        Log.d(TAG, "bean valid:" + bean.isValid());
+
+        for(int i=0;i<fpgaNums;i++) {
+            beginIdx = FPGACommand.beginChIdx(i);
+            endIdx = FPGACommand.endChIdx(i);
+
+
+            fpgaCommand.update_v_Zoom(i);
+            fpgaCommand.gntR_disMode(i);
+            fpgaCommand.gntR_Dis(i);
+
+            for (int j = beginIdx; j < endIdx; j++) {
+                fpgaCommand.cmdFpgaDotMatrix(j);
+            }
+            fpgaCommand.cmdFpgaReloadChazhiCoef(i);
+        }
+        fpgaCommand.updataRegDis(0);
+        setTransientDisplayTimestamp(SystemClock.elapsedRealtime());
+    }
+
+
+
+    private boolean isTriggerLevelChange(){
+        return (FPGA_CMD[0] == FPGA_CMD_TRIG_LEVEL
+                && FPGA_CMD[1] == 0);
+    }
+    private boolean isCmdRunStop(){
+        return (FPGA_CMD[0] == FPGA_CMD_RUN_STOP
+                && FPGA_CMD[1] == 0);
+    }
+    public long displayTimestamp = 0;
+
+    public boolean display(){
+        long ts = SystemClock.elapsedRealtime();
+        int n = getCmdNum();
+//        Log.d(TAG, "display() called ,n:" + n + ",bakNum:" + bakNum);
+        if(bakNum != n || ts - displayTimestamp > 3000 ) {
+
+            displayCmd();
+            FPGA_CMD[0] |= FPGA_CMD_DIS_MODE | FPGA_CMD_DIS_PIX
+                    |FPGA_CMD_DIS | FPGA_CMD_SEGMENT | FPGA_CMD_CH_OFFSET;
+            FPGA_CMD[1] |= FPGA_CMD_EXT_CHAZHI_COEF;
+            bakNum = n;
+            displayTimestamp = ts;
+            return true;
+        }
+        return false;
+    }
+    public long transientDisplayTimestamp = 0;
+
+    public void setTransientDisplayTimestamp(long ts){
+        this.transientDisplayTimestamp = ts;
+    }
+
+    public void onTransientDisplay(){
+        Sample sample = Sample.getInstance();
+        if(sample.getSampleState() == Sample.SAMPLE_TRANSIENT_DIAPLAY){
+            if((SystemClock.elapsedRealtime() - transientDisplayTimestamp) > 100){
+                sample.setSampleState(Sample.SAMPLE_TRANSIENT_RUN);
+            }
+        }
+    }
+
+    public boolean isDisplayTransient(){
+        Scope scope = Scope.getInstance();
+        Sample sample = Sample.getInstance();
+        boolean bDisplay = false;
+        if(sample.isRunSample()){
+            onTransientDisplay();
+
+            switch (sample.getSampleState()){
+                case Sample.SAMPLE_TRANSIENT_DIAPLAY:
+                case Sample.SAMPLE_TRANSIENT:
+                    bDisplay = true;
+                    break;
+                case Sample.SAMPLE_TRANSIENT_RUN:
+                    if(bakNum != mNum){
+                        sample.setSampleState(Sample.SAMPLE_TRANSIENT);
+                        bDisplay = true;
+                    }
+                    break;
+            }
+
+            if(bDisplay){
+
+                if(scope.isAuto()
+                        || scope.isInXYMode()
+                        || sample.isSingle()
+                        || scope.isSerialText()
+                        || scope.isEnableChannelZero()
+                        || isTriggerLevelChange()
+                        || isCmdRunStop()
+                        || isCalibrate()
+                        ){
+                    bDisplay = false;
+                }
+                if(!bDisplay){
+                    sample.setSampleState(Sample.SAMPLE_TRANSIENT_RUN);
+                }
+            }
+
+        }
+//        Log.d(TAG,"bDisplay:" + bDisplay);
+        return bDisplay;
+    }
+
+    public void run(){
+        Scope scope = Scope.getInstance();
+        Sample sample = Sample.getInstance();
+        ScopeFrozen scopeFrozen = ScopeFrozen.getInstance();
+        boolean bDisplay = false;
+        boolean bSampleTime = false;
+
+        Log.d(TAG,"run() ==>"+"[begin]"
+                +" FPGA_CMD[0]=0x" + Integer.toHexString(FPGA_CMD[0])
+                +",FPGA_CMD[1]=0x" + Integer.toHexString(FPGA_CMD[1]));
+
+        int syncheader = -1;
+        if(scope.isRun(true)){
+            syncheader = SyncHeader.upSyncHeader();
+            scopeFrozen.setSyncHeader(syncheader);
+        }
+
+
+        int n = getCmdNum();
+        int beginIdx,endIdx;
+        if(isMask(FPGA_CMD[0] & FPGA_CMD_AD_CH_CHANGE)){
+            FPGA_CMD[0] |= FPGA_CMD_DIS_PIX;
+            fpgaCommand.resume();
+        }
+
+        boolean bUpdataRegDis = false;
+        bCmdRun = bCmdSingle = false;
+        for (int i = 0; i < fpgaNums; i++) {
+            beginIdx = FPGACommand.beginChIdx(i);
+            endIdx = FPGACommand.endChIdx(i);
+            if (isMask(FPGA_CMD[0] & (FPGA_CMD_DIS | FPGA_CMD_DIS_PIX | FPGA_CMD_Y_PLACE))
+                    || isMask(FPGA_CMD[1] & FPGA_CMD_EXT_RESISTANCE)) {
+                FPGA_CMD[0] |= fpgaCommand.update_v_Zoom(i) << 19;
+            }
+
+            if (isMask(FPGA_CMD[0] & FPGA_CMD_MASK_SAMP)) {
+                if (isMask(FPGA_CMD[0] & FPGA_CMD_SAMP_MODE)) {
+                    fpgaCommand.gntR_sampMode(i);
+                }
+                if (isMask(FPGA_CMD[0] & FPGA_CMD_PJBL_NUM)) {
+                    fpgaCommand.gntR_pinJ_baoL(i);
+                }
+                if (isMask(FPGA_CMD[0] & FPGA_CMD_SAMP_ZUN_DEPTH)) {
+                    fpgaCommand.gntR_zun_depth(i);
+                }
+                if (isMask(FPGA_CMD[0] & FPGA_CMD_SAMP_PLACE)) {
+                    fpgaCommand.gntR_samp_place(i);
+                }
+                if (isMask(FPGA_CMD[0] & FPGA_CMD_COUY)) {
+                    fpgaCommand.gntR_CouY(i);
+                }
+                if (isMask(FPGA_CMD[0] & FPGA_CMD_SERIAL_CODE_DEPTH))
+                    fpgaCommand.gntR_serial_dec_depth(i);
+                if (isMask(FPGA_CMD[0] & FPGA_CMD_Y_PLACE)) {
+                    fpgaCommand.gntR_ch_y_place(i); // 注意：必须放在gntR_trigLevel(),cmdFpgaDotMatrix()之前
+                }
+                if (isMask(FPGA_CMD[0] & FPGA_CMD_TRIG)) {
+                    fpgaCommand.gntR_trigMode(i);
+                }
+                if (isMask(FPGA_CMD[0] & (FPGA_CMD_TRIG_HUICHA | FPGA_CMD_TRIG_LEVEL))) {
+                    fpgaCommand.gntR_trigLevel(i);
+                }
+                if (isMask(FPGA_CMD[0] & FPGA_CMD_TRIG_COUPLE)) fpgaCommand.gntR_trigCouple(i);
+                if (isMask(FPGA_CMD[0] & FPGA_CMD_TRIG_RETRAIN))
+                    fpgaCommand.gntR_trigRestrainTime(i);
+                if (isMask(FPGA_CMD[0] & FPGA_CMD_AUTO_TRIG_T)) fpgaCommand.gntR_trigAutoTime(i);
+                if (isMask(FPGA_CMD[0] & FPGA_CMD_CH_OFFSET)) fpgaCommand.gntR_ChOffsetDa(i);
+                if (isMask(FPGA_CMD[0] & FPGA_CMD_AD_CH_CHANGE)) {
+                    if(fpgaCommand.SendAdc_ch_change(i)) {
+                        FPGA_CMD[0] |= FPGA_CMD_DIS_PIX;
+                        fpgaCommand.resetBak(i);
+                    }
+                }
+            }
+
+            if (isMask(FPGA_CMD[0] & FPGA_CMD_MASK_DIS)) {
+                // 显示寄存器
+                if (isMask(FPGA_CMD[0] & FPGA_CMD_DIS_MODE)){
+                    fpgaCommand.gntR_disMode(i);
+                    bDisplay = true;
+                }
+
+                if (isMask(FPGA_CMD[0] & (FPGA_CMD_DIS))) {
+                    fpgaCommand.gntR_Dis(i);
+                    fpgaCommand.gntR_yuHui(i);
+                    bDisplay = true;
+                }
+                if (isMask(FPGA_CMD[0] & FPGA_CMD_GET_DATA)) {
+                    fpgaCommand.cmdFpgaGetData(i);
+                }
+                for (int j = beginIdx; j < endIdx; j++) {
+                    if (isMask(FPGA_CMD[0] & (FPGA_CMD_DIS_PIX_ch1 << (j - ChannelFactory.CH1)))) {
+                        fpgaCommand.cmdFpgaDotMatrix(j);
+
+                        bDisplay = true;
+                    }
+                }
+                if(isMask(FPGA_CMD[0] & FPGA_CMD_DIS_PIX)){
+                    fpgaCommand.cmdTrigOffset(i);
+                }
+            }
+
+            if (isMask(FPGA_CMD[0] & FPGA_CMD_SEGMENT)) {
+                fpgaCommand.cmdSegment(i);
+                bDisplay = true;
+            }
+
+            if (isMask(FPGA_CMD[1] & FPGA_CMD_EXT_MASK_SAMP)) {
+                // 载入插值系数放在其他之后，因为需要调用其他的结果
+                if (isMask(FPGA_CMD[1] & FPGA_CMD_EXT_CHAZHI_COEF)) {
+                    fpgaCommand.cmdFpgaReloadChazhiCoef(i);
+                }
+                if (isMask(FPGA_CMD[1] & FPGA_CMD_EXT_AD_COEF)) fpgaCommand.cmdReload_AD_coef(i);
+                boolean b = false;
+                for (int j = beginIdx; j < endIdx; j++) {
+                    if (isMask(
+                            FPGA_CMD[1]
+                                    & (FPGA_CMD_EXT_vScale_CHANGE_CH1 << (j - ChannelFactory.CH1)))) {
+                        fpgaCommand.cmdReload_AD_coef_VOL_dangChange(j);
+                        b = true;
+                    }
+                }
+                if(b) {
+                    fpgaCommand.cmdChNoise(i);
+                }
+
+                //                if (isMask(FPGA_CMD[1] & FPGA_CMD_EXT_AD_ZERO)) {
+                //                    fpgaCommand.changeAD_Zero(i);
+                //                }
+                if (isMask(FPGA_CMD[1] & FPGA_CMD_EXT_RESISTANCE)) {
+                    fpgaCommand.ChangeResistance(i);
+                }
+                if (isMask(FPGA_CMD[1] & FPGA_CMD_EXT_PROBE_DA)) {
+                    fpgaCommand.ChangeProbeDa(i);
+                }
+                if(isMask(FPGA_CMD[1] & FPGA_CMD_EXT_TRIGGER_LEVEL)){
+                    fpgaCommand.ExtTriggerLevel(i);
+                }
+            }
+            if (isMask(FPGA_CMD[1] & FPGA_CMD_EXT_MASK_T)) {
+                if (isMask(FPGA_CMD[1] & FPGA_CMD_BUS_TYPE)) {
+                    fpgaCommand.gntR_Bus(i);
+                }
+                for (int j = 0; j < ChannelFactory.SERIAL_CNT / 2; j++) {
+                    int idx = i * ChannelFactory.SERIAL_CNT / 2 + j;
+                    if (isMask(FPGA_CMD[1] & (FPGA_CMD_BUS_S1 << idx))) {
+                        fpgaCommand.Bus_Config(ChannelFactory.S1 + idx);
+                    }
+                }
+                if (isMask(FPGA_CMD[1] & FPGA_CMD_BUS_LEVEL)) {
+                    fpgaCommand.gntR_Bus_Level(i);
+                }
+                bDisplay = true;
+            }
+            if (isMask(FPGA_CMD[0]) || isMask(FPGA_CMD[1])) {
+
+                if (scope.isRun(true)) {
+                    fpgaCommand.updataReg(i);
+                    bSampleTime = true;
+                } else {
+                    if (!isMask(FPGA_CMD[0] & FPGA_CMD_RUN_STOP) && bDisplay) {
+                        bUpdataRegDis = true;
+                    }
+                }
+            }
+
+            if (isMask(FPGA_CMD[0] & FPGA_CMD_RUN_STOP)) {
+                if (scope.isRun(true)) {
+                    if (sample.getSampleState() == Sample.SAMPLE_RUN) {
+                        cmdRun();
+//                        fpgaCommand.cmdFpgaRun(i);
+                        bCmdRun = bSampleTime = true;
+                    }
+                } else {
+                    displayCmd(true);
+                }
+            }
+
+            if (isMask(FPGA_CMD[0] & FPGA_CMD_SINGLE)) {
+                if (scope.isRun(true) && scope.isSingle()) {
+                    bSampleTime = true;
+                    bCmdSingle = true;
+                }
+            }
+            if (isMask(FPGA_CMD[0]) || isMask(FPGA_CMD[1])) {
+                if (sample.getSampleState() == Sample.SAMPLE_TRANSIENT_RUN) {
+                    fpgaCommand.cmdFpgaResume(i);
+                    bSampleTime = true;
+                }
+                if (scope.isRun(true) && scope.isSingle()) {
+                    bCmdSingle = true;
+                }
+            }
+        }
+        if(bUpdataRegDis){
+            fpgaCommand.updataRegDis(0);
+        }
+
+        if(scope.isRun(true) && syncheader >= 0){
+            scopeFrozen.setSyncHeader(syncheader);
+        }
+        clr_Cmd(n);
+        if(bSampleTime){
+            updateSampleTime();
+        }
+    }
+    boolean bCmdSingle = false;
+    boolean bCmdRun = false;
+    public void fpgaSync(){
+        //值需要主fpga同步
+        if(Scope.getInstance().isRun(true)) {
+            if(bCmdSingle){
+                fpgaCommand.cmdFpgaSingle(0);
+            }else if(bCmdRun){
+                fpgaCommand.cmdFpgaRun(0);
+            }else {
+                fpgaCommand.updataReg(0);
+            }
+            bCmdRun = bCmdSingle = false;
+            Log.d(TAG, "fpgaSync() called");
+        }
+    }
+    private void sleep_ms(long ms){
+        try{
+            Thread.sleep(ms);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+    private void updateSampleTime(){
+        SegmentSample.getInstance().updateBeginSampleTime();
+    }
+    public void segmentTimestamp(){
+        for(int i=0;i<fpgaNums;i++) {
+            fpgaCommand.segmentTimestamp(i);
+        }
+    }
+    public void forceTrigger(){
+        for(int i=0;i<fpgaNums;i++) {
+            fpgaCommand.forceTrigger(i);
+        }
+    }
+    public void forceAdCalibation(){
+         if(!fpgaCommand.isCalibrate()) {
+             for(int i=0;i<fpgaNums;i++) {
+                 fpgaCommand.forceAdCablition(i);
+             }
+         }
+    }
+    public int fpgaId(){
+        return fpgaCommand.readFpgaId(0)  | fpgaCommand.readFpgaId(1);
+    }
+    public int fpgaStatus(){
+        return fpgaCommand.readFpgaStatus(0);
+    }
+    public int fpgaVersion(){
+        return fpgaCommand.readFpgaVer(0);
+    }
+    public void cmdSegment(){
+        for(int i=0;i<fpgaNums;i++) {
+            fpgaCommand.cmdSegment(i);
+        }
+    }
+
+    public void getFPGA_Status(FPGA_Status fpgaStatus){
+        for(int i=0;i<fpgaNums;i++) {
+            fpgaCommand.readFpgaStatus(i,fpgaStatus);
+        }
+        fpgaStatus.check();
+    }
+    public boolean isDelayRun(){
+
+         return ((FPGA_CMD[0] != 0 || FPGA_CMD[1] != 0) && mNum >0);
+    }
+
+
+    public int getSegmentFrames(){
+        int numFrames = fpgaCommand.cmdFpgaGetSegmentFrames(0);
+
+        return numFrames;
+    }
+    public int get50O(){
+        int v = 0;
+        for(int i=0;i<fpgaNums;i++){
+            v |= fpgaCommand.cmdFpgaGet50O(i) << (i * ChannelFactory.CH_CNT/2);
+        }
+        return v;
+    }
+
+
+
+    public void probeProcess(){
+        for(int i=0;i<fpgaNums;i++) {
+            fpgaCommand.probeProcess(i);
+        }
+    }
+
+    public int getFpgaTemperature(int fpgaIdx){
+        return fpgaCommand.getFpgaTemperature(fpgaIdx);
+    }
+
+    public boolean getFpgaClockInOutStatus(boolean isIn) {
+        return fpgaCommand.getFpgaClockInOutStatus(0, isIn);
+    }
+
+    public int getFanSpeed(int [] fans){
+        int [] tmp = {0,0};
+        fpgaCommand.getFpgaFanSpeed(0,tmp);
+        fans[0] = tmp[0];fans[1] =tmp[1];
+        fpgaCommand.getFpgaFanSpeed(1,tmp);
+        fans[2] = tmp[0];fans[3] =tmp[1];
+        return fans[0];
+    }
+
+    public int getfpgaStatus(){
+        return fpgaCommand.getFpgaStatus();
+    }
+    public void sendProbe(int chIdx,byte [] bytes){
+        ProbeFactory probeFactory = ProbeFactory.getInstance();
+
+        probeFactory.sendProbeCommand(chIdx, bytes, new ProbeCommand.ProbeCommandlistener() {
+            @Override
+            public void onProbeCommand(ProbeCommand command) {
+                fpgaCommand.SendProbe(command.getChIdx(),command.getCmd());
+            }
+        });
+    }
+    public void checkProbe(){
+        ProbeFactory probeFactory = ProbeFactory.getInstance();
+        List<ProbeCommand> list = probeFactory.checkProbeCommandTimeout(new ProbeCommand.ProbeCommandlistener() {
+            @Override
+            public void onProbeCommand(ProbeCommand command) {
+                fpgaCommand.SendProbe(command.getChIdx(),command.getCmd());
+            }
+        });
+        for(ProbeCommand probeCommand:list){
+            probeFactory.probeAbnormal(probeCommand.getChIdx());
+        }
+    }
+
+    public boolean isCalibrate(){
+        return fpgaCommand.isCalibrate();
+    }
+
+
+}

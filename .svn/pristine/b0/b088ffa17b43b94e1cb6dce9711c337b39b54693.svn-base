@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <CheckBox
+        android:id="@+id/check_s1"
+        android:layout_width="120px"
+        android:layout_height="60px"
+        android:layout_marginStart="161px"
+        android:background="@drawable/selector_rightslip_button"
+        android:button="@null"
+        android:gravity="center"
+        android:text="S1"
+        android:textColor="@drawable/selector_text_color"
+        android:textSize="@dimen/textSizeCur" />
+
+
+    <CheckBox
+        android:id="@+id/check_s2"
+        android:layout_width="120px"
+        android:layout_height="60px"
+        android:layout_marginStart="80px"
+        android:layout_toRightOf="@+id/check_s1"
+        android:background="@drawable/selector_rightslip_button"
+        android:button="@null"
+        android:gravity="center"
+        android:text="S2"
+        android:textColor="@drawable/selector_text_color"
+        android:textSize="@dimen/textSizeCur" />
+
+
+    <CheckBox
+        android:id="@+id/check_s3"
+        android:layout_width="120px"
+        android:layout_height="60px"
+        android:layout_marginStart="80px"
+        android:layout_toRightOf="@+id/check_s2"
+        android:background="@drawable/selector_rightslip_button"
+        android:button="@null"
+        android:gravity="center"
+        android:text="S3"
+        android:textColor="@drawable/selector_text_color"
+        android:textSize="@dimen/textSizeCur" />
+
+    <CheckBox
+        android:id="@+id/check_s4"
+        android:layout_width="120px"
+        android:layout_height="60px"
+        android:layout_marginStart="80px"
+        android:layout_toRightOf="@+id/check_s3"
+        android:background="@drawable/selector_rightslip_button"
+        android:button="@null"
+        android:gravity="center"
+        android:text="S4"
+        android:textColor="@drawable/selector_text_color"
+        android:textSize="@dimen/textSizeCur" />
+    
+
+</RelativeLayout>

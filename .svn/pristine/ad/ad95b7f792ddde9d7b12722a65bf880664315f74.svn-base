@@ -1,0 +1,24 @@
+package com.micsig.tbook.scope.fpga;
+
+import android.util.Log;
+
+public class FPGAReg_SIGNAL_FREQ extends FPGAReg{
+    public FPGAReg_SIGNAL_FREQ() {
+        super(FPGA_SIGNAL_FREQ, 8);
+    }
+
+    public void setSignalFreq(int bmpFreq,int waveFreq){
+
+        setVal(0,15,1000/bmpFreq + (1000 % bmpFreq > 0 ? 1 : 0) );
+        if(waveFreq > 0){
+            setVal(16,15,1000/waveFreq + (1000 % waveFreq > 0 ? 1 : 0) );
+        }else {
+            setVal(31, 1, 1);
+        }
+    }
+
+    public void setChNosie(int chIdx,int val){
+        Log.d("", "setChNosie() fpgaidx = " + getFpgaIdx() + ",chIdx = [" + chIdx + "], val = [" + val + "]");
+        setVal(1,chIdx * 4,4,val);
+    }
+}

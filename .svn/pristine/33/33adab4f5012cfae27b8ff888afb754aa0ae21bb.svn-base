@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <TextView
+        android:id="@+id/sourceHead"
+        style="@style/rightHeadText"
+        android:layout_width="108px"
+        android:layout_height="54px"
+        android:layout_marginStart="0px"
+        android:layout_marginTop="7px"
+        android:gravity="center_vertical"
+        android:text="@string/serialsM1553bSource" />
+
+    <com.micsig.tbook.ui.rightslipmenu.RightViewSelect
+        android:id="@+id/source"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        app:array="@array/channelsNameEight"
+        app:arrayOrientation="horizontalEachRow4"
+        app:itemHeight="54px"
+        app:itemMargin="7px"
+        app:itemWidth="108px" />
+
+    <View
+        android:id="@+id/divider"
+        android:layout_width="match_parent"
+        android:layout_height="2px"
+        android:layout_below="@id/source"
+        android:layout_marginVertical="7px"
+        android:layout_marginEnd="7px"
+        android:background="@drawable/bg_right_layout_divider" />
+
+    <TextView
+        android:id="@+id/displayTitle"
+        style="@style/rightHeadText"
+        android:layout_width="wrap_content"
+        android:layout_height="54px"
+        android:layout_below="@id/divider"
+        android:layout_marginStart="0px"
+        android:layout_marginTop="7px"
+        android:gravity="center_vertical"
+        android:text="@string/serialsM1553bDisplay" />
+
+    <com.micsig.tbook.ui.rightslipmenu.RightViewSelect
+        android:id="@+id/display"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/divider"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:layout_gravity="end|center_vertical"
+        android:layout_marginTop="7px"
+        android:layout_marginEnd="7px"
+        app:array="@array/serialsM1553bDisplay"
+        app:arrayOrientation="horizontalEachRow2"
+        app:itemHalfCornerEach="each_108_54"
+        app:itemHeight="54px"
+        app:itemStartAndEndBgHalfCorner="true"
+        app:itemWidth="108px" />
+</RelativeLayout>

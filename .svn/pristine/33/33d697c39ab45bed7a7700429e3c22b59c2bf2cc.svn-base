@@ -1,0 +1,86 @@
+package com.micsig.tbook.scope.measure;
+
+public class MeasureStaticsBean {
+    private final int chIdx;
+    private final int measureType;
+    private double val=0;
+    private double averageVal=0;
+    private double maxVal=0;
+    private double minVal=0;
+    private double mqdVal=0;
+
+    private int nums = 0;
+    public MeasureStaticsBean(int chIdx,int measureType){
+        this.chIdx = chIdx;
+        this.measureType = measureType;
+    }
+
+    public int getChIdx() {
+        return chIdx;
+    }
+
+    public int getMeasureType() {
+        return measureType;
+    }
+
+    public void setVal(double val) {
+        this.val = val;
+    }
+
+    public void setAverageVal(double averageVal) {
+        this.averageVal = averageVal;
+    }
+
+    public void setMaxVal(double maxVal) {
+        this.maxVal = maxVal;
+    }
+
+    public void setMinVal(double minVal) {
+        this.minVal = minVal;
+    }
+
+    public void setMqdVal(double mqdVal) {
+        this.mqdVal = mqdVal;
+    }
+
+    public double getVal() {
+        return val;
+    }
+
+    public double getAverageVal() {
+        return averageVal;
+    }
+
+    public double getMaxVal() {
+        return maxVal;
+    }
+
+    public double getMinVal() {
+        return minVal;
+    }
+
+    public double getMqdVal() {
+        return mqdVal;
+    }
+
+    public int getNums() {
+        return nums;
+    }
+
+    public void setNums(int nums) {
+        this.nums = nums;
+    }
+
+    @Override
+    public String toString() {
+        return "MeasureStaticsBean{" +
+                "chIdx=" + chIdx +
+                ", measureType=" + measureType +
+                ", val=" + val +
+                ", averageVal=" + averageVal +
+                ", maxVal=" + maxVal +
+                ", minVal=" + minVal +
+                ", mqdVal=" + mqdVal +
+                '}';
+    }
+}

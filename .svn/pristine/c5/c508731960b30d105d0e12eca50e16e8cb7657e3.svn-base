@@ -1,0 +1,459 @@
+package com.micsig.tbook.tbookscope.wavezone.display;
+
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.DashPathEffect;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
+import android.graphics.RectF;
+import android.util.Log;
+
+import com.chillingvan.canvasgl.ICanvasGL;
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.tbookscope.BuildConfig;
+import com.micsig.tbook.tbookscope.GlobalVar;
+import com.micsig.tbook.tbookscope.wavezone.IWorkMode;
+
+import java.util.Arrays;
+
+/**
+ * Created by liwb on 2017/5/3.
+ */
+
+public class WaveGrid_YT implements IWorkMode, IGrid {
+    private static final String TAG="WaveGrid_YT";
+    //region 属性
+    /** 起始亮度 */
+    private final int BaseBright=40;
+    private int GridAttr_Enum = GridAttr_CrossLine | GridAttr_CrossPoint | GridAttr_ALLPoint | GridAttr_Frame;
+    private int GridLine_Bright = Color.argb(0x00, 0x80, 0x80, 0x80);
+
+
+
+    @Override
+    public void refresh() {
+        drawGrid();
+    }
+
+    @Override
+    public int getGridLine_Attr() {
+        return GridAttr_Enum;
+    }
+
+    @Override
+    public void setGridLine_Attr(int gridLine_Attr) {
+        GridAttr_Enum = gridLine_Attr;
+        drawGrid();
+    }
+
+    @Override
+    public int getGridLine_Bright() {
+        return (int)((GridLine_Bright-BaseBright)/180.0f);
+   }
+
+    @Override
+    public void setGridLine_Bright(int gridLine_Bright) {
+        int c=(int)(BaseBright+(180*gridLine_Bright*1.0/100));
+        GridLine_Bright = Color.rgb(c, c, c);
+        drawGrid();
+    }
+    //endregion
+
+    private Bitmap bmp;
+    private Bitmap bmpOld;
+    private Canvas mCanvas;
+    private Paint paint;
+    /**
+     * 图像是否改变，即图像像素是否改变
+     */
+    private boolean isChanageBitmap = false;
+    private ICanvasGL canvasGL;
+    public void onRefresh(){
+        if(canvasGL != null){
+            canvasGL.onRefreshTexture();
+        }
+    }
+    private RectF bmpRect;
+
+    /**
+     *  需求说明1：YT模式下，绘制11格，左右各半格，十字线显示在中间
+     *  修改说明1：YT模式下，绘制12格，显示的时候偏移半格，即50像素。正好得达需求
+     *
+     *  2。YT YTzoom进行分配：150：500
+     *
+     *  3。XY 的尺寸为，500*500
+     */
+
+    /** 添加一格 */
+    private static final int AddOneGrid=0;
+
+    public WaveGrid_YT() {
+        //temp 宽高应该在一个静态类中，直接获取到。
+        bmp = Bitmap.createBitmap(GlobalVar.get().getWaveZoneWidth_Pix(IWorkMode.WorkMode_YT)+AddOneGrid,
+                GlobalVar.get().getWaveZoneHeight_Pix(IWorkMode.WorkMode_YT), Bitmap.Config.ARGB_8888);
+        mCanvas = new Canvas(bmp);
+        paint = new Paint();
+
+        bmpRect = new RectF(0, 0, bmp.getWidth() + 0, bmp.getHeight() + 0);
+        drawGrid();
+
+    }
+
+    //region 单例创建
+//    private static class WaveGrid_YT_Holder {
+//        private static final WaveGrid_YT instance = new WaveGrid_YT();
+//    }
+//
+//    public static final WaveGrid_YT getInstance() {
+//        return WaveGrid_YT_Holder.instance;
+//    }
+    //endregion
+
+    //region IWorkMode接口实现
+
+    //1100*650 ,显示11格，以十字线为中心，左右各半格，实计1200*650画12格，偏移半格显示
+    private
+    @WorkMode
+    int mWorkMode;
+    private int widthBigDiv = 150; //50
+    private int heightBigDiv = 100; //50
+    private int widthSmallDiv = widthBigDiv/5; // 5为显示5个刻度
+    private int heightSmallDiv = heightBigDiv/5; // 5为显示5个刻度
+
+    @Override
+    public void setHeightDiv(int heightDiv) {
+
+        bmpOld = bmp;
+        bmp = Bitmap.createScaledBitmap(bmp, bmp.getWidth(), heightDiv * ScopeBase.getVerticalGridCnt(), true);
+        mCanvas.setBitmap(bmp);
+        bmpRect.union(0, 0, bmp.getWidth(), bmp.getHeight());
+        heightBigDiv = heightDiv;
+        heightSmallDiv = heightDiv / 5;
+        drawGrid();
+    }
+
+    @Override
+    public void switchWorkMode(@WorkMode int workMode) {
+        this.mWorkMode = workMode;
+        synchronized (bmp) {
+//            int newWidth=GlobalVar.get().getWaveZoneWidth_Pix(workMode);
+//            int newHeight=GlobalVar.get().getWaveZoneHeight_Pix(workMode);
+//            if (workMode==IWorkMode.WorkMode_YT || workMode==IWorkMode.WorkMode_YTZOOM)
+//            {
+//                newWidth+=AddOneGrid;
+//            }
+//            bmp.reconfigure(newWidth,newHeight, Bitmap.Config.ARGB_8888);
+//            bmpRect.set(0,0,newWidth,newHeight);
+//            //bmp.setHeight(400);
+//            mCanvas.setBitmap(bmp);
+            switch (workMode) {
+                case IWorkMode.WorkMode_YT:
+                case IWorkMode.WorkMode_YTZOOM:
+                    widthBigDiv = 150;
+                    heightBigDiv = GlobalVar.get().getMainWave().y / ScopeBase.getVerticalGridCnt();
+                    widthSmallDiv = widthBigDiv/5;
+                    heightSmallDiv = heightBigDiv/5;
+                    break;
+//                case IWorkMode.WorkMode_YTZOOM:
+//                    widthBigDiv = 150;
+//                    heightBigDiv = 75;
+//                    widthSmallDiv = widthBigDiv/5;
+//                    heightSmallDiv = heightBigDiv/5;
+//
+//                    break;
+                case IWorkMode.WorkMode_XY:
+                    widthBigDiv = 50;
+                    heightBigDiv = 50;
+                    widthSmallDiv = 10;
+                    heightSmallDiv = 10;
+                    break;
+            }
+            drawGrid();
+            isChanageBitmap = true;
+            onRefresh();
+        }
+    }
+
+    //endregion
+
+
+    public void drawGrid(Canvas canvas) {
+        synchronized (bmp) {
+            canvas.drawBitmap(bmp, 0, 0, null);
+        }
+    }
+
+    @Override
+    public void draw(ICanvasGL canvas) {
+        synchronized (bmp) {
+            canvasGL = canvas;
+            //canvas.drawBitmap(bmp,0,0,isChanageBitmap);
+            int bottom = mCanvas.getHeight();
+            canvasGL.setSize(canvas.getWidth(), bottom);
+            if (isChanageBitmap){
+                canvas.invalidateTextureContent(bmp,bmpOld);
+                bmpOld = null;
+//                Log.d("20250901","canvasGL:" + canvas + "bmp:" + bmp);
+            }
+            switch (this.mWorkMode){
+                case IWorkMode.WorkMode_YTZOOM:{
+                    RectF src=new RectF(0,0,1800,bottom);
+                    RectF des = new RectF(0, 0, 1800, bottom * 3 >> 2);
+                    canvas.drawBitmap(bmp, src, des);
+
+                }break;
+                case IWorkMode.WorkMode_YT:{
+                    RectF src=new RectF(0,0,1800,bottom);
+                    RectF des=new RectF(0,0,1800,bottom);
+                    canvas.drawBitmap(bmp, src, des);
+
+                }break;
+                default: {
+                    canvas.drawBitmap(bmp, bmpRect, bmpRect);
+
+                }break;
+            }
+
+            isChanageBitmap = false;
+        }
+    }
+
+
+    private void drawTesting(){
+
+        if(BuildConfig.APP_TESTING || BuildConfig.DEBUG) {
+            String str = "内部测试版";
+            if(BuildConfig.APP_DEVELOP){
+                str +="(开发分支)";
+            }else{
+                str +="(主分支)";
+            }
+            Paint p = new Paint();
+            p.setColor(Color.RED);
+            p.setAntiAlias(true);
+            p.setAlpha(200);
+            p.setTextSize(36);
+
+            Rect rect = new Rect();
+            p.getTextBounds(str, 0, str.length(), rect);
+            int w = rect.width();
+            int h = rect.height();
+            mCanvas.drawText(str, (bmp.getWidth() - w) >> 1, h, p);
+        }
+    }
+
+    private void drawGrid() {
+        synchronized (bmp) {
+            paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
+            mCanvas.drawPaint(paint);
+            paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC));
+
+//            drawTesting();
+
+
+            if ((GridAttr_Enum & GridAttr_CrossPoint) == GridAttr_CrossPoint) {
+                drawCrossPoint(mCanvas);
+            }
+            if ((GridAttr_Enum & GridAttr_ALLPoint) == GridAttr_ALLPoint) {
+//                drawAllPoint(mCanvas);
+                drawAllPoint_line(mCanvas);
+            }
+            if ((GridAttr_Enum & GridAttr_Frame) == GridAttr_Frame) {
+//                drawFrame(mCanvas);
+            }
+            if ((GridAttr_Enum & GridAttr_CrossLine) == GridAttr_CrossLine) {
+                drawCrossLine(mCanvas);
+            }
+            isChanageBitmap = true;
+            onRefresh();
+        }
+    }
+
+    //region 私有函数
+    private void drawFrame(Canvas canvas) {
+        paint.setColor(0xFF008080);
+        paint.setStrokeWidth(1);
+        canvas.drawLine(0, 0, canvas.getWidth(), 0, paint);
+        canvas.drawLine(0, 0, 0, canvas.getHeight(), paint);
+        canvas.drawLine(0, canvas.getHeight() - 1, canvas.getWidth(), canvas.getHeight() - 1, paint);
+        canvas.drawLine(canvas.getWidth() - 1, 0, canvas.getWidth() - 1, canvas.getHeight(), paint);
+
+    }
+
+    public static int getCrossLine(int gridLine_Bright){
+        int r = Color.red(gridLine_Bright) + 35;
+        int g = Color.green(gridLine_Bright) + 35;
+        int b = Color.blue(gridLine_Bright) + 35;
+//        Logger.d("limh", "getCrossLine r= " + r + ", g= " + g + ", b= " + b);
+        return Color.rgb(r, g, b);
+    }
+    //十字线
+    private void drawCrossLine(Canvas canvas) {
+        int rowPoint = canvas.getWidth() / 2;
+        int rowpoint1 = 18 * 4 * 2; //18格 1条4条线，一条线2个点
+        int rowpoint2 = 18 * 4;   //18格 1格4个点
+
+        int colPoint = canvas.getHeight();
+        int colPoint1 = 14 * 4 * 2;
+        int colPoint2 = 14 * 4;
+
+        float[] rowPts = new float[(rowPoint + rowpoint1 + rowpoint2) * 2];
+        float[] colPts = new float[(colPoint + colPoint1 + colPoint2) * 2];
+        Arrays.fill(rowPts,Float.MAX_VALUE);
+        Arrays.fill(colPts,Float.MAX_VALUE);
+        paint.setColor(getCrossLine(GridLine_Bright));
+        paint.setStrokeWidth(1);
+        //画横线
+        int index = 0;
+        for (int x = 2; x < canvas.getWidth(); x += 2) {
+            //被50整除画4个点，被5整除画2个点。
+            if (x % widthBigDiv == 0 && x % widthSmallDiv == 0) {
+                rowPts[index] = x;
+                index = index + 1;
+                rowPts[index] = (canvas.getHeight() >> 1) - 2;
+                index += 1;
+
+                rowPts[index] = x;
+                index += 1;
+                rowPts[index] = (canvas.getHeight() >> 1) - 4;
+                index += 1;
+
+                rowPts[index] = x;
+                index += 1;
+                rowPts[index] = (canvas.getHeight() >> 1) + 2;
+                index += 1;
+
+                rowPts[index] = x;
+                index += 1;
+                rowPts[index] = (canvas.getHeight() >> 1) + 4;
+                index += 1;
+
+            } else if (x % widthSmallDiv == 0) {
+                rowPts[index] = x;
+                index += 1;
+                rowPts[index] = (canvas.getHeight() >> 1) - 2;
+                index += 1;
+
+                rowPts[index] = x;
+                index += 1;
+                rowPts[index] = (canvas.getHeight() >> 1) + 2;
+                index += 1;
+            }
+            rowPts[index] = x;
+            index = index + 1;
+            rowPts[index] = canvas.getHeight() >> 1;
+            index = index + 1;
+        }
+        canvas.drawPoints(rowPts, paint);
+
+        //画坚线
+        index = 0;
+        for (int y = 2; y < canvas.getHeight(); y += 2) {
+            //被50整除画4个点，被5整除画2个点。
+            if (y % heightBigDiv == 0 && y % heightSmallDiv == 0) {
+                colPts[index] = (canvas.getWidth() >> 1) - 2;
+                index = index + 1;
+                colPts[index] = y;
+                index += 1;
+
+                colPts[index] = (canvas.getWidth() >> 1) - 4;
+                index += 1;
+                colPts[index] = y;
+                index += 1;
+
+                colPts[index] = (canvas.getWidth() >> 1) + 2;
+                index += 1;
+                colPts[index] = y;
+                index += 1;
+
+                colPts[index] = (canvas.getWidth() >> 1) + 4;
+                index += 1;
+                colPts[index] = y;
+                index += 1;
+
+            } else if (y % heightSmallDiv == 0) {
+                colPts[index] = (canvas.getWidth() >> 1) - 2;
+                index += 1;
+                colPts[index] = y;
+                index += 1;
+
+                colPts[index] = (canvas.getWidth() >> 1) + 2;
+                index += 1;
+                colPts[index] = y;
+                index += 1;
+            }
+            colPts[index] = canvas.getWidth() >> 1;
+            index = index + 1;
+            colPts[index] = y;
+            index = index + 1;
+        }
+        canvas.drawPoints(colPts, paint);
+
+    }
+
+    //十字点
+    private void drawCrossPoint(Canvas canvas) {
+        float[] pts = new float[( canvas.getWidth() / widthBigDiv * canvas.getHeight() / heightBigDiv * 2)];
+        Arrays.fill(pts,Float.MAX_VALUE);
+        paint.setColor(GridLine_Bright);
+        paint.setStrokeWidth(1);
+
+        int index = 0;
+        for (int y = heightBigDiv; y < canvas.getHeight(); y += heightBigDiv) {
+            for (int x = widthBigDiv; x < canvas.getWidth(); x += widthBigDiv) {
+                pts[index] = x;
+                index += 1;
+                pts[index] = y;
+                index += 1;
+            }
+        }
+        canvas.drawPoints(pts, paint);
+
+    }
+
+    //画所有点
+    private void drawAllPoint(Canvas canvas) {
+        int rowPoint = canvas.getWidth() / widthSmallDiv * 2;
+        int colPoint = canvas.getHeight() / heightSmallDiv * 2;
+        float[] pts = new float[rowPoint * colPoint];
+        Arrays.fill(pts,Float.MAX_VALUE);
+        paint.setColor(GridLine_Bright);
+        paint.setStrokeWidth(1);
+
+        int index = 0;
+        for (int y = heightSmallDiv; y < canvas.getHeight(); y += heightSmallDiv) {
+            for (int x = widthSmallDiv; x < canvas.getWidth(); x += widthSmallDiv) {
+                if (x % widthBigDiv == 0) {
+                    pts[index] = x;
+                    index += 1;
+                    pts[index] = y;
+                    index += 1;
+                } else if (y % heightBigDiv == 0) {
+                    pts[index] = x;
+                    index += 1;
+                    pts[index] = y;
+                    index += 1;
+                }
+            }
+        }
+        canvas.drawPoints(pts, paint);
+
+    }
+
+    private void drawAllPoint_line(Canvas canvas){
+        DashPathEffect dashPathEffect = new DashPathEffect(new float[]{1, 1, 1, 1}, 0);
+        paint.setPathEffect(dashPathEffect);
+        for (int y = heightBigDiv; y < canvas.getHeight(); y += heightBigDiv) {
+            canvas.drawLine(0, y, canvas.getWidth(), y, paint);
+        }
+        for (int x = widthBigDiv; x < canvas.getWidth(); x += widthBigDiv) {
+            canvas.drawLine(x, 0, x, canvas.getHeight(), paint);
+        }
+        paint.setPathEffect(null);
+    }
+    //endregion
+}

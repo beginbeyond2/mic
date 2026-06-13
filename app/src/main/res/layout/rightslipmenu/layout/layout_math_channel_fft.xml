@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.micsig.tbook.ui.rightslipmenu.InterceptTouchRelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/fftLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center_horizontal"
+    android:paddingStart="28px"
+    android:paddingTop="28px"
+    android:paddingEnd="22px">
+
+    <TextView
+        android:id="@+id/fftTitle"
+        style="@style/rightHeadText"
+        android:layout_width="100px"
+        android:layout_height="54px"
+        android:gravity="center_vertical"
+        android:text="@string/mathFft" />
+
+    <com.micsig.tbook.ui.rightslipmenu.RightViewSelect
+        android:id="@+id/fftType"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="7px"
+        android:paddingRight="0px"
+        app:array="@array/mathFftType"
+        app:arrayOrientation="horizontalEachRow2"
+        app:itemHalfCornerEach="each_108_54"
+        app:itemHeight="54px"
+        app:itemStartAndEndBgHalfCorner="true"
+        app:itemWidth="108px" />
+
+    <View
+        android:id="@+id/driver1"
+        android:layout_width="match_parent"
+        android:layout_height="2px"
+        android:layout_below="@+id/fftType"
+        android:layout_marginTop="14px"
+        android:layout_marginEnd="7px"
+        android:layout_marginBottom="7px"
+        android:background="@drawable/bg_right_layout_divider" />
+
+
+    <TextView
+        android:id="@+id/fftSourceHead"
+        style="@style/rightHeadText"
+        android:layout_width="100px"
+        android:layout_height="54px"
+        android:layout_below="@id/driver1"
+        android:gravity="center_vertical"
+        android:text="@string/mathSource" />
+
+    <com.micsig.tbook.ui.rightslipmenu.RightViewSelect
+        android:id="@+id/fftSource"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/driver1"
+        android:layout_alignParentEnd="true"
+        app:array="@array/channelsNameEight"
+        app:arrayOrientation="horizontalEachRow4"
+        app:itemHeight="54px"
+        app:itemMargin="7px"
+        app:itemWidth="108px" />
+
+    <View
+        android:id="@+id/driver2"
+        android:layout_width="match_parent"
+        android:layout_height="2px"
+        android:layout_below="@+id/fftSource"
+        android:layout_marginTop="7px"
+        android:layout_marginEnd="7px"
+        android:layout_marginBottom="7px"
+        android:background="@drawable/bg_right_layout_divider" />
+
+
+    <TextView
+        android:id="@+id/fftWindowHead"
+        style="@style/rightHeadText"
+        android:layout_width="100px"
+        android:layout_height="54px"
+        android:layout_below="@+id/driver2"
+        android:gravity="center_vertical"
+        android:text="@string/mathWindow" />
+
+    <com.micsig.tbook.ui.rightslipmenu.RightViewSelect
+        android:id="@+id/fftWindow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/driver2"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="0px"
+        app:array="@array/mathWindow"
+        app:arrayOrientation="horizontalEachRow4"
+        app:itemHeight="54px"
+        app:itemMargin="7px"
+        app:itemWidth="108px" />
+
+    <View
+        android:id="@+id/driver3"
+        android:layout_width="match_parent"
+        android:layout_height="2px"
+        android:layout_below="@+id/fftWindow"
+        android:layout_marginTop="7px"
+        android:layout_marginEnd="7px"
+        android:layout_marginBottom="7px"
+        android:visibility="gone"
+        android:background="@drawable/bg_right_layout_divider" />
+
+    <TextView
+        android:id="@+id/fftPersistHead"
+        style="@style/rightHeadText"
+        android:layout_width="100px"
+        android:layout_height="54px"
+        android:layout_below="@id/driver3"
+        android:layout_marginTop="10px"
+        android:gravity="center_vertical"
+        android:visibility="gone"
+        android:text="@string/displayPersist" />
+
+    <com.micsig.tbook.ui.rightslipmenu.RightViewSelect
+        android:id="@+id/fftPersist"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/driver3"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="0px"
+        app:array="@array/mathFftPersist"
+        app:arrayOrientation="horizontalEachRow4"
+        app:itemHeight="54px"
+        app:itemMargin="7px"
+        android:visibility="gone"
+        app:itemWidth="108px" />
+
+    <TextView
+        android:id="@+id/fftPersistValue"
+        style="@style/editTextStyleRight"
+        android:layout_width="108px"
+        android:layout_height="54px"
+        android:layout_below="@+id/driver3"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="7px"
+        android:layout_marginEnd="7px"
+        android:gravity="center"
+        android:visibility="gone"
+        android:text="1ms" />
+
+</com.micsig.tbook.ui.rightslipmenu.InterceptTouchRelativeLayout>

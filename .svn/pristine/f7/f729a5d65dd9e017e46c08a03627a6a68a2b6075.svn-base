@@ -1,0 +1,160 @@
+package com.micsig.tbook.scope.surface;
+
+import android.util.Log;
+
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.Sample.Sample;
+import com.micsig.tbook.scope.ScopeMessage;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+
+import java.util.Arrays;
+
+public class SlideFinger {
+
+    private static final String TAG = "SlideFinger";
+    public final static int MOVE_LEFTRIGHT = 1;
+    public final static int MOVE_UPDOWN = 2;
+    private static SlideFinger instance;
+
+    public static SlideFinger getInstance(){
+        synchronized (SlideFinger.class){
+            if(instance == null){
+                instance = new SlideFinger();
+            }
+        }
+        return instance;
+    }
+    private float downX,downY;
+    private float X,Y;
+
+    private float []xOffset = new float[ChannelFactory.CH_CNT + ChannelFactory.MATH_CNT];
+    private float []yOffset = new float[ChannelFactory.CH_CNT + ChannelFactory.MATH_CNT];
+
+    private int chIdx = ChannelFactory.CH1;
+    private int slideDirection = -1;
+    private SlideFinger(){
+
+    }
+
+    public void ms_sleep(long ms){
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+    public synchronized boolean isMathCh(){
+        return ChannelFactory.isMathCh(chIdx);
+    }
+
+    public synchronized boolean isRef() {
+        return ChannelFactory.isRefCh(chIdx);
+    }
+
+    private boolean isValid(){
+        return ChannelFactory.isDynamicCh(chIdx) || ChannelFactory.isMathCh(chIdx);
+    }
+    public void setSlideDirection(int slideDirection){
+        Sample sample  = Sample.getInstance();
+        ScopeMessage scopeMessage = ScopeMessage.getInstance();
+        switch (slideDirection){
+            case SlideFinger.MOVE_LEFTRIGHT:
+            case SlideFinger.MOVE_UPDOWN:
+                if(isValid()) {
+                    bakSampleState = sample.getSampleState();
+                    scopeMessage.enableCommand(false);
+                    scopeMessage.touchPause();
+                }
+                break;
+            default:
+                if(this.slideDirection == MOVE_LEFTRIGHT
+                        || this.slideDirection == MOVE_UPDOWN) {
+                    if(isValid()) {
+                        synchronized (this) {
+                            xOffset[this.chIdx] += X - downX;
+                            yOffset[this.chIdx] += Y - downY;
+                        }
+                        if (bakSampleState != Sample.SAMPLE_STOP) {
+                            //sample.setSampleState(Sample.SAMPLE_TRANSIENT_RUN);
+                            sample.frozenSample(bakSampleState);
+                        }
+                        scopeMessage.touchResume();
+                        scopeMessage.enableCommand(true);
+                    }
+                }
+                this.chIdx = ChannelFactory.CH_CNT;
+                break;
+        }
+        this.slideDirection = slideDirection;
+    }
+    private int bakSampleState;
+    private boolean bMove = false;
+    public synchronized boolean isSlide(){
+        return isValid() && bMove && (slideDirection == MOVE_LEFTRIGHT || slideDirection == MOVE_UPDOWN);
+    }
+    public synchronized int getSlideDirection(){
+        return this.slideDirection;
+    }
+    public synchronized void setChIdx(int chIdx){
+        this.chIdx = chIdx;
+    }
+    public int getChIdx(){
+        return chIdx;
+    }
+    public void fingerDownXY(float x,float y){
+        synchronized (this) {
+            this.downX = x;
+            this.downY = y;
+            this.X = x;
+            this.Y = y;
+        }
+        if (isValid()) {
+            EventFactory.sendEvent(new EventBase(EventFactory.EVENT_WAVE_LABEL_SELECT, (int) x + ";" + (int) y), true);
+        }
+    }
+    public void fingerMoveXY(float x,float y){
+        synchronized (this) {
+            bMove = true;
+            this.X = x;
+            this.Y = y;
+
+        }
+        if(isValid()) {
+            EventFactory.sendEvent(EventFactory.EVENT_WAVE_OFFSET);
+        }
+    }
+
+    public void fingerMoveLabel(float x, float y) {
+        EventFactory.sendEvent(new EventBase(EventFactory.EVENT_WAVE_LABEL_MOVE, (int) x + ";" + (int) y), true);
+    }
+
+    public void fingerUp(float x,float y){
+        fingerMoveXY(x,y);
+        synchronized (this) {
+            bMove = false;
+        }
+    }
+
+    public synchronized float getHorizontalOffset(){
+        if(isValid()) {
+            return X - downX + xOffset[this.chIdx];
+        }else{
+            return X - downX;
+        }
+    }
+
+    public synchronized float getVerticalOffset(){
+        if(isValid()) {
+            return Y - downY + yOffset[this.chIdx];
+        }else{
+            return Y - downY;
+        }
+    }
+
+    public synchronized void reset(){
+        Arrays.fill(xOffset,0);
+        Arrays.fill(yOffset,0);
+    }
+
+}

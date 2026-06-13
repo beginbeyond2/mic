@@ -1,0 +1,38 @@
+package com.micsig.tbook.scope.fpga;
+
+import android.util.Log;
+
+import com.micsig.base.Logger;
+
+/**
+ * Created by zhuzh on 2018-4-8.
+ */
+
+public class FPGAReg_DIS_MODE extends FPGAReg {
+    public FPGAReg_DIS_MODE() {
+        super(FPGA_DIS_MODE, 4);
+    }
+
+    public void setChNum(int val){
+        setVal(0,3,val);
+    }
+    public void setChValid(int chIdx,boolean bEnable){
+        setVal(4 + chIdx,1,bEnable ? 1 : 0);
+    }
+
+    public void setMaxGray(int val){
+        setVal(8,8,val);
+    }
+    public void setZoom(int val){
+        setVal(16,1,val);
+    }
+    public void setNeedStaticBitBuf(int val){
+        setVal(17,1,val);
+    }
+    public void setNeedStaticWave(int val){
+        setVal(18,1,val);
+    }
+    public void setDisType(int val){
+        setVal(19,1,val);
+    }
+}

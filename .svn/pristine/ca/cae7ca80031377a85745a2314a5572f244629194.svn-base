@@ -1,0 +1,15 @@
+package com.micsig.tbook.scope.fpga;
+
+public class FPGAReg_ZoomSmallPlace extends FPGAReg{
+    public FPGAReg_ZoomSmallPlace() {
+        super(FPGAReg.FPGA_ZOOM_SMALL_PLACE, 8);
+    }
+
+    public void setPlace(int place){
+        setVal(1,place);
+    }
+
+    public void setNums(int nums){
+        setVal(0,nums);
+    }
+}

@@ -1,0 +1,43 @@
+package com.micsig.tbook.scope.surface;
+
+import android.graphics.SurfaceTexture;
+import android.os.SystemClock;
+import android.util.Log;
+
+import com.chillingvan.canvasgl.ICanvasGL;
+import com.chillingvan.canvasgl.glcanvas.RawTexture;
+
+public class LayerTextureMath extends LayerTexture{
+    private RawTexture rawTexture;
+    public LayerTextureMath(int layerType) {
+        super(layerType);
+    }
+
+    public LayerTextureMath(int width, int height, int layerType) {
+        super(width, height, layerType);
+    }
+
+    @Override
+    public void setTexture(RawTexture texture) {
+        rawTexture = texture;
+    }
+
+    @Override
+    public void setSurfaceTexture(SurfaceTexture surfaceTexture) {
+
+    }
+
+    @Override
+    public void onDraw(ICanvasGL canvas) {
+        if(bVaild) {
+            if(rawTexture != null) {
+                canvas.save();
+                canvas.translate((float) getOffsetX(),(float) getOffsetY());
+                canvas.drawSurfaceTexture(rawTexture, null, left, top, left + width, top + height, basicTextureFilter);
+                canvas.restore();
+            }else {
+                super.onDraw(canvas);
+            }
+        }
+    }
+}

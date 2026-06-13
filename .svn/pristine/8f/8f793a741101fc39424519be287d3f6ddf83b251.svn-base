@@ -1,0 +1,992 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="channelsNameEight">
+        <item>@string/mainCenterRadioButtonCh1</item>
+        <item>@string/mainCenterRadioButtonCh2</item>
+        <item>@string/mainCenterRadioButtonCh3</item>
+        <item>@string/mainCenterRadioButtonCh4</item>
+        <item>@string/mainCenterRadioButtonCh5</item>
+        <item>@string/mainCenterRadioButtonCh6</item>
+        <item>@string/mainCenterRadioButtonCh7</item>
+        <item>@string/mainCenterRadioButtonCh8</item>
+    </string-array>
+    <string-array name="channelsNameFour">
+        <item>@string/mainCenterRadioButtonCh1</item>
+        <item>@string/mainCenterRadioButtonCh2</item>
+        <item>@string/mainCenterRadioButtonCh3</item>
+        <item>@string/mainCenterRadioButtonCh4</item>
+    </string-array>
+    <string-array name="channelsNameDouble">
+        <item>@string/mainCenterRadioButtonCh1</item>
+        <item>@string/mainCenterRadioButtonCh2</item>
+    </string-array>
+
+    <string-array name="keyboard">
+        <item>7</item>
+        <item>4</item>
+        <item>1</item>
+        <item>.</item>
+        <item>8</item>
+        <item>5</item>
+        <item>2</item>
+        <item>0</item>
+        <item>9</item>
+        <item>6</item>
+        <item>3</item>
+        <item>X</item>
+        <item>b/s</item>
+        <item>A</item>
+        <item>C</item>
+        <item>E</item>
+        <item>kb/s</item>
+        <item>B</item>
+        <item>D</item>
+        <item>F</item>
+        <item>Mb/s</item>
+        <item> </item>
+        <item>Enter</item>
+    </string-array>
+
+    <string name="mathDoubleWave">雙波形</string>
+    <string name="mathSource1">源1</string>
+    <string name="mathSource2">源2</string>
+    <string-array name="mathSymbol">
+        <item>+</item>
+        <item>-</item>
+        <item>x</item>
+        <item>÷</item>
+    </string-array>
+    <string name="mathFft">FFT</string>
+    <string name="mathSource">源</string>
+    <string name="mathWindow">視窗</string>
+    <string-array name="mathWindow">
+        <item>矩形窗</item>
+        <item>哈明窗</item>
+        <item>布萊克曼</item>
+        <item>漢寧窗</item>
+    </string-array>
+    <string-array name="mathFftType">
+        <item>線性</item>
+        <item>分貝</item>
+    </string-array>
+    <string-array name="mathFftPersist">
+        <item>無</item>
+        <item>∞</item>
+        <item>正常</item>
+    </string-array>
+    <string name="mathAdvance">高級數學</string>
+    <string name="mathAdvanceExpr">表達式</string>
+    <string name="mathAdvanceVar1">變量1</string>
+    <string name="mathAdvanceVar2">變量2</string>
+    <string name="mathVertical">垂直展開基準</string>
+    <string-array name="mathVertical">
+        <item>中心</item>
+        <item>零點</item>
+    </string-array>
+
+    <string name="refR1Title">R1</string>
+    <string name="refR2Title">R2</string>
+    <string name="refR3Title">R3</string>
+    <string name="refR4Title">R4</string>
+    <string name="refRecall">讀取</string>
+
+    <string name="serialsType">匯流排類型</string>
+
+    <string name="serialsUartRx">RX</string>
+    <!-- -->
+    <string name="serialsUartIdle">空閒電平</string>
+    <string-array name="serialsUartIdle">
+        <item>高</item>
+        <item>低</item>
+    </string-array>
+    <string name="serialsUartCheck">校驗</string>
+    <string-array name="serialsUartCheck">
+        <item>無</item>
+        <item>奇</item>
+        <item>偶</item>
+    </string-array>
+    <string name="serialsUartBits">#比特</string>
+    <string-array name="serialsUartBits">
+        <item>5bit</item>
+        <item>6bit</item>
+        <item>7bit</item>
+        <item>8bit</item>
+        <item>9bit</item>
+    </string-array>
+    <string name="serialsUartDisplay">顯示</string>
+    <string-array name="serialsUartDisplay">
+        <item>十六進位</item>
+        <item>二進位</item>
+        <item>ASCⅡ碼</item>
+    </string-array>
+    <string name="serialsUartBaudRate">波特率</string>
+
+    <string name="serialsLinSource">源</string>
+    <string name="serialsLinIdle">空閒電平</string>
+    <string-array name="serialsLinIdle">
+        <item>高</item>
+        <item>低</item>
+    </string-array>
+    <string name="serialsLinBaudRate">波特率</string>
+
+    <string name="serialsCanSource">源</string>
+    <string name="serialsCanSignal">信號</string>
+    <string-array name="serialsCanSignal">
+        <item>CAN_H</item>
+        <item>CAN_L</item>
+        <item>H_L</item>
+        <item>L_H</item>
+        <item>Rx</item>
+        <item>Tx</item>
+    </string-array>
+    <string name="serialsCanBaudRate">波特率</string>
+    <string name="serialsCanFDBaudRate">FD波特率</string>
+    <string-array name="serialsCanFDBaudRate">
+        <item>無</item>
+        <item>2Mb/s</item>
+        <item>5Mb/s</item>
+    </string-array>
+    <string name="serialsCanFDISO" translatable="false">ISO</string>
+    <string-array name="serialsCanFDISO" translatable="false">
+        <item>ISO</item>
+        <item>Non-ISO</item>
+    </string-array>
+
+    <string name="serialsSpiSource">時鐘</string>
+    <string name="serialsSpiData">數據</string>
+    <string name="serialsSpiCS">CS</string>
+    <string name="serialsSpiBits">#比特</string>
+    <string-array name="serialsSpiBits">
+        <item>4bit</item>
+        <item>8bit</item>
+        <item>16bit</item>
+        <item>24bit</item>
+        <item>32bit</item>
+    </string-array>
+
+    <string name="serialsI2CSDA">數據</string>
+    <string name="serialsI2CSCL">時鐘</string>
+
+    <string name="serialsM429Source">源</string>
+    <string name="serialsM429Format">格式</string>
+    <string-array name="serialsM429Format">
+        <item>LABEL+DATA</item>
+        <item>L+D+SSM</item>
+        <item>L+SDI+D+SSM</item>
+    </string-array>
+    <string name="serialsM429Display">顯示</string>
+    <string-array name="serialsM429Display">
+        <item>二進位</item>
+        <item>十六進位</item>
+    </string-array>
+    <string name="serialsM429BaudRate">波特率</string>
+    <string-array name="serialsM429BaudRate">
+        <item>12.5kb/s</item>
+        <item>100kb/s</item>
+    </string-array>
+
+    <string name="serialsM1553bSource">源</string>
+    <string name="serialsM1553bDisplay">顯示</string>
+    <string-array name="serialsM1553bDisplay">
+        <item>二進位</item>
+        <item>十六進位</item>
+    </string-array>
+
+    <string name="channelInvertHead">反相</string>
+    <string name="channelCouple">耦合管道</string>
+    <string-array name="channelCouple">
+        <item>直流</item>
+        <item>交流</item>
+        <item>地</item>
+    </string-array>
+    <string name="channelProbeType">探針</string>
+    <string-array name="channelProbeType">
+        <item>電壓</item>
+        <item>電流</item>
+    </string-array>
+    <string name="probe_calibration">校準</string>
+    <string name="probe_Type" translatable="false">衰減</string>
+    <string-array name="Probe_Type">
+        <item>手動</item>
+        <item>自動</item>
+    </string-array>
+    <string name="channelProbeMultiple">1mX</string>
+    <string name="channelBandWidth">頻寬</string>
+    <string name="chBandWidthFull">全</string>
+    <string name="chBandWidth200M">20M</string>
+    <string name="chBandWidth20M">20M</string>
+    <string name="chBandWidthHigh">高通</string>
+    <string name="chBandWidthLow">低通</string>
+    <string-array name="channelBandWidth">
+        <item>全</item>
+        <item>200M</item>
+        <item>20M</item>
+        <item>高通</item>
+        <item>低通</item>
+    </string-array>
+
+    <string name="triggerImped" translatable="false">輸入阻抗</string>
+    <string name="channelImped" translatable="false">阻抗</string>
+    <string-array name="channelImped">
+        <item>1M</item>
+        <item>50Ω</item>
+    </string-array>
+    <string name="channelColor" translatable="false">顔色</string>
+    <string name="channelLabel">標籤</string>
+    <string name="channelDelay">延遲</string>
+    <string name="channelFineExtent">精細檔位</string>
+    <string name="channelOffset">偏移</string>
+    <string name="channelPosition" translatable="false">位置</string>
+    <string name="channelSample">採樣</string>
+    <string name="tvalueVoltage" translatable="false">幅度</string>
+    <string name="tvalueEdge" translatable="false">邊沿</string>
+    <string-array name="channelSample">
+        <item>正常</item>
+        <item>平均</item>
+        <item>包絡</item>
+        <item>峰峰</item>
+    </string-array>
+    <string-array name="channelSampleDetail">
+        <item>2</item>
+        <item>4</item>
+        <item>8</item>
+        <item>16</item>
+        <item>32</item>
+        <item>64</item>
+        <item>128</item>
+        <item>256</item>
+        <item>∞</item>
+    </string-array>
+    <string-array name="channelProbeTypeMultiple">
+        <item>1mX</item>
+        <item>2mX</item>
+        <item>5mX</item>
+        <item>10mX</item>
+        <item>20mX</item>
+        <item>50mX</item>
+        <item>100mX</item>
+        <item>200mX</item>
+        <item>500mX</item>
+        <item>1X</item>
+        <item>2X</item>
+        <item>5X</item>
+        <item>10X</item>
+        <item>20X</item>
+        <item>50X</item>
+        <item>100X</item>
+        <item>200X</item>
+        <item>500X</item>
+        <item>1kX</item>
+        <item>2kX</item>
+        <item>5kX</item>
+        <item>10kX</item>
+    </string-array>
+    <string name="dialogBandWidthMHz">MHz</string>
+    <string name="dialogBandWidthKHz">KHz</string>
+    <string-array name="channelProbeEvery">
+        <item>500u</item>
+        <item>1m</item>
+        <item>2m</item>
+        <item>5m</item>
+        <item>10m</item>
+        <item>20m</item>
+        <item>50m</item>
+        <item>100m</item>
+        <item>200m</item>
+        <item>500m</item>
+        <item>1</item>
+        <item>2</item>
+        <item>5</item>
+        <item>10</item>
+    </string-array>
+    <string-array name="channelProbeEveryDouble">
+        <item>0.0005</item>
+        <item>0.001</item>
+        <item>0.002</item>
+        <item>0.005</item>
+        <item>0.01</item>
+        <item>0.02</item>
+        <item>0.05</item>
+        <item>0.1</item>
+        <item>0.2</item>
+        <item>0.5</item>
+        <item>1</item>
+        <item>2</item>
+        <item>5</item>
+        <item>10</item>
+    </string-array>
+    <string-array name="channelLabel">
+        <item>無</item>
+        <item></item>
+        <item>ACK</item>
+        <item>ADDR</item>
+        <item>TX</item>
+        <item>RX</item>
+        <item>CAN_H</item>
+        <item>CAN_L</item>
+        <item>H_L</item>
+        <item>L_H</item>
+        <item>SS</item>
+        <item>MISO</item>
+        <item>MOSI</item>
+        <item>CS</item>
+        <item>SDA</item>
+        <item>SCL</item>
+        <item>DATA</item>
+        <item>CLK</item>
+        <item>IN</item>
+        <item>OUT</item>
+<!--        <item>Flex_A</item>-->
+<!--        <item>Flex_B</item>-->
+    </string-array>
+    <string name="auto">自動</string>
+    <string name="normal">正常</string>
+    <string name="main_capture" translatable="false">截屏</string>
+    <string name="main_quick_save" translatable="false">快速保存</string>
+    <string name="main_measure" translatable="false">測量</string>
+    <string name="main_cursor_heng" translatable="false">游標</string>
+    <string name="main_cursor_shu" translatable="false">游標</string>
+
+    <string-array name="popArrayTitle">
+        <item>測量</item>
+        <item>保存/調用</item>
+        <item>光标</item>
+        <item>採樣</item>
+        <item>顯示</item>
+        <item>觸發</item>
+        <item>自動</item>
+        <item>用戶設置</item>
+        <item>頻率計</item>
+    </string-array>
+    <string-array name="popArrayTitleCalibration">
+        <item>測量</item>
+        <item>保存/調用</item>
+        <item>游標</item>
+        <item>採樣</item>
+        <item>顯示</item>
+        <item>觸發</item>
+        <item>自動</item>
+        <item>用戶設置</item>
+        <item>頻率計</item>
+        <item>工廠校準</item>
+
+    </string-array>
+    <string-array name="measure">
+        <item>常規</item>
+        <item>統計</item>
+        <item>頻率計</item>
+        <item>設置</item>
+    </string-array>
+    <string-array name="cursor" translatable="false">
+        <item>常規</item>
+        <item>設置</item>
+    </string-array>
+    <string name="cursorTrance" translatable="false">光标跟踪</string>
+    <string name="labelFollowMode" translatable="false">标签固定</string>
+
+    <string-array name="popArrayChannel">
+        <item>@string/mainCenterRadioButtonCh1</item>
+        <item>@string/mainCenterRadioButtonCh2</item>
+        <item>@string/mainCenterRadioButtonCh3</item>
+        <item>@string/mainCenterRadioButtonCh4</item>
+        <item>@string/mainCenterRadioButtonMath1</item>
+        <item>@string/mainCenterRadioButtonR1</item>
+        <item>@string/mainCenterRadioButtonR2</item>
+        <item>@string/mainCenterRadioButtonR3</item>
+        <item>@string/mainCenterRadioButtonR4</item>
+    </string-array>
+
+    <string name="measureStaticsAll" >開關</string>
+    <string name="measureStaticsReset" >重置</string>
+    <string name="measureStaticsMean" >平均值</string>
+    <string name="measureStaticsMax" >最大值</string>
+    <string name="measureStaticsMin" >最小值</string>
+    <string name="measureStaticsDelta" >均方差</string>
+    <string name="measureStaticsCount" >計數</string>
+    <string name="measureCounterReset" translatable="false">重置</string>
+
+    <string-array name="save">
+        <item>保存</item>
+        <item>調用</item>
+        <item>自动保存</item>
+    </string-array>
+
+    <string-array name="topSaveType">
+        <item>WAV</item>
+        <item>CSV</item>
+        <item>BIN</item>
+        <item>設置</item>
+        <item>圖片</item>
+        <item>會話</item>
+    </string-array>
+
+    <string-array name="topInvokeType">
+        <item>WAV</item>
+        <item>CSV</item>
+        <item>設置</item>
+        <item>會話</item>
+    </string-array>
+
+    <array name="popArrayChannelColor">
+        <item>@color/colorCh1</item>
+        <item>@color/colorCh2</item>
+        <item>@color/colorCh3</item>
+        <item>@color/colorCh4</item>
+        <item>@color/colorCh5</item>
+        <item>@color/colorCh6</item>
+        <item>@color/colorCh7</item>
+        <item>@color/colorCh8</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorChCommon</item>
+    </array>
+    <string name="measureSettingRange">測量範圍</string>
+    <string-array name="measureSettingRange" translatable="false">
+        <item>屏幕</item>
+        <item>光標</item>
+    </string-array>
+    <string name="measureSettingIndicator">指示器</string>
+    <string name="measureSettingSource">源</string>
+    <string name="measureSettingThresholds">閾值類型</string>
+    <string-array name="measureSettingThresholds" translatable="false">
+        <item>%</item>
+        <item>絕對值</item>
+    </string-array>
+    <string name="measureSettingHigh">高值</string>
+    <string name="measureSettingMiddle">中值</string>
+    <string name="measureSettingLower">低值</string>
+    <string name="saveIn">儲存在</string>
+    <string-array name="saveIn">
+        <item>內部記憶體</item>
+        <item>USB</item>
+    </string-array>
+    <string name="saveAllSegments" translatable="false">所有段</string>
+    <string name="saveType">類型</string>
+    <string-array name="saveType">
+        <item>WAV</item>
+        <item>CSV</item>
+        <item>BIN</item>
+        <item>Picture</item>
+        <item>Session</item>
+    </string-array>
+    <string name="saveTimestamp">時間戳</string>
+    <string name="saveInverseColor">反色</string>
+    <string name="saveThumbnail">縮略圖</string>
+
+    <string-array name="sample">
+        <item>模式</item>
+        <item>記錄長度</item>
+        <item>分段存儲</item>
+    </string-array>
+    <string name="sampleMode">採樣</string>
+    <string-array name="sampleMode">
+        <item>正常</item>
+        <item>平均</item>
+        <item>包絡</item>
+        <item>峰值</item>
+    </string-array>
+    <string name="sampleDepth">記錄長度</string>
+    <string-array name="sampleDepth">
+        <item>自動</item>
+        <item>28/14/7M</item>
+        <item>2.8/1.4/0.7M</item>
+        <item>280/140/70K</item>
+        <item>28/14/7K</item>
+    </string-array>
+    <string name="sampleSegmented">分段存儲</string>
+    <string-array name="sampleSegmentedState">
+        <item>開啟</item>
+        <item>關閉</item>
+    </string-array>
+    <string name="sampleSegmentedNumber">段數</string>
+    <string-array name="sampleSegmentedNumber">
+        <item>100</item>
+        <item>1000</item>
+        <item>最大</item>
+        <item>@string/serialsUserDefine</item>
+    </string-array>
+    <string name="sampleSegmentedDisplay">顯示方式</string>
+    <string-array name="sampleSegmentedDisplay">
+        <item>單幀</item>
+        <item>擬合</item>
+    </string-array>
+    <string name="sampleSegmentedOrder">播放</string>
+    <string-array name="sampleSegmentedOrder">
+        <item>順序</item>
+        <item>倒序</item>
+    </string-array>
+    <string name="centerSegmentedStart">起始</string>
+    <string name="centerSegmentedEnd">結尾</string>
+
+    <string-array name="display">
+        <item>常規</item>
+        <item>波形</item>
+        <item>格線顯示</item>
+        <item>余輝</item>
+        <item>FFT 訊息.</item>
+        <item>Txt 組合</item>
+    </string-array>
+    <string name="displayHorRef">時基參考</string>
+    <string-array name="displayHorRef">
+        <item>中心</item>
+        <item>觸發位置</item>
+    </string-array>
+    <string name="displayTimebase">時基</string>
+    <string-array name="displayTimebase">
+        <item>YT</item>
+        <item>XY</item>
+    </string-array>
+    <string name="dispalyRoll">滾動螢幕</string>
+    <string name="displayCCT">色溫</string>
+    <string name="displayScale">刻度</string>
+    <string-array name="displayEnable">
+        <item>開啟</item>
+        <item>關閉</item>
+    </string-array>
+    <string name="displayDrawType">繪製方式</string>
+    <string-array name="displayDrawType">
+        <item>點</item>
+        <item>線</item>
+    </string-array>
+    <string name="displayBackground">Background</string>
+    <string-array name="displayBackground">
+        <item>Dark</item>
+        <item>Light</item>
+    </string-array>
+    <string name="displayMode">類型</string>
+    <string-array name="displayMode">
+        <item>滿</item>
+        <item>柵格</item>
+        <item>十字標線</item>
+        <item>框架</item>
+    </string-array>
+    <string name="displayPersist">類比\n通道</string>
+    <string-array name="displayPersist">
+        <item>無</item>
+        <item>自動</item>
+        <item>普通</item>
+        <item>∞</item>
+    </string-array>
+    <string-array name="displayPersistAdjust">
+        <item>100ms</item>
+        <item>200ms</item>
+        <item>300ms</item>
+        <item>400ms</item>
+        <item>500ms</item>
+        <item>600ms</item>
+        <item>700ms</item>
+        <item>800ms</item>
+        <item>900ms</item>
+        <item>1s</item>
+        <item>2s</item>
+        <item>3s</item>
+        <item>4s</item>
+        <item>5s</item>
+        <item>6s</item>
+        <item>7s</item>
+        <item>8s</item>
+        <item>9s</item>
+        <item>10s</item>
+    </string-array>
+    <string-array name="trigger">
+        <item>常規</item>
+        <item>邊緣</item>
+        <item>脈寬</item>
+        <item>邏輯</item>
+        <item>N邊緣</item>
+        <item>矮波</item>
+        <item>斜率</item>
+        <item>超時</item>
+        <item>視訊</item>
+        <item>S1 UART</item>
+        <item>S2 UART</item>
+        <item>S3 UART</item>
+        <item>S4 UART</item>
+    </string-array>
+    <string name="triggerMode">模式</string>
+    <string-array name="triggerMode">
+        <item>自動</item>
+        <item>正常</item>
+    </string-array>
+    <string name="triggerSource">源</string>
+    <string name="triggerEdge">邊緣</string>
+    <string-array name="triggerEdge">
+        <item>上升</item>
+        <item>下降</item>
+        <item>雙緣</item>
+    </string-array>
+    <string name="triggerCouple">耦合</string>
+    <string-array name="triggerCouple">
+        <item>直流</item>
+        <item>交流</item>
+        <item>高頻抑制</item>
+        <item>低頻抑制</item>
+        <item>雜訊抑制</item>
+    </string-array>
+    <string name="triggerPulsewidthPolar">極性</string>
+    <string-array name="triggerPulsewidthPolar">
+        <item>正</item>
+        <item>負</item>
+    </string-array>
+    <string name="triggerPulsewidthCondition">條件</string>
+    <string-array name="triggerPulsewidthCondition">
+        <item>&lt;</item>
+        <item>&gt;</item>
+        <item>=</item>
+        <item>&lt;&gt;</item>
+    </string-array>
+
+    <string name="triggerCh1">@string/mainCenterRadioButtonCh1</string>
+    <string name="triggerCh2">@string/mainCenterRadioButtonCh2</string>
+    <string name="triggerCh3">@string/mainCenterRadioButtonCh3</string>
+    <string name="triggerCh4">@string/mainCenterRadioButtonCh4</string>
+    <string name="triggerCh5">@string/mainCenterRadioButtonCh5</string>
+    <string name="triggerCh6">@string/mainCenterRadioButtonCh6</string>
+    <string name="triggerCh7">@string/mainCenterRadioButtonCh7</string>
+    <string name="triggerCh8">@string/mainCenterRadioButtonCh8</string>
+    <string-array name="triggerCh">
+        <item>高</item>
+        <item>低</item>
+        <item>無</item>
+    </string-array>
+    <string name="triggerLogic">邏輯</string>
+    <string-array name="triggerLogic">
+        <item>AND</item>
+        <item>OR</item>
+        <item>NAND</item>
+        <item>NOR</item>
+    </string-array>
+    <string name="triggerLogicCondition">條件</string>
+    <string-array name="triggerLogicCondition">
+        <item>&lt;</item>
+        <item>&gt;</item>
+        <item>=</item>
+        <item>&lt;&gt;</item>
+        <item>真</item>
+        <item>假</item>
+    </string-array>
+    <string name="triggerNEdgeSlope">邊緣</string>
+    <string-array name="triggerNEdgeSlope">
+        <item>上升</item>
+        <item>下降</item>
+    </string-array>
+
+    <string name="triggerRuntPolar">極性</string>
+    <string-array name="triggerRuntPolar">
+        <item>正</item>
+        <item>負</item>
+        <item>任意</item>
+    </string-array>
+    <string name="triggerRuntCondition">條件</string>
+    <string-array name="triggerRuntCondition">
+        <item>&lt;</item>
+        <item>&gt;</item>
+        <item>&lt;&gt;</item>
+        <item>無</item>
+    </string-array>
+
+    <string name="triggerSlopeEdge">邊緣</string>
+    <string-array name="triggerSlopeEdge">
+        <item>上升</item>
+        <item>下降</item>
+        <item>任意</item>
+    </string-array>
+    <string name="triggerSlopeCondition">條件</string>
+    <string-array name="triggerSlopeCondition">
+        <item>&lt;</item>
+        <item>&gt;</item>
+        <item>&lt;&gt;</item>
+    </string-array>
+
+    <string name="triggerTimeoutPolar">極性</string>
+    <string-array name="triggerTimeoutPolar">
+        <item>正</item>
+        <item>負</item>
+        <item>任意</item>
+    </string-array>
+
+    <string name="triggerVideoPolar">極性</string>
+    <string-array name="triggerVideoPolar">
+        <item>正</item>
+        <item>負</item>
+    </string-array>
+    <string name="triggerVideoStandard">标准</string>
+    <string-array name="triggerVideoStandard">
+        <item>625/PAL</item>
+        <item>SECAM</item>
+        <item>525/NTSC</item>
+        <item>720P</item>
+        <item>1080I</item>
+        <item>1080P</item>
+    </string-array>
+    <string name="triggerVideotrigger">觸發</string>
+    <string-array name="triggerVideoTriggerMore">
+        <item>奇圖場</item>
+        <item>偶圖場</item>
+        <item>所有圖場</item>
+        <item>所有掃描線</item>
+        <item>掃描線</item>
+    </string-array>
+    <string-array name="triggerVideoTriggerLess">
+        <item>所有圖場</item>
+        <item>所有掃描線</item>
+        <item>掃描線</item>
+    </string-array>
+    <string name="triggerVideoFrequency">頻率</string>
+    <string-array name="triggerVideoFrequencyMore">
+        <item>60Hz</item>
+        <item>50Hz</item>
+        <item>30Hz</item>
+        <item>25Hz</item>
+        <item>24Hz</item>
+    </string-array>
+    <string-array name="triggerVideoFrequencyLess">
+        <item>60Hz</item>
+        <item>50Hz</item>
+    </string-array>
+
+    <string-array name="triggerSerialsUART">
+        <item>開始比特</item>
+        <item>結束比特</item>
+        <item>數據</item>
+        <item>[0:數據]</item>
+        <item>[1:數據]</item>
+        <item>[x:數據]</item>
+        <item>同位錯誤</item>
+    </string-array>
+    <string-array name="triggerSerialsLIN">
+        <item>同步上升沿</item>
+        <item>幀ID</item>
+        <item>幀ID和數據</item>
+        <item>Parity Error</item>
+        <item>Checksum Error</item>
+    </string-array>
+    <string-array name="triggerSerialsCAN">
+        <item>幀起始</item>
+        <item>遠程幀ID</item>
+        <item>數據幀ID</item>
+        <item>遠程幀/數據幀ID</item>
+        <item>數據幀ID和數據</item>
+        <item>錯誤幀</item>
+        <item>所有錯誤</item>
+        <item>確認錯誤</item>
+        <item>超載幀</item>
+    </string-array>
+    <string-array name="triggerSerialsSPI">
+        <item>CS</item>
+        <item>數據</item>
+        <item>X:數據</item>
+    </string-array>
+    <string-array name="triggerSerialsI2C">
+        <item>啟動條件</item>
+        <item>停止條件</item>
+        <item>確認遺失</item>
+        <item>重新啟動</item>
+        <item>地址欄位無確認</item>
+        <item>幀型1</item>
+        <item>幀型2</item>
+        <item>EEPROM數據讀寫</item>
+        <item>10比特寫幀</item>
+    </string-array>
+    <string-array name="triggerSerialsARINC429">
+        <item>字起始</item>
+        <item>字結束</item>
+        <item>標籤</item>
+        <item>SDI</item>
+        <item>數據</item>
+        <item>SSM</item>
+        <item>標籤+SDI</item>
+        <item>標籤+數據</item>
+        <item>標籤+SSM</item>
+        <item>字錯誤</item>
+        <item>字間隙錯誤</item>
+        <item>校驗錯誤</item>
+        <item>所有錯誤</item>
+        <item>所有0比特</item>
+        <item>所有1比特</item>
+    </string-array>
+    <string-array name="triggerSerials1553B">
+        <item>指令/狀態字同步頭</item>
+        <item>數據字同步頭</item>
+        <item>指令/狀態字</item>
+        <item>遠程終端地址</item>
+        <item>曼賈斯特碼錯誤</item>
+        <item>數據字</item>
+        <item>奇校驗錯誤</item>
+        <item>所有錯誤</item>
+    </string-array>
+    <string name="triggerSerialsUARTCondition">條件</string>
+    <string-array name="triggerSerialsUARTCondition">
+        <item>&lt;</item>
+        <item>&gt;</item>
+        <item>=</item>
+        <item>≠</item>
+    </string-array>
+
+    <string-array name="auto">
+        <item>自動設置</item>
+        <item>自動量程</item>
+    </string-array>
+    <string name="autoSettingOpenChannel">自動打開通道</string>
+    <string-array name="autoSettingOpenChannel">
+        <item>開啟</item>
+        <item>關閉</item>
+    </string-array>
+    <string name="autoSettingTriggerSource">自動觸發源</string>
+    <string-array name="autoSettingTriggerSource">
+        <item>當前信號</item>
+        <item>最大信號</item>
+    </string-array>
+    <string-array name="autoSettingLevelSelect">
+        <item>V</item>
+        <item>mV</item>
+    </string-array>
+
+    <string name="autoRangeRange">自動量程</string>
+    <string name="autoRangeVertical">垂直檔位</string>
+    <string name="autoRangeHorizontal">水平時基</string>
+    <string name="autoRangeLevel">電平</string>
+    <string-array name="autoRangeSelect">
+        <item>開啟</item>
+        <item>關閉</item>
+    </string-array>
+
+    <string name="frequencymeter">頻率計</string>
+    <string-array name="frequencymeter">
+        <item>關閉</item>
+    </string-array>
+
+    <string-array name="setting">
+        <item>出廠設定</item>
+        <item>自我校正</item>
+        <item>無線手柄</item>
+        <item>外部輸入</item>
+        <item>參考波形時基</item>
+    </string-array>
+
+    <string name="timestamp">時間戳記</string>
+    <string-array name="timestamp">
+        <item>打開</item>
+        <item>關閉</item>
+    </string-array>
+
+    <string name="screenInvert">反色</string>
+    <string-array name="screenInvert">
+        <item>打開</item>
+        <item>關閉</item>
+    </string-array>
+
+    <string name="usersetDepth">記錄長度</string>
+    <string-array name="usersetDepth">
+        <item>自動</item>
+        <item>28/14/7M</item>
+        <item>2.8/1.4/0.7M</item>
+        <item>280/140/70K</item>
+        <item>28/14/7K</item>
+    </string-array>
+
+    <string-array name="measures">
+        <item>週期</item>
+        <item>頻率</item>
+        <item>上升時間</item>
+        <item>下降時間</item>
+        <item>延遲</item>
+        <item>正工作週期</item>
+        <item>負工作週期</item>
+        <item>正脈衝寬度</item>
+        <item>負脈衝寬度</item>
+        <item>突發脈寬</item>
+        <item>過衝</item>
+        <item>下衝</item>
+        <item>相位</item>
+        <item>峰對峰值</item>
+        <item>振幅</item>
+        <item>高</item>
+        <item>低</item>
+        <item>最大值</item>
+        <item>最小值</item>
+        <item>有效值</item>
+        <item>週期有效值</item>
+        <item>平均值</item>
+        <item>週期平均</item>
+        <item>AC有效值</item>
+        <item>正斜率</item>
+        <item>負斜率</item>
+        <item>TValue</item>
+    </string-array>
+
+    <string-array name="measureDelayPosition">
+        <item>首個上升緣</item>
+        <item>首個下降緣</item>
+        <item>末個上升緣</item>
+        <item>末個下降緣</item>
+    </string-array>
+    <string-array name="measureDelayToChannel">
+        <item>M1</item>
+        <item>M2</item>
+        <item>M3</item>
+        <item>M4</item>
+        <item>M5</item>
+        <item>M6</item>
+        <item>M7</item>
+        <item>M8</item>
+    </string-array>
+    <string-array name="measurePhaseToChannel">
+        <item>M1</item>
+        <item>M2</item>
+        <item>M3</item>
+        <item>M4</item>
+        <item>M5</item>
+        <item>M6</item>
+        <item>M7</item>
+        <item>M8</item>
+    </string-array>
+
+    <string-array name="serialsWordTitle">
+        <item>S1:Uart</item>
+        <item>S2</item>
+        <item>S1&amp;S2</item>
+    </string-array>
+
+    <string-array name="math_channel_type">
+        <item>雙波形</item>
+        <item>FFT</item>
+        <item>AX+B</item>
+        <item>高級數學</item>
+    </string-array>
+
+    <string name="userSetAuxOutTrigger" translatable="false">觸發</string>
+    <string name="userSetAuxOutClock" translatable="false">時鐘</string>
+    <string-array name="userSetAuxOut" translatable="false">
+        <item>禁用</item>
+        <item>使能</item>
+    </string-array>
+
+    <string name="userSetRefTimeBase" translatable="false">時基調節</string>
+    <string-array name="userSetRefTimeBase" translatable="false">
+        <item>跟隨模擬通道</item>
+        <item>獨立調節</item>
+    </string-array>
+
+    <string name="tValueCursor" translatable="false">光標</string>
+    <string-array name="tValueCursor" translatable="false">
+        <item>無</item>
+        <item>X1</item>
+        <item>X2</item>
+    </string-array>
+
+</resources>

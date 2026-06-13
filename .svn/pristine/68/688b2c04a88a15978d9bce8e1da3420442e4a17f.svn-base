@@ -1,0 +1,69 @@
+package com.micsig.tbook.scope.fpga;
+
+import com.micsig.tbook.scope.Bus.IBus;
+import com.micsig.tbook.scope.Bus.UartBus;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+
+/**
+ * Created by zhuzh on 2018-5-30.
+ */
+
+public class FPGAReg_BUS_UART extends FPGAReg_BUS {
+    public FPGAReg_BUS_UART(int addr) {
+        super(addr, 20);
+    }
+    public void setSrc(int val){
+        setVal(0,2,val);
+    }
+    public void setRate(int val){
+        setVal(4,28,val);
+    }
+    public void setBS(int val){
+        setVal(1,0,1,val);
+    }
+    public void setBL(int val){
+        setVal(1,1,3,val);
+    }
+    public void setBV(int val){
+        setVal(1,4,2,val);
+    }
+    public void setTriggerMode(int val){
+        setVal(2,0,4,val);
+    }
+    public void setTriggerData(int val){
+        setVal(2,8,8,val);
+    }
+    public void setTriggerRelation(int val){
+        setVal(2,16,2,val);
+    }
+
+    @Override
+    public void configBus(int fpgaIdx,IBus iBus) {
+        int iBitWidth = 0;
+        UartBus bus = (UartBus)iBus;
+        int src = bus.getRxChIdx();
+        FPGAReg_BUS_LEVEL busLevel = (FPGAReg_BUS_LEVEL) FPGACommand.getReg(fpgaIdx,FPGA_BUS_LEVEL);
+        setSrc(chIdx2BusSrc(src));
+        busLevel.setBusSrcExt(getBusIdx(),((src>>2)&0x1));
+
+        setRate((int)(1e9/bus.getBaudRate()/8 - 1));
+        setBS(0);
+        switch (bus.getBits()){
+            default:
+            case 8: iBitWidth = 0;break;
+            case 5: iBitWidth = 1;break;
+            case 6: iBitWidth = 2;break;
+            case 7: iBitWidth = 3;break;
+            case 9: iBitWidth = 7;break;
+        }
+        setBL(iBitWidth);
+        setBV(bus.getVerify());
+        setTriggerMode(bus.getTriggerType());
+        setTriggerData(bus.getTriggerData());
+        setTriggerRelation(bus.getTriggerRelation());
+        setLevel(busLevel,src,bus.getIdleLevel());
+        FPGACommand.sendCmd(busLevel);
+    }
+
+
+}

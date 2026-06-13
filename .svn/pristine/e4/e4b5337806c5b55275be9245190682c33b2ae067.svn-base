@@ -1,0 +1,17 @@
+package com.micsig.tbook.scope.fpga;
+
+
+public class FPGAReg_VER extends FPGAReg {
+    private FPGAReg recvReg;
+
+    public FPGAReg_VER() {
+        super(FPGA_STATUS_VER, 4, true);
+        recvReg = new FPGAReg(FPGA_STATUS_VER,4);
+    }
+    public int getVersion(){
+        return recvReg.getVal(0);
+    }
+    public FPGAReg getRecvReg(){
+        return recvReg;
+    }
+}

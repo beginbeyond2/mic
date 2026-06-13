@@ -1,0 +1,177 @@
+<resources>
+
+
+    <style name="AppTheme2" parent="Theme.AppCompat.NoActionBar">
+        <!-- Customize your theme here. -->
+        <!--<item name="colorPrimary">@color/colorPrimary</item>-->
+        <!--<item name="colorPrimaryDark">@color/colorPrimaryDark</item>-->
+        <!--<item name="colorAccent">@color/colorAccent</item>-->
+        <item name="android:windowDisablePreview">true</item>
+        <item name="android:windowAnimationStyle">@style/Animation</item>
+        <item name="android:dropDownListViewStyle">@style/XSpinnerDriverLine</item>
+    </style>
+
+    <style name="Animation">
+        <item name="android:activityOpenEnterAnimation">@null</item>
+        <item name="android:activityOpenExitAnimation">@null</item>
+        <item name="android:activityCloseEnterAnimation">@null</item>
+        <item name="android:activityCloseExitAnimation">@null</item>
+        <!-- 其他动画资源也可以设置为@null -->
+    </style>
+
+    <style name="FirstActivity" parent="Theme.AppCompat.NoActionBar">
+        <!--<item name="android:windowBackground">@android:color/transparent</item>-->
+        <item name="android:windowDisablePreview">true</item>
+
+        <item name="android:windowAnimationStyle">@style/Animation</item>
+    </style>
+
+    <!--<style name="popwindow_style">-->
+    <!--<item name="android:windowEnterAnimation">@anim/popshow</item>-->
+    <!--&lt;!&ndash; 指定显示的动画xml &ndash;&gt;-->
+
+    <!--<item name="android:windowExitAnimation">@anim/pophidden</item>-->
+    <!--&lt;!&ndash; 指定消失的动画xml &ndash;&gt;-->
+    <!--</style>-->
+
+    <style name="radiobutton_title">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:paddingLeft">15dp</item>
+        <item name="android:paddingRight">15dp</item>
+        <item name="android:paddingTop">10dp</item>
+        <item name="android:paddingBottom">10dp</item>
+        <item name="android:button">@null</item>
+        <item name="android:textColor">@drawable/bg_radiobutton_topviewtitle_text</item>
+    </style>
+
+    <style name="textStyle">
+        <item name="android:textColor">@color/textColorTop</item>
+        <item name="android:textSize">@dimen/textSizeCur</item>
+    </style>
+
+    <style name="textTimeStyle">
+        <item name="android:textColor">@color/textColorTop</item>
+        <item name="android:textSize">@dimen/textSizeCur</item>
+    </style>
+
+    <style name="buttonStyle">
+        <item name="android:textSize">@dimen/textSizeCur</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textColor">@drawable/bg_button_textcolor</item>
+        <item name="android:background">@drawable/selector_rightslip_button</item>
+    </style>
+
+    <style name="buttonStyleTop" parent="buttonStyle">
+        <item name="background">@drawable/selector_rightslip_button</item>
+    </style>
+
+    <style name="editTextStyle" parent="textStyle">
+        <item name="android:background">@drawable/shape_frame_bg_black</item>
+        <item name="android:textColor">@color/textcolor_edittext</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:padding">5px</item>
+    </style>
+
+    <style name="editTextStyleNoStork" parent="textStyle">
+        <item name="android:background">@drawable/shape_no_stroke_black</item>
+        <item name="android:textColor">@color/textcolor_edittext</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:padding">5px</item>
+    </style>
+    <style name="editTextUserDefaultStyle" parent="textStyle">
+        <item name="android:textColor">@color/textcolor_edittext</item>
+        <item name="android:maxLines">1</item>
+    </style>
+
+    <style name="editTextStyleRight" parent="editTextStyle">
+        <item name="android:gravity">center_vertical|right</item>
+    </style>
+
+    <style name="editTextStyleRightHalf" parent="editTextStyle">
+        <item name="android:gravity">center_vertical|right</item>
+        <item name="android:background">@drawable/bg_edittext_half</item>
+    </style>
+
+    <style name="textStylePrompt">
+        <item name="android:textColor">@color/textColorNewRightViewEnable</item>
+        <item name="android:textSize">@dimen/textSizeCur</item>
+    </style>
+
+    <style name="textStylePrompt_16px" parent="textStylePrompt">
+        <item name="android:textSize">@dimen/textSize16</item>
+    </style>
+
+    <style name="numberKeyBoardKey">
+        <item name="android:layout_width">80px</item>
+        <item name="android:layout_height">54px</item>
+        <item name="android:layout_marginStart">7px</item>
+        <item name="android:layout_marginEnd">7px</item>
+        <item name="android:layout_marginTop">7px</item>
+        <item name="android:layout_marginBottom">7px</item>
+        <item name="android:background">@drawable/selector_rightslip_button</item>
+        <item name="android:button">@null</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textColor">@drawable/bg_keyboard_item_textcolor</item>
+        <item name="android:textSize">@dimen/textSize20</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="floatKeyBoardKey">
+        <item name="android:layout_width">86px</item>
+        <item name="android:layout_height">60px</item>
+        <item name="android:layout_marginStart">8px</item>
+        <item name="android:layout_marginEnd">8px</item>
+        <item name="android:layout_marginTop">8px</item>
+        <item name="android:layout_marginBottom">8px</item>
+        <item name="android:background">@drawable/selector_rightslip_button</item>
+        <item name="android:button">@null</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textColor">@drawable/bg_keyboard_item_textcolor</item>
+        <item name="android:textSize">@dimen/textSizeCur</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="rightHeadText">
+        <item name="android:gravity">center</item>
+        <item name="android:layout_marginStart">10px</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textColor">@drawable/bg_head_textcolor</item>
+        <item name="android:textSize">@dimen/textSizeCur</item>
+    </style>
+
+    <declare-styleable name="MRadioGroup">
+        <attr name="promptText" format="string"/>
+        <attr name="promptInterval" format="dimension"/>
+        <attr name="arrays" format="reference"/>
+        <attr name="showStyle" format="enum">
+            <enum name="Common" value="0"/>   <!-- 通用 !-->
+            <enum name="Semicircle" value="1"/> <!-- 半圆固定2个radio !-->
+            <enum name="RoundCorner" value="2"/><!-- 圆角 !-->
+        </attr>
+        <attr name="itemWidth" />
+        <attr name="itemHeight"/>
+        <attr name="itemLeftMargin" format="dimension"/>
+        <attr name="itemTopMargin" format="dimension"/>
+        <attr name="itemRightMargin" format="dimension"/>
+        <attr name="itemBottomMargin" format="dimension"/>
+        <attr name="firstLineShowCount" format="integer"/>
+        <attr name="perLineShowTotalCount" format="integer"/>
+        <attr name="android:orientation"/>
+    </declare-styleable>
+
+    <style name="otherChannelButtonStyle">
+        <item name="android:textSize">@dimen/textSize24</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textColor">@drawable/bg_button_textcolor</item>
+        <item name="android:background">@drawable/selector_rightslip_button</item>
+    </style>
+
+    <style name="XSpinnerDriverLine" parent="android:Widget.ListView.DropDown">
+        <item name="android:divider">@drawable/divider_measure_common</item>
+        <item name="android:dividerHeight">1px</item>
+    </style>
+
+</resources>

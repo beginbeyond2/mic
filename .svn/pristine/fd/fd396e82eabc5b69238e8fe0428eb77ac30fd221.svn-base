@@ -1,0 +1,41 @@
+package com.micsig.tbook.scope.Sample;
+
+import com.micsig.tbook.scope.Action.FPGAMessage;
+import com.micsig.tbook.scope.Action.UiMessage;
+import com.micsig.tbook.scope.Action.XAction;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.horizontal.HorizontalAxis;
+
+/**
+ * Created by zhuzh on 2018-4-9.
+ */
+
+public class MemDepthAction extends XAction {
+    public MemDepth memDepth;
+    public MemDepthAction(MemDepth memDepth){
+        this.memDepth = memDepth;
+
+    }
+    public void memDepthChange(){
+        if(Scope.getInstance().isRun()) {
+            if(Scope.getInstance().isZoom()){//zoom模式存储深度被改变，缩略视图的时基档可能需要调整
+                Scope scope = Scope.getInstance();
+                HorizontalAxis horizontalAxis = HorizontalAxis.getInstance();
+                int scaleNow = scope.enterZoom_SL_scale();
+                int scaleLast = horizontalAxis.getTimeScaleIdOfView(HorizontalAxis.WPI_STANDARD);
+                if (scaleLast > scaleNow) {
+                    horizontalAxis.setTimeScaleIdOfView(HorizontalAxis.WPI_SMALL, scaleNow);
+                    sendUiMsg(UiMessage.UI_MESSAGE_TIME_SCALE_CHANGE);
+                }
+            }
+
+            sendFpgaMsg(FPGAMessage.FPGA_CMD_SAMP_ZUN_DEPTH|FPGAMessage.FPGA_CMD_SAMP_PLACE
+                    |FPGAMessage.FPGA_CMD_COUY|FPGAMessage.FPGA_CMD_DIS | FPGAMessage.FPGA_CMD_DIS_MODE
+                    |FPGAMessage.FPGA_CMD_SAMP_MODE|FPGAMessage.FPGA_CMD_SEGMENT);
+            sendEvent(EventFactory.EVENT_MEM_DEPTH,true);
+            sendUiMsg(UiMessage.UI_MESSAGE_DEPTH_SAMPFRE);
+            sendUiMsg(UiMessage.UI_MESSAGE_SIMPLE_WIN_DIS);
+        }
+    }
+}

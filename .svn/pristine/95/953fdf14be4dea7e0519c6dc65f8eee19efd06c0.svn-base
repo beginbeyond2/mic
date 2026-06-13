@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:mButton="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/mBottomBar_Quick"
+    android:layout_width="@dimen/mainCenterWidth"
+    android:layout_height="@dimen/mainBottomQuickHeight"
+    android:layout_gravity="center_vertical"
+    android:layout_x="@dimen/mainBottomQuickX"
+    android:layout_y="@dimen/mainBottomQuickHeight"
+    android:background="@color/color_Backcolor_MainMenu3"
+    android:clickable="true"
+    android:paddingTop="4px"
+    android:orientation="vertical">
+
+
+<!--        mButton:textCenterX="true"-->
+<!--        mButton:text_y="35px"-->
+<!--        mButton:touchDownBitmap="@drawable/screen_a"-->
+<!--        mButton:touchUpBitmap="@drawable/screen_n" />-->
+    <Button
+        android:id="@+id/mButton_screen"
+        android:layout_width="100px"
+        android:layout_height="68px"
+        android:textAllCaps="false"
+        android:text="@string/menu_bottom_qiuck_screen"
+        android:textSize="16px"
+        android:textColor="@color/textColor"
+        android:gravity="center_horizontal|bottom"
+        android:paddingBottom="5px"
+        android:button="@null"
+        android:layout_marginTop="4px"
+        android:layout_marginStart="48px"
+        mButton:layout_constraintLeft_toLeftOf="parent"
+        mButton:layout_constraintTop_toTopOf="parent"
+        android:background="@drawable/ic_bottom_screen_selector"
+        android:visibility="gone"
+        />
+
+
+    <CheckBox
+        android:id="@+id/mButton_zoom"
+        android:layout_width="100px"
+        android:layout_height="68px"
+        android:textAllCaps="false"
+        android:text="@string/menu_bottom_qiuck_zoom"
+        android:textSize="16px"
+        android:textColor="@color/textcolor_edittext"
+        android:gravity="center_horizontal|bottom"
+        android:paddingBottom="5px"
+        android:button="@null"
+        mButton:layout_constraintLeft_toRightOf="@+id/mButton_screen"
+        mButton:layout_constraintTop_toTopOf="parent"
+        android:layout_marginTop="4px"
+        android:layout_marginStart="48px"
+        android:background="@drawable/ic_bottom_zoom_selector"
+        android:visibility="gone"
+        />
+<!--        mButton:checkedBitmap="@drawable/zoom_a"-->
+<!--        mButton:checkedTextColor="@color/color_Text_bottomquick"-->
+<!--        mButton:textCenterX="true"-->
+<!--        mButton:text_y="35px"-->
+<!--        mButton:unCheckedBitmap="@drawable/zoom_n"-->
+<!--        mButton:unCheckedTextColor="@color/color_Text_bottomquick" />-->
+
+    <CheckBox
+        android:id="@+id/mButton_fullMeasure"
+        android:layout_width="100px"
+        android:layout_height="68px"
+        android:textAllCaps="false"
+        android:text="@string/menu_bottom_qiuck_all_measure"
+        android:textSize="16px"
+        android:textColor="@drawable/selector_text_color"
+        android:gravity="center_horizontal|bottom"
+        android:paddingBottom="3px"
+        android:button="@null"
+        mButton:layout_constraintLeft_toRightOf="@+id/mButton_zoom"
+        mButton:layout_constraintTop_toTopOf="parent"
+        android:layout_marginTop="4px"
+        android:layout_marginStart="48px"
+        android:background="@drawable/ic_bottom_all_measure_selector" />
+<!--        mButton:checkedBitmap="@drawable/fullmeasure_a"-->
+<!--        mButton:checkedTextColor="@color/color_Text_bottomquick"-->
+<!--        mButton:textCenterX="true"-->
+<!--        mButton:text_y="35px"-->
+<!--        mButton:unCheckedBitmap="@drawable/fullmeasure_n"-->
+<!--        mButton:unCheckedTextColor="@color/color_Text_bottomquick" />-->
+
+    <CheckBox
+        android:id="@+id/mButton_serialbus"
+        android:layout_width="100px"
+        android:layout_height="68px"
+        android:textAllCaps="false"
+        android:text="@string/menu_bottom_qiuck_serials_txt"
+        android:textSize="16px"
+        android:textColor="@drawable/selector_text_color"
+        android:gravity="center_horizontal|bottom"
+        android:paddingBottom="3px"
+        android:button="@null"
+        android:layout_marginTop="4px"
+        android:layout_marginStart="48px"
+        mButton:layout_constraintLeft_toRightOf="@+id/mButton_fullMeasure"
+        mButton:layout_constraintTop_toTopOf="parent"
+        android:background="@drawable/ic_bottom_serials_txt_selector" />
+<!--        mButton:checkedBitmap="@drawable/serialbustxt_a"-->
+<!--        mButton:checkedTextColor="@color/color_Text_bottomquick"-->
+<!--        mButton:textCenterX="true"-->
+<!--        mButton:text_y="35px"-->
+<!--        mButton:unCheckedBitmap="@drawable/serialbustxt_n"-->
+<!--        mButton:unCheckedTextColor="@color/color_Text_bottomquick" />-->
+
+    <CheckBox
+        android:id="@+id/mButton_centerMenu"
+        android:layout_width="100px"
+        android:layout_height="68px"
+        android:layout_x="372px"
+        android:layout_y="4px"
+        android:textAllCaps="false"
+        android:text="@string/menu_bottom_qiuck_center_menu"
+        android:textSize="16px"
+        android:textColor="@color/textColor"
+        android:visibility="gone"
+        android:gravity="center_horizontal|bottom"
+        android:button="@null"
+        mButton:layout_constraintLeft_toLeftOf="parent"
+        mButton:layout_constraintTop_toTopOf="parent"
+        android:background="@drawable/ic_bottom_quick_home_selector" />
+
+
+    <Button
+        android:id="@+id/mButton_segment"
+        android:layout_width="100px"
+        android:layout_height="68px"
+        android:textAllCaps="false"
+        android:text="@string/menu_bottom_qiuck_segment"
+        android:textSize="16px"
+        android:textColor="@drawable/selector_text_color"
+        android:gravity="center_horizontal|bottom"
+        android:paddingBottom="3px"
+        android:button="@null"
+        android:layout_marginTop="4px"
+        android:layout_marginStart="48px"
+        mButton:layout_constraintLeft_toRightOf="@+id/mButton_serialbus"
+        mButton:layout_constraintTop_toTopOf="parent"
+        android:background="@drawable/ic_bottom_segment_selector"
+         />
+
+    <Button
+        android:id="@+id/mButton_zero"
+        android:layout_width="100px"
+        android:layout_height="68px"
+        android:textAllCaps="false"
+        android:text="@string/mainCenterMenuZero"
+        android:textSize="16px"
+        android:textColor="@drawable/selector_text_color"
+        android:gravity="center_horizontal|bottom"
+        android:paddingBottom="3px"
+        android:button="@null"
+        android:layout_marginTop="4px"
+        android:layout_marginStart="48px"
+        mButton:layout_constraintLeft_toRightOf="@+id/mButton_segment"
+        mButton:layout_constraintTop_toTopOf="parent"
+        android:background="@drawable/ic_bottom_adjust_zero_selector"
+        />
+
+    <Button
+        android:id="@+id/mButton_home"
+        android:layout_width="100px"
+        android:layout_height="68px"
+        android:textAllCaps="false"
+        android:text="@string/menu_bottom_qiuck_home"
+        android:textSize="16px"
+        android:textColor="@drawable/selector_text_color"
+        android:gravity="center_horizontal|bottom"
+        android:paddingBottom="3px"
+        android:button="@null"
+        android:layout_marginTop="4px"
+        android:layout_marginStart="48px"
+        mButton:layout_constraintLeft_toRightOf="@+id/mButton_zero"
+        mButton:layout_constraintTop_toTopOf="parent"
+        android:background="@drawable/ic_bottom_quick_home_selector"
+        />
+
+
+
+    <CheckBox
+        android:id="@+id/mButton_video"
+        android:layout_width="69px"
+        android:layout_height="55px"
+        android:layout_x="0px"
+        android:layout_y="4px" />
+<!--        mButton:checkedBitmap="@drawable/video_a"-->
+<!--        mButton:unCheckedBitmap="@drawable/video_n" />-->
+</androidx.constraintlayout.widget.ConstraintLayout>

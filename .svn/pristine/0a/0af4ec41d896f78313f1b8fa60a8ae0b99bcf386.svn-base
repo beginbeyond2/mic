@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/displayPersist"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="33px"
+        app:array="@array/displayPersist"
+        app:head="@string/displayPersist"
+        app:headWidth="100px" />
+
+    <Button
+        android:id="@+id/clear_persist"
+        style="@style/buttonStyleTop"
+        android:layout_width="wrap_content"
+        android:layout_height="60px"
+        android:layout_alignBottom="@id/displayPersist"
+        android:layout_marginStart="60px"
+        android:layout_toEndOf="@id/displayPersist"
+        android:gravity="center"
+        android:text="@string/view_afterglow_clearup"
+        android:textAllCaps="false" />
+
+    <com.micsig.tbook.ui.top.view.selectHorList.TopViewSelectHorListToHead
+        android:id="@+id/selectListToHead"
+        android:layout_width="match_parent"
+        android:layout_height="60px"
+        android:layout_alignBottom="@+id/displayPersist"
+        android:layout_marginStart="33px"
+        android:layout_toEndOf="@id/clear_persist" />
+
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/fft_persist"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/displayPersist"
+        android:layout_marginStart="33px"
+        android:layout_marginTop="10px"
+        app:array="@array/displayPersist"
+        app:head="FFT"
+        app:headWidth="100px" />
+
+    <Button
+        android:id="@+id/fft_clear_persist"
+        style="@style/buttonStyleTop"
+        android:layout_width="wrap_content"
+        android:layout_height="60px"
+        android:layout_alignBottom="@id/fft_persist"
+        android:layout_marginStart="60px"
+        android:layout_toEndOf="@id/fft_persist"
+        android:gravity="center"
+        android:text="@string/view_afterglow_clearup"
+        android:textAllCaps="false" />
+
+    <com.micsig.tbook.ui.top.view.selectHorList.TopViewSelectHorListToHead
+        android:id="@+id/fft_selectListToHead"
+        android:layout_width="match_parent"
+        android:layout_height="60px"
+        android:layout_alignBottom="@+id/fft_persist"
+        android:layout_marginStart="33px"
+        android:layout_toEndOf="@id/fft_clear_persist" />
+
+</RelativeLayout>

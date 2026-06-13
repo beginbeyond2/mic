@@ -1,0 +1,8 @@
+package com.micsig.tbook.tbookscope;
+
+/**
+ * Created by yangj on 2017/7/18.
+ */
+
+public class LoadCache {
+}

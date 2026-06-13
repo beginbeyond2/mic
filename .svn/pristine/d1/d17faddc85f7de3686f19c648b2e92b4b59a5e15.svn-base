@@ -1,0 +1,481 @@
+package com.micsig.tbook.scope.measure;
+
+import android.os.SystemClock;
+import android.util.Log;
+
+import com.micsig.base.FilterThread;
+import com.micsig.tbook.hardware.HardwareProduct;
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.channel.IChannel;
+import com.micsig.tbook.scope.math.MathService;
+import com.micsig.tbook.scope.math.MathWave;
+
+import java.util.Observable;
+import java.util.Observer;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
+/**
+ * Created by zhuzh on 2018-4-13.
+ */
+
+public class MeasureService extends FilterThread implements Observer{
+    private static final String TAG = "MeasureService";
+    private static volatile MeasureService instance = null;
+    public static MeasureService getInstance() {
+        if (instance == null) {
+            synchronized (MeasureService.class) {
+                if (instance == null ) {
+                    instance = new MeasureService();
+                }
+            }
+        }
+        return instance;
+    }
+    private static final int CH_MEASURE = 1<<0;
+    private static final int REF_MEASURE = 1<<1;
+    private static final int MATH_MEASURE = 1<<2;
+
+    private static final int STATICS_RESET = 1<<8;
+
+
+    private volatile int measureFlag = 0;
+
+
+    private volatile int statics_flag = 0;
+
+    private MeasureService(){
+        super(TAG);
+        this.setRunnable(new Runnable() {
+            @Override
+            public void run() {
+                MeasureCalc();
+            }
+        });
+        setBeforeRun(false);
+        setDelayMillis(100);
+
+        EventFactory.addEventObserver(EventFactory.EVENT_CH_WAVE_UPDATE,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_REF_WAVE_UPDATE,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_MATH_WAVE_UPDATE,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_CHANNEL_CLOSE,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_CHANNEL_VSCALE,this);
+
+        EventFactory.addEventObserver(EventFactory.EVENT_CHANNEL_POS,this);
+
+        EventFactory.addEventObserver(EventFactory.EVENT_DISPLAY_MODE,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_DISPLAY_ZOOM,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_TIME_SCALE,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_TIME_POS,this);
+        EventFactory.addEventObserver(EventFactory.EVENT_SCOPE_STATE,this);
+
+
+        AtomicInteger j = new AtomicInteger(0);
+        ChannelFactory.forEachCh(channel -> {
+            chArray[j.getAndIncrement()] = channel.getChId();
+
+        });
+        ChannelFactory.forEachMath(mathChannel -> {
+            chArray[j.getAndIncrement()] = mathChannel.getChId();
+        });
+    }
+
+
+    private Measure getMeasure(int chIdx){
+        IChannel channel = ChannelFactory.getValidChannel(chIdx);
+        if(channel != null){
+            return channel.getMeasure();
+        }
+        return null;
+    }
+
+    private boolean ChMeasureCalc(){
+
+        boolean []bMeasure = {false};
+        ChannelFactory.forEachCh(channel -> {
+            Measure measure = null;
+            measure = channel.getMeasure();
+            if(measure != null
+                    && measure.isEnable()){
+                bMeasure[0] = measure.MeasureCalc() || bMeasure[0];
+            }
+        });
+        return bMeasure[0];
+    }
+    private boolean RefMeasureCalc(){
+        boolean []bMeasure = {false};
+        ChannelFactory.forEachRef(refChannel -> {
+            Measure measure = refChannel.getMeasure();
+            if(measure != null
+                    && measure.isEnable()){
+                bMeasure[0] = measure.MeasureCalc() || bMeasure[0];
+            }
+        });
+        return bMeasure[0];
+    }
+
+    private boolean MathMeasureCalc() {
+        boolean[] bMeasure = {false};
+        boolean[] bForceRefresh = {false};
+        ChannelFactory.forEachMath(mathChannel -> {
+            Measure measure = mathChannel.getMeasure();
+            if (measure != null
+                    && measure.isEnable()) {
+                bMeasure[0] = measure.MeasureCalc() || bMeasure[0];
+
+                if (mathChannel.getMathType() == MathWave.MATH_FFTWAVE) {
+                    if (measure.isMeasureItemEnable(Measure.MeasureType.MEASURE_CURSOR_X1)
+                            || measure.isMeasureItemEnable(Measure.MeasureType.MEASURE_CURSOR_X2)) {
+                        bForceRefresh[0] = true;
+                    }
+                }
+            }
+        });
+
+        if(bForceRefresh[0]){
+            MathService.forceMathRefresh();
+        }
+        return bMeasure[0];
+    }
+    private void MeasureStatics(){
+
+        Measure measure;
+        for(int i=0;i<chArray.length;i++) {
+            measure = getMeasure(chArray[i]);
+            if(measure != null){
+                if(ChannelFactory.isChOpen(chArray[i])) {
+                    measure.calcStatics();
+                }else{
+                    measure.getMeasureStatics().reset();
+//                    Log.d(TAG,"------reset ch: " + chArray[i]);
+                }
+            }
+
+        }
+    }
+    private void MeasureStaticsReset(int chIdx)
+    {
+        Measure measure = getMeasure(chIdx);
+        if (measure != null) {
+            measure.getMeasureStatics().reset();
+        }
+    }
+
+    private synchronized void setMeasureStaticsReset(int chIdx){
+        statics_flag |= 1 << chIdx;
+    }
+    private synchronized void MeasureStaticsReset(){
+
+        for (int j : chArray) {
+            statics_flag |= 1 << j;
+        }
+    }
+    private void setWaveHeight(IChannel channel){
+        if(channel != null){
+            channel.getMeasure().WaveHeightRate(
+                    Scope.getInstance().isZoom()
+                            ?(float) ScopeBase.getZoomHeight()/ScopeBase.getHeight()
+                            :1.0f
+            );
+        }
+    }
+    private void MeasureWaveHeight(){
+        ChannelFactory.forEachCh(this::setWaveHeight);
+        ChannelFactory.forEachMath(this::setWaveHeight);
+        ChannelFactory.forEachRef(this::setWaveHeight);
+    }
+    int[] chArray = new int[ChannelFactory.getChNums() + ChannelFactory.getMathChNums()];
+    private void MeaseureDelayORPhase(){
+
+        Measure measure,refMeasure;
+        boolean bValid = false;
+
+        for (int k : chArray) {
+            measure = getMeasure(k);
+            if (measure != null) {
+
+                if (measure.isMeasureDelay()) {
+                    bValid = false;
+                    int idx = measure.getDelayRefChIdx();
+                    if (Scope.getInstance().isChannelInSample(idx)
+                            || (ChannelFactory.isMathCh(idx) && ChannelFactory.getMathChannel(idx).isOpen())) {
+                        refMeasure = getMeasure(idx);
+                        if (refMeasure != null) {
+                            if (refMeasure.isMeasureItemEnable(Measure.MeasureType.MEASURE_DELAY)) {
+                                bValid = measure.MeasureDelay(refMeasure);
+                            } else {
+                                refMeasure.MeasureItemEnable(Measure.MeasureType.MEASURE_DELAY, true);
+                            }
+                        }
+                    }
+                    measure.setMeasureItemValid(Measure.MeasureType.MEASURE_DELAY, bValid);
+                }
+
+                if (measure.isMeasurePhase()) {
+                    bValid = false;
+                    int idx = measure.getPhaseRefChIdx();
+                    if (Scope.getInstance().isChannelInSample(idx)
+                            || (ChannelFactory.isMathCh(idx) && ChannelFactory.getMathChannel(idx).isOpen())) {
+                        refMeasure = getMeasure(idx);
+                        if (refMeasure != null) {
+                            if (refMeasure.isMeasureItemEnable(Measure.MeasureType.MEASURE_PHASE)) {
+                                bValid = measure.MeasurePhase(refMeasure);
+                            } else {
+                                refMeasure.MeasureItemEnable(Measure.MeasureType.MEASURE_PHASE, true);
+                            }
+                        }
+                    }
+                    measure.setMeasureItemValid(Measure.MeasureType.MEASURE_PHASE, bValid);
+                }
+
+            }
+        }
+    }
+
+    int bakChNums = 0;
+
+
+    private void MeasureCalc(){
+        boolean bChMeasure = false;
+        boolean bRefMeasure = false;
+        boolean bMathMeasure = false;
+        synchronized (this) {
+            if (statics_flag != 0) {
+                for (int i = 0; i < 32; i++) {
+                    if ((statics_flag & (1<< i)) != 0) {
+                        MeasureStaticsReset(i);
+                    }
+                }
+                statics_flag = 0;
+            }
+        }
+
+
+        if(measureFlag != 0) {
+
+            if ((measureFlag & CH_MEASURE) != 0) {
+                synchronized (this) {
+                    bakChNums = chNums;
+                    measureFlag &= ~(CH_MEASURE);
+                }
+                bChMeasure = ChMeasureCalc();
+            }
+            if ((measureFlag & REF_MEASURE) != 0) {
+                measureFlag &= ~(REF_MEASURE);
+                bRefMeasure = RefMeasureCalc();
+            }
+            if ((measureFlag & MATH_MEASURE) != 0) {
+                measureFlag &= ~(MATH_MEASURE);
+                bMathMeasure = MathMeasureCalc();
+
+            }
+
+            MeaseureDelayORPhase();
+            MeasureStatics();
+
+        }
+//        Logger.d(TAG,"bChMeasure:" + bChMeasure);
+        if(bChMeasure || isChMeasureEnable()){
+            EventFactory.sendEvent(EventFactory.EVENT_CH_MEASURE_UPDATE);
+        }
+        if(bRefMeasure){
+            EventFactory.sendEvent(EventFactory.EVENT_REF_MEASURE_UPDATE);
+        }
+        if(bMathMeasure){
+            EventFactory.sendEvent(EventFactory.EVENT_MATH_MEASURE_UPDATE);
+        }
+        synchronized (this){
+            if(chNums != bakChNums){
+                measureFlag |= CH_MEASURE;
+                run();
+            }else{
+                chNums = bakChNums = 0;
+            }
+        }
+
+
+
+    }
+
+    private boolean isMeasureEnable(int beginIdx,int endIdx){
+        Measure measure;
+        for(int i=beginIdx;i<endIdx;i++) {
+            measure = getMeasure(i);
+            if(measure != null
+                    && measure.isEnable()){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isChMeasureEnable(){
+        return isMeasureEnable(ChannelFactory.CH1,ChannelFactory.getMaxChIdx());
+    }
+    private boolean isRefMeasureEnable(){
+        return isMeasureEnable(ChannelFactory.REF1,ChannelFactory.getMaxRefIdx());
+    }
+    private boolean isMathMeasureEnable(){
+        return isMeasureEnable(ChannelFactory.MATH1,ChannelFactory.getMaxMathIdx());
+    }
+    int chNums = 0;
+
+    public void ChMeasureRefresh(){
+        if(isChMeasureEnable()) {
+            synchronized (this) {
+                measureFlag |= CH_MEASURE;
+                chNums++;
+            }
+            run();
+        }
+    }
+    public void RefMeasureRefresh(){
+        if(isRefMeasureEnable()) {
+            measureFlag |= REF_MEASURE;
+            run();
+        }
+    }
+    public void MathMeasureRefresh(){
+        if(isMathMeasureEnable()) {
+            measureFlag |= MATH_MEASURE;
+            run();
+        }
+    }
+    public void MeasureRefresh(){
+        measureFlag = MATH_MEASURE | REF_MEASURE | CH_MEASURE;
+        run();
+    }
+    Object xo = new Object();
+    public void immedMeasure(int chIdx){
+
+        run(()->{
+            if(ChannelFactory.isDynamicCh(chIdx)){
+                measureFlag |= CH_MEASURE;
+            }
+            if(ChannelFactory.isRefCh(chIdx)){
+                measureFlag |= REF_MEASURE;
+            }
+            if(ChannelFactory.isMathCh(chIdx)){
+                measureFlag |= MATH_MEASURE;
+            }
+            this.MeasureCalc();
+//            xo.notify();
+        });
+
+//        try {
+//            xo.wait(1000);
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+    }
+
+    @Override
+    public void update(Observable observable, Object data) {
+        EventBase eventBase = (EventBase)data;
+        int chIdx = 0;
+        switch (eventBase.getId()){
+            case EventFactory.EVENT_CHANNEL_CLOSE:
+                chIdx = (int) eventBase.getData();
+//                MeasureStaticsReset(chIdx);
+                setMeasureStaticsReset(chIdx);
+            case EventFactory.EVENT_CH_WAVE_UPDATE:
+                ChMeasureRefresh();
+                break;
+            case EventFactory.EVENT_REF_WAVE_UPDATE:
+                RefMeasureRefresh();
+                break;
+            case EventFactory.EVENT_MATH_WAVE_UPDATE:
+                MathMeasureRefresh();
+                break;
+            case EventFactory.EVENT_CHANNEL_OPEN:
+            case EventFactory.EVENT_CHANNEL_VSCALE:
+            case EventFactory.EVENT_CHANNEL_POS:
+                chIdx = (int) eventBase.getData();
+//                MeasureStaticsReset(chIdx);
+                setMeasureStaticsReset(chIdx);
+                break;
+            case EventFactory.EVENT_DISPLAY_ZOOM:
+                MeasureWaveHeight();
+            case EventFactory.EVENT_DISPLAY_MODE:
+            case EventFactory.EVENT_TIME_SCALE:
+            case EventFactory.EVENT_TIME_POS:
+                MeasureStaticsReset();
+                break;
+            case EventFactory.EVENT_SCOPE_STATE:
+                if(Scope.getInstance().isRun()){
+                    MeasureStaticsReset();
+                }
+                break;
+        }
+    }
+
+    public static void forceMeasureRefresh(){
+        getInstance().MeasureRefresh();
+    }
+
+    public static void forceChMeasureRefresh(){
+        getInstance().ChMeasureRefresh();
+    }
+
+    public static void forceRefMeasureRefresh(){
+        getInstance().RefMeasureRefresh();
+    }
+
+    public static void forceMathMeasureRefresh(){
+        getInstance().MathMeasureRefresh();
+    }
+
+    public static void forceImmedMeasure(int chIdx){
+        getInstance().immedMeasure(chIdx);
+    }
+
+    private static void setMeasureRange(IChannel channel,int begin,int end){
+        Measure measure = channel.getMeasure();
+        if(measure != null){
+            measure.MeasureBegin(begin);
+            measure.MeasureEnd(end);
+            measure.setCursorMeasureRange(isCursorRang());
+        }
+    }
+    public static void setMeasureRange(int begin,int end){
+
+        if(end < begin){
+            int tmp = begin;
+            begin = end;
+            end = tmp;
+        }
+        if(!isCursorRang()){
+            begin = 0;
+            end = ScopeBase.getWidth()-1;
+        }
+        int finalBegin = begin;
+        int finalEnd = end;
+        ChannelFactory.forEachRef(refChannel -> {
+            setMeasureRange(refChannel, finalBegin, finalEnd);
+        });
+        ChannelFactory.forEachCh(channel -> {
+            setMeasureRange(channel,finalBegin,finalEnd);
+        });
+        ChannelFactory.forEachMath(mathChannel -> {
+            setMeasureRange(mathChannel,finalBegin,finalEnd);
+        });
+        forceMeasureRefresh();
+    }
+
+    private static boolean bCursorRang = false;
+    public static void setCursorRang(boolean b){
+        synchronized (MeasureService.class) {
+            bCursorRang = b;
+            EventFactory.sendEvent(EventFactory.EVENT_MEASURE_RANGE,true);
+        }
+    }
+    public static boolean isCursorRang(){
+        synchronized (MeasureService.class) {
+            return bCursorRang;
+        }
+    }
+}

@@ -1,0 +1,781 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="channelsNameEight">
+        <item>@string/mainCenterRadioButtonCh1</item>
+        <item>@string/mainCenterRadioButtonCh2</item>
+        <item>@string/mainCenterRadioButtonCh3</item>
+        <item>@string/mainCenterRadioButtonCh4</item>
+        <item>@string/mainCenterRadioButtonCh5</item>
+        <item>@string/mainCenterRadioButtonCh6</item>
+        <item>@string/mainCenterRadioButtonCh7</item>
+        <item>@string/mainCenterRadioButtonCh8</item>
+    </string-array>
+    <string-array name="channelsNameFour">
+        <item>@string/mainCenterRadioButtonCh1</item>
+        <item>@string/mainCenterRadioButtonCh2</item>
+        <item>@string/mainCenterRadioButtonCh3</item>
+        <item>@string/mainCenterRadioButtonCh4</item>
+    </string-array>
+    <string-array name="channelsNameDouble">
+        <item>@string/mainCenterRadioButtonCh1</item>
+        <item>@string/mainCenterRadioButtonCh2</item>
+    </string-array>
+
+    <string-array name="keyboard"><item>7</item>
+        <item>4</item>
+        <item>1</item>
+        <item>.</item>
+        <item>8</item>
+        <item>5</item>
+        <item>2</item>
+        <item>0</item>
+        <item>9</item>
+        <item>6</item>
+        <item>3</item>
+        <item>X</item>
+        <item>b/s</item>
+        <item>A</item>
+        <item>C</item>
+        <item>E</item>
+        <item>kb/s</item>
+        <item>B</item>
+        <item>D</item>
+        <item>F</item>
+        <item>Mb/s</item>
+        <item> </item>
+        <item>入る</item>
+    </string-array>
+
+    <string name="mathDoubleWave">二重波形</string>
+    <string name="mathSource1">ソース1</string>
+    <string name="mathSource2">ソース2</string>
+    <string-array name="mathSymbol">
+        <item>+</item>
+        <item>-</item>
+        <item>×</item>
+        <item>÷</item>
+    </string-array>
+    <string name="mathFft">FFT</string>
+    <string name="mathSource">出典</string>
+    <string name="mathWindow">窓</string>
+    <string-array name="mathWindow">
+        <item>長方形の窓</item>
+        <item>ハミング窓</item>
+        <item>ブラックマン</item>
+        <item>ハニング窓</item>
+    </string-array>
+    <string-array name="mathFftType">
+        <item>行</item>
+        <item>デシベル</item>
+    </string-array>
+    <string name="mathAdvance">高度な数学</string>
+    <string name="mathAdvanceExpr">表現</string>
+    <string name="mathAdvanceVar1">変数1</string>
+    <string name="mathAdvanceVar2">変数2</string>
+    <string name="mathVertical">垂直スケール基準</string>
+    <string-array name="mathVertical">
+        <item>センター</item>
+        <item>ゼロ</item>
+    </string-array>
+
+    <string name="refR1Title">R1</string>
+    <string name="refR2Title">R2</string>
+    <string name="refR3Title">R3</string>
+    <string name="refR4Title">R4</string>
+    <string name="refRecall">電話する</string>
+
+    <string name="serialsType">バスの種類</string>
+
+    <string name="serialsUartRx">RX</string>
+    <string name="serialsUartIdle">アイドルレベル</string>
+    <string-array name="serialsUartIdle">
+        <item>高い</item>
+        <item>低い</item>
+    </string-array>
+    <string name="serialsUartCheck">チェックする</string>
+    <string-array name="serialsUartCheck">
+        <item>いいえ</item>
+        <item>奇数</item>
+        <item>でも</item>
+    </string-array>
+    <string name="serialsUartBits">＃比特</string>
+    <string-array name="serialsUartBits">
+        <item>5bit</item>
+        <item>6bit</item>
+        <item>7bit</item>
+        <item>8bit</item>
+        <item>9bit</item>
+    </string-array>
+    <string name="serialsUartDisplay">表示</string>
+    <string-array name="serialsUartDisplay">
+        <item>16進数</item>
+        <item>バイナリ</item>
+        <item>ASCIIコード</item>
+    </string-array>
+    <string name="serialsUartBaudRate">ボーレート</string>
+
+    <string name="serialsLinSource">出典</string>
+    <string name="serialsLinIdle">アイドルレベル</string>
+    <string-array name="serialsLinIdle">
+        <item>高い</item>
+        <item>低い</item>
+    </string-array>
+    <string name="serialsLinBaudRate">ボーレート</string>
+
+    <string name="serialsCanSource">出典</string>
+    <string name="serialsCanSignal">アイドルレベル</string>
+    <string-array name="serialsCanSignal">
+        <item>CAN_H</item>
+        <item>CAN_L</item>
+        <item>H_L</item>
+        <item>L_H</item>
+        <item>Rx</item>
+        <item>Tx</item>
+    </string-array>
+    <string name="serialsCanBaudRate">ボーレート</string>
+
+    <string name="serialsSpiSource">時計</string>
+    <string name="serialsSpiData">データ</string>
+    <string name="serialsSpiCS">CS</string>
+    <string name="serialsSpiBits">＃比特</string>
+    <string-array name="serialsSpiBits">
+        <item>4bit</item>
+        <item>8bit</item>
+        <item>16bit</item>
+        <item>24bit</item>
+        <item>32bit</item>
+    </string-array>
+
+    <string name="serialsI2CSDA">データ</string>
+    <string name="serialsI2CSCL">時計</string>
+
+    <string name="serialsM429Source">出典</string>
+    <string name="serialsM429Format">フォーマット</string>
+    <string-array name="serialsM429Format">
+        <item>LABEL + DATA</item>
+        <item>L + D + SSM</item>
+        <item>L + SDI + D + SSM</item>
+    </string-array>
+    <string name="serialsM429Display">表示</string>
+    <string-array name="serialsM429Display">
+        <item>バイナリ</item>
+        <item>16進数</item>
+    </string-array>
+    <string name="serialsM429BaudRate">ボーレート</string>
+    <string-array name="serialsM429BaudRate">
+        <item>12.5kb / s</item>
+        <item>100kbps</item>
+    </string-array>
+
+    <string name="serialsM1553bSource">出典</string>
+    <string name="serialsM1553bDisplay">表示</string>
+    <string-array name="serialsM1553bDisplay">
+        <item>バイナリ</item>
+        <item>16進数</item>
+    </string-array>
+
+    <string name="channelInvertHead">反転</string>
+    <string name="channelCouple">カップリング方法</string>
+    <string-array name="channelCouple">
+        <item>DC</item>
+        <item>交換</item>
+        <item>地面</item>
+    </string-array>
+    <string name="channelProbeType">プローブ</string>
+    <string-array name="channelProbeType">
+        <item>電圧</item>
+        <item>現在</item>
+    </string-array>
+    <string name="probe_calibration">Calibration</string>
+    <string name="channelProbeMultiple">1mX</string>
+    <string name="channelBandWidth">帯域幅</string>
+    <string-array name="channelBandWidth">
+        <item>いっぱい</item>
+        <item>200M</item>
+        <item>20M</item>
+        <item>クアルコム</item>
+        <item>ローパス</item>
+    </string-array>
+    <string name="channelSample">サンプリング</string>
+    <string-array name="channelSample">
+        <item>普通</item>
+        <item>平均</item>
+        <item>封筒</item>
+        <item>ピーク</item>
+    </string-array>
+    <string-array name="channelSampleDetail">
+        <item>2</item>
+        <item>4</item>
+        <item>8</item>
+        <item>16</item>
+        <item>32</item>
+        <item>64</item>
+        <item>128</item>
+        <item>256</item>
+        <item>∞</item>
+    </string-array>
+    <string-array name="channelProbeTypeMultiple">
+        <item>1mX</item>
+        <item>2mX</item>
+        <item>5mX</item>
+        <item>10mX</item>
+        <item>20mX</item>
+        <item>50mX</item>
+        <item>100mX</item>
+        <item>200mX</item>
+        <item>500mX</item>
+        <item>1X</item>
+        <item>2X</item>
+        <item>5X</item>
+        <item>10X</item>
+        <item>20X</item>
+        <item>50X</item>
+        <item>100X</item>
+        <item>200X</item>
+        <item>500X</item>
+        <item>1kX</item>
+        <item>2kX</item>
+        <item>5kX</item>
+        <item>10kX</item>
+    </string-array>
+    <string name="dialogBandWidthMHz">MHz</string>
+    <string name="dialogBandWidthKHz">KHz</string>
+    <string-array name="channelProbeEvery">
+        <item>500u</item>
+        <item>1m</item>
+        <item>2m</item>
+        <item>5m</item>
+        <item>10m</item>
+        <item>20m</item>
+        <item>50m</item>
+        <item>100m</item>
+        <item>200m</item>
+        <item>500m</item>
+        <item>1</item>
+        <item>2</item>
+        <item>5</item>
+        <item>10</item>
+    </string-array>
+    <string-array name="channelProbeEveryDouble">
+        <item>0.0005</item>
+        <item>0.001</item>
+        <item>0.002</item>
+        <item>0.005</item>
+        <item>0.01</item>
+        <item>0.02</item>
+        <item>0.05</item>
+        <item>0.1</item>
+        <item>0.2</item>
+        <item>0.5</item>
+        <item>1</item>
+        <item>2</item>
+        <item>5</item>
+        <item>10</item>
+    </string-array>
+
+    <string-array name="popArrayTitle">
+        <item>測定</item>
+        <item>保存する</item>
+        <item>Cursor</item>
+        <item>サンプル</item>
+        <item>表示</item>
+        <item>トリガー</item>
+        <item>自動</item>
+        <item>ユーザー設定</item>
+        <item>周波数計</item>
+    </string-array>
+    <string-array name="popArrayTitleCalibration">
+        <item>測定</item>
+        <item>保存する</item>
+        <item>Cursor</item>
+        <item>サンプル</item>
+        <item>表示</item>
+        <item>トリガー</item>
+        <item>自動</item>
+        <item>ユーザー設定</item>
+        <item>周波数計</item>
+        <item>工場校正</item>
+    </string-array>
+    <string-array name="popArrayChannel">
+        <item>@string/mainCenterRadioButtonCh1</item>
+        <item>@string/mainCenterRadioButtonCh2</item>
+        <item>@string/mainCenterRadioButtonCh3</item>
+        <item>@string/mainCenterRadioButtonCh4</item>
+        <item>@string/mainCenterRadioButtonMath1</item>
+        <item>@string/mainCenterRadioButtonR1</item>
+        <item>@string/mainCenterRadioButtonR2</item>
+        <item>@string/mainCenterRadioButtonR3</item>
+        <item>@string/mainCenterRadioButtonR4</item>
+    </string-array>
+    <array name="popArrayChannelColor">
+        <item>@color/colorCh1</item>
+        <item>@color/colorCh2</item>
+        <item>@color/colorCh3</item>
+        <item>@color/colorCh4</item>
+        <item>@color/colorCh5</item>
+        <item>@color/colorCh6</item>
+        <item>@color/colorCh7</item>
+        <item>@color/colorCh8</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorMath</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorRefActive</item>
+        <item>@color/colorChCommon</item>
+    </array>
+    <string name="saveIn">に保存されました</string>
+    <string-array name="saveIn">
+        <item>ローカル</item>
+        <item>Uディスク</item>
+    </string-array>
+    <string name="saveType">タイプ</string>
+    <string-array name="saveType">
+        <item>WAV</item>
+        <item>CSV</item>
+        <item>BIN</item>
+        <item>Picture</item>
+        <item>Session</item>
+    </string-array>
+    <string-array name="display">
+        <item>従来の</item>
+        <item>波形</item>
+        <item>四角チャート</item>
+        <item>残光</item>
+        <item>FFT Info.</item>
+        <item>Txt Mix</item>
+    </string-array>
+    <string name="displayHorRef">タイムベース参照</string>
+    <string-array name="displayHorRef">
+        <item>センター</item>
+        <item>トリガー位置</item>
+    </string-array>
+    <string name="displayTimebase">タイムベース</string>
+    <string-array name="displayTimebase">
+        <item>YT</item>
+        <item>XY</item>
+    </string-array>
+    <string name="dispalyRoll">スクロール</string>
+    <string name="displayCCT">色温度</string>
+    <string name="displayScale">Scale</string>
+    <string-array name="displayEnable">
+        <item>開く</item>
+        <item>閉じる</item>
+    </string-array>
+    <string name="displayDrawType">描画方法</string>
+    <string-array name="displayDrawType">
+        <item>ポイント</item>
+        <item>行</item>
+    </string-array>
+    <string name="displayMode">タイプ</string>
+    <string-array name="displayMode">
+        <item>いっぱい</item>
+        <item>グリッド</item>
+        <item>十字線</item>
+        <item>フレーム</item>
+    </string-array>
+    <string name="displayPersist">残光</string>
+    <string-array name="displayPersist">
+        <item>いいえ</item>
+        <item>自動</item>
+        <item>共通の</item>
+        <item>∞</item>
+    </string-array>
+    <string-array name="displayPersistAdjust">
+        <item>100ms</item>
+        <item>200ms</item>
+        <item>300ms</item>
+        <item>400ms</item>
+        <item>500ms</item>
+        <item>600ms</item>
+        <item>700ms</item>
+        <item>800ms</item>
+        <item>900ms</item>
+        <item>1秒</item>
+        <item>2秒</item>
+        <item>3秒</item>
+        <item>4秒</item>
+        <item>5秒</item>
+        <item>6秒</item>
+        <item>7秒</item>
+        <item>8秒</item>
+        <item>9秒</item>
+        <item>10秒</item>
+    </string-array>
+    <string-array name="trigger">
+        <item>従来の</item>
+        <item>端</item>
+        <item>パルス幅</item>
+        <item>ロジック</item>
+        <item>Nエッジ</item>
+        <item>ラント</item>
+        <item>斜面</item>
+        <item>タイムアウト</item>
+        <item>ビデオ</item>
+        <item>S1 UART</item>
+        <item>S2 UART</item>
+        <item>S3 UART</item>
+        <item>S4 UART</item>
+    </string-array>
+    <string name="triggerMode">モード</string>
+    <string-array name="triggerMode">
+        <item>自動</item>
+        <item>普通</item>
+    </string-array>
+    <string name="triggerSource">出典</string>
+    <string name="triggerEdge">端</string>
+    <string-array name="triggerEdge">
+        <item>上昇</item>
+        <item>辞退する</item>
+        <item>ダブルエッジ</item>
+    </string-array>
+    <string name="triggerCouple">カップリング</string>
+    <string-array name="triggerCouple">
+        <item>DC</item>
+        <item>交換</item>
+        <item>高周波抑制</item>
+        <item>低周波抑制</item>
+        <item>ノイズ抑制</item>
+    </string-array>
+    <string name="triggerPulsewidthPolar">極性</string>
+    <string-array name="triggerPulsewidthPolar">
+        <item>ポジティブ</item>
+        <item>ネガティブ</item>
+    </string-array>
+    <string name="triggerPulsewidthCondition">状態</string>
+    <string-array name="triggerPulsewidthCondition">
+        <item>&lt;</item>
+        <item>&gt;</item>
+        <item>=</item>
+        <item>&lt;&gt;</item>
+    </string-array>
+
+    <string name="triggerCh1">@string/mainCenterRadioButtonCh1</string>
+    <string name="triggerCh2">@string/mainCenterRadioButtonCh2</string>
+    <string name="triggerCh3">@string/mainCenterRadioButtonCh3</string>
+    <string name="triggerCh4">@string/mainCenterRadioButtonCh4</string>
+    <string name="triggerCh5">@string/mainCenterRadioButtonCh5</string>
+    <string name="triggerCh6">@string/mainCenterRadioButtonCh6</string>
+    <string name="triggerCh7">@string/mainCenterRadioButtonCh7</string>
+    <string name="triggerCh8">@string/mainCenterRadioButtonCh8</string>
+    <string-array name="triggerCh">
+        <item>高い</item>
+        <item>低い</item>
+        <item>いいえ</item>
+    </string-array>
+    <string name="triggerLogic">ロジック</string>
+    <string-array name="triggerLogic">
+        <item>AND</item>
+        <item>OR</item>
+        <item>NAND</item>
+        <item>NOR</item>
+    </string-array>
+    <string name="triggerLogicCondition">状態</string>
+    <string-array name="triggerLogicCondition">
+        <item>&lt;</item>
+        <item>&gt;</item>
+        <item>=</item>
+        <item>&lt;&gt;</item>
+        <item>本当</item>
+        <item>偽物</item>
+    </string-array>
+    <string name="triggerNEdgeSlope">端</string>
+    <string-array name="triggerNEdgeSlope">
+        <item>上昇</item>
+        <item>辞退する</item>
+    </string-array>
+
+    <string name="triggerRuntPolar">極性</string>
+    <string-array name="triggerRuntPolar">
+        <item>ポジティブ</item>
+        <item>ネガティブ</item>
+        <item>任意に</item>
+    </string-array>
+    <string name="triggerRuntCondition">状態</string>
+    <string-array name="triggerRuntCondition">
+        <item>&lt;</item>
+        <item>&gt;</item>
+        <item>&lt;&gt;</item>
+        <item>いいえ</item>
+    </string-array>
+
+    <string name="triggerSlopeEdge">端</string>
+    <string-array name="triggerSlopeEdge">
+        <item>上昇</item>
+        <item>辞退する</item>
+        <item>任意に</item>
+    </string-array>
+    <string name="triggerSlopeCondition">状態</string>
+    <string-array name="triggerSlopeCondition">
+        <item>&lt;</item>
+        <item>&gt;</item>
+        <item>&lt;&gt;</item>
+    </string-array>
+
+    <string name="triggerTimeoutPolar">極性</string>
+    <string-array name="triggerTimeoutPolar">
+        <item>ポジティブ</item>
+        <item>ネガティブ</item>
+        <item>任意に</item>
+    </string-array>
+
+    <string name="triggerVideoPolar">極性</string>
+    <string-array name="triggerVideoPolar">
+        <item>ポジティブ</item>
+        <item>ネガティブ</item>
+    </string-array>
+    <string name="triggerVideoStandard">標準</string>
+    <string-array name="triggerVideoStandard">
+        <item>625 / PAL</item>
+        <item>SECAM</item>
+        <item>525 / NTSC</item>
+        <item>720P</item>
+        <item>1080I</item>
+        <item>1080P</item>
+    </string-array>
+    <string name="triggerVideotrigger">トリガー</string>
+    <string-array name="triggerVideoTriggerMore">
+        <item>奇数フィールド</item>
+        <item>偶数フィールド</item>
+        <item>すべての分野</item>
+        <item>すべての行</item>
+        <item>行</item>
+    </string-array>
+    <string-array name="triggerVideoTriggerLess">
+        <item>すべての分野</item>
+        <item>すべての行</item>
+        <item>行</item>
+    </string-array>
+    <string name="triggerVideoFrequency">頻度</string>
+    <string-array name="triggerVideoFrequencyMore">
+        <item>60Hz</item>
+        <item>50Hz</item>
+        <item>30Hz</item>
+        <item>25Hz</item>
+        <item>24Hz</item>
+    </string-array>
+    <string-array name="triggerVideoFrequencyLess">
+        <item>60Hz</item>
+        <item>50Hz</item>
+    </string-array>
+
+    <string-array name="triggerSerialsUART">
+        <item>スタートビット</item>
+        <item>ストップビット</item>
+        <item>データ</item>
+        <item>[0：データ]</item>
+        <item>[1：データ]</item>
+        <item>[x：データ]</item>
+        <item>パリティエラー</item>
+    </string-array>
+    <string-array name="triggerSerialsLIN">
+        <item>同期立ち上がりエッジ</item>
+        <item>フレームID</item>
+        <item>フレームIDとデータ</item>
+        <item>Parity Error</item>
+        <item>Checksum Error</item>
+    </string-array>
+    <string-array name="triggerSerialsCAN">
+        <item>フレームスタート</item>
+        <item>リモートフレームID</item>
+        <item>データフレームID</item>
+        <item>リモートフレーム/データフレームID</item>
+        <item>データフレームIDとデータ</item>
+        <item>エラーフレーム</item>
+        <item>すべてのエラー</item>
+        <item>エラーを確認</item>
+        <item>積み過ぎフレーム</item>
+    </string-array>
+    <string-array name="triggerSerialsSPI">
+        <item>CS</item>
+        <item>データ</item>
+        <item>X：データ</item>
+    </string-array>
+    <string-array name="triggerSerialsI2C">
+        <item>開始条件</item>
+        <item>停止条件</item>
+        <item>紛失を確認</item>
+        <item>再起動</item>
+        <item>住所欄に確認がありません</item>
+        <item>フレームタイプ1</item>
+        <item>フレームタイプ2</item>
+        <item>EEPROMデータの読み書き</item>
+        <item>10ビットライトフレーム</item>
+    </string-array>
+    <string-array name="triggerSerialsARINC429">
+        <item>ワードスタート</item>
+        <item>単語の終わり</item>
+        <item>LABEL</item>
+        <item>SDI</item>
+        <item>DATA</item>
+        <item>SSM</item>
+        <item>LABEL + SDI</item>
+        <item>ラベル+データ</item>
+        <item>ラベル+ SSM</item>
+        <item>ワードエラー</item>
+        <item>ワードギャップエラー</item>
+        <item>パリティエラー</item>
+        <item>すべてのエラー</item>
+        <item>すべて0桁</item>
+        <item>すべて1</item>
+    </string-array>
+    <string-array name="triggerSerials1553B">
+        <item>命令/ステータスワード同期ヘッダ</item>
+        <item>データワード同期ヘッダ</item>
+        <item>命令/ステータスワード</item>
+        <item>リモート端末アドレス</item>
+        <item>マンチェスターコードエラー</item>
+        <item>データワード</item>
+        <item>奇数パリティエラー</item>
+        <item>すべてのエラー</item>
+    </string-array>
+    <string name="triggerSerialsUARTCondition">状態</string>
+    <string-array name="triggerSerialsUARTCondition">
+        <item>&lt;</item>
+        <item>&gt;</item>
+        <item>=</item>
+        <item>≠</item>
+    </string-array>
+
+    <string-array name="auto">
+        <item>自動設定</item>
+        <item>オートレンジ</item>
+    </string-array>
+    <string name="autoSettingOpenChannel">自動的にチャンネルを開く</string>
+    <string-array name="autoSettingOpenChannel">
+        <item>開く</item>
+        <item>閉じる</item>
+    </string-array>
+    <string name="autoSettingTriggerSource">自動トリガソース</string>
+    <string-array name="autoSettingTriggerSource">
+        <item>電流信号</item>
+        <item>最大信号</item>
+    </string-array>
+    <string-array name="autoSettingLevelSelect">
+        <item>V</item>
+        <item>mV</item>
+    </string-array>
+
+    <string name="autoRangeRange">オートレンジ</string>
+    <string name="autoRangeVertical">垂直ギア</string>
+    <string name="autoRangeHorizontal">水平タイムベース</string>
+    <string name="autoRangeLevel">レベル</string>
+    <string-array name="autoRangeSelect">
+        <item>開く</item>
+        <item>閉じる</item>
+    </string-array>
+
+    <string name="frequencymeter">周波数計</string>
+    <string-array name="frequencymeter">
+        <item>閉じる</item>
+    </string-array>
+
+    <string-array name="setting">
+        <item>工場設定</item>
+        <item>自動キャリブレーション</item>
+        <item>ワイヤレスキーボード</item>
+        <item>Aux In</item>
+        <item>Ref Base</item>
+    </string-array>
+
+    <string name="timestamp">タイムスタンプ</string>
+    <string-array name="timestamp">
+        <item>開く</item>
+        <item>閉じる</item>
+    </string-array>
+
+    <string name="screenInvert">反転</string>
+    <string-array name="screenInvert">
+        <item>開く</item>
+        <item>閉じる</item>
+    </string-array>
+
+    <string name="usersetDepth">レコード長</string>
+    <string-array name="usersetDepth">
+        <item>自動</item>
+        <item>28/14/7M</item>
+        <item>2.8/1.4/0.7M</item>
+        <item>280/140/70K</item>
+        <item>28/14/7K</item>
+    </string-array>
+
+    <string-array name="measures">
+        <item>サイクル</item>
+        <item>頻度</item>
+        <item>立ち上がり時間</item>
+        <item>立ち下がり時間</item>
+        <item>遅れる</item>
+        <item>正のデューティサイクル</item>
+        <item>負のデューティサイクル</item>
+        <item>正のパルス幅</item>
+        <item>負のパルス幅</item>
+        <item>バーストパルス幅</item>
+        <item>正のオーバーシュート</item>
+        <item>負のオーバーシュート</item>
+        <item>フェーズ</item>
+        <item>ピークピーク</item>
+        <item>振幅</item>
+        <item>高い</item>
+        <item>低い</item>
+        <item>最大</item>
+        <item>最小値</item>
+        <item>二乗平均平方根</item>
+        <item>C二乗平均平方根</item>
+        <item>平均</item>
+        <item>C平均</item>
+        <item>AC RMS</item>
+        <item>+Rate</item>
+        <item>-Rate</item>
+        <item>TValue</item>
+    </string-array>
+
+    <string-array name="measureDelayPosition">
+        <item>最初の立ち上がり</item>
+        <item>最初の立ち下がり</item>
+        <item>最後の立ち上がり</item>
+        <item>最後の立ち下がり</item>
+    </string-array>
+    <string-array name="measureDelayToChannel">
+        <item>数学1</item>
+        <item>数学2</item>
+        <item>数学3</item>
+        <item>数学4</item>
+        <item>数学5</item>
+        <item>数学6</item>
+        <item>数学7</item>
+        <item>数学8</item>
+    </string-array>
+    <string-array name="measurePhaseToChannel">
+        <item>数学1</item>
+        <item>数学2</item>
+        <item>数学3</item>
+        <item>数学4</item>
+        <item>数学5</item>
+        <item>数学6</item>
+        <item>数学7</item>
+        <item>数学8</item>
+    </string-array>
+
+    <string-array name="serialsWordTitle">
+        <item>S1：Uart</item>
+        <item>S2</item>
+        <item>S1とS2</item>
+    </string-array>
+
+    <string-array name="math_channel_type">
+        <item>二重波形</item>
+        <item>FFT</item>
+        <item>AX+B</item>
+        <item>高度な数学</item>
+    </string-array>
+</resources>

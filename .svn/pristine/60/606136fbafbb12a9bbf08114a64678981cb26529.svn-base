@@ -1,0 +1,300 @@
+package com.micsig.tbook.scope.fpga;
+
+import com.micsig.base.Logger;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.IntBuffer;
+import java.nio.ShortBuffer;
+
+/**
+ * Created by zhuzh on 2018/3/13.
+ */
+
+public class FPGAReg {
+
+    private static final String TAG = "FPGAReg";
+    public static final int FPGA_SAMPLE_MODE = 0x00;    //采样模式
+    public static final int FPGA_SEGMENT_FRAME = 0x01;            //分段存储帧空间
+    public static final int FPGA_PJBL_TIMES = 0x02;            //平均或包络次数
+    public static final int FPGA_ZUN_DEPTH = 0x03;            //准存储深度
+    public static final int FPGA_PRE_SAMP = 0x04;            //预采样深度
+    public static final int FPGA_NUM_CY12 = 0x07;       //抽样数
+    public static final int FPGA_NUM_CY34 = 0x08;              //抽样数
+    public static final int FPGA_CY_BUCONG = 0x09;            //抽样补充
+    public static final int FPGA_SCROLL_ROW = 0x0A;            //滚屏下，每次刷新多少列
+    public static final int FPGA_SERIAL_DEC_DEPTH = 0x0B;     //码字采样深度 serial
+    public static final int FPGA_CH_Y_PLACE = 0x0C;            //通道Y轴波形偏移量
+    public static final int FPGA_SLOW_SCALE_SET = 0x10; //YT模式慢时基参数设置
+    public static final int FPGA_AD_ZERO = 0x15;        //AD零点
+    public static final int FPGA_CH_Y_PLACE_BC = 0x16;  //通道Y轴波形偏移量补充
+    public static final int FPGA_CH_Y_PLACE_BC1 = FPGA_CH_Y_PLACE_BC;
+    public static final int FPGA_CH_Y_PLACE_BC2 = 0x17;
+    public static final int FPGA_GAIN_BC_AD = 0x18;     //AD增益补偿
+
+    //触发寄存器地址
+    public static final int FPGA_TRIG_MODE = 0x20;      //触发模式
+    public static final int FPGA_TRIG_VAL_L = 0x22;     //脉冲触发时间控制值1(小)或视频触发固定行的行号（1~625）
+    public static final int FPGA_TRIG_VAL_H = 0x23;            //脉冲触发时间控制值2(大)判断奇偶场的行场同步信号间的时间差
+    public static final int FPGA_TRIG_AUTO_TRIG_TIME = 0x24;//自动触发时间控制,1ms为单位
+    public static final int FPGA_TRIG_RESTRAIN_TIME = 0x25; //抑制时间
+    public static final int FPGA_TRIG_COUPLE = 0x26;    //触发耦合寄存器
+    public static final int FPGA_TRIG_LEVEL = 0x27;   //触发电平寄存器
+    public static final int FPGA_TRIG_LEVEL1 = 0x27;   //主触发电平寄存器：1
+    public static final int FPGA_TRIG_LEVEL2 = 0x28;   //主触发电平寄存器：2
+    public static final int FPGA_TRIG_LEVEL3 = 0x29;   //主触发电平寄存器：3
+    public static final int FPGA_TRIG_LEVEL4 = 0x2A;   //主触发电平寄存器：4
+    public static final int FPGA_TRIG_SNDLVL = 0x2B;   //次触发电平
+
+    //串行解码寄存器地址
+    public static final int FPGA_BUS_TYPE = 0x30;
+    public static final int FPGA_BUS_LEVEL = 0x31;
+    public static final int FPGA_BUS1_ADDR = 0x32; //32-36
+    public static final int FPGA_BUS2_ADDR = 0x37; //37-3B
+    public static final int FPGA_BUS_PRIMARY = 0x3C;
+    public static final int FPGA_BUS_SECONDARY = 0x3D;
+    public static final int FPGA_BUS_PRIMARY_EXT = 0x3E;
+    public static final int FPGA_BUS_SECONDARY_EXT = 0x3F;
+    public static final int FPGA_BUS1_CAN_EXT = 0xC0;//补充CAN FD 协议
+    public static final int FPGA_BUS2_CAN_EXT = 0xC8;//补充CAN FD 协议
+
+    //显示寄存器地址
+    public static final int FPGA_DIS_MODE = 0x40;       //显示模式
+    public static final int FPGA_DISP_CHA1 = 0x41;             //主视图插值参数1
+    public static final int FPGA_DISP_CHA2 = 0x42;             //主视图插值参数2
+    public static final int FPGA_DISP_PLACE_MAIN = 0x43;       //主视图取数的相对位置
+    public static final int FPGA_SEGMENT_NUMS = 0x4B;    //放大镜纵向乘法因子
+    public static final int FPGA_SEGMENT_START = 0x4C;      //放大镜纵向显示范围
+    public static final int FPGA_DISP_RESOLUTION = 0x4D;           //显示分辨率
+    public static final int FPGA_DISP_PLACE_SL = 0x4E;        //缩略视图点阵合并
+    public static final int FPGA_DISP_SERI = 0x51;      //串行取数相关
+
+    public static final int FPGA_DISP_Y_SCALE = 0x58;   //tbook:静态点阵纵向缩放使能
+    public static final int FPGA_DISP_WAVE = 0x5B;      //波形抽样波形起始位置
+    public static final int FPGA_DISP_YUHUI = 0x5D;     //余辉时间设置
+    public static final int FPGA_DISP_SL = 0x5E;        //缩略视图的显示列范围
+    public static final int FPGA_DISP_WAVE_LIE_NUM = 0x5F; //波形数据每列多少个 //mini
+    //外设寄存器地址
+    public static final int FPGA_WRITE_AD1 = 0x60;      //写AD1
+    public static final int FPGA_WRITE_AD2 = 0x61;             //写AD2
+    public static final int FPGA_INTERFACE_TEST=0x63;   //fpga接口测试
+    public static final int FPGA_CH_OFFSET_DA12=0x64;   //1、2通道偏移DA
+    public static final int FPGA_CH_OFFSET_DA34=0x65;   //3、4通道偏移DA
+    public static final int FPGA_PROBE_DA12=0x66;
+    public static final int FPGA_PROBE_DA34=0x67;
+    public static final int FPGA_CH_CAPACITANCE1=0x69;
+    public static final int FPGA_CH_CAPACITANCE2=0x6A;
+    public static final int FPGA_CH_CAPACITANCE1_16BIT=0x6B;
+    public static final int FPGA_CH_CAPACITANCE2_16BIT=0x6C;
+
+    public static final int FPGA_CH_CAP_DA12 = 0x6D;
+    public static final int FPGA_CH_CAP_DA34 = 0x6E;
+
+    public static final int FPGA_EXT_GRIGGER_LEVEL = 0x6F;
+    //通道输入阻抗定义
+    public static final int FPGA_CH_RESISTANCE=0x68;
+    //精确触发校准
+    public static final int FPGA_TRIG_OFFSET1 = 0x70;
+    public static final int FPGA_TRIG_OFFSET2 = 0x71;
+    public static final int FPGA_TRIG_OFFSET3 = 0x72;
+    public static final int FPGA_TRIG_OFFSET4 = 0x73;
+    public static final int FPGA_TRIG_OFFSET5 = 0x74;
+    public static final int FPGA_TRIG_OFFSET6 = 0x75;
+    public static final int FPGA_TRIG_OFFSET7 = 0x76;
+    public static final int FPGA_TRIG_OFFSET8 = 0x77;
+
+    //中断寄存器
+    public static final int FPGA_INTRPT = 0x90;
+    public static final int FPGA_CH_DSIPLAY_POS = 0xB0;
+    //mini_v2x:通道显示
+    public static final int FPGA_CH_DISPLAY = 0xB8;
+
+    public static final int FPGA_ZOOM_SMALL_PLACE = 0xB9;
+
+    public static final int FPGA_ZOOM_SMALL_NUM = 0xBA;
+
+    //命令寄存器地址
+    public static final int FPGA_COMMAND = 0xA0;        //FPGA命令寄存器
+    //mini:点阵缩放列表刷新
+    public static final int FPGA_DOT_MATRIX = 0xA1;     //点阵缩放
+    //mini:
+    public static final int FPGA_GET_DATA = 0xA2;
+    //mini：重载插值系数
+    public static final int FPGA_CHAZHI_COEF = 0XA3;
+    public static final int FPGA_AD_COEF = 0XA4;
+    public static final int FPGA_SEACH_COEF = 0XA5;
+    public static final int FPGA_SIGNAL_FREQ=0xA7;
+    public static final int FPGA_FORCE_TRIGGER = 0xA8;
+    public static final int FPGA_GRAY_LEVEL = 0xA9;
+    public static final int FPGA_SEGMENT_TS = 0xAA;
+    public static final int FPGA_SPI_EXT = 0xAB;
+    public static final int FPGA_SPI_R  = 0xAC;
+
+    public static final int FPGA_V_ZOOM = 0xAD;
+    //状态寄存器地址
+    public static final int FPGA_STATUS_ID = 0x80;
+    public static final int FPGA_STATUS_STATE = 0x81;//FPGA状态
+    public static final int FPGA_STATUS_REFRESH = 0x82;
+    //FPGA_STATUS_TRIG_TV = 0x83,
+    public static final int FPGA_STATUS_AUTO_V = 0x84;
+    public static final int FPGA_STATUS_AUTO_V1 = 0x84;
+    public static final int FPGA_STATUS_AUTO_V2 = 0x85;
+    public static final int FPGA_STATUS_AUTO_CYCLE_1 = 0x86;
+    public static final int FPGA_STATUS_AUTO_CYCLE_2 = 0x87;
+    public static final int FPGA_STATUS_AUTO_CYCLE_3 = 0x88;
+    public static final int FPGA_STATUS_AUTO_CYCLE_4 = 0x89;
+    public static final int FPGA_PROBE = 0x8A;
+    public static final int FPGA_STATUS_VER   = 0x8B;
+    public static final int FPGA_STATUS_TEST  = 0x8C;
+    public static final int FPGA_STATUS_FRAMES = 0x8D;
+    public static final int FPGA_TEMPERATURE = 0x8E;
+    public static final int FPGA_FAN_SPEED = 0x8F;
+    public static final int FPGA_STATUS_CH_T   = 0xD0;
+    public static final int FPGA_STATUS_CH_N  = 0xD1;
+
+    public static final int FPGA_AUTO_V1 = 0xD2;
+    public static final int FPGA_AUTO_V2 = 0xD3;
+    public static final int FPGA_AUTO_V3 = 0xD4;
+    public static final int FPGA_AUTO_V4 = 0xD5;
+    public static final int FPGA_50O_STATUS = 0xD8;
+
+    public static final int FPGA_REG_HEADER_LEN = 8;
+
+    protected ByteBuffer byteBuffer;
+
+    private IntBuffer intBuffer;
+
+    private int addr;
+    private int length;
+
+    private int fpgaIdx = 0;
+    boolean bRecv = false;
+
+    public FPGAReg(int addr,int len){
+        this(addr,len,false);
+    }
+
+    public FPGAReg(int addr,int len,boolean bRecv){
+        this.addr = addr;
+        this.length = len;
+        this.bRecv = bRecv;
+        byteBuffer = ByteBuffer.allocate(this.length + FPGA_REG_HEADER_LEN);
+        byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+        intBuffer = byteBuffer.asIntBuffer();
+        reset(bRecv);
+    }
+    public void setFpgaIdx(int fpgaIdx){
+        this.fpgaIdx = fpgaIdx;
+    }
+
+    public int getFpgaIdx(){
+        return fpgaIdx;
+    }
+
+    public void setCommandLength(int len){
+        this.length = len;
+    }
+    public void Dump(){
+
+        StringBuilder stringBuffer = new StringBuilder();
+        stringBuffer.append("fpga = ").append(getFpgaIdx());
+        stringBuffer.append(",Addr = ");
+        stringBuffer.append(Integer.toHexString(addr));
+        stringBuffer.append(",len = ");
+        stringBuffer.append(Integer.toString(length));
+        stringBuffer.append(",data:");
+        for (int i = 0; i < intBuffer.capacity(); i++) {
+            stringBuffer.append(Integer.toHexString(intBuffer.get(i)));
+            stringBuffer.append(" ");
+        }
+        Logger.d(TAG, stringBuffer.toString());
+
+    }
+    public int getAddr(){
+        return addr;
+    }
+    public int getLength(){
+        return length;
+    }
+
+    public ByteBuffer getCommand(){
+        //Dump();
+        return byteBuffer;
+    }
+    public  int getCommandLength(){
+        int cmdlen = length+FPGA_REG_HEADER_LEN;
+        if(bRecv)
+            cmdlen = FPGA_REG_HEADER_LEN;
+        return cmdlen;
+    }
+    public void reset(){
+        reset(false);
+    }
+    public void reset(boolean bRecv){
+        intBuffer.clear();
+        int val = 0x8180; //send
+        if(bRecv) {
+            val = 0x2421; //recv
+        }
+        intBuffer.put(0, val | (addr << 16) );
+        intBuffer.put(1,length/4);
+        for(int i=0;i<length/4;i++){
+            intBuffer.put(i+FPGA_REG_HEADER_LEN/4,0);
+        }
+    }
+
+    public void setCmdLength(int cmdLen){
+        intBuffer.put(0, 0x8180 | (addr << 16) );
+        intBuffer.put(1,cmdLen/4);
+    }
+
+    public int getVal(){
+        return getVal(0);
+    }
+    public int getVal(int idx){
+        return intBuffer.get(idx + FPGA_REG_HEADER_LEN/4);
+    }
+    public boolean isHeaderValid(){
+        return (intBuffer.get(0) == intBuffer.get(1)) && (intBuffer.get(0) == 0x181118ff);
+    }
+    public void setVal(byte [] datas){
+        for (int i=0;i<datas.length;i++){
+            byteBuffer.put(i+FPGA_REG_HEADER_LEN,datas[i]);
+        }
+    }
+    public void setVal(short [] datas){
+        ShortBuffer shortBuffer = byteBuffer.asShortBuffer();
+        for (int i=0;i<datas.length;i++){
+            shortBuffer.put(i+FPGA_REG_HEADER_LEN/2,datas[i]);
+        }
+    }
+    public void setVal(int [] datas){
+        for(int i=0;i<datas.length;i++){
+            intBuffer.put(i+FPGA_REG_HEADER_LEN/4,datas[i]);
+        }
+    }
+
+    public void setVal(int idx,int val){
+        setVal(idx,0,32,val);
+    }
+    public void setVal(int startBit,int bitsWidth,int val){
+        setVal(0,startBit,bitsWidth,val);
+    }
+    public void setVal(int idx,int startBit,int bitsWidth,int val){
+        int cmd;
+        int mask = 0;
+        for(int i=0;i<bitsWidth;i++){
+            mask |= 1<<i;
+        }
+        cmd = intBuffer.get(idx+FPGA_REG_HEADER_LEN/4);
+        cmd &= ~(mask<<startBit);
+        cmd |= ((val & mask)<<startBit);
+        intBuffer.put(idx+FPGA_REG_HEADER_LEN/4,cmd);
+    }
+    public void onCommand(){
+
+    }
+
+
+
+}

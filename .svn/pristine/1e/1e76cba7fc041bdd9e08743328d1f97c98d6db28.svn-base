@@ -1,0 +1,229 @@
+package com.micsig.tbook.scope.horizontal;
+
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.Sample.Sample;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.channel.MathChannel;
+import com.micsig.tbook.scope.math.MathNative;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class HorizontalAxisMath  {
+    private static final String TAG = "HorizontalAxisMath";
+
+    private final double xScaleArray[] = {
+            1e9,//G
+            500e6, 200e6, 100e6, 50e6, 20e6, 10e6, 5e6, 2e6, 1e6,//M
+            500e3, 200e3, 100e3, 50e3, 20e3, 10e3, 5e3, 2e3, 1e3,//K
+            500, 200, 100, 50, 20, 10, 5, 2, 1
+    };
+
+    private List<Double> xAxis = new ArrayList<>();
+    private long xPos;
+    private int  xScale;
+    private int startX = 0;
+    private int endX = 0;
+    private MathChannel mathChannel;
+    private Double mathFftScaleDefault = xScaleArray[1];
+    private int min_xScale;
+    private int max_xScale;
+
+    public HorizontalAxisMath(MathChannel mathChannel) {
+        //EventFactory.addEventObserver(EventFactory.EVENT_DEPTH_SAMPFRE_CHANGE, this);
+
+        this.mathChannel = mathChannel;
+
+        initAxis();
+        xScale = xScaleArray.length/2;
+        min_xScale = 0;
+        max_xScale = xScaleArray.length-1;
+    }
+
+    private void initAxis() {
+        generateMathFftAxis(0, xScaleArray.length - 1);
+    }
+
+    public List<Double> getxAxis() {
+        synchronized (this) {
+            return new ArrayList<>(xAxis);
+        }
+    }
+
+    private void generateMathFftAxis(int idMin, int idMax) {
+        xAxis.clear();
+        if (idMin < 0) idMin = 0;
+        if (idMax >= xScaleArray.length) idMax = xScaleArray.length - 1;
+        for (int i = idMin; i <= idMax; i++) {
+            xAxis.add(xScaleArray[i]);
+        }
+    }
+
+    public double fftXScaleIdVal(int scaleId) {
+        if (scaleId < 0 || scaleId >= xAxis.size())
+            scaleId = 0;
+        if (xAxis.size() == 0)
+            genFFT_Axis();
+        return xAxis.get(scaleId);
+    }
+
+    public double fftXScaleIdVal() {
+        return fftXScaleIdVal(xScale);
+    }
+
+    public long SCPIQueryPixInScreenFromTImePosVal(double timePosVal) {
+        double pix = timePosVal * ScopeBase.getHorizonPerGridPixels() / fftXScaleIdVal();
+
+        return (long) pix;
+    }
+
+    //往大找最接近的档位
+    private int fft_xScaleId_ceill(double scaleVal) {
+        //按大的頻率取
+        int i = 0;
+        for (; i < xScaleArray.length; i++) {
+            if (scaleVal > (xScaleArray[i] + xScaleArray[i] / 1000)) {
+                break;
+            }
+        }
+
+        if (i == 0)
+            return 0;
+
+        return i - 1;
+    }
+
+    //往小找最接近的档位
+    private int fft_xScaleId_floor(double scaleVal) {
+        //按小的頻率取
+        int i = xScaleArray.length - 1;
+        for (; i >= 0; i--) {
+            if (scaleVal < (xScaleArray[i] - xScaleArray[i] / 1000)) {
+                break;
+            }
+        }
+
+        if (i == xScaleArray.length - 1)
+            return i;
+
+        return i + 1;
+    }
+
+    public void setHorizontalScaleId(int scaleId) {
+        if(scaleId >= min_xScale && scaleId <= max_xScale)
+            xScale = scaleId;
+        EventFactory.sendEvent(new EventBase(EventFactory.EVENT_AFTERGLOW_MATH_CLEAR),true,100);
+    }
+
+    public int getHorizontalScaleId() {
+        return xScale;
+    }
+    public int getHorizontalScaleIndexUI(){
+        return xScale-min_xScale;
+    }
+
+    public long getXPosOfView() {
+        return xPos;
+    }
+
+    public void setXPosOfView(long timePos) {
+        xPos = timePos;
+        Scope scope = Scope.getInstance();
+        Sample sample = Sample.getInstance();
+        if (!scope.isRun() || sample.isTransient())
+            mathChannel.forceRefresh();
+        EventFactory.sendEvent(new EventBase(EventFactory.EVENT_AFTERGLOW_MATH_CLEAR),true,200);
+    }
+
+    public void correctXPose() {
+        double fs = mathChannel.getSampleRate();
+        int point = MathNative.CalFFTPointNum(mathChannel.getWaveLen());
+        int ix = (int) (ScopeBase.getHorizonPerGridPixels() * fs * (point / 2 - 1) / point / fftXScaleIdVal());
+        if (xPos < 0)
+            xPos = 0;
+        else if (xPos > ix)
+            xPos = ix;
+    }
+
+    public int getStartX() {
+        return startX;
+    }
+
+    public void setStartX(int startX) {
+        this.startX = startX;
+    }
+
+    public int getEndX() {
+        return endX;
+    }
+
+    public void setEndX(int endX) {
+        this.endX = endX;
+    }
+
+    public Double getMathFftScaleDefault() {
+        return mathFftScaleDefault;
+    }
+
+    /*
+    private void genFFT_Axis() {
+        int point = MathNative.CalFFTPointNum(mathChannel.getWaveLen());
+        double fs = mathChannel.getSampleRate();
+        double maxF = fs / 2 / ScopeBase.getHorizonGridCnt();
+        double minF = fs / point;
+        if (maxF < minF)
+            maxF = minF;
+        int minID = fft_xScaleId_ceill(maxF);
+        int maxID = fft_xScaleId_floor(minF);
+        generateMathFftAxis(minID, maxID);
+        if (xAxis.size() > 0) {
+            double def = xAxis.get(1);
+            if (ChannelFactory.getMathChannel().isOpen()
+                    && ChannelFactory.isMath_FFT_Ch(ChannelFactory.MATH_CH)
+                    && Double.compare(def, mathFftScaleDefault) != 0) {
+                mathFftScaleDefault = def;
+                EventFactory.sendEvent(EventFactory.EVENT_MATH_FFT_SCALE);
+            }
+        }
+    }
+    */
+    public void genFFT_Axis(){
+        genFFT_Axis(false);
+    }
+    public void genFFT_Axis(boolean b) {
+        int point = MathNative.CalFFTPointNum(mathChannel.getWaveLen());
+        double fs = mathChannel.getSampleRate();
+        double maxF = fs / 2 / ScopeBase.getHorizonGridCnt();
+        double minF = fs / point;
+        if (maxF < minF)
+            maxF = minF;
+        int minID = fft_xScaleId_ceill(maxF);
+        int maxID = fft_xScaleId_floor(minF);
+        min_xScale = minID;
+        max_xScale = maxID;
+        boolean change=false;
+        if(xScale < min_xScale) {
+            xScale = min_xScale;
+            change = true;
+        }
+        else if(xScale > max_xScale) {
+            xScale = max_xScale;
+            change = true;
+        }
+        if (change || b
+                //&& !ChannelFactory.isChActivate(mathChannel.getChId())
+            ) {
+            EventFactory.sendEvent(new EventBase(EventFactory.EVENT_MATH_FFT_SCALE, mathChannel.getChId()),true);
+        }
+    }
+
+    public int getMinScaleId(){ return min_xScale;}
+    public int getMaxScaleId(){ return max_xScale;}
+
+ 
+
+
+}

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content" >
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/mode"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="420px"
+        app:head="@string/triggerMode"
+        app:headWidth="100px"
+        app:array="@array/triggerMode" />
+
+    <TextView
+        android:id="@+id/holdoffTimeTitle"
+        style="@style/textStyle"
+        android:layout_width="100px"
+        android:layout_height="60px"
+        android:layout_alignBottom="@id/mode"
+        android:layout_marginStart="34px"
+        android:gravity="center"
+        android:text="@string/view_trigger_inhibitiontimetitle" />
+
+    <TextView
+        android:id="@+id/holdoffTimeValue"
+        style="@style/editTextStyleRight"
+        android:layout_width="120px"
+        android:layout_height="60px"
+        android:layout_alignBottom="@id/mode"
+        android:layout_marginStart="12px"
+        android:layout_toRightOf="@+id/holdoffTimeTitle"
+        android:text="@string/view_trigger_inhibitiontimevalue"
+        android:layout_toEndOf="@+id/holdoffTimeTitle" />
+
+    <com.micsig.tbook.ui.top.view.TopViewSeekBar
+        android:id="@+id/triggerSensitivity"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="150px"
+        app:headWidth="120px"
+        />
+</RelativeLayout>

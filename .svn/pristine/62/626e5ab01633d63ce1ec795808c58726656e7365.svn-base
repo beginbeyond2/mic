@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="text" format="string" />
+    <attr name="text_x" format="dimension" />
+    <attr name="showLayoutMarginTop" format="dimension" />
+    <attr name="checked" format="boolean" />
+    <attr name="bgLeftChecked" format="reference" />
+    <attr name="bgLeftUnChecked" format="reference" />
+    <attr name="bgRightTopTouchDown" format="reference" />
+    <attr name="bgRightTopTouchUp" format="reference" />
+    <attr name="bgRightBottomTouchDown" format="reference" />
+    <attr name="bgRightBottomTouchUp" format="reference" />
+    <attr name="bgProbeDetail" format="reference" />
+    <attr name="isSerials" format="boolean" />
+    <attr name="isNormal" format="boolean" />//是否为Math/Ref/Serials共同显示的布局
+
+    <declare-styleable name="MainLayoutRightChannel">
+        <attr name="text" />
+        <attr name="checked" />
+        <attr name="showLayoutMarginTop" />
+        <attr name="bgLeftChecked" />
+        <attr name="bgLeftUnChecked" />
+        <attr name="bgRightTopTouchDown" />
+        <attr name="bgRightTopTouchUp" />
+        <attr name="bgRightBottomTouchDown" />
+        <attr name="bgRightBottomTouchUp" />
+        <attr name="bgProbeDetail" />
+    </declare-styleable>
+
+    <declare-styleable name="MainLayoutRight">
+        <attr name="text" />
+        <attr name="text_x" />
+        <attr name="checked" />
+        <attr name="isSerials" />
+        <attr name="bgLeftChecked" />
+        <attr name="bgLeftUnChecked" />
+        <attr name="bgRightTopTouchDown" />
+        <attr name="bgRightTopTouchUp" />
+        <attr name="bgRightBottomTouchDown" />
+        <attr name="bgRightBottomTouchUp" />
+    </declare-styleable>
+
+    <attr name="serialsNumber">
+        <enum name="serials1" value="1" />
+        <enum name="serials2" value="2" />
+        <enum name="serials3" value="3" />
+        <enum name="serials4" value="4" />
+    </attr>
+    <declare-styleable name="RightLayoutSerials">
+        <attr name="serialsNumber" />
+        <attr name="isNormal" />
+    </declare-styleable>
+
+    <attr name="channelNumber">
+        <enum name="channel1" value="1" />
+        <enum name="channel2" value="2" />
+        <enum name="channel3" value="3" />
+        <enum name="channel4" value="4" />
+        <enum name="channel5" value="5" />
+        <enum name="channel6" value="6" />
+        <enum name="channel7" value="7" />
+        <enum name="channel8" value="8" />
+    </attr>
+    <declare-styleable name="RightLayoutChannel">
+        <attr name="channelNumber" />
+    </declare-styleable>
+
+    <attr name="large" format="boolean" />
+    <declare-styleable name="MainRightLayoutItemChannelMaster">
+        <attr name="checked" />
+        <attr name="large" />
+        <attr name="text" />
+        <attr name="isNormal" />
+    </declare-styleable>
+
+    <declare-styleable name="MainRightLayoutItemChannelBranch">
+        <attr name="checked" />
+        <attr name="text" />
+    </declare-styleable>
+
+    <declare-styleable name="MainRightLayoutItemSerialsMaster">
+        <attr name="checked" />
+        <attr name="text" />
+    </declare-styleable>
+
+    <attr name="refChannelNumber">
+        <enum name="Ref1" value="1" />
+        <enum name="Ref2" value="2" />
+        <enum name="Ref3" value="3" />
+        <enum name="Ref4" value="4" />
+        <enum name="Ref5" value="5" />
+        <enum name="Ref6" value="6" />
+        <enum name="Ref7" value="7" />
+        <enum name="Ref8" value="8" />
+    </attr>
+    <declare-styleable name="RightLayoutRef">
+        <attr name="refChannelNumber" />
+        <attr name="isNormal" />
+    </declare-styleable>
+
+    <attr name="mathChannelNumber">
+        <enum name="Math1" value="1" />
+        <enum name="Math2" value="2" />
+        <enum name="Math3" value="3" />
+        <enum name="Math4" value="4" />
+        <enum name="Math5" value="5" />
+        <enum name="Math6" value="6" />
+        <enum name="Math7" value="7" />
+        <enum name="Math8" value="8" />
+    </attr>
+    <declare-styleable name="RightLayoutMath">
+        <attr name="mathChannelNumber" />
+        <attr name="isNormal" />
+    </declare-styleable>
+
+</resources>

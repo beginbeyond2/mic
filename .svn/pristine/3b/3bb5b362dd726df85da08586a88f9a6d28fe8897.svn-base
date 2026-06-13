@@ -1,0 +1,47 @@
+package com.micsig.tbook.scope.math;
+
+/**
+ * Created by zhuzh on 2018-5-31.
+ */
+
+public abstract class MathWave {
+    public static final int MATH_DUALWAVE = 0;
+    public static final int MATH_FFTWAVE = 1;
+    public static final int MATH_EXPR = 2;
+    public static final int MATH_TYPE_MAX = 3;
+
+    public static boolean isMathTypeVaild(int mathType){
+        return mathType >= MATH_DUALWAVE && mathType< MATH_TYPE_MAX;
+    }
+    private int mathType = MATH_EXPR;
+    public MathWave(int mathType){
+        this.mathType = mathType;
+    }
+
+    public int getMathType() {
+        return mathType;
+    }
+
+    public abstract boolean isChInSample(int chIdx);
+    public abstract int getProbeType();
+    public abstract void setProbeType(int probeType);
+    public abstract void setProbeStr(String probeStr);
+    public abstract String getProbeStr();
+    public abstract double getVScaleVal();
+    public abstract int generateProbeType();
+
+    public abstract double getVScaleIdVal();
+
+    public abstract int getVScaleId();
+
+    public abstract int getVScaleIdMax();
+
+    public abstract int getVScaleIdMin();
+    public abstract double getFineScale();
+    public abstract void setVScaleId(int scaleId);
+    public abstract void setVScaleVal(double scaleIdVal);
+    public abstract void setFineScale(double fineScale);
+    public abstract double getVScaleIdVal(int scaleId);
+    public abstract int getVScaleId(double scaleVal);
+
+}

@@ -1,0 +1,55 @@
+package com.micsig.tbook.tbookscope;
+
+import android.content.Context;
+import android.util.AttributeSet;
+import android.view.MotionEvent;
+import android.view.View;
+import android.widget.LinearLayout;
+
+import androidx.annotation.Nullable;
+
+public class MainRightLayout extends LinearLayout {
+    private Context context;
+    private OnInterceptListener onInterceptListener;
+
+    public void setOnInterceptListener(OnInterceptListener onInterceptListener) {
+        this.onInterceptListener = onInterceptListener;
+    }
+
+    public interface OnInterceptListener {
+        boolean onInterceptTouchEvent(MotionEvent ev);
+        boolean onTouch(View v, MotionEvent event);
+    }
+
+    public MainRightLayout(Context context) {
+        this(context, null);
+    }
+
+    public MainRightLayout(Context context, @Nullable AttributeSet attrs) {
+        this(context, attrs, 0);
+    }
+
+    public MainRightLayout(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
+        this.context = context;
+    }
+
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        if (onInterceptListener != null) {
+            boolean b = onInterceptListener.onInterceptTouchEvent(ev);
+            if (b) {
+                return b;
+            }
+        }
+        return super.onInterceptTouchEvent(ev);
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if (onInterceptListener != null) {
+           return onInterceptListener.onTouch(this, event);
+        }
+        return true;
+    }
+}

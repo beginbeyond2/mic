@@ -1,0 +1,2413 @@
+package com.micsig.tbook.tbookscope.services.ExternalKeys.client;
+
+import android.content.Intent;
+import android.os.Handler;
+import android.os.SystemClock;
+import android.util.Log;
+import android.view.View;
+
+import com.micsig.base.Logger;
+import com.micsig.tbook.hardware.HardwareProduct;
+import com.micsig.tbook.scope.Data.AutoSave;
+import com.micsig.tbook.scope.Trigger.Trigger;
+import com.micsig.tbook.scope.Trigger.TriggerFactory;
+import com.micsig.tbook.scope.Trigger.TriggerVideo;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.tbookscope.MainMsgSlip;
+import com.micsig.tbook.tbookscope.MainViewGroup;
+import com.micsig.tbook.tbookscope.main.ExternalKeysMsgChannel;
+import com.micsig.tbook.tbookscope.main.ExternalKeysMsgCursor;
+import com.micsig.tbook.tbookscope.main.maincenter.serialsword.ISerialsWord;
+import com.micsig.tbook.tbookscope.middleware.Tag;
+import com.micsig.tbook.tbookscope.middleware.command.Command;
+import com.micsig.tbook.tbookscope.middleware.command.Command_Trigger_Video;
+import com.micsig.tbook.tbookscope.rxjava.RxBus;
+import com.micsig.tbook.tbookscope.rxjava.RxEnum;
+import com.micsig.tbook.tbookscope.services.ExternalKeys.multifunctionKnob.ExternalKeysManager;
+import com.micsig.tbook.tbookscope.services.ExternalKeys.multifunctionKnob.ExternalKeysNode;
+import com.micsig.tbook.tbookscope.struct.ExternalKeysMsg_ToMCU;
+import com.micsig.tbook.tbookscope.structdata.ExternalKeysCommand;
+import com.micsig.tbook.tbookscope.structdata.ExternalKeysUI;
+import com.micsig.tbook.tbookscope.tools.LockScreenUtils;
+import com.micsig.tbook.tbookscope.tools.PlaySound;
+import com.micsig.tbook.tbookscope.tools.SaveManage;
+import com.micsig.tbook.tbookscope.tools.ScreenControls;
+import com.micsig.tbook.tbookscope.tools.Tools;
+import com.micsig.tbook.tbookscope.top.popwindow.keyboardtext.TopDialogCandidatesWord;
+import com.micsig.tbook.tbookscope.util.App;
+import com.micsig.tbook.tbookscope.util.CacheUtil;
+import com.micsig.tbook.tbookscope.wavezone.IWorkMode;
+import com.micsig.tbook.tbookscope.wavezone.WaveZoneDisplay_XY;
+import com.micsig.tbook.tbookscope.wavezone.WaveZoneDisplay_YT;
+import com.micsig.tbook.tbookscope.wavezone.WorkModeManage;
+import com.micsig.tbook.tbookscope.wavezone.bean.YTZoomMsgDisplay;
+import com.micsig.tbook.tbookscope.wavezone.display.CursorManage;
+import com.micsig.tbook.tbookscope.wavezone.display.MsgCursorVisible;
+import com.micsig.tbook.tbookscope.wavezone.display.WaveMaskLayer_YTZoom;
+import com.micsig.tbook.tbookscope.wavezone.measure.MeasureManage;
+import com.micsig.tbook.tbookscope.wavezone.wave.WaveManage;
+import com.micsig.tbook.ui.wavezone.TChan;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+
+import io.reactivex.rxjava3.functions.Consumer;
+
+
+/**
+ * Created by liwb on 2017/12/6.
+ */
+
+public class ExternalKeysProtocol {
+    public static String Debug="ExternalKeys";
+    private static String TAG = "ExternalKeysProtocol";
+
+    /**
+     * 是否打印调试位置信息
+     */
+    public static boolean isPrintDebugLocation = false;
+    //region 类型定义
+    /**
+     * 发送类型 MCU发送给ARM
+     */
+    public final static byte TYPE_KEY_PRESS = 0x01;
+    /**
+     * 发送类型 编码器编码发送
+     */
+    public final static byte TYPE_KEY_PRESS_LONG_2 = 0x02;
+    public final static byte TYPE_KEY_PRESS_LONG = 0x03;
+    public final static byte TYPE_KEY_PRESS_EXT = 0x05;
+    public final static byte TYPE_KEY_PRESS_LONG_EXT = 0x0D;
+    public final static byte TYPE_KNOB = 0x0E;
+
+    public final static byte KNOB_CLOCKWISE = 0;            //顺
+    public final static byte KNOB_ANTICLOCKWISE = 1;        //逆
+
+    public final static byte KNOB_1 = 0;
+    public final static byte KNOB_2 = 1;
+    public final static byte KNOB_HORIZONTAL_POSITION = 2;
+    public final static byte KNOB_TRIGGER_LEVEL = 3;
+    public final static byte KNOB_HORIZONTAL_SCALE = 4;
+    public final static byte KNOB_VERTICAL_POSITION = 5;
+    public final static byte KNOB_VERTICAL_SCALE = 6;
+
+    /**
+     * 发送类型　ＡＲＭ发送给ＭＣＵ
+     */
+    public final static byte TYPE_ARMTOMCU = (byte) 0xF1;
+    public final static byte TYPE_ARMTOMCU_EXT = (byte) 0xF2;
+    //endregion
+
+    //region 类型1的定义
+    //region 第一个字节
+
+    private final static byte KEY_00_SEQ = 1 << 0;
+    private final static byte KEY_01_QUICK_MENU = 1 << 1;
+    private final static byte KEY_02_ZOOM = 1 << 2;
+    private final static byte KEY_03_CH2 = 1 << 3;
+    private final static byte KEY_04_POSITION_LEFT = 1 << 4;
+    private final static byte KEY_05_SCALE_LEFT = 1 << 5;
+    private final static byte KEY_06_SELECT_LEFT = 1 << 6;
+    private final static byte KEY_07_TRIGGER_LEFT = (byte) (1 << 7);
+
+    private final static byte KEY_10_RUN_STOP = 1 << 0;
+    private final static byte KEY_11_TOP_MENU = 1 << 1;
+    private final static byte KEY_12_VERTICAL_CURSOR = 1 << 2;
+    private final static byte KEY_13_CH3 = 1 << 3;
+    private final static byte KEY_14_POSITION_DOWN = 1 << 4;
+    private final static byte KEY_15_SCALE_DOWN = 1 << 5;
+    private final static byte KEY_16_SELECT_DOWN = 1 << 6;
+    private final static byte KEY_17_TRIGGER_DOWN = (byte) (1 << 7);
+
+    private final static byte KEY_20_CAPTURE = 1 << 0;
+    private final static byte KEY_21_BACK = 1 << 1;
+    private final static byte KEY_22_CH_MENU = 1 << 2;
+    private final static byte KEY_23_CH4 = 1 << 3;
+    private final static byte KEY_24_POSITION_RIGHT = 1 << 4;
+    private final static byte KEY_25_SCALE_RIGHT = 1 << 5;
+    private final static byte KEY_26_SELECT_RIGHT = 1 << 6;
+    private final static byte KEY_27_TRIGGER_RIGHT = (byte) (1 << 7);
+
+    private final static byte KEY_30_AUTO = 1 << 0;
+    private final static byte KEY_31_HORIZONTAL_CURSOR = 1 << 1;
+    private final static byte KEY_32_CH1 = 1 << 2;
+    private final static byte KEY_33_MATH = 1 << 3;
+    private final static byte KEY_34_POSITION_CENTER = 1 << 4;
+    private final static byte KEY_35_SCALE_CENTER = 1 << 5;
+    private final static byte KEY_36_SELECT_CENTER = 1 << 6;
+    private final static byte KEY_37_TRIGGER_CENTER = (byte) (1 << 7);
+
+    private final static byte KEY_40_REF = 1 << 0;
+    private final static byte KEY_41_TOUCH_OFF = 1 << 1;
+    private final static byte KEY_42_HOME = 1 << 2;
+    private final static byte KEY_43_NULL = 1 << 3;
+    private final static byte KEY_44_POSITION_UP = 1 << 4;
+    private final static byte KEY_45_SCALE_UP = 1 << 5;
+    private final static byte KEY_46_SELECT_UP = 1 << 6;
+    private final static byte KEY_47_TRIGGER_UP = (byte) (1 << 7);
+
+    private final static byte KEY_100_KNOB5 = 1 << 0;
+    private final static byte KEY_101_KNOB3 = 1 << 1;
+    private final static byte KEY_102_KNOB2 = 1 << 2;
+    private final static byte KEY_103_BUS2 = 1 << 3;
+    private final static byte KEY_104_BUS1 = 1 << 4;
+    private final static byte KEY_105_BUS = 1 << 5;
+    private final static byte KEY_106_EDGE = 1 << 6;
+    private final static byte KEY_107_TMENU = (byte) (1 << 7);
+
+
+    private final static byte KEY_117_KNOB6 = (byte) (1 << 7);
+    private final static byte KEY_116_CH5 = 1 << 6;
+    private final static byte KEY_115_CH6 = 1 << 5;
+    private final static byte KEY_114_CH7 = 1 << 4;
+    private final static byte KEY_113_CH8 = 1 << 3;
+    private final static byte KEY_112_Select=1 << 2;
+    private final static byte KEY_111_Force=1<<1;
+    private final static byte KEY_110_MODE=1<<0;
+
+    private final static byte KEY_127_CHX=(byte)(1<<7);
+    private final static byte KEY_126_Measure=(byte)(1<<6);
+
+
+    public final static byte KEY_SELECT_UP = 1;
+    public final static byte KEY_SELECT_DOWN = 2;
+    public final static byte KEY_SELECT_LEFT = 3;
+    public final static byte KEY_SELECT_RIGHT = 4;
+
+    public final static byte KEY_PRESS_LONG_VAL = 1;
+
+    //endregion
+    //endregion
+
+    //region 类型F1的定义
+    private final static byte LED_00_STOP = 1 << 0;
+    private final static byte LED_01_AUTO = 1 << 1;
+    private final static byte LED_02_TOUCH_OFF = 1 << 2;
+    private final static byte LED_03_BUS1_BLUE = 1 << 3;
+    private final static byte LED_04_BUS1_GREEN = 1 << 4;
+    private final static byte LED_05_BUS2_RED = 1 << 5;
+    private final static byte LED_06_BUS2_BLUE = 1 << 6;
+    private final static byte LED_07_BUS2_GREEN = (byte) (1 << 7);
+
+
+    private final static byte LED_10_MATH_RED = 1 << 0;
+    private final static byte LED_11_MATH_BLUE = 1 << 1;
+    private final static byte LED_12_MATH_GREEN = 1 << 2;
+
+    private final static byte LED_13_SEQ = 1 << 3;
+    private final static byte LED_14_CAPTURE = 1 << 4;
+    private final static byte LED_15_ZOOM = 1 << 5;
+    private final static byte LED_16_HOME = 1 << 6;
+    private final static byte LED_17_RUN = (byte) (1 << 7);
+
+
+    private final static byte LED_20_CH3_GREEN = 1 << 0;
+    private final static byte LED_21_CH4_RED = 1 << 1;
+    private final static byte LED_22_CH4_BLUE = 1 << 2;
+    private final static byte LED_23_CH4_GREEN = 1 << 3;
+    private final static byte LED_24_REF_RED = 1 << 4;
+    private final static byte LED_25_REF_BLUE = 1 << 5;
+    private final static byte LED_26_REF_GREEN = 1 << 6;
+    private final static byte LED_27_BUS1_RED = (byte) (1 << 7);
+
+    private final static byte LED_30_CH1_RED = 1 << 0;
+    private final static byte LED_31_CH1_BLUE = 1 << 1;
+    private final static byte LED_32_CH1_GREEN = 1 << 2;
+    private final static byte LED_33_CH2_RED = 1 << 3;
+    private final static byte LED_34_CH2_BLUE = 1 << 4;
+    private final static byte LED_35_CH2_GREEN = 1 << 5;
+    private final static byte LED_36_CH3_RED = 1 << 6;
+    private final static byte LED_37_CH3_BLUE = (byte) (1 << 7);
+
+
+    private final static byte LED_100_CH8_RED=1<<0;
+    private final static byte LED_101_CH8_BLUE=1<<1;
+    private final static byte LED_102_CH8_GREEN=1<<2;
+    private final static byte LED_103_VCURSOR = 1 << 3;
+    private final static byte LED_104_HCURSOR = 1 << 4;
+    private final static byte LED_105_BUS_RED = 1 << 5;
+    private final static byte LED_106_BUS_BLUE = 1 << 6;
+    private final static byte LED_107_BUS_GREEN = (byte) (1 << 7);
+
+    private final static byte LED_110_CH5_BLUE = 1 << 0;
+    private final static byte LED_111_CH5_GREEN = 1 << 1;
+    private final static byte LED_112_CH6_RED = 1 << 2;
+    private final static byte LED_113_CH6_BLUE = 1 << 3;
+    private final static byte LED_114_CH6_GREEN = 1 << 4;
+    private final static byte LED_115_CH7_RED = 1 << 5;
+    private final static byte LED_116_CH7_BLUE = 1 << 6;
+    private final static byte LED_117_CH7_GREEN = (byte) (1 << 7);
+
+    private final static byte LED_127_CH5_RED=(byte)(1<<7);
+
+    /**
+     * 是否是不同字节上的组合键
+     */
+    private static boolean isCompositeKey(byte[] bytes) {
+        int count = 0;
+        for (int i = 0; i < 4; i++) {
+            if (bytes[i] != 0) {
+                count++;
+            }
+        }
+        return count > 1;
+    }
+
+    public static final int BACKSTATE_CURSOR = 0;
+    public static final int BACKSTATE_VCURSOR = BACKSTATE_CURSOR;
+    public static final int BACKSTATE_HCURSOR = 1;
+    public static final int BACKSTATE_CHLIST = 2;
+    public static final int BACKSTATE_SEGMENT = 3;
+    public static final int BACKSTATE_ZOOMUP = 4;
+
+    public static final int BACKSTATE_MIN = BACKSTATE_CHLIST;
+    public static final int BACKSTATE_MAX = BACKSTATE_ZOOMUP;
+    public static final int BACKSTATE_NULL = -1;
+    private static int backState = BACKSTATE_CHLIST;
+    private static boolean singleVCursor = true;
+    private static boolean singleHCursor = true;
+    private static boolean curHCursor = true;//当两个方向的光标都存在时，当前操作的是否是水平方向的光标
+    private static boolean positionV = true;
+
+    public static void init() {
+        initControl();
+    }
+
+    private static void initControl() {
+        RxBus.getInstance().getObservable(RxEnum.CURSOR_CHANGE_VISIBLE).subscribe(consumerCursorChangeVisible);
+        RxBus.getInstance().getObservable(RxEnum.MAINCENTER_CHANNEL_VISIBLE_LAYOUTTOBTN).subscribe(consumerChannelVisible);
+        RxBus.getInstance().getObservable(RxEnum.WAVEZONE_DISPLAY_YTZOOM).subscribe(consumerYtZoomDisplay);
+        RxBus.getInstance().getObservable(RxEnum.MAIN_SLIP_TO_OTHER).subscribe(consumerMainSlipToOther);
+        RxBus.getInstance().getObservable(RxEnum.MAINCENTER_SEGMENTED_VISIBLE).subscribe(consumerSegmentVisible);
+    }
+
+    private static Consumer<MsgCursorVisible> consumerCursorChangeVisible = new Consumer<MsgCursorVisible>() {
+        @Override
+        public void accept(MsgCursorVisible msgCursorVisible) throws Exception {
+
+        }
+    };
+
+    private static Consumer<Integer> consumerChannelVisible = new Consumer<Integer>() {
+        @Override
+        public void accept(Integer integer) throws Exception {
+            if (integer == View.VISIBLE) {
+//                backState = BACKSTATE_CHLIST;
+                BackStateUpdate(BACKSTATE_CHLIST);
+                CacheUtil.get().setLastObjectIsCursor(false);
+            } else {
+                if (backState==BACKSTATE_CHLIST){
+                    selectBackStateList();
+                }
+                BackStateUpdate(backState);
+                if (backState!=BACKSTATE_HCURSOR && backState!=BACKSTATE_VCURSOR){
+                    CacheUtil.get().setLastObjectIsCursor(false);
+                }
+                ExternalKeysUI.getInstance().setFocusControlBackVisible(false);
+            }
+        }
+    };
+    private static Consumer<Boolean> consumerSegmentVisible = new Consumer<Boolean>() {
+        @Override
+        public void accept(Boolean bBoolean) throws Exception {
+            if (bBoolean) {
+//                backState = BACKSTATE_SEGMENT;
+                BackStateUpdate(BACKSTATE_SEGMENT);
+                CacheUtil.get().setLastObjectIsCursor(false);
+                if (ExternalKeysUI.getInstance().isVisibleFocusControl()) {
+                    ExternalKeysManager.get().showViewPlace(ExternalKeysManager.LISTTYPE_SEGMENTED);
+                }
+            }else {
+                //Log.d("Tag.Debug", String.format("consumerSegmentVisible accept: %b",bBoolean ));
+                if (backState==BACKSTATE_SEGMENT){
+                    selectBackStateList();
+                    BackStateUpdate(backState);
+                }
+                if (backState!=BACKSTATE_HCURSOR && backState!=BACKSTATE_VCURSOR){
+                    CacheUtil.get().setLastObjectIsCursor(false);
+                }
+            }
+        }
+    };
+    private static Consumer<YTZoomMsgDisplay> consumerYtZoomDisplay = new Consumer<YTZoomMsgDisplay>() {
+        @Override
+        public void accept(YTZoomMsgDisplay ytZoomMsgDisplay) throws Exception {
+            if (ytZoomMsgDisplay.isDisplay()) {
+//                backState = BACKSTATE_ZOOMUP;
+                BackStateUpdate(BACKSTATE_ZOOMUP);
+                CacheUtil.get().setLastObjectIsCursor(false);
+            } else {
+                if (backState==BACKSTATE_ZOOMUP){
+                    selectBackStateList();
+                }
+                BackStateUpdate(backState);
+                if (backState!=BACKSTATE_HCURSOR && backState!=BACKSTATE_VCURSOR){
+                    CacheUtil.get().setLastObjectIsCursor(false);
+                }
+            }
+            ExternalKeysUI.getInstance().setFocusControlBackVisible(false);
+        }
+    };
+
+    private static Consumer<MainMsgSlip> consumerMainSlipToOther = new Consumer<MainMsgSlip>() {
+        @Override
+        public void accept(MainMsgSlip msgSlip) throws Exception {
+            canPercentFlag = false;
+        }
+    };
+
+    static void parseMCUTOARM_10(byte val, byte state){
+        Log.d(TAG, "parseMCUTOARM_10: "+val);
+        switch (val){
+            case KEY_100_KNOB5:
+                //position
+                if (ExternalKeysCommand.get().moveTimeBasePosition50Percent()) {
+                    RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, TChan.TriggerTime);
+                    RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, WaveZoneDisplay_YT.MOVE_LEFTRIGHT);
+                }
+                break;
+            case KEY_101_KNOB3:
+                //level
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    break;
+                }
+                TriggerValueVoltageLine triggerValueVoltageLine = TriggerValueVoltageLine.getInstance();
+                if (state == TYPE_KEY_PRESS_EXT) {
+                    if (triggerValueVoltageLine.isTriggerlevelActive()) {
+                        ExternalKeysCommand.get().clickTriggerLevelCenter();
+                    } else {
+                        ExternalKeysCommand.get().clickValueLevelCenter();
+                    }
+                } else if (state == TYPE_KEY_PRESS_LONG_EXT) {
+                    triggerValueVoltageLine.switchTriggerValueLevel();
+                }
+                break;
+            case KEY_102_KNOB2:
+//                当前为可选中光标状态时，切换水平方向的光标选择
+               {
+
+//                当前为全键盘窗口时，点击确定预选框中汉字
+                    if (ExternalKeysCommand.get().isDialogShow(MainViewGroup.DIALOG_TEXTKEYBOARD)) {
+                        ExternalKeysCommand.get().moveKeyBoardCandidatesWord(TopDialogCandidatesWord.ACTION_CANDIDATES_FINISH, 1);
+                    } else {
+                        if (backState == BACKSTATE_VCURSOR) {
+                            singleVCursor = !singleVCursor;
+                            if (singleVCursor) {
+                                ExternalKeysCommand.get().setCursorSelected(false, TChan.Cursor_col_2);
+                            } else {
+                                ExternalKeysCommand.get().setCursorSelected(false, TChan.Cursor_col_4);
+                            }
+                        } else if (backState == BACKSTATE_HCURSOR) {
+                            singleHCursor = !singleHCursor;
+                            if (singleHCursor) {
+                                ExternalKeysCommand.get().setCursorSelected(true, TChan.Cursor_row_2);
+                            } else {
+                                ExternalKeysCommand.get().setCursorSelected(true, TChan.Cursor_row_4);
+                            }
+                        }
+                    }
+
+                }
+                break;
+//            case KEY_103_BUS2:
+//                if(state == TYPE_KEY_PRESS_EXT) {
+//                    ExternalKeysCommand.get().clickRightSerials(2);
+//                }
+//                break;
+//            case KEY_104_BUS1:
+//                if(state == TYPE_KEY_PRESS_EXT) {
+//                    ExternalKeysCommand.get().clickRightSerials(1);
+//                }
+//                break;
+//            case KEY_105_BUS:
+//                if(state==TYPE_KEY_PRESS_EXT){
+//                    Log.d(TAG, "parseMCUTOARM_10 ："+KEY_105_BUS);
+//                    ExternalKeysCommand.get().clickRightSerials(1);
+//                }
+//                break;
+            case KEY_105_BUS:
+            case KEY_104_BUS1:
+            case KEY_103_BUS2:
+                if (state == TYPE_KEY_PRESS_EXT) {
+                    ExternalKeysCommand.get().clickAddRightSerials();
+                }
+                break;
+            case KEY_106_EDGE:
+                if(state == TYPE_KEY_PRESS_EXT){
+                    PlaySound.getInstance().playButton();
+                    ExternalKeysCommand.get().clickTriggerEdge();
+                }
+                break;
+            case KEY_107_TMENU:
+                if(state == TYPE_KEY_PRESS_EXT) {
+                    ExternalKeysCommand.get().clickTriggerMenu();
+                }
+                break;
+        }
+    }
+    static void parseMCUTOARM_11(byte val, byte state){
+        switch (val){
+            case KEY_117_KNOB6:
+                int chIdx = WaveManage.get().getCurCh();
+                WaveManage.get().setCenterChY(chIdx);
+                switch (WorkModeManage.getInstance().getmWorkMode()) {
+                    case IWorkMode.WorkMode_XY: {
+                        if (ChannelFactory.isDynamicCh(TChan.toFpgaChNo(chIdx))) {
+                            RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, chIdx);
+                            if (TChan.Ch1 == chIdx || TChan.Ch3 == chIdx) {
+                                RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, WaveZoneDisplay_XY.MOVE_LEFTRIGHT);
+                            } else if (TChan.Ch2 == chIdx || TChan.Ch4 == chIdx) {
+                                RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, WaveZoneDisplay_XY.MOVE_UPDOWN);
+                            }
+                        }
+                        break;
+                    }
+                    case IWorkMode.WorkMode_YT:
+                    case IWorkMode.WorkMode_YTZOOM: {
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, chIdx);
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, WaveZoneDisplay_YT.MOVE_UPDOWN);
+                        break;
+                    }
+                }
+                break;
+            case KEY_116_CH5:{
+                // TODO: 2024-8-1 按键处理
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    break;
+                }
+                if (state == TYPE_KEY_PRESS_EXT || state==TYPE_KEY_PRESS_LONG_EXT) {
+                    ExternalKeysCommand.get().clickRightChannel(ExternalKeysMsgChannel.CH5);
+                }
+            }break;
+            case KEY_115_CH6:{
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    break;
+                }
+                if (state == TYPE_KEY_PRESS_EXT || state==TYPE_KEY_PRESS_LONG_EXT) {
+                    ExternalKeysCommand.get().clickRightChannel(ExternalKeysMsgChannel.CH6);
+                }
+            }break;
+
+            case KEY_114_CH7:{
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    break;
+                }
+                if (state == TYPE_KEY_PRESS_EXT || state==TYPE_KEY_PRESS_LONG_EXT) {
+                    ExternalKeysCommand.get().clickRightChannel(ExternalKeysMsgChannel.CH7);
+                }
+            }break;
+            case KEY_113_CH8:{
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    break;
+                }
+                if (state == TYPE_KEY_PRESS_EXT || state==TYPE_KEY_PRESS_LONG_EXT) {
+                    ExternalKeysCommand.get().clickRightChannel(ExternalKeysMsgChannel.CH8);
+                }
+            }break;
+            case KEY_112_Select:{
+
+            }break;
+            case KEY_111_Force: {//force trigger
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    break;
+                }
+                if (state == TYPE_KEY_PRESS_EXT || state == TYPE_KEY_PRESS_LONG_EXT) {
+                    ExternalKeysCommand.get().forceTrigger();
+                }
+            }break;
+            case KEY_110_MODE: {//trigger mode: auto、normal
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    break;
+                }
+                if (state == TYPE_KEY_PRESS_EXT || state == TYPE_KEY_PRESS_LONG_EXT) {
+                    ExternalKeysCommand.get().changeTriggerCommonMode();
+                }
+            }break;
+        }
+    }
+    static void parseMCUTOARM_12(byte val, byte state){
+        switch (val){
+            case KEY_126_Measure: {
+                if (!ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    ExternalKeysCommand.get().ClickMeasureBtn();
+                }
+            }break;
+            case KEY_127_CHX:{
+               ExternalKeysCommand.get().ClickChannelList();
+            }break;
+        }
+    }
+
+    static void parseMCUTOARM_0(byte val, byte state) {
+        switch (val) {
+            case KEY_00_SEQ:
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    break;
+                }
+                if (state == TYPE_KEY_PRESS || state == TYPE_KEY_PRESS_LONG_2)
+                    ExternalKeysCommand.get().clickSeq();
+                break;
+            case KEY_01_QUICK_MENU:
+                if (state == TYPE_KEY_PRESS || state == TYPE_KEY_PRESS_LONG_2)
+                    ExternalKeysCommand.get().openBottomSlip();
+                break;
+            case KEY_02_ZOOM:
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    break;
+                }
+                if (state == TYPE_KEY_PRESS || state == TYPE_KEY_PRESS_LONG_2) {
+                    ExternalKeysCommand.get().clickZoom();
+                    ExternalKeysManager.get().setFocusViewVisible(View.GONE);
+                }
+                break;
+            case KEY_03_CH2:
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    break;
+                }
+                if (state == TYPE_KEY_PRESS || state == TYPE_KEY_PRESS_LONG_2) {
+                    Logger.d(TAG, "KEY_03_CH2," + state);
+                    ExternalKeysCommand.get().clickRightChannel(2);
+                }
+                break;
+            case KEY_04_POSITION_LEFT: {
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    break;
+                }
+                int count = state == TYPE_KEY_PRESS ? 1 : getPressLongSpeed(1);
+                switch (WorkModeManage.getInstance().getmWorkMode()) {
+                    case IWorkMode.WorkMode_XY:
+                        if (WaveManage.get().getCurCh() != TChan.Ch1) {
+                            WaveManage.get().setSelectCursor(TChan.Ch1);
+                        }
+                        ExternalKeysCommand.get().moveChannelPosition(true, count);
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, TChan.Ch1);
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, WaveZoneDisplay_XY.MOVE_LEFTRIGHT);
+                        break;
+                    case IWorkMode.WorkMode_YT:
+                    case IWorkMode.WorkMode_YTZOOM:
+
+                        if (ExternalKeysCommand.get().moveTimeBasePosition(false, count)) {
+                            RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, TChan.TriggerTime);
+                            RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, WaveZoneDisplay_YT.MOVE_LEFTRIGHT);
+                        }
+                        break;
+                }
+            }
+            break;
+            case KEY_05_SCALE_LEFT:
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    break;
+                }
+                ExternalKeysCommand.get().moveTimeBaseScale(true, state == TYPE_KEY_PRESS ? 1 : KEY_PRESS_LONG_VAL);
+                break;
+            case KEY_06_SELECT_LEFT:
+                SelectKey(true, KEY_SELECT_LEFT, state);
+                break;
+            case KEY_07_TRIGGER_LEFT:
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    break;
+                }
+                ExternalKeysCommand.get().clickTriggerSource(true);
+
+                break;
+        }
+    }
+
+    static void parseMCUTOARM_1(byte val, byte state) {
+        switch (val) {
+            case KEY_10_RUN_STOP:
+                if (state == TYPE_KEY_PRESS || state == TYPE_KEY_PRESS_LONG_2)
+                    ExternalKeysCommand.get().clickRunStop();
+                break;
+            case KEY_11_TOP_MENU:
+                if (state == TYPE_KEY_PRESS || state == TYPE_KEY_PRESS_LONG_2)
+                    ExternalKeysCommand.get().openTopSlip();
+                break;
+            case KEY_12_VERTICAL_CURSOR: {
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    break;
+                }
+                if (state == TYPE_KEY_PRESS || state == TYPE_KEY_PRESS_LONG_2) {
+                    PlaySound.getInstance().playButton();
+                    boolean ver = getVisibleCursorV();
+
+                    {
+                        int s = -1;
+                        if(ver) {
+                            boolean b= CacheUtil.get().getLastObjectIsCursor();
+                            if (b==false){
+                                CacheUtil.get().setLastObjectIsCursor(true);
+//                                backState = BACKSTATE_VCURSOR;
+                                BackStateUpdate(BACKSTATE_VCURSOR);
+                                ExternalKeysCommand.get().setCursorSelected(false,
+                                        ExternalKeysCommand.get().getCursorSelected(false));
+                                singleVCursor = CursorManage.getInstance().getVerIndex() != 3;
+                            }else {
+                                int selectCursor = CursorManage.getInstance().getCurrSelectCursor();
+                                switch (selectCursor) {
+                                    case TChan.Cursor_row_1:
+                                    case TChan.Cursor_row_2:
+                                    case TChan.Cursor_row_3:
+                                    case TChan.Cursor_row_4:
+                                        CacheUtil.get().setLastObjectIsCursor(true);
+//                                        backState = BACKSTATE_VCURSOR;
+//                                    ExternalKeysCommand.get().switchCursor(false);
+                                        BackStateUpdate(BACKSTATE_VCURSOR);
+                                        ExternalKeysCommand.get().setCursorSelected(false,
+                                                ExternalKeysCommand.get().getCursorSelected(false));
+                                        singleVCursor = CursorManage.getInstance().getVerIndex() != 3;
+
+                                        break;
+                                    case TChan.Cursor_col_1:
+                                    case TChan.Cursor_col_2:
+                                    case TChan.Cursor_col_3:
+                                    case TChan.Cursor_col_4:
+                                        s = ExternalKeysMsgCursor.TYPE_CLOSE;
+                                        break;
+                                    default:
+                                }
+                            }
+                        }else{
+                            s = ExternalKeysMsgCursor.TYPE_OPEN;
+                        }
+                        if(s >= 0){
+                            if (!MeasureManage.getInstance().isCursorTValueTrace()) {
+                                ExternalKeysCommand.get().clickCursor(false, s);
+                            }
+                        }
+                    }
+                }
+            }
+            break;
+            case KEY_13_CH3:
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    break;
+                }
+                if (state == TYPE_KEY_PRESS || state == TYPE_KEY_PRESS_LONG_2) {
+//                    Logger.d(TAG, "KEY_13_CH3," + state);
+                    ExternalKeysCommand.get().clickRightChannel(3);
+                }
+                break;
+            case KEY_14_POSITION_DOWN: {
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    break;
+                }
+                int count = state == TYPE_KEY_PRESS ? 1 : getPressLongSpeed(1);
+                switch (WorkModeManage.getInstance().getmWorkMode()) {
+                    case IWorkMode.WorkMode_XY: {
+                        if (WaveManage.get().getCurCh() != TChan.Ch2) {
+                            WaveManage.get().setSelectCursor(TChan.Ch2);
+                        }
+                        ExternalKeysCommand.get().moveChannelPosition(false, count);
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, TChan.Ch2);
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, WaveZoneDisplay_XY.MOVE_UPDOWN);
+                        break;
+                    }
+                    case IWorkMode.WorkMode_YT:
+                    case IWorkMode.WorkMode_YTZOOM: {
+                        ExternalKeysCommand.get().moveChannelPosition(false, count);
+                        int chIdx = WaveManage.get().getCurCh();
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, chIdx);
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, WaveZoneDisplay_YT.MOVE_UPDOWN);
+                        break;
+                    }
+                }
+            }
+            break;
+            case KEY_15_SCALE_DOWN:
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    break;
+                }
+
+                ExternalKeysCommand.get().moveChannelScale(true, state == TYPE_KEY_PRESS ? 1 : getPressLongSpeed(4));
+                break;
+            case KEY_16_SELECT_DOWN:
+                SelectKey(false, KEY_SELECT_DOWN, state);
+                break;
+            case KEY_17_TRIGGER_DOWN: {
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    break;
+                }
+                int count = state == TYPE_KEY_PRESS ? 1 : getPressLongSpeed(1);
+
+                if (TriggerValueVoltageLine.getInstance().isTriggerlevelActive()) {
+                    ExternalKeysCommand.get().moveTriggerLevel(false, count);
+                } else {
+                    moveValueLevel(false, count);
+                }
+            }
+            break;
+        }
+    }
+
+    static void parseMCUTOARM_2(byte val, byte state) {
+        switch (val) {
+            case KEY_20_CAPTURE:
+                if (state == TYPE_KEY_PRESS)
+                    ExternalKeysCommand.get().clickScreenCapture();
+                else if (state == TYPE_KEY_PRESS_LONG_2) {
+                    ExternalKeysCommand.get().clickQuickSave();
+                }
+                break;
+            case KEY_21_BACK:
+                PlaySound.getInstance().playButton();
+                if (state == TYPE_KEY_PRESS || state == TYPE_KEY_PRESS_LONG_2) {
+                    boolean isSerialsTxt = CacheUtil.get().getBoolean(CacheUtil.MAIN_BOTTOM_SLIP_SERIALBUSTXT);
+                    if (isSerialsTxt && ExternalKeysCommand.get().isDialog()==false && ExternalKeysCommand.get().isSlip()==false){
+                        ExternalKeysUI.getInstance().setFocusViewVisible(false);
+                        ExternalKeysCommand.get().EnterToYt();
+                    }else if (ExternalKeysCommand.get().isRightLayoutLevel()) {
+                        ExternalKeysCommand.get().hideRightLayoutLevel();
+                    } else if (ExternalKeysCommand.get().isDialogShow(MainViewGroup.DIALOG_TOPSCALE)
+                            || ExternalKeysCommand.get().isDialogShow(MainViewGroup.DIALOG_BANDWIDTHHZ)) {
+                        ExternalKeysManager.get().closeDialog();
+                        new Handler().postDelayed(() -> {
+                            ExternalKeysUI.getInstance().setFocusViewVisible(false);
+                        }, 50);
+                    }
+//                当前为topSlip打开状态时，点击退出本级菜单，返回上一级菜单
+                    else if (ExternalKeysCommand.get().isSlip() || CacheUtil.get().getBoolean(CacheUtil.MAIN_BOTTOM_SLIP_SERIALBUSTXT)) {
+                        if (canPercentFlag) {
+                            canPercentFlag = false;
+                        } else {
+                            ExternalKeysManager.get().moveBack();
+                        }
+                    }
+//                当前各种状态都不是时，则关闭通道选择预选框
+                    else {
+                        if (WorkModeManage.getInstance().getmWorkMode()==IWorkMode.WorkMode_XY) break;
+                        boolean vCursor = getVisibleCursorV();
+                        boolean hCursor = getVisibleCursorH();
+                        boolean channelList = getVisibleChannelList();
+                        boolean segment = getVisibleSegment();
+                        boolean zoom = getVisibleZoom();
+                        if (!vCursor && !hCursor && !channelList && !zoom && !segment) {
+                            //如果全都不可选则不做操作
+                        } else {
+
+                            boolean changed=false;
+                            int beforeBackState=backState;
+                            if ((ExternalKeysManager.get().isFocusViewVisible())==false && (channelList || segment || zoom)) {
+                                //否则就切换可选项
+                                changed = switchBackState();
+                            }
+                            BackStateUpdate(backState);
+                            if ((beforeBackState==BACKSTATE_HCURSOR || beforeBackState==BACKSTATE_VCURSOR) && beforeBackState!=backState ){
+                                CacheUtil.get().setLastObjectIsCursor(false);
+                            }
+
+//                            if (backState != BACKSTATE_CHLIST) {
+//                                ExternalKeysUI.getInstance().setFocusViewVisible(false);
+//                            }else if (backState==BACKSTATE_SEGMENT && !segment){
+////                                ExternalKeysManager.get().moveBack();
+//                            }
+                            int selectCursor = 0;
+                            switch (backState) {
+                                case BACKSTATE_CURSOR: {
+//                                    if (vCursor) {
+//                                        if (singleVCursor) {
+//                                            selectCursor = IWave.Cursor_col_1;
+//                                        } else {
+//                                            selectCursor = IWave.Cursor_col_3;
+//                                        }
+//                                    }
+//                                    if (hCursor) {
+//                                        if (singleHCursor) {
+//                                            selectCursor = IWave.Cursor_row_1;
+//                                        } else {
+//                                            selectCursor = IWave.Cursor_row_3;
+//                                        }
+//                                    }
+//                                    if (vCursor || hCursor) {
+//                                        if (!ExternalKeysManager.get().isFocusViewVisible()) {
+//                                            ExternalKeysUI.getInstance().showBackStateFocus(backState);
+//                                        } else {
+//                                            canPercentFlag = false;
+//                                            ExternalKeysManager.get().moveBack();
+//                                            if (ExternalKeysManager.get().isFocusViewVisible() == false) {
+//                                                ExternalKeysUI.getInstance().showBackStateFocus(backState);
+//                                            }
+//                                        }
+//                                    }
+//                                    if (changed && ExternalKeysManager.get().isFocusViewVisible() == false) {
+//                                        ExternalKeysUI.getInstance().showBackStateFocus(backState);
+//                                    }
+                                }
+                                break;
+                                case BACKSTATE_CHLIST: {
+                                    boolean visibleFocusControl = ExternalKeysUI.getInstance().isVisibleFocusControl();
+                                    if (channelList) {
+                                        if (!ExternalKeysManager.get().isFocusViewVisible()) {
+//                                            ExternalKeysManager.get().showViewPlace(ExternalKeysManager.LISTTYPE_CHANNELS);
+                                            ExternalKeysUI.getInstance().showBackStateFocus(backState);
+                                        } else {
+                                            canPercentFlag = false;
+                                            ExternalKeysManager.get().moveBack();
+                                            if (ExternalKeysManager.get().isFocusViewVisible() == false) {
+                                                ExternalKeysUI.getInstance().showBackStateFocus(backState);
+                                            }
+                                        }
+                                    }
+                                    if (changed && ExternalKeysManager.get().isFocusViewVisible() == false) {
+                                        ExternalKeysUI.getInstance().showBackStateFocus(backState);
+                                        if (visibleFocusControl) {
+                                            ExternalKeysUI.getInstance().setFocusControlBackVisible(true);
+                                        }
+                                    }
+                                }
+                                break;
+                                case BACKSTATE_SEGMENT: {
+                                    boolean visibleFocusControl = ExternalKeysUI.getInstance().isVisibleFocusControl();
+                                    if (segment) {
+                                        if (!ExternalKeysManager.get().isFocusViewVisible()) {
+                                            ExternalKeysUI.getInstance().showBackStateFocus(backState);
+                                        } else {
+                                            canPercentFlag = false;
+                                            ExternalKeysManager.get().moveBack();
+                                            if (ExternalKeysManager.get().isFocusViewVisible() == false) {
+                                                ExternalKeysUI.getInstance().showBackStateFocus(backState);
+                                            }
+                                        }
+                                    }
+                                    if (changed && ExternalKeysManager.get().isFocusViewVisible() == false) {
+                                        ExternalKeysUI.getInstance().showBackStateFocus(backState);
+                                        if (visibleFocusControl) {
+                                            ExternalKeysUI.getInstance().setFocusControlBackVisible(true);
+                                        }
+                                    }
+                                }
+                                break;
+                                case BACKSTATE_ZOOMUP: {
+//                                    if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_YTZOOM) {
+//                                        int symbol = isRight ? 1 : -1;
+//                                        WaveMaskLayer_YTZoom.getInstance().layerX_move(count * symbol);
+//                                    }
+                                    if (zoom) {
+                                        if (!ExternalKeysManager.get().isFocusViewVisible()) {
+//                                            ExternalKeysManager.get().showViewPlace(ExternalKeysManager.LISTTYPE_CHANNELS);
+                                            ExternalKeysUI.getInstance().showBackStateFocus(backState);
+                                        } else {
+                                            canPercentFlag = false;
+                                            ExternalKeysManager.get().moveBack();
+                                            if (ExternalKeysManager.get().isFocusViewVisible() == false) {
+                                                ExternalKeysUI.getInstance().showBackStateFocus(backState);
+                                            }
+                                        }
+                                    }
+                                    if (changed && ExternalKeysManager.get().isFocusViewVisible() == false) {
+                                        ExternalKeysUI.getInstance().showBackStateFocus(backState);
+                                    }
+                                }
+                                break;
+
+                            }
+
+                        }
+                    }
+                }
+                break;
+            case KEY_22_CH_MENU:
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    if (state == TYPE_KEY_PRESS || state == TYPE_KEY_PRESS_LONG_2) {
+                        int curTab = CacheUtil.get().getInt(CacheUtil.SERIAL_TXT_CURRTAB);
+                        if (curTab == ISerialsWord.TYPE_S1) {
+                            ExternalKeysCommand.get().openRightSlip(TChan.S1);
+                        } else if (curTab == ISerialsWord.TYPE_S2) {
+                            ExternalKeysCommand.get().openRightSlip(TChan.S2);
+                        }
+                    }
+                    break;
+                }
+                if (state == TYPE_KEY_PRESS || state == TYPE_KEY_PRESS_LONG_2)
+                    ExternalKeysCommand.get().openRightCurSlip();
+                break;
+            case KEY_23_CH4:
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    break;
+                }
+                if (state == TYPE_KEY_PRESS || state == TYPE_KEY_PRESS_LONG_2) {
+                    Logger.d(TAG, "KEY_23_CH4," + state);
+
+                    ExternalKeysCommand.get().clickRightChannel(4);
+                }
+                break;
+            case KEY_24_POSITION_RIGHT: {
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    break;
+                }
+                int count = state == TYPE_KEY_PRESS ? 1 : getPressLongSpeed(1);
+                switch (WorkModeManage.getInstance().getmWorkMode()) {
+                    case IWorkMode.WorkMode_XY:
+                        if (WaveManage.get().getCurCh() != TChan.Ch1) {
+                            WaveManage.get().setSelectCursor(TChan.Ch1);
+                        }
+                        ExternalKeysCommand.get().moveChannelPosition(false, count);
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, TChan.Ch1);
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, WaveZoneDisplay_XY.MOVE_LEFTRIGHT);
+                        break;
+                    case IWorkMode.WorkMode_YT:
+                    case IWorkMode.WorkMode_YTZOOM:
+                        if (ExternalKeysCommand.get().moveTimeBasePosition(true, count)) {
+                            RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, TChan.TriggerTime);
+                            RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, WaveZoneDisplay_YT.MOVE_LEFTRIGHT);
+                        }
+                        break;
+                }
+            }
+            break;
+            case KEY_25_SCALE_RIGHT:
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    break;
+                }
+                ExternalKeysCommand.get().moveTimeBaseScale(false, state == TYPE_KEY_PRESS ? 1 : KEY_PRESS_LONG_VAL);
+                break;
+            case KEY_26_SELECT_RIGHT:
+                SelectKey(false, KEY_SELECT_RIGHT, state);
+                break;
+            case KEY_27_TRIGGER_RIGHT:
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    break;
+                }
+                ExternalKeysCommand.get().clickTriggerSource(false);
+
+                break;
+        }
+    }
+
+    static boolean canPercentFlag = false;
+    static boolean canPercentTop = false;
+
+    static boolean fixCanPercentFlag() {
+        if (ExternalKeysCommand.get().isSlipShow(MainViewGroup.RIGHTSLIP_S1)
+                && ExternalKeysManager.get().isFocusViewVisible()
+                && Objects.equals(ExternalKeysNode.TYPE_CAN_PERCENT, ExternalKeysManager.get().getRightSerialsList(CacheUtil.S1)
+                .get(ExternalKeysManager.get().getRightSerialsListIndex(CacheUtil.S1)).getType())) {
+            canPercentTop = ExternalKeysManager.get().getRightSerialsListIndex(CacheUtil.S1) < 12;
+            canPercentFlag = !canPercentFlag;
+            return canPercentFlag;
+        } else if (ExternalKeysCommand.get().isSlipShow(MainViewGroup.RIGHTSLIP_S2)
+                && ExternalKeysManager.get().isFocusViewVisible()
+                && Objects.equals(ExternalKeysNode.TYPE_CAN_PERCENT, ExternalKeysManager.get().getRightSerialsList(CacheUtil.S2)
+                .get(ExternalKeysManager.get().getRightSerialsListIndex(CacheUtil.S2)).getType())) {
+            canPercentTop = ExternalKeysManager.get().getRightSerialsListIndex(CacheUtil.S2) < 12;
+            canPercentFlag = !canPercentFlag;
+            return canPercentFlag;
+        } else if (ExternalKeysCommand.get().isSlipShow(MainViewGroup.RIGHTSLIP_S3)
+                && ExternalKeysManager.get().isFocusViewVisible()
+                && Objects.equals(ExternalKeysNode.TYPE_CAN_PERCENT, ExternalKeysManager.get().getRightSerialsList(CacheUtil.S3)
+                .get(ExternalKeysManager.get().getRightSerialsListIndex(CacheUtil.S3)).getType())) {
+            canPercentTop = ExternalKeysManager.get().getRightSerialsListIndex(CacheUtil.S3) < 12;
+            canPercentFlag = !canPercentFlag;
+            return canPercentFlag;
+        } else if (ExternalKeysCommand.get().isSlipShow(MainViewGroup.RIGHTSLIP_S4)
+                && ExternalKeysManager.get().isFocusViewVisible()
+                && Objects.equals(ExternalKeysNode.TYPE_CAN_PERCENT, ExternalKeysManager.get().getRightSerialsList(CacheUtil.S4)
+                .get(ExternalKeysManager.get().getRightSerialsListIndex(CacheUtil.S4)).getType())) {
+            canPercentTop = ExternalKeysManager.get().getRightSerialsListIndex(CacheUtil.S4) < 12;
+            canPercentFlag = !canPercentFlag;
+            return canPercentFlag;
+        }
+        return false;
+    }
+
+
+    static void parseMCUTOARM_3(byte val, byte state) {
+        switch (val) {
+            case KEY_30_AUTO:
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    break;
+                }
+                if (state == TYPE_KEY_PRESS || state == TYPE_KEY_PRESS_LONG_2)
+                    ExternalKeysCommand.get().clickAuto();
+                break;
+            case KEY_31_HORIZONTAL_CURSOR: {
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    break;
+                }
+                if (state == TYPE_KEY_PRESS || state == TYPE_KEY_PRESS_LONG_2) {
+                    PlaySound.getInstance().playButton();
+                    boolean hor = getVisibleCursorH();
+
+                    {
+                        int s = -1;
+                        if(hor){
+                            if (CacheUtil.get().getLastObjectIsCursor()==false){
+//                                backState = BACKSTATE_HCURSOR;
+                                BackStateUpdate(BACKSTATE_HCURSOR);
+                                CacheUtil.get().setLastObjectIsCursor(true);
+                                ExternalKeysCommand.get().setCursorSelected(true,
+                                        ExternalKeysCommand.get().getCursorSelected(true));
+                                singleHCursor = CursorManage.getInstance().getHorIndex() != 3;
+                            }else {
+                                int selectCursor = CursorManage.getInstance().getCurrSelectCursor();
+                                switch (selectCursor) {
+                                    case TChan.Cursor_row_1:
+                                    case TChan.Cursor_row_2:
+                                    case TChan.Cursor_row_3:
+                                    case TChan.Cursor_row_4:
+                                        s = ExternalKeysMsgCursor.TYPE_CLOSE;
+                                        break;
+                                    case TChan.Cursor_col_1:
+                                    case TChan.Cursor_col_2:
+                                    case TChan.Cursor_col_3:
+                                    case TChan.Cursor_col_4:
+//                                        backState = BACKSTATE_HCURSOR;
+                                        BackStateUpdate(BACKSTATE_HCURSOR);
+                                        CacheUtil.get().setLastObjectIsCursor(true);
+                                        ExternalKeysCommand.get().setCursorSelected(true,
+                                                ExternalKeysCommand.get().getCursorSelected(true));
+                                        singleHCursor = CursorManage.getInstance().getHorIndex() != 3;
+                                        break;
+                                    default:
+                                }
+                            }
+                        }else{
+                            s = ExternalKeysMsgCursor.TYPE_OPEN;
+                        }
+                        if(s >= 0) {
+                            ExternalKeysCommand.get().clickCursor(true, s);
+                        }
+                    }
+                }
+            }
+            break;
+            case KEY_32_CH1:
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    break;
+                }
+                if (state == TYPE_KEY_PRESS || state == TYPE_KEY_PRESS_LONG_2) {
+                    Logger.d(TAG, "KEY_32_CH1," + state);
+                    ExternalKeysCommand.get().clickRightChannel(1);
+                }
+                break;
+            case KEY_33_MATH:
+                Logger.e(TAG, "KEY_33_MATH=" + state);
+                if (state == TYPE_KEY_PRESS && !ExternalKeysCommand.get().isSerialsWordVisible()) {
+//                    ExternalKeysCommand.get().clickRightMath(ExternalKeysMsgChannel.MATH1);
+                    ExternalKeysCommand.get().clickAddRightMath();
+                }
+//                else if (state == TYPE_KEY_PRESS_LONG_2) {
+//                    ExternalKeysCommand.get().clickRightSerials(1);
+//                }
+
+                break;
+            case KEY_34_POSITION_CENTER: {
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    break;
+                }
+                if (positionV) {
+                    int chIdx = WaveManage.get().getCurCh();
+                    WaveManage.get().setCenterChY(chIdx);
+                    switch (WorkModeManage.getInstance().getmWorkMode()) {
+                        case IWorkMode.WorkMode_XY: {
+                            if (ChannelFactory.isDynamicCh(TChan.toFpgaChNo(chIdx))) {
+                                RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, chIdx);
+                                if (TChan.Ch1 == chIdx || TChan.Ch3 == chIdx) {
+                                    RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, WaveZoneDisplay_XY.MOVE_LEFTRIGHT);
+                                } else if (TChan.Ch2 == chIdx || TChan.Ch4 == chIdx) {
+                                    RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, WaveZoneDisplay_XY.MOVE_UPDOWN);
+                                }
+                            }
+                            break;
+                        }
+                        case IWorkMode.WorkMode_YT:
+                        case IWorkMode.WorkMode_YTZOOM: {
+                            RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, chIdx);
+                            RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, WaveZoneDisplay_YT.MOVE_UPDOWN);
+                            break;
+                        }
+                    }
+                } else {
+                    if (ExternalKeysCommand.get().moveTimeBasePosition50Percent()) {
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, TChan.TriggerTime);
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, WaveZoneDisplay_YT.MOVE_LEFTRIGHT);
+                    }
+                }
+            }
+            break;
+            case KEY_35_SCALE_CENTER:
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    break;
+                }
+                ExternalKeysCommand.get().channelVernier();
+                break;
+            case KEY_36_SELECT_CENTER:
+                {
+
+//                    当前为DialogOkCancel或者DialogOk窗口
+                    if (ExternalKeysCommand.get().isDialogOkVisible()) {
+                        ExternalKeysManager.get().moveIntoDialogOkSelect();
+                    }
+                    else
+                    {
+//                当前为dialogTopScale状态打开时，点击关闭dialog
+                        if (ExternalKeysCommand.get().isDialogShow(MainViewGroup.DIALOG_TOPSCALE)
+                                || ExternalKeysCommand.get().isDialogShow(MainViewGroup.DIALOG_BANDWIDTHHZ)) {
+                            if (ExternalKeysManager.get().showViewIfGone()) {
+                                return;
+                            }
+                            ExternalKeysManager.get().closeDialog();
+                        }
+////                当前为参考选择窗口时，点击选择可选参考数据
+//                    else if (ExternalKeysCommand.get().isDialogShow(MainViewGroup.DIALOG_REFRECALL)) {
+//                        ExternalKeysCommand.get().moveRefRecall(DialogRefRecall.ACTION_REFRECALL_FINISH, 1);
+//                        ExternalKeysManager.get().moveBackNoClick();
+//                    }
+
+//                当前为topSlip打开状态时，点击选中当前选项，并进入下一级菜单
+                        else if (ExternalKeysCommand.get().isSlip()
+                                || CacheUtil.get().getBoolean(CacheUtil.MAIN_BOTTOM_SLIP_SERIALBUSTXT)) {
+                            ExternalKeysManager.get().moveInto();
+                        }
+//                    当前各种状态都不是时，则点击通道选择预选框
+                        else {
+
+                            {
+                                //Log.d(TAG,"backState:" +backState +",singleHCursor:" +singleHCursor);
+                                if (backState == BACKSTATE_VCURSOR) {
+                                    singleVCursor = !singleVCursor;
+                                    if (singleVCursor) {
+                                        ExternalKeysCommand.get().setCursorSelected(false, TChan.Cursor_col_1);
+                                    } else {
+                                        ExternalKeysCommand.get().setCursorSelected(false, TChan.Cursor_col_4);
+                                    }
+                                } else if (backState == BACKSTATE_HCURSOR) {
+                                    singleHCursor = !singleHCursor;
+                                    if (singleHCursor) {
+                                        ExternalKeysCommand.get().setCursorSelected(true, TChan.Cursor_row_1);
+                                    } else {
+                                        ExternalKeysCommand.get().setCursorSelected(true, TChan.Cursor_row_4);
+                                    }
+                                } else if (backState == BACKSTATE_CHLIST) {
+                                    ExternalKeysManager.get().moveIntoChannelsSelect();
+                                } else if (backState == BACKSTATE_SEGMENT) {
+                                    ExternalKeysManager.get().moveIntoSegment();
+                                }
+                            }
+                        }
+                    }
+                }
+                break;
+            case KEY_37_TRIGGER_CENTER: {
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    break;
+                }
+                ExternalKeysCommand.get().timeVernier();
+
+//                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+//                    break;
+//                }
+//                TriggerValueVoltageLine triggerValueVoltageLine = TriggerValueVoltageLine.getInstance();
+//                if (state == TYPE_KEY_PRESS) {
+//                    if (triggerValueVoltageLine.isTriggerlevelActive()) {
+//                        ExternalKeysCommand.get().clickTriggerLevelCenter();
+//                    } else {
+//                        ExternalKeysCommand.get().clickValueLevelCenter();
+//                    }
+//                } else if (state == TYPE_KEY_PRESS_LONG_2) {
+//                    triggerValueVoltageLine.switchTriggerValueLevel();
+//                }
+            }
+
+
+            break;
+        }
+    }
+
+    //    static boolean bKey37TriggerCenterTriggerValid = true;
+    //TODO 需要匹配新的key协议
+    static void parseMCUTOARM_4(byte val, byte state) {
+        Logger.d(TAG,"val:" + Integer.toHexString(val) + ",state:" + state);
+        switch (val) {
+            case KEY_40_REF:
+                if (state == TYPE_KEY_PRESS && !ExternalKeysCommand.get().isSerialsWordVisible()) {
+//                    ExternalKeysCommand.get().clickRightRef(ExternalKeysMsgChannel.REF1);
+                    ExternalKeysCommand.get().clickAddRightRef();
+                }
+//                else if (state == TYPE_KEY_PRESS_LONG_2) {
+//                    ExternalKeysCommand.get().clickRightSerials(2);
+//                }
+                break;
+            case KEY_41_TOUCH_OFF: {
+                if (state == TYPE_KEY_PRESS || state == TYPE_KEY_PRESS_LONG_2) {
+                    boolean bled = false;
+                    bled=LockScreenUtils.isLockScreen(App.get().getApplicationContext());
+//                    if (ScreenControls.getInstance().isLockScreen(ScreenControls.LOCK_KEY)) {
+//                        ScreenControls.getInstance().unLockScreen(ScreenControls.LOCK_KEY);
+//                        bled = false;
+//                    } else {
+//                        ScreenControls.getInstance().lockScreen(ScreenControls.LOCK_KEY);
+//                        bled = true;
+//                    }
+                    sendExternalToMcuMsg(bled ? ExternalKeysMsg_ToMCU.STATE_LED_ON : ExternalKeysMsg_ToMCU.STATE_LED_OFF);
+                }
+            }
+            break;
+            case KEY_42_HOME:
+                Logger.d(TAG,"val:HOME" + Integer.toHexString(val) + ",state:" + state);
+                if (state == TYPE_KEY_PRESS || state == TYPE_KEY_PRESS_LONG_2 ||state == TYPE_KEY_PRESS_LONG) {
+                    Logger.d(TAG,"val:test" + Integer.toHexString(val) + ",state:" + state);
+                    RxBus.getInstance().post(RxEnum.MSG_HIDE_KEYBOARD,false);
+
+                    PlaySound.getInstance().playButton();
+                    if(state == TYPE_KEY_PRESS_LONG_2 || state == TYPE_KEY_PRESS_LONG){
+                        if(HardwareProduct.isExtKeyboard()){
+                            sendExternalToMcuMsg(LockScreenUtils.isLockScreen(App.get().getBaseContext()) ? ExternalKeysMsg_ToMCU.STATE_LED_ON : ExternalKeysMsg_ToMCU.STATE_LED_OFF);
+                            break;
+                        }
+                    }
+
+                    SaveManage.getInstance().saveToDefaultSaveName();
+                    SaveManage.getInstance().saveToOtherSaveName();
+//                    ExternalKeysCommand.get().clickHome();
+                }
+                break;
+
+            case KEY_44_POSITION_UP: {
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    break;
+                }
+                int count = state == TYPE_KEY_PRESS ? 1 : getPressLongSpeed(1);
+
+                switch (WorkModeManage.getInstance().getmWorkMode()) {
+                    case IWorkMode.WorkMode_XY: {
+                        if (WaveManage.get().getCurCh() != TChan.Ch2) {
+                            WaveManage.get().setSelectCursor(TChan.Ch2);
+                        }
+                        ExternalKeysCommand.get().moveChannelPosition(true, count);
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, TChan.Ch2);
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, WaveZoneDisplay_XY.MOVE_UPDOWN);
+                        break;
+                    }
+                    case IWorkMode.WorkMode_YT:
+                    case IWorkMode.WorkMode_YTZOOM: {
+                        ExternalKeysCommand.get().moveChannelPosition(true, count);
+                        int chIdx = WaveManage.get().getCurCh();
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, chIdx);
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, WaveZoneDisplay_YT.MOVE_UPDOWN);
+                        break;
+                    }
+                }
+            }
+            break;
+            case KEY_45_SCALE_UP:
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    break;
+                }
+
+                ExternalKeysCommand.get().moveChannelScale(false, state == TYPE_KEY_PRESS ? 1 : getPressLongSpeed(4));
+                break;
+            case KEY_46_SELECT_UP:
+                SelectKey(true, KEY_SELECT_UP, state);
+                break;
+            case KEY_47_TRIGGER_UP: {
+                if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                    break;
+                }
+                int count = state == TYPE_KEY_PRESS ? 1 : getPressLongSpeed(1);
+
+                if (TriggerValueVoltageLine.getInstance().isTriggerlevelActive()) {
+                    ExternalKeysCommand.get().moveTriggerLevel(true, count);
+                } else {
+                    moveValueLevel(true, count);
+                }
+            }
+            break;
+        }
+    }
+
+    static void moveValueLevel() {
+        int count = 0;
+        synchronized (lock) {
+            count = valueLevelCount;
+            if (count > 0) {
+                valueLevelCount = 0;
+            }
+        }
+        if (count > 0) {
+            ExternalKeysCommand.get().moveValueLevel(bUpMoveValueLevel, count);
+        }
+    }
+
+    static void moveValueLevel(boolean isUp, int count) {
+        boolean bValue = false;
+        synchronized (lock) {
+            if (bUpMoveValueLevel == isUp) {
+                valueLevelCount += count;
+            } else {
+                bValue = true;
+            }
+        }
+        if (bValue) {
+            moveValueLevel();
+            synchronized (lock) {
+                bUpMoveValueLevel = isUp;
+                valueLevelCount = count;
+            }
+        }
+    }
+
+    static Object lock = new Object();
+    static volatile boolean bUpMoveValueLevel = false;
+    static volatile int valueLevelCount = 0;
+
+    static boolean bKeyboradCandidatesWord = false;
+
+    static void SelectKey(boolean rightWard, int key, byte state) {
+        Log.d(TAG, "SelectKey() called with: rightWard = [" + rightWard + "], key = [" + key + "]");
+        bKeyboradCandidatesWord = false;
+        int count = state == TYPE_KEY_PRESS ? 1 : KEY_PRESS_LONG_VAL;
+
+        if (ExternalKeysCommand.get().isDialogOkVisible()) {
+            canPercentFlag = false;
+            ExternalKeysManager.get().moveDialogOkSelect(!rightWard, count);
+        } else if (ExternalKeysCommand.get().isDialogShow(MainViewGroup.DIALOG_TOPSCALE)
+                || ExternalKeysCommand.get().isDialogShow(MainViewGroup.DIALOG_BANDWIDTHHZ)) {
+
+            ExternalKeysCommand.get().moveTopDialogScale(key == KEY_SELECT_UP || key == KEY_SELECT_DOWN, !rightWard, count);
+        } else if (ExternalKeysCommand.get().isKeyboradCandidatesWordShow() && (key == KEY_SELECT_UP || key == KEY_SELECT_DOWN)) {
+
+            bKeyboradCandidatesWord = true;
+            if (rightWard) {
+                ExternalKeysCommand.get().moveKeyBoardCandidatesWord(TopDialogCandidatesWord.ACTION_CANDIDATES_LEFT, count);
+            } else {
+                ExternalKeysCommand.get().moveKeyBoardCandidatesWord(TopDialogCandidatesWord.ACTION_CANDIDATES_RIGHT, count);
+            }
+        }
+//                    当前为numberPicker窗口时，移动改变当前选中项的值
+        else if (ExternalKeysCommand.get().isDialogShow(MainViewGroup.DIALOG_NUMBERPICKER) && (key == KEY_SELECT_UP || key == KEY_SELECT_DOWN)) {
+
+            ExternalKeysManager.get().changeNumberPickerItem(rightWard);
+        }
+
+        else if (ExternalKeysCommand.get().isDialogShow(MainViewGroup.DIALOG_FLOATKEYBOARD) && (key == KEY_SELECT_UP || key == KEY_SELECT_DOWN)) {
+            ExternalKeysManager.get().changeNumberKeyboardItem(rightWard);
+        }
+//                当前为文本模式时，移动上下调节列表
+        else if (CacheUtil.get().getBoolean(CacheUtil.MAIN_BOTTOM_SLIP_SERIALBUSTXT) && (key == KEY_SELECT_UP || key == KEY_SELECT_DOWN)
+                && !ExternalKeysCommand.get().isSlip()) {
+
+            ExternalKeysCommand.get().moveSerialsWordList(rightWard ? count : count * -1);
+        }
+//                当前为可选中光标状态时，移动垂直方向的光标
+        else if (ExternalKeysCommand.get().isSlip() || CacheUtil.get().getBoolean(CacheUtil.MAIN_BOTTOM_SLIP_SERIALBUSTXT)) {
+            if (canPercentFlag) {
+                boolean s1Show = ExternalKeysCommand.get().isSlipShow(MainViewGroup.RIGHTSLIP_S1);
+                if (key == KEY_SELECT_UP || key == KEY_SELECT_LEFT) {
+                    ExternalKeysCommand.get().moveRightCanPercent(s1Show, false, canPercentTop, count);
+                } else if (key == KEY_SELECT_DOWN || key == KEY_SELECT_RIGHT) {
+                    ExternalKeysCommand.get().moveRightCanPercent(s1Show, true, canPercentTop, count);
+                }
+            } else {
+
+                long t = SystemClock.elapsedRealtime();
+                if(t - moveMenuTs > 25) {
+                    count = state == TYPE_KEY_PRESS ? 1 : getPressLongSpeed(1);
+                    switch (key) {
+                        case KEY_SELECT_UP:
+                            ExternalKeysManager.get().moveUp(count);
+                            break;
+                        case KEY_SELECT_DOWN:
+                            ExternalKeysManager.get().moveDown(count);
+                            break;
+                        case KEY_SELECT_LEFT:
+                            ExternalKeysManager.get().moveLeft(count);
+                            break;
+                        case KEY_SELECT_RIGHT:
+                            ExternalKeysManager.get().moveRight(count);
+                            break;
+                    }
+                    moveMenuTs = t;
+                }
+            }
+
+        } else {
+            boolean vCursor = getVisibleCursorV();
+            boolean hCursor = getVisibleCursorH();
+            boolean chList = getVisibleChannelList();
+            boolean segment = getVisibleSegment();
+            boolean zoom = getVisibleZoom();
+                Logger.d(TAG,"vCursor:" + vCursor + ",hCursor:" + hCursor + ",chList:" + chList + ",zoom:" + zoom + ",key:" + key);
+//            if ((vCursor || hCursor) && !chList && !zoom && !segment
+//                    && ((vCursor && (key == KEY_SELECT_RIGHT || key == KEY_SELECT_LEFT))
+//                    || (hCursor && (key == KEY_SELECT_UP || key == KEY_SELECT_DOWN)))
+//            ) {
+//                //只有垂直光标可操作时
+//                //只有水平光标可操作时
+//                backState = BACKSTATE_CURSOR;
+//            } else if (!(vCursor || hCursor) && chList && !zoom && !segment && (key == KEY_SELECT_RIGHT || key == KEY_SELECT_LEFT)) {
+//                //只有通道选择条可操作时
+//                backState = BACKSTATE_CHLIST;
+//            } else if (!(vCursor || hCursor) && !chList && zoom && !segment && (key == KEY_SELECT_RIGHT || key == KEY_SELECT_LEFT)) {
+//                //只有zoom上半部分可操作时
+//                backState = BACKSTATE_ZOOMUP;
+//            } else if (!(vCursor || hCursor) && !chList && !zoom && !segment) {
+//                //全部不可操作时，显示并移动通道选择条
+//                backState = BACKSTATE_CHLIST;
+//            } else if (!(vCursor || hCursor) && !chList && !zoom && segment && (key == KEY_SELECT_RIGHT || key == KEY_SELECT_LEFT)) {
+//                backState = BACKSTATE_SEGMENT;
+//            } //有两项以上可操作时，不修改backState
+            backState=getBackState();
+
+            if (backState==BACKSTATE_NULL){
+                //backState=BACKSTATE_CHLIST;
+                return;
+            }
+
+            if (backState != BACKSTATE_CHLIST && backState != BACKSTATE_SEGMENT) {
+                ExternalKeysUI.getInstance().setFocusViewVisible(false);
+            }
+
+            if ((((backState == BACKSTATE_CHLIST) || (backState == BACKSTATE_ZOOMUP)) /*&& (key == KEY_SELECT_RIGHT || key == KEY_SELECT_LEFT)*/)
+                    || (backState == BACKSTATE_CURSOR) || (backState == BACKSTATE_HCURSOR)
+                    || (backState == BACKSTATE_SEGMENT)) {
+                editorMulMove(key, !rightWard, state);
+            }
+        }
+    }
+
+    static long moveMenuTs = 0;
+    static void parseEditor(byte[] bytes){
+        if (ScreenControls.getInstance().isExternalKey()) return;
+        if (ExternalKeysCommand.get().isUserTouch()) return;
+        ExternalKeysCommand.get().hideCenterMenuAndCenterHalf();
+        AutoSave.getInstance().setUserInput(true);
+        int idx = bytes[0];
+        int dir = (bytes[1] & 0x80) == 0 ? KNOB_CLOCKWISE : KNOB_ANTICLOCKWISE;
+        int val = bytes[1] & 0x7F;
+        boolean rightWard = true;
+        if (dir == KNOB_CLOCKWISE) {
+            rightWard = false;
+        }
+        if(val > 0){
+            switch (idx){
+                case KNOB_2: {
+                    Log.d(Tag.Debug, String.format("ExternalKeysProtocol.parseEditor: KNOB2" ));
+                    if (ExternalKeysCommand.get().isDialogShow(MainViewGroup.DIALOG_TOPSCALE)
+                    || ExternalKeysCommand.get().isDialogShow(MainViewGroup.DIALOG_BANDWIDTHHZ)) {
+                        ExternalKeysCommand.get().moveTopDialogScale(true, !rightWard, val);
+                    }
+
+                    else if (ExternalKeysCommand.get().isDialogShow(MainViewGroup.DIALOG_TEXTKEYBOARD)) {
+                        if (rightWard) {
+                            ExternalKeysCommand.get().moveKeyBoardCandidatesWord(TopDialogCandidatesWord.ACTION_CANDIDATES_LEFT, val);
+                        } else {
+                            ExternalKeysCommand.get().moveKeyBoardCandidatesWord(TopDialogCandidatesWord.ACTION_CANDIDATES_RIGHT, val);
+                        }
+                    }
+
+                    else if (ExternalKeysCommand.get().isDialogShow(MainViewGroup.DIALOG_NUMBERPICKER)) {
+                        ExternalKeysManager.get().changeNumberPickerItem(rightWard);
+                    }
+
+                    else if (ExternalKeysCommand.get().isDialogShow(MainViewGroup.DIALOG_FLOATKEYBOARD)) {
+                        ExternalKeysManager.get().changeNumberKeyboardItem(rightWard);
+                    }
+
+                    else if (CacheUtil.get().getBoolean(CacheUtil.MAIN_BOTTOM_SLIP_SERIALBUSTXT)) {
+                        ExternalKeysCommand.get().moveSerialsWordList(rightWard ? val : val * -1);
+                    }
+
+                    else {
+
+                        {
+                            boolean vCursor = getVisibleCursorV();
+                            boolean hCursor = getVisibleCursorH();
+                            boolean chList = getVisibleChannelList();
+                            boolean zoom = getVisibleZoom();
+                            boolean segment=getVisibleSegment();
+                            if (vCursor && hCursor && !chList && !zoom && !segment){
+                                int i=CursorManage.getInstance().getCurrSelectCursor();
+                                if (TChan.isCursorCol4(i)){
+                                    backState=BACKSTATE_VCURSOR;
+                                }else if (TChan.isCursorRow4(i)){
+                                    backState=BACKSTATE_HCURSOR;
+                                }
+
+                            }else if (vCursor && !hCursor && !chList && !zoom && !segment) {
+                                //只有垂直光标可操作时
+                                backState = BACKSTATE_VCURSOR;
+                            } else if (!vCursor && hCursor && !chList && !zoom && !segment) {
+                                //只有水平光标可操作时
+                                backState = BACKSTATE_HCURSOR;
+                            } else if (!vCursor && !hCursor && chList && !zoom && !segment) {
+                                //只有通道选择条可操作时
+                            } else if (!vCursor && !hCursor && !chList && zoom && !segment) {
+                                //只有zoom上半部分可操作时
+                            }else if (!vCursor && !hCursor && !chList && !zoom && segment){
+
+                            } else if (!vCursor && !hCursor && !chList && !zoom && !segment) {
+                                //全部不可操作时，显示并移动通道选择条
+                            }//有两项以上可操作时，不修改backState
+                            if (backState == BACKSTATE_VCURSOR || backState == BACKSTATE_HCURSOR) {
+                                editorMulMove2(false, !rightWard, val);
+                            }
+                        }
+                    }
+
+                }
+                break;
+                case KNOB_1: {
+                    Log.d(Tag.Debug, String.format("ExternalKeysProtocol.parseEditor: KNOB1" ));
+                    if (ExternalKeysCommand.get().isDialogOkVisible()) {
+
+                        ExternalKeysManager.get().moveDialogOkSelect(!rightWard, val);
+                    }
+//                当前为可选中光标状态时，移动垂直方向的光标
+                    else {
+
+//                  当前为时间调节窗口时，移动微调光标
+                        if (ExternalKeysCommand.get().isDialogShow(MainViewGroup.DIALOG_TOPSCALE)
+                                || ExternalKeysCommand.get().isDialogShow(MainViewGroup.DIALOG_BANDWIDTHHZ)) {
+                            ExternalKeysCommand.get().moveTopDialogScale(false, !rightWard, val);
+                        }
+////                当前为参考波形选择窗口时，移动选择可选参考数据
+//                    else if (ExternalKeysCommand.get().isDialogShow(MainViewGroup.DIALOG_REFRECALL)) {
+//                        if (rightWard) {
+//                            ExternalKeysCommand.get().moveRefRecall(DialogRefRecall.ACTION_REFRECALL_DOWN, count);
+//                        } else {
+//                            ExternalKeysCommand.get().moveRefRecall(DialogRefRecall.ACTION_REFRECALL_UP, count);
+//                        }
+//                    }
+
+//                当前为任意Slip打开状态时，在当前等级菜单中移动穿行
+                        else if (ExternalKeysCommand.get().isSlip() || CacheUtil.get().getBoolean(CacheUtil.MAIN_BOTTOM_SLIP_SERIALBUSTXT)) {
+
+                            long t = SystemClock.elapsedRealtime();
+                            if(t - moveMenuTs > 25){
+                                val = 1;
+                                if (rightWard) {
+                                    ExternalKeysManager.get().moveLeft(getPressLongSpeed(1));
+                                } else {
+                                    ExternalKeysManager.get().moveRight(getPressLongSpeed(1));
+                                }
+                                moveMenuTs = t;
+                            }
+
+
+                        }
+//                    当前各种状态都不是时，则移动通道选择预选框
+                        else {
+
+                            {
+                                boolean vCursor = getVisibleCursorV();
+                                boolean hCursor = getVisibleCursorH();
+                                boolean chList = getVisibleChannelList();
+                                boolean zoom = getVisibleZoom();
+                                boolean segment=getVisibleSegment();
+                                backState=getBackState();
+//                                if (vCursor && !hCursor && !chList && !zoom && !segment) {
+//                                    //只有垂直光标可操作时
+//                                    backState = BACKSTATE_VCURSOR;
+//                                } else if (!vCursor && hCursor && !chList && !zoom && !segment) {
+//                                    //只有水平光标可操作时
+//                                    backState = BACKSTATE_HCURSOR;
+//                                } else if (!vCursor && !hCursor && chList && !zoom && !segment) {
+//                                    //只有通道选择条可操作时
+//                                    backState = BACKSTATE_CHLIST;
+//                                } else if (!vCursor && !hCursor && !chList && zoom && !segment) {
+//                                    //只有zoom上半部分可操作时
+//                                    backState = BACKSTATE_ZOOMUP;
+//                                }else if (!vCursor && !hCursor && !chList && !zoom && segment){
+//                                    backState=BACKSTATE_SEGMENT;
+//                                } else if (!vCursor && !hCursor && !chList && !zoom && !segment) {
+//                                    //全部不可操作时，显示并移动通道选择条
+//                                    backState = BACKSTATE_CHLIST;
+//                                }//有两项以上可操作时，不修改backState
+                                editorMulMove2(true, !rightWard, val);
+                            }
+                        }
+                    }
+                }
+                break;
+
+                case KNOB_HORIZONTAL_POSITION:
+                {
+                    if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                        break;
+                    }
+                    val = (int)(Math.ceil((double) val * val / 2) + 0.1);
+                    switch (WorkModeManage.getInstance().getmWorkMode()) {
+                        case IWorkMode.WorkMode_XY:
+                            if (WaveManage.get().getCurCh() != TChan.Ch1) {
+                                WaveManage.get().setSelectCursor(TChan.Ch1);
+                            }
+                            ExternalKeysCommand.get().moveChannelPosition(dir == KNOB_ANTICLOCKWISE, val);
+                            RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, TChan.Ch1);
+                            RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, WaveZoneDisplay_XY.MOVE_LEFTRIGHT);
+                            break;
+                        case IWorkMode.WorkMode_YT:
+                        case IWorkMode.WorkMode_YTZOOM:
+                            if (ExternalKeysCommand.get().moveTimeBasePosition(dir == KNOB_CLOCKWISE, val)) {
+                                RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, TChan.TriggerTime);
+                                RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, WaveZoneDisplay_YT.MOVE_LEFTRIGHT);
+                            }
+                            break;
+                    }
+                }
+                    break;
+                case KNOB_TRIGGER_LEVEL:
+                    if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                        break;
+                    }
+
+                    val = (int)(Math.ceil((double) val * val / 2) + 0.1);
+
+                    int triggerType = TriggerFactory.getTriggerType();
+                    if(triggerType == Trigger.TRIG_TYPE_VIDEO){
+                        TriggerVideo triggerVideo = (TriggerVideo) TriggerFactory.getTriggerObj(Trigger.TRIG_TYPE_VIDEO);
+                        if(triggerVideo != null){
+                            if(triggerVideo.getVideoTrigger() == TriggerVideo.VIDEO_TRIGGER_LINE){
+                                Command_Trigger_Video trigger_video = Command.get().getTrigger_video();
+                                trigger_video.Line(trigger_video.LineQ() + (dir == KNOB_CLOCKWISE ? val : -1),true);
+                            }
+                        }
+
+                    }else {
+                        if (TriggerValueVoltageLine.getInstance().isTriggerlevelActive()) {
+                            ExternalKeysCommand.get().moveTriggerLevel(dir == KNOB_CLOCKWISE, val);
+                        } else {
+                            moveValueLevel(dir == KNOB_CLOCKWISE, val);
+                        }
+                    }
+
+                    break;
+                case KNOB_HORIZONTAL_SCALE:
+                    if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                        break;
+                    }
+                    ExternalKeysCommand.get().moveTimeBaseScale(dir == KNOB_ANTICLOCKWISE, val);
+                    break;
+                case KNOB_VERTICAL_POSITION:
+                {
+                    if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                        break;
+                    }
+                    val = (int)(Math.ceil((double) val * val / 2) + 0.1);
+                    switch (WorkModeManage.getInstance().getmWorkMode()) {
+                        case IWorkMode.WorkMode_XY: {
+                            if (WaveManage.get().getCurCh() != TChan.Ch2) {
+                                WaveManage.get().setSelectCursor(TChan.Ch2);
+                            }
+                            ExternalKeysCommand.get().moveChannelPosition(dir == KNOB_ANTICLOCKWISE, val);
+                            RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, TChan.Ch2);
+                            RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, WaveZoneDisplay_XY.MOVE_UPDOWN);
+                            break;
+                        }
+                        case IWorkMode.WorkMode_YT:
+                        case IWorkMode.WorkMode_YTZOOM: {
+                            ExternalKeysCommand.get().moveChannelPosition(dir == KNOB_ANTICLOCKWISE, val);
+                            int chIdx = WaveManage.get().getCurCh();
+                            RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, chIdx);
+                            RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, WaveZoneDisplay_YT.MOVE_UPDOWN);
+                            break;
+                        }
+                    }
+                }
+                    break;
+                case KNOB_VERTICAL_SCALE:
+                    if (ExternalKeysCommand.get().isSerialsWordVisible()) {
+                        break;
+                    }
+                    ExternalKeysCommand.get().moveChannelScale(dir == KNOB_CLOCKWISE, val);
+                    break;
+            }
+        }
+    }
+    static void parseMCUTOARM(byte[] bytes) {
+        //Log.d("Tag.Debug", String.format("ExternalKeysProtocol.parseMCUTOARM rec: %s", Arrays.toString(bytes) ));
+        if (ScreenControls.getInstance().isExternalKey()){ Log.d(TAG,"parseMCUTOARM.isExternalKey");return;}
+        if (ExternalKeysCommand.get().isUserTouch()){ Log.d(TAG,"parseMCUTOARM.isUserTouch");return;}
+        ExternalKeysCommand.get().hideCenterMenuAndCenterHalf();
+        if (isCompositeKey(bytes)) {Log.d(TAG,"parseMCUTOARM.isCompositeKey");return;}
+        //Log.d("Tag.Debug", String.format("ExternalKeysProtocol.parseMCUTOARM parse: %s",Arrays.toString(bytes) ));
+
+        AutoSave.getInstance().setUserInput(true);
+        for (int i = 0; i < 5; i++) {
+            for (int j = 0; j < 8; j++) {
+                if ((bytes[i] & (1 << j)) != 0) {
+                    switch (bytes[5]) {
+                        case TYPE_KEY_PRESS:
+                        case TYPE_KEY_PRESS_LONG_2:
+                        case TYPE_KEY_PRESS_LONG:
+                            switch (i) {
+                                case 0:
+                                    parseMCUTOARM_0((byte) (1 << j), bytes[5]);
+                                    break;
+                                case 1:
+                                    parseMCUTOARM_1((byte) (1 << j), bytes[5]);
+                                    break;
+                                case 2:
+                                    parseMCUTOARM_2((byte) (1 << j), bytes[5]);
+                                    break;
+                                case 3:
+                                    parseMCUTOARM_3((byte) (1 << j), bytes[5]);
+                                    break;
+                                case 4:
+                                    parseMCUTOARM_4((byte) (1 << j), bytes[5]);
+                                    break;
+                            }
+                            break;
+                        case TYPE_KEY_PRESS_EXT:
+                        case TYPE_KEY_PRESS_LONG_EXT:
+                            switch (i){
+                                case 0:
+                                    parseMCUTOARM_10((byte) (1 << j), bytes[5]);
+                                    break;
+                                case 1:
+                                    parseMCUTOARM_11((byte) (1 << j), bytes[5]);
+                                    break;
+                                case 2:{
+                                    parseMCUTOARM_12((byte) (1 << j), bytes[5]);
+                                }break;
+                            }
+
+                    }
+                }
+            }
+        }
+
+    }
+
+
+    static long pressTs = 0;
+    static long startTs = 0;
+    private static int getPressLongSpeed(int speed) {
+
+        long ts = SystemClock.elapsedRealtime();
+        if(ts - pressTs >  100){
+            startTs = ts;
+        }
+        pressTs = ts;
+        ts = ts - startTs;
+        if(ts > 100){
+            ts = speed * ts / 100;
+            if(ts > 15) {
+                ts = 15;
+            }
+            return (int)(ts);
+        }else{
+            return speed * 3;
+        }
+    }
+    private static boolean getVisibleCursorV() {
+        if (WorkModeManage.getInstance().getmWorkMode() != IWorkMode.WorkMode_XY) {
+            return CacheUtil.get().getBoolean(CacheUtil.MAIN_WAVE_YT_CURSORV_VISIBLE);
+        } else {
+            return CacheUtil.get().getBoolean(CacheUtil.MAIN_WAVE_XY_CURSORV_VISIBLE);
+        }
+    }
+
+    private static boolean getVisibleCursorH() {
+        if (WorkModeManage.getInstance().getmWorkMode() != IWorkMode.WorkMode_XY) {
+            return CacheUtil.get().getBoolean(CacheUtil.MAIN_WAVE_YT_CURSORH_VISIBLE);
+        } else {
+            return CacheUtil.get().getBoolean(CacheUtil.MAIN_WAVE_XY_CURSORH_VISIBLE);
+        }
+    }
+
+    private static boolean getVisibleChannelList() {
+        return CacheUtil.get().getBoolean(CacheUtil.MAIN_BOTTOM_CHANNELLIST_VISIBLE)
+                && WorkModeManage.getInstance().getmWorkMode() != IWorkMode.WorkMode_XY;
+    }
+
+    private static boolean getVisibleZoom() {
+        return CacheUtil.get().getBoolean(CacheUtil.MAIN_BOTTOM_SLIP_ZOOM)
+                && WorkModeManage.getInstance().getmWorkMode() != IWorkMode.WorkMode_XY;
+    }
+
+    private static boolean getVisibleSegment() {
+        return CacheUtil.get().getBoolean(CacheUtil.MAIN_CENTER_SEGMENTED_VISIBLE)
+                && WorkModeManage.getInstance().getmWorkMode() != IWorkMode.WorkMode_XY;
+    }
+
+    private static boolean switchBackState() {
+        int preBackState = backState;
+        boolean vCursor =false;// getVisibleCursorV();
+        boolean hCursor =false;// getVisibleCursorH();
+        boolean channelList = getVisibleChannelList();
+        boolean segment = getVisibleSegment();
+        boolean zoom = getVisibleZoom();
+            if (/*!vCursor && !hCursor &&*/ !channelList && !zoom && !segment) {
+                backState = BACKSTATE_NULL;
+                return backState != preBackState;
+            }
+            boolean[] list = {vCursor , hCursor, channelList, segment, zoom};
+            do {
+                if (backState<BACKSTATE_MIN){
+                    backState=BACKSTATE_MIN;
+                }else  if (backState == BACKSTATE_MAX) {
+                    backState = BACKSTATE_MIN;
+                } else {
+                    backState++;
+                }
+            } while (!list[backState]);
+        if (backState<BACKSTATE_MIN) backState=BACKSTATE_MIN;
+        return backState != preBackState;
+    }
+
+    private static void selectBackStateList(){
+        boolean vCursor =getVisibleCursorV();
+        boolean hCursor = getVisibleCursorH();
+        boolean channelList = getVisibleChannelList();
+        boolean segment = getVisibleSegment();
+        boolean zoom = getVisibleZoom();
+        boolean[] bs=new boolean[]{vCursor,hCursor,channelList,segment,zoom};
+        for(int i=0;i<backStateList.size();i++){
+            if (bs[backStateList.get(i)]){
+                backState=backStateList.get(i);
+                    if (backStateList.get(i) == 1) {
+                        CacheUtil.get().setLastObjectIsCursor(true);
+                        ExternalKeysCommand.get().setCursorSelected(true,
+                                ExternalKeysCommand.get().getCursorSelected(true));
+                        singleHCursor = CursorManage.getInstance().getHorIndex() != 3;
+                    } else if (backStateList.get(i) == 0) {
+                        CacheUtil.get().setLastObjectIsCursor(true);
+                        ExternalKeysCommand.get().setCursorSelected(false,
+                                ExternalKeysCommand.get().getCursorSelected(false));
+                        singleVCursor = CursorManage.getInstance().getVerIndex() != 3;
+                    }
+                return;
+            }
+        }
+//        backState=BACKSTATE_CHLIST;
+        backState=BACKSTATE_NULL;
+    }
+    private static void selectDefaultBackState(){
+        boolean vCursor =getVisibleCursorV();
+        boolean hCursor = getVisibleCursorH();
+        boolean channelList = getVisibleChannelList();
+        boolean segment = getVisibleSegment();
+        boolean zoom = getVisibleZoom();
+        boolean[] bs=new boolean[]{vCursor,hCursor,channelList,segment,zoom};
+        for(int i=0;i<bs.length;i++){
+            if (bs[i]){
+                backState=i;
+                    if (i == 1) {
+                        CacheUtil.get().setLastObjectIsCursor(true);
+                        ExternalKeysCommand.get().setCursorSelected(true,
+                                ExternalKeysCommand.get().getCursorSelected(true));
+                        singleHCursor = CursorManage.getInstance().getHorIndex() != 3;
+                    } else if (i == 0) {
+                        CacheUtil.get().setLastObjectIsCursor(true);
+                        ExternalKeysCommand.get().setCursorSelected(false,
+                                ExternalKeysCommand.get().getCursorSelected(false));
+                        singleVCursor = CursorManage.getInstance().getVerIndex() != 3;
+                    }
+                return ;
+            }
+        }
+//        backState=BACKSTATE_CHLIST;
+        backState=BACKSTATE_NULL;
+    }
+    private static void editorMulMove2(boolean isMulUp, boolean isRight, int count) {
+        boolean vCursor = getVisibleCursorV();
+        boolean hCursor = getVisibleCursorH();
+        boolean chList = getVisibleChannelList();
+        boolean zoom = getVisibleZoom();
+        boolean segment=getVisibleSegment();
+        Log.d(Tag.Debug, String.format("ExternalKeysProtocol.editorMulMove2: isMulUp:%s,backState:%s,",isMulUp,backState ));
+        if (backState!=BACKSTATE_VCURSOR && backState!=BACKSTATE_HCURSOR){
+            CacheUtil.get().setLastObjectIsCursor(false);
+        }
+        switch (backState) {
+            case BACKSTATE_VCURSOR: {
+                CacheUtil.get().setLastObjectIsCursor(true);
+                ExternalKeysUI.getInstance().setFocusControlBackVisible(false);
+                ExternalKeysManager.get().setFocusViewVisible(View.GONE);
+                count = (int)(Math.ceil((double) count * count / 2) + 0.1);
+                if (isMulUp) {
+                    if (singleVCursor) {
+                        ExternalKeysCommand.get().setCursorSelected(false, TChan.Cursor_col_1);
+                        ExternalKeysCommand.get().moveCursor(false, isRight, count);
+                    } else {
+                        ExternalKeysCommand.get().setCursorSelected(false, TChan.Cursor_col_3);
+                        ExternalKeysCommand.get().moveZoomCursor(false, isRight, count);
+                    }
+                    RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, TChan.Cursor_col_1);
+                    RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, WaveZoneDisplay_YT.MOVE_LEFTRIGHT);
+                } else {
+                    if (singleVCursor) {
+                        ExternalKeysCommand.get().setCursorSelected(false, TChan.Cursor_col_2);
+                    } else {
+                        ExternalKeysCommand.get().setCursorSelected(false, TChan.Cursor_col_3);
+                    }
+                    ExternalKeysCommand.get().moveCursor(false, isRight, count);
+                    RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, TChan.Cursor_col_2);
+                    RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, WaveZoneDisplay_YT.MOVE_LEFTRIGHT);
+                }
+            }
+            break;
+            case BACKSTATE_HCURSOR: {
+                CacheUtil.get().setLastObjectIsCursor(true);
+                ExternalKeysUI.getInstance().setFocusControlBackVisible(false);
+                ExternalKeysManager.get().setFocusViewVisible(View.GONE);
+                count = (int)(Math.ceil((double) count * count / 2) + 0.1);
+               // Log.d(TAG,"singleHCursor:" + singleHCursor);
+                if (isMulUp) {
+                    if (singleHCursor) {
+                        ExternalKeysCommand.get().setCursorSelected(true, TChan.Cursor_row_1);
+                        ExternalKeysCommand.get().moveCursor(true, !isRight, count);
+                    } else {
+                        ExternalKeysCommand.get().setCursorSelected(true, TChan.Cursor_row_3);
+                        ExternalKeysCommand.get().moveZoomCursor(true, !isRight, count);
+                    }
+                    RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, TChan.Cursor_row_1);
+                    RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, WaveZoneDisplay_YT.MOVE_UPDOWN);
+                } else {
+                    if (singleHCursor) {
+                        ExternalKeysCommand.get().setCursorSelected(true, TChan.Cursor_row_2);
+                    } else {
+                        ExternalKeysCommand.get().setCursorSelected(true, TChan.Cursor_row_3);
+                    }
+                    ExternalKeysCommand.get().moveCursor(true, !isRight, count);
+                    RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, TChan.Cursor_row_2);
+                    RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, WaveZoneDisplay_YT.MOVE_UPDOWN);
+                }
+            }
+            break;
+            case BACKSTATE_CHLIST: {
+                if (isMulUp) {
+                    ExternalKeysManager.get().moveChannelsSelect(isRight, count);
+                    ExternalKeysUI.getInstance().setFocusControlBackVisible(false);
+                }
+            }
+            break;
+            case BACKSTATE_SEGMENT: {
+                if (isMulUp) {
+                    ExternalKeysManager.get().moveSegment(isRight, count);
+                    ExternalKeysUI.getInstance().setFocusControlBackVisible(false);
+                }
+            }
+            break;
+            case BACKSTATE_ZOOMUP: {
+                if (isMulUp) {
+                    if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_YTZOOM) {
+                        ExternalKeysUI.getInstance().showBackStateFocus(backState);
+                        ExternalKeysUI.getInstance().setFocusControlBackVisible(true);
+                        int symbol = isRight ? 1 : -1;
+                        count = (int)(Math.ceil((double) count * count / 2) + 0.1);
+                        WaveMaskLayer_YTZoom.getInstance().layerX_move(count * symbol);
+                    }
+                }
+            }
+            break;
+            default:
+//                if (isMulUp) {
+//
+//                    ExternalKeysManager.get().moveChannelsSelect(isRight, count);
+//                }
+                break;
+        }
+    }
+
+    private static void editorMulMove(int key, boolean isRight, byte state) {
+        int count = state == TYPE_KEY_PRESS ? 1 : KEY_PRESS_LONG_VAL;
+        boolean isLeftRight = key == KEY_SELECT_RIGHT || key == KEY_SELECT_LEFT;
+        boolean vCursor = getVisibleCursorV();
+        boolean hCursor = getVisibleCursorH();
+        boolean chList = getVisibleChannelList();
+        boolean segment = getVisibleSegment();
+        boolean zoom = getVisibleZoom();
+//        if (backState == BACKSTATE_CURSOR && !(vCursor || hCursor)) {
+//            switchBackState();
+//        } else if (backState == BACKSTATE_CHLIST && !chList) {
+//            switchBackState();
+//        } else if (backState == BACKSTATE_SEGMENT && !segment) {
+//            switchBackState();
+//        } else if (backState == BACKSTATE_ZOOMUP && !zoom) {
+//            switchBackState();
+//        }
+
+        if (backState==BACKSTATE_NULL){
+            selectBackStateList();
+
+            BackStateUpdate(backState);
+            if (backState!=BACKSTATE_HCURSOR && backState!=BACKSTATE_VCURSOR){
+                CacheUtil.get().setLastObjectIsCursor(false);
+            }
+        }
+
+
+        switch (backState) {
+            case BACKSTATE_HCURSOR:
+            case BACKSTATE_CURSOR: {
+                if (vCursor && hCursor) {
+                    curHCursor = !isLeftRight;
+                }
+                if (state != TYPE_KEY_PRESS) {
+                    count = getPressLongSpeed(1);
+                }
+                if (isLeftRight) {
+                    if (vCursor) {
+                        ExternalKeysCommand.get().moveCursor(false, isRight, count);
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, TChan.Cursor_col_1);
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, WaveZoneDisplay_YT.MOVE_LEFTRIGHT);
+                    }
+                } else {
+                    if (hCursor) {
+                        ExternalKeysCommand.get().moveCursor(true, isRight, count);
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION_LASTOBJECT, TChan.Cursor_row_1);
+                        RxBus.getInstance().post(RxEnum.WAVEZONE_SLIDEDIRECTION, WaveZoneDisplay_YT.MOVE_UPDOWN);
+                    }
+                }
+            }
+            break;
+            case BACKSTATE_CHLIST: {
+
+                if (isLeftRight) {
+                    canPercentFlag = false;
+                    ExternalKeysManager.get().moveChannelsSelect(isRight, count);
+                    ExternalKeysUI.getInstance().setFocusControlBackVisible(false);
+                }
+            }
+            break;
+            case BACKSTATE_SEGMENT: {
+//                if (isLeftRight)
+                {
+                    canPercentFlag = false;
+                    ExternalKeysManager.get().moveSegment(key, isRight, count);
+                    ExternalKeysUI.getInstance().setFocusControlBackVisible(false);
+                }
+            }
+            break;
+            case BACKSTATE_ZOOMUP: {
+                if (isLeftRight) {
+                    if (state != TYPE_KEY_PRESS) {
+                        count *= 3;
+                    }
+                    if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_YTZOOM) {
+                        int symbol = isRight ? 1 : -1;
+                        WaveMaskLayer_YTZoom.getInstance().layerX_move(count * symbol);
+                    }
+                }
+            }
+            break;
+            default:
+                if (isLeftRight) {
+                    canPercentFlag = false;
+                    ExternalKeysManager.get().moveChannelsSelect(isRight, count);
+                    ExternalKeysUI.getInstance().setFocusControlBackVisible(false);
+                }
+                break;
+        }
+    }
+
+
+    public static void setLastCursor(int lastObject) {
+        //Log.d(TAG, "setLastCursor() called with: lastObject = [" + lastObject + "]");
+
+        switch (lastObject) {
+            case TChan.Cursor_col_1:
+            case TChan.Cursor_col_2:
+            case TChan.Cursor_col_3:
+                BackStateUpdate(BACKSTATE_VCURSOR);
+                singleVCursor = CursorManage.getInstance().getVerIndex() != 3;
+                break;
+            case TChan.Cursor_row_1:
+            case TChan.Cursor_row_2:
+            case TChan.Cursor_row_3:
+                BackStateUpdate(BACKSTATE_HCURSOR);
+                singleHCursor = CursorManage.getInstance().getHorIndex() != 3;
+                break;
+            case TChan.TriggerTime:
+                positionV = false;
+                break;
+            case TChan.Ch1:
+            case TChan.Ch2:
+            case TChan.Ch3:
+            case TChan.Ch4:
+            case TChan.R1:
+            case TChan.R2:
+            case TChan.R3:
+            case TChan.R4:
+            case TChan.Math1:
+            case TChan.S1:
+            case TChan.S2:
+                positionV = true;
+                break;
+        }
+    }
+
+    private static byte[] save = {0x00, 0x00, 0x00, 0x00,0,0,0,0};
+
+
+
+    static synchronized byte[] parseToMCU(ExternalKeysMsg_ToMCU toMCU) {
+
+//        if (ScreenControls.getInstance().isExternalKey()) return save;
+
+        if (toMCU == null) return save;
+        switch (toMCU.getLedType()) {
+            case ExternalKeysMsg_ToMCU.TYPE_CH + TChan.Ch1:
+                if (!toMCU.getLedState().equals(ExternalKeysMsg_ToMCU.STATE_LED_OFF)) {
+                    save[3] = (byte) (save[3] | LED_30_CH1_RED | LED_32_CH1_GREEN);
+                } else {
+                    save[3] = (byte) (save[3] & ~(LED_30_CH1_RED | LED_32_CH1_GREEN));
+                }
+                break;
+            case ExternalKeysMsg_ToMCU.TYPE_CH + TChan.Ch2:
+                if (!toMCU.getLedState().equals(ExternalKeysMsg_ToMCU.STATE_LED_OFF)) {
+                    save[3] = (byte) (save[3] | LED_34_CH2_BLUE | LED_35_CH2_GREEN);
+                } else {
+                    save[3] = (byte) (save[3] & ~(LED_34_CH2_BLUE | LED_35_CH2_GREEN));
+                }
+                break;
+            case ExternalKeysMsg_ToMCU.TYPE_CH + TChan.Ch3:
+                if (!toMCU.getLedState().equals(ExternalKeysMsg_ToMCU.STATE_LED_OFF)) {
+                    save[3] = (byte) (save[3] | LED_36_CH3_RED | LED_37_CH3_BLUE);
+
+                } else {
+                    save[3] = (byte) (save[3] & ~(LED_36_CH3_RED | LED_37_CH3_BLUE));
+                }
+                break;
+            case ExternalKeysMsg_ToMCU.TYPE_CH + TChan.Ch4:
+                if (!toMCU.getLedState().equals(ExternalKeysMsg_ToMCU.STATE_LED_OFF)) {
+                    save[2] = (byte) (save[2] | (LED_23_CH4_GREEN));
+                } else {
+                    save[2] = (byte) (save[2] & ~(LED_23_CH4_GREEN));
+                }
+                break;
+            case ExternalKeysMsg_ToMCU.TYPE_CH+TChan.Ch5:{
+
+                if (!toMCU.getLedState().equals(ExternalKeysMsg_ToMCU.STATE_LED_OFF)) {
+                    save[5] = (byte) (save[5] | (LED_111_CH5_GREEN) );
+                    save[6] =(byte)(save[6] | LED_127_CH5_RED);
+                } else {
+                    save[5] = (byte) (save[5] & ~(LED_111_CH5_GREEN));
+                    save[6] =(byte)(save[6] & ~(LED_127_CH5_RED));
+                }
+            }break;
+            case ExternalKeysMsg_ToMCU.TYPE_CH+TChan.Ch6:{
+                if (!toMCU.getLedState().equals(ExternalKeysMsg_ToMCU.STATE_LED_OFF)) {
+                    save[5] = (byte) (save[5] | (LED_114_CH6_GREEN) | (LED_113_CH6_BLUE) );
+                } else {
+                    save[5] = (byte) (save[5] & ~(LED_114_CH6_GREEN | LED_113_CH6_BLUE ) );
+                }
+            }break;
+            case ExternalKeysMsg_ToMCU.TYPE_CH+TChan.Ch7:{
+                if (!toMCU.getLedState().equals(ExternalKeysMsg_ToMCU.STATE_LED_OFF)) {
+                    save[5] = (byte) (save[5] | (LED_115_CH7_RED) | (LED_117_CH7_GREEN)| LED_116_CH7_BLUE );
+                } else {
+                    save[5] = (byte) (save[5] & ~(LED_115_CH7_RED | LED_117_CH7_GREEN | LED_116_CH7_BLUE) );
+                }
+            }break;
+            case ExternalKeysMsg_ToMCU.TYPE_CH+TChan.Ch8:{
+                if (!toMCU.getLedState().equals(ExternalKeysMsg_ToMCU.STATE_LED_OFF)) {
+                    save[4] = (byte) (save[4] |   (LED_102_CH8_GREEN)| LED_101_CH8_BLUE );
+                } else {
+                    save[4] = (byte) (save[4] & ~(  LED_102_CH8_GREEN | LED_101_CH8_BLUE) );
+                }
+            }break;
+
+
+            case ExternalKeysMsg_ToMCU.TYPE_MATH:
+            case ExternalKeysMsg_ToMCU.TYPE_MATH+TChan.Math1:
+                if (!toMCU.getLedState().equals(ExternalKeysMsg_ToMCU.STATE_LED_OFF)) {
+                    save[1] = (byte) (save[1] & ~(LED_10_MATH_RED | LED_11_MATH_BLUE | LED_12_MATH_GREEN));
+                    save[1] = (byte) (save[1] | (LED_10_MATH_RED));
+                } else {
+                    save[1] = (byte) (save[1] & ~(LED_10_MATH_RED | LED_11_MATH_BLUE | LED_12_MATH_GREEN));
+                }
+
+                break;
+            case ExternalKeysMsg_ToMCU.TYPE_RUNSTOP:
+                if (toMCU.getLedState().equals(ExternalKeysMsg_ToMCU.STATE_LED_RED)) {
+                    save[0] = (byte) (save[0] | LED_00_STOP);
+                } else {
+                    save[0] = (byte) (save[0] & ~(LED_00_STOP));
+                }
+                if (toMCU.getLedState().equals(ExternalKeysMsg_ToMCU.STATE_LED_GREEN)) {
+                    save[1] = (byte) (save[1] | LED_17_RUN);
+                } else {
+                    save[1] = (byte) (save[1] & ~(LED_17_RUN));
+                }
+                break;
+            case ExternalKeysMsg_ToMCU.TYPE_AUTO:
+                if (!toMCU.getLedState().equals(ExternalKeysMsg_ToMCU.STATE_LED_OFF)) {
+                    save[0] = (byte) (save[0] | LED_01_AUTO);
+                } else {
+                    save[0] = (byte) (save[0] & ~LED_01_AUTO);
+                }
+                break;
+            case ExternalKeysMsg_ToMCU.TYPE_SEQ:
+                if (!toMCU.getLedState().equals(ExternalKeysMsg_ToMCU.STATE_LED_OFF)) {
+                    save[1] = (byte) (save[1] | LED_13_SEQ);
+                } else {
+                    save[1] = (byte) (save[1] & ~LED_13_SEQ);
+                }
+                break;
+            case ExternalKeysMsg_ToMCU.TYPE_FINE:
+                return null;
+
+            case ExternalKeysMsg_ToMCU.TYPE_ZOOM:
+                if (!toMCU.getLedState().equals(ExternalKeysMsg_ToMCU.STATE_LED_OFF)) {
+                    save[1] = (byte) (save[1] | LED_15_ZOOM);
+                } else {
+                    save[1] = (byte) (save[1] & ~LED_15_ZOOM);
+                }
+                break;
+            case ExternalKeysMsg_ToMCU.TYPE_SEARCH:
+                return null;
+
+            case ExternalKeysMsg_ToMCU.TYPE_REF:
+                if (!toMCU.getLedState().equals(ExternalKeysMsg_ToMCU.STATE_LED_OFF)) {
+                    save[2] = (byte) (save[2] & ~(LED_24_REF_RED | LED_25_REF_BLUE | LED_26_REF_GREEN));
+                    save[2] = (byte) (save[2] | (LED_24_REF_RED | LED_25_REF_BLUE | LED_26_REF_GREEN));
+                } else {
+                    save[2] = (byte) (save[2] & ~(LED_24_REF_RED | LED_25_REF_BLUE | LED_26_REF_GREEN));
+                }
+                break;
+            case ExternalKeysMsg_ToMCU.TYPE_SERIAL:
+            case ExternalKeysMsg_ToMCU.TYPE_S1:
+                if (!toMCU.getLedState().equals(ExternalKeysMsg_ToMCU.STATE_LED_OFF)) {
+                    save[4] = (byte) (save[4] | (LED_105_BUS_RED | LED_107_BUS_GREEN | LED_106_BUS_BLUE));
+                } else {
+                    save[4] = (byte) (save[4] & ~(LED_105_BUS_RED | LED_107_BUS_GREEN | LED_106_BUS_BLUE));
+                }
+
+//                if(HardwareProduct.isExtKeyboard()){
+//
+//                    if (!toMCU.getLedState().equals(ExternalKeysMsg_ToMCU.STATE_LED_OFF)) {
+//                        save[0] = (byte) (save[0] & ~(LED_03_BUS1_BLUE | LED_04_BUS1_GREEN ));
+//                        save[2] = (byte) (save[2] & ~(LED_27_BUS1_RED));
+//                        save[2] = (byte) (save[2] | LED_27_BUS1_RED);
+//                        save[0] = (byte) (save[0] | LED_04_BUS1_GREEN);
+//
+//                    } else {
+//                        save[0] = (byte) (save[0] & ~(LED_03_BUS1_BLUE | LED_04_BUS1_GREEN ));
+//                        save[2] = (byte) (save[2] & ~(LED_27_BUS1_RED));
+//                    }
+//
+//                }else {
+//                    if (!toMCU.getLedState().equals(ExternalKeysMsg_ToMCU.STATE_LED_OFF)) {
+//                        save[1] = (byte) (save[1] & ~(LED_10_MATH_RED | LED_11_MATH_BLUE | LED_12_MATH_GREEN));
+//                        save[1] = (byte) (save[1] | (LED_10_MATH_RED | LED_12_MATH_GREEN));
+//
+//                    } else {
+//                        save[1] = (byte) (save[1] & ~(LED_10_MATH_RED | LED_11_MATH_BLUE | LED_12_MATH_GREEN));
+//                    }
+//                }
+                break;
+            case ExternalKeysMsg_ToMCU.TYPE_S2:
+                if(HardwareProduct.isExtKeyboard()){
+                    if (!toMCU.getLedState().equals(ExternalKeysMsg_ToMCU.STATE_LED_OFF)) {
+                        save[0] = (byte) (save[0] & ~(LED_05_BUS2_RED | LED_06_BUS2_BLUE |  LED_07_BUS2_GREEN));
+                        save[0] = (byte) (save[0] | (LED_05_BUS2_RED | LED_07_BUS2_GREEN));
+                    } else {
+                        save[0] = (byte) (save[0] & ~(LED_05_BUS2_RED | LED_06_BUS2_BLUE |  LED_07_BUS2_GREEN));
+                    }
+                }else {
+                    if (!toMCU.getLedState().equals(ExternalKeysMsg_ToMCU.STATE_LED_OFF)) {
+                        save[2] = (byte) (save[2] & ~(LED_24_REF_RED | LED_25_REF_BLUE | LED_26_REF_GREEN));
+                        save[2] = (byte) (save[2] | (LED_24_REF_RED | LED_26_REF_GREEN));
+                    } else {
+                        save[2] = (byte) (save[2] & ~(LED_24_REF_RED | LED_25_REF_BLUE | LED_26_REF_GREEN));
+                    }
+                }
+                break;
+
+            case ExternalKeysMsg_ToMCU.TYPE_DIGITAL:
+                return null;
+
+            case ExternalKeysMsg_ToMCU.TYPE_WAVEFORM:
+                return null;
+
+            case ExternalKeysMsg_ToMCU.TYPE_POWER:
+
+                break;
+            case ExternalKeysMsg_ToMCU.TYPE_HCURSOR:
+                if (!toMCU.getLedState().equals(ExternalKeysMsg_ToMCU.STATE_LED_OFF)) {
+                    save[4] = (byte) (save[4] | (LED_104_HCURSOR));
+                } else {
+                    save[4] = (byte) (save[4] & ~(LED_104_HCURSOR));
+                }
+                break;
+            case ExternalKeysMsg_ToMCU.TYPE_VCURSOR:
+                if (!toMCU.getLedState().equals(ExternalKeysMsg_ToMCU.STATE_LED_OFF)) {
+                    save[4] = (byte) (save[4] | (LED_103_VCURSOR));
+                } else {
+                    save[4] = (byte) (save[4] & ~(LED_103_VCURSOR));
+                }
+                break;
+            case ExternalKeysMsg_ToMCU.TYPE_TOUCH_OFF:
+                if (!toMCU.getLedState().equals(ExternalKeysMsg_ToMCU.STATE_LED_OFF)) {
+                    save[0] = (byte) (save[0] | LED_02_TOUCH_OFF);
+                } else {
+                    save[0] = (byte) (save[0] & ~LED_02_TOUCH_OFF);
+                }
+                break;
+            case ExternalKeysMsg_ToMCU.TYPE_ALL: {
+                byte xsave[] = new byte[save.length];
+                for (int i = 0; i < save.length; i++) {
+                    xsave[i] = (byte) (toMCU.getLedState().equals(ExternalKeysMsg_ToMCU.STATE_LED_OFF) ? 0 : 0xFF);
+                }
+                return xsave;
+            }
+        }
+        return save;
+    }
+
+    private static void sendExternalToMcuMsg(String state) {
+        RxBus.getInstance().post(RxEnum.EXTERNALKEY_TOMCU, new ExternalKeysMsg_ToMCU(ExternalKeysMsg_ToMCU.TYPE_TOUCH_OFF, state));
+    }
+
+    public static List<Integer> backStateList=new ArrayList<>();
+    public static void BackStateUpdate(int bs){
+        if (backStateList.size()==0){
+            backStateList.add(BACKSTATE_VCURSOR);
+            backStateList.add(BACKSTATE_HCURSOR);
+            backStateList.add(BACKSTATE_CHLIST);
+            backStateList.add(BACKSTATE_SEGMENT);
+            backStateList.add(BACKSTATE_ZOOMUP);
+        }
+        if (backStateList.contains(bs)){
+            int index= Tools.indexOf(backStateList,i->i==bs);
+            backStateList.add(0,backStateList.remove(index));
+            backState=bs;
+        }
+    }
+    public static int getBackState(){
+        Log.d(Tag.Debug, String.format("ExternalKeysProtocol.getBackState: %s",Arrays.toString(backStateList.toArray()) ));
+        for(int i=0;i<backStateList.size();i++){
+                switch (backStateList.get(i)) {
+                    case BACKSTATE_VCURSOR: {
+                        if (CursorManage.getInstance().getColVisible()) {
+                            return backStateList.get(i);
+                        }
+                    }
+                    break;
+                    case BACKSTATE_HCURSOR: {
+                        if (CursorManage.getInstance().getRowVisible()) {
+                            return backStateList.get(i);
+                        }
+                    }
+                    break;
+                    case BACKSTATE_CHLIST: {
+                        if (ExternalKeysCommand.get().isDialogChListShow()) {
+                            return backStateList.get(i);
+                        }
+                    }
+                    break;
+                    case BACKSTATE_SEGMENT: {
+                        if (ExternalKeysCommand.get().isDialogSegmentShow()) {
+                            return backStateList.get(i);
+                        }
+                    }
+                    break;
+                    case BACKSTATE_ZOOMUP: {
+                        if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_YTZOOM) {
+                            return backStateList.get(i);
+                        }
+                    }
+                    break;
+                    default:
+                        return BACKSTATE_NULL;
+                }
+        }
+        return BACKSTATE_NULL;
+    }
+
+}

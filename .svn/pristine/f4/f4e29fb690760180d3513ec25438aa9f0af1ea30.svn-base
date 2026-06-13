@@ -1,0 +1,158 @@
+package com.micsig.tbook.scope.surface;
+
+import android.opengl.GLES20;
+import android.opengl.GLES32;
+import android.util.Log;
+
+import com.chillingvan.canvasgl.ICanvasGL;
+import com.chillingvan.canvasgl.glcanvas.BasicTexture;
+import com.chillingvan.canvasgl.textureFilter.BasicTextureFilter;
+import com.micsig.tbook.scope.ScopeBase;
+
+import java.nio.FloatBuffer;
+
+/**
+ * Created by zhuzh on 2018-4-3.
+ */
+
+public class Gray2RGBAFilter extends BasicTextureFilter {
+    private static final String UNIFORM_ZORDER = "uZorder";
+
+    private static final String UNIFORM_OFFSET = "uOffset";
+
+    private static final String UNIFORM_INDEX = "uIndex";
+    private static final int MAX_NUMS = 4;
+    private volatile int[] zorderVal = new int[MAX_NUMS];
+
+
+    //Ch1 #FF FF 00
+    //Ch2 #00 FF FF
+    //Ch3 #FF 00 FF
+    //Ch4 #00 FF 00
+    //Ch5 #FF 80 00
+    //Ch6 #00 55 FF
+    //Ch7 #FF 66 7F
+    //Ch8 #26 FF B7
+    private static final String GRAY2RGBA_FRAGMENT_SHADER = "" +
+            "precision highp float;\n" +
+            "varying vec2 " + VARYING_TEXTURE_COORD + ";\n" +
+            "uniform sampler2D " + TEXTURE_SAMPLER_UNIFORM + ";\n" +
+            "uniform int " + UNIFORM_INDEX + ";\n" +
+            "uniform int " + UNIFORM_ZORDER + "[4];\n" +
+            "uniform float " + UNIFORM_OFFSET + "[4];\n" +
+            "vec4 colorArray[8];\n"+
+            "void main() {\n" +
+            "   vec4 color,color1;\n" +
+            "   vec2 p,p1;\n" +
+            "   float c = 1.0;\n" +
+            "   int i ,idx ;\n"+
+            "   idx = 0;\n"+
+            "   colorArray[0] = vec4(1.0,1.0,0.0,1.0);\n"+
+            "   colorArray[1] = vec4(0.0,1.0,1.0,1.0);\n"+
+            "   colorArray[2] = vec4(1.0,0.0,1.0,1.0);\n"+
+            "   colorArray[3] = vec4(0.0,1.0,0.0,1.0);\n"+
+            "   colorArray[4] = vec4(1.0,0.50196,0.0,1.0);\n"+
+            "   colorArray[5] = vec4(0.0,0.33333,1.0,1.0);\n"+
+            "   colorArray[6] = vec4(1.0,0.4,0.498039,1.0);\n"+
+            "   colorArray[7] = vec4(0.0,0.666667,1.0,1.0);\n"+
+            "   if(" + UNIFORM_OFFSET + "[3] > 0.01){\n" +
+            "       if(" + VARYING_TEXTURE_COORD + ".y > " + UNIFORM_OFFSET + "[3]){\n" +
+            "           p = " + VARYING_TEXTURE_COORD + ";\n"+
+            "       }else{\n"+
+            "           p = " + VARYING_TEXTURE_COORD  + " + vec2(" + UNIFORM_OFFSET + "[0]," +UNIFORM_OFFSET + "[1]);\n" +
+            "           if( p.y > " + UNIFORM_OFFSET + "[3]){\n" +
+            "               c = 0.0;\n"+
+            "           }\n"+
+            "       }\n"+
+            "   }else{\n"+
+            "       p = " + VARYING_TEXTURE_COORD  + " + vec2(" + UNIFORM_OFFSET + "[0]," +UNIFORM_OFFSET + "[1]);\n" +
+            "   }\n"+
+            "   color1 = texture2D(" + TEXTURE_SAMPLER_UNIFORM + ", p);\n" +
+            "   if(" + UNIFORM_OFFSET + "[2] > 0.5){\n" +
+            "       color = color1;\n" +
+            "   }else{\n"+
+            "       color = texture2D(" + TEXTURE_SAMPLER_UNIFORM + "," + VARYING_TEXTURE_COORD + ");\n" +
+            "   }\n"+
+            "   idx = " + UNIFORM_ZORDER + "[0];\n" +
+            "   c = color1[idx] * c;\n" +
+            "   if(c < 0.003){\n" +
+            "       for( i = 1;  i < 4; i++ ) {\n" +
+            "           idx = " + UNIFORM_ZORDER + "[i];\n" +
+            "           c = color[idx];\n" +
+            "           if(c > 0.003){\n" +
+            "               break;\n"+
+            "           }\n"+
+            "       }\n"+
+            "   }\n"+
+            "   idx = idx + " + UNIFORM_INDEX + ";\n" +
+            "   gl_FragColor = vec4(colorArray[idx].r*c,colorArray[idx].g*c,colorArray[idx].b*c,step(0.003,c));\n" +
+            "}\n";
+
+    public Gray2RGBAFilter(int idx){
+        super();
+        this.index = idx;
+        for(int i=0;i<MAX_NUMS;i++){
+            zorderVal[i] = i + idx * 4;
+        }
+
+    }
+
+    @Override
+    public String getVertexShader() {
+        return super.getVertexShader();
+    }
+
+    @Override
+    public String getFragmentShader() {
+        return GRAY2RGBA_FRAGMENT_SHADER;
+    }
+
+    @Override
+    public String getOesFragmentProgram() {
+        return super.getOesFragmentProgram();
+    }
+
+    @Override
+    public void onPreDraw(int program, BasicTexture texture, ICanvasGL canvas) {
+        super.onPreDraw(program, texture, canvas);
+        synchronized (this) {
+            GLES20.glUniform1iv(GLES20.glGetUniformLocation(program, UNIFORM_ZORDER), zorderVal.length, zorderVal, 0);
+            GLES20.glUniform1i(GLES20.glGetUniformLocation(program, UNIFORM_INDEX), index * 4);
+            float[] borderColor = {0, 0, 0, 0};
+            float[] xyOffset = {0, 0, 0, 0};
+            GLES32.glTexParameterfv(GLES20.GL_TEXTURE_2D, GLES32.GL_TEXTURE_BORDER_COLOR, borderColor, 0);
+            xyOffset[0] = (float) xOffset / texture.getTextureWidth();
+            xyOffset[1] = bTop ? (float) yOffset / texture.getTextureHeight() : 0;
+            xyOffset[2] = Math.abs(xOffset) > 0 ? 1 : 0;
+            xyOffset[3] = bZoom ? (float) ScopeBase.getZoomHeight() / texture.getTextureHeight() : 0;
+            GLES20.glUniform1fv(GLES20.glGetUniformLocation(program, UNIFORM_OFFSET), xyOffset.length, xyOffset, 0);
+        }
+    }
+    private volatile boolean bTop = false;
+
+    public synchronized void setTop(boolean bTop){
+        this.bTop = bTop;
+    }
+    public synchronized void setZorder(int [] zorder){
+        for(int i=0;i<zorderVal.length;i++){
+            zorderVal[i] = zorder[i + index * 4] - index * 4;
+        }
+    }
+
+    public synchronized void setOffset(int x,int y){
+        xOffset = x;
+        yOffset = y;
+    }
+
+    public synchronized void setZoom(boolean bZoom){
+        this.bZoom = bZoom;
+    }
+
+    public synchronized void setIndex(int index){
+        this.index = index;
+    }
+    private volatile int xOffset = 0;
+    private volatile int yOffset = 0;
+    private volatile boolean bZoom = false;
+    private volatile int index = 0;
+}

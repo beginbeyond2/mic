@@ -1,0 +1,544 @@
+package com.micsig.tbook.scope.Calibrate.MHO38v1;
+
+import android.util.Log;
+
+import com.micsig.base.DoubleUtil;
+import com.micsig.base.Logger;
+import com.micsig.tbook.hardware.HardwareProduct;
+import com.micsig.tbook.scope.Action.ChannelHardw;
+import com.micsig.tbook.scope.Calibrate.CabteRegister;
+import com.micsig.tbook.scope.Calibrate.Calibrate;
+import com.micsig.tbook.scope.Calibrate.HwConfig;
+import com.micsig.tbook.scope.Data.WaveData;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.Trigger.Trigger;
+import com.micsig.tbook.scope.Trigger.TriggerCommon;
+import com.micsig.tbook.scope.Trigger.TriggerEdge;
+import com.micsig.tbook.scope.Trigger.TriggerFactory;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.fpga.FPGACommand;
+import com.micsig.tbook.scope.horizontal.HorizontalAxis;
+import com.micsig.tbook.scope.math.MathNative;
+import com.micsig.tbook.scope.vertical.VerticalAxis;
+
+/**
+ * Created by xuj on 2018/7/18.
+ * 通道增益校准，每次校准1个通道，或4个通道同时校准，但每次只能校准1个档位
+ * 输入校准信号标准：
+ *   1. 30Hz交流方波，占空比50%；
+ *   2. 方波高电压scale*4(V)；;
+ *   3. 方波低电压-scale*4(V)；
+ */
+
+public class MHO38v1_ChGainCalibrate extends Calibrate {
+    public MHO38v1_ChGainCalibrate(int calibrateType) {
+        super(calibrateType);
+        delaySet(2);
+    }
+
+    private int errcode;
+    private final String TAG = "ChGain";
+    private final String TAG1=TAG_PRI+":"+TAG;
+    private volatile int ch=0;
+    private volatile int chIdx = 0;
+
+    private int vPos = 100;//校准方波的基准幅度值应为8*50个像素
+    private int vMax = 100*5;
+    private volatile int step;
+    private int meatCnt;
+    private volatile double srcAmp;
+    private volatile double vScaleVal;
+
+    private volatile int idx;
+    private double average[]={0,0,0,0,0,0,0,0};
+    private double min[]={0,0,0,0,0,0,0,0};
+    private double max[]={0,0,0,0,0,0,0,0};
+
+    private double []best_value=new double[ChannelFactory.CH_CNT];
+    private short []bakCoef=new short[ChannelFactory.CH_CNT];
+    private int []state=new int[ChannelFactory.CH_CNT];
+    private int []tryNum=new int[ChannelFactory.CH_CNT];
+    private int []tryChiShu=new int[ChannelFactory.CH_CNT];
+    private int []trypga=new int[ChannelFactory.CH_CNT];
+    private boolean []finished=new boolean[ChannelFactory.CH_CNT];
+
+    private boolean []ch_en=new boolean[ChannelFactory.CH_CNT];
+    private volatile double [] chpos ={0,0,0,0,0,0,0,0};
+    private ChannelHardw channelHardw;
+
+    HW_MHO38V1 hw;
+
+    @Override
+    public String getTAG() {
+        return TAG1;
+    }
+
+    @Override
+    public int getErrcode() {
+        //=1：校验错误
+        return errcode;
+    }
+
+    //校准下一档初始化
+    private void rstCalculate(){
+        for(int i=0; i<ChannelFactory.CH_CNT; i++) {
+            best_value[i] = Float.MAX_VALUE;
+            state[i] = 0;
+            average[i] = 0;
+            max[i] = -Double.MAX_VALUE;
+            min[i] = Double.MAX_VALUE;
+            tryNum[i] = 0;
+            tryChiShu[i] = 0;
+            trypga[i] = 0;
+        }
+        meatCnt = 0;
+    }
+
+    @Override
+    public void iniCalibrateReg(){
+        channelHardw = ChannelHardw.getInstance();
+        hw = (HW_MHO38V1)cabteRegister.getHw();
+    }
+
+    /**
+     * 设置校准参数
+     * @param vol
+     * vol为int[];
+     * 第1个值为通道：0~3,-1；（-1表示所有通道）
+     * 第2个值为档位；
+     */
+    @Override
+    public void setParam(Object vol) {
+        if(vol instanceof double[]) {
+            double[] param=(double[])vol;
+            if(param.length >= 3){
+                int ix =(int)(param[0] + 0.1);
+                if(param[0] < 0){
+                    ix = -1;
+                }
+                if(ix == -1 || ChannelFactory.isDynamicCh(ix)) {
+                    ch = ix;
+                    vScaleVal = param[1];
+                    srcAmp = vScaleVal * 8;
+                    Logger.d(TAG,"ch:" + ch + ",vScaleVal:" + vScaleVal + ",srcAmp:" + srcAmp);
+                    return;
+
+                }
+            }
+        }
+        ch = ChannelFactory.CH1;
+        vScaleVal = VerticalAxis.getScaleIdValById(VerticalAxis.DANG_10mV);
+    }
+
+    int []param = new int[2];
+    @Override
+    public Object getParam() {
+        param[0] = ch;
+        param[1] = idx;
+        return param;
+    }
+    private void setPGAVal(int val){
+        FPGACommand fpgaCommand = FPGACommand.getInstance();
+        fpgaCommand.cmdDevice(300);
+        int [] res ={val,val,val,val,val,val,val,val};
+        channelHardw.set_ch_AD8370Gain(res);
+        fpgaCommand.setPgaVal(val);
+        fpgaCommand.cmdDevice(300);
+    }
+    public static int getGainIdx(double v){
+        for(int i=0;i<HW_MHO38V1.GAIN_INPUT_AMP.length;i++){
+            if(DoubleUtil.FuzzyCompare(HW_MHO38V1.GAIN_INPUT_AMP[i],v)){
+                return i;
+            }
+        }
+        return -1;
+    }
+
+
+    volatile int ratioIdx = 0;
+    @Override
+    public void calibratePrepare() {
+        for(int i=0; i<finished.length; i++) {
+            finished[i] = true;
+            ch_en[i] = false;
+        }
+        FPGACommand.getInstance().setADdiffGainCalib(true);
+        HorizontalAxis.getInstance().setTimeScaleIdOfView(HorizontalAxis.TSI_100uS);
+        TriggerFactory triggerFactory=TriggerFactory.getInstance();
+        triggerFactory.getTriggerCommon().setTriggerMode(TriggerCommon.TM_NORMAL);
+        TriggerEdge triggerEdge=(TriggerEdge)(triggerFactory.getTrigger(Trigger.TRIG_TYPE_EDGE));
+        triggerEdge.setTriggerEdge(TriggerEdge.TET_ASC);
+
+        idx = getGainIdx(vScaleVal);
+        if(idx < 0){
+            Log.e(TAG,"error:vScaleVal:" + vScaleVal);
+        }
+        Logger.d(TAG,"idx:" + idx + ",vScaleVal:" + vScaleVal);
+
+
+        int pga = HW_MHO38V1.LG1;
+
+        switch (idx){
+            case HW_MHO38V1.GAIN_INPUT_AMP_44_8_MV:
+            case HW_MHO38V1.GAIN_INPUT_AMP_40_8_MV:
+                ratioIdx = HW_MHO38V1.RATIO_DANG_2;
+                pga = HW_MHO38V1.LG1;
+                break;
+            case HW_MHO38V1.GAIN_INPUT_AMP_257_MV:
+                ratioIdx = HW_MHO38V1.RATIO_DANG_2;
+                pga = HW_MHO38V1.LG9;
+                break;
+            case HW_MHO38V1.GAIN_INPUT_AMP_25_7_MV:
+                ratioIdx = HW_MHO38V1.RATIO_DANG_2;
+                pga = HW_MHO38V1.HG9;
+                break;
+            case HW_MHO38V1.GAIN_INPUT_AMP_11_2_MV:
+            case HW_MHO38V1.GAIN_INPUT_AMP_10_2_MV:
+                ratioIdx = HW_MHO38V1.RATIO_DANG_1;
+                pga = HW_MHO38V1.LG1;
+                break;
+            case HW_MHO38V1.GAIN_INPUT_AMP_560_MV:
+            case HW_MHO38V1.GAIN_INPUT_AMP_510_MV:
+                ratioIdx = HW_MHO38V1.RATIO_DANG_3;
+                pga = HW_MHO38V1.LG1;
+                break;
+        }
+        ms_sleep(300);
+        double x = 1;
+
+        Log.d(TAG,"ch:" + ch + ",idx:" + idx + ",pga:" + pga + ",ratioIdx:" + ratioIdx);
+        for(int i=0; i<channelNums; i++) {
+            channel[i].setProbeRate(1);
+            channel[i].setVScaleId(CabteRegister.getRatioIdx2Dang(0,ratioIdx));
+            x = channel[i].getADVerticalPerPix()/channel[i].getProbeRate();
+            chpos[i] = srcAmp / (2 * x);
+            channel[i].setPos(-(int)(chpos[i]));
+        }
+        ms_sleep(400);
+        if(ch < 0) {
+            triggerEdge.setTriggerSource(0);
+            x = channel[0].getADVerticalPerPix()/channel[0].getProbeRate();
+            for(int k = 0;k<channelNums;k++){
+                finished[k] = false;
+                ch_en[k] = true;
+            }
+            chIdx = 0;
+        } else {
+            triggerEdge.setTriggerSource(ch);
+            x = channel[ch].getADVerticalPerPix()/channel[ch].getProbeRate();
+            finished[ch] = false;
+            ch_en[ch] = true;
+            chIdx = ch;
+        }
+        step = 0;
+        chflag = 0;
+        int levelPos = (int)(srcAmp/(2 * x));
+        triggerEdge.getTriggerLevel().setPos(levelPos);
+        ms_sleep(500);
+        triggerEdge.getTriggerLevel().setPos(levelPos);
+        setPGAVal(pga);
+        FPGACommand fpgaCommand = FPGACommand.getInstance();
+        for(int i=0;i<channelNums;i++){
+            fpgaCommand.writeAD_gain(i/4,(i % 4) / 2,i & 0x01, getFS());
+        }
+        fpgaCommand.ADCalibrate();
+        ms_sleep(400);
+        triggerEdge.getTriggerLevel().setPos(levelPos);//界面消息乱发在设置一次
+        delaySet(5);
+        rstCalculate();
+        fpgaSync();
+        errcode = 0;
+        resultString.add("chGainCalibrate start");
+        Log.i(TAG1,"chGainCalibrate start");
+
+        bCheckParam = true;
+    }
+    boolean bCheckParam = true;
+    @Override
+    public boolean checkParam() {
+        boolean bChange = false;
+        int chidx = Math.max(ch,0);
+
+        if(ChannelFactory.isDynamicCh(chidx)) {
+
+            for(int i=0;i<channelNums;i++){
+                double pp = -Math.round(chpos[i]);
+                if(Math.abs(pp - channel[i].getPos()) > 1){
+                    bChange = true;
+                }
+            }
+
+            if(bChange){
+                updateSync();
+                for(int i=0;i<channelNums;i++){
+                    double pp = -Math.round(chpos[i]);
+                    if(Math.abs(pp - channel[i].getPos()) > 1){
+                        channel[i].setPos(pp);
+                    }
+                }
+            }
+
+            TriggerFactory triggerFactory = TriggerFactory.getInstance();
+
+            TriggerEdge triggerEdge = (TriggerEdge) (triggerFactory.getTrigger(Trigger.TRIG_TYPE_EDGE));
+            if (!triggerEdge.isTriggerSource(chidx)) {
+                triggerEdge.setTriggerSource(chidx);
+                bChange = true;
+            }
+
+
+            double levelPos = -channel[chidx].getPos();
+            if (Math.abs(triggerEdge.getTriggerLevel().getPos() - levelPos) > 1) {
+                triggerEdge.getTriggerLevel().setPos(levelPos);
+                bChange = true;
+            }
+        }
+        if(bChange){
+            rstCalculate();
+            delaySet(2);
+            fpgaSync();
+        }
+        return bChange;
+    }
+
+
+    int getFS(){
+        int fs = 16384;
+        switch (idx) {
+            case HW_MHO38V1.GAIN_INPUT_AMP_44_8_MV:
+                fs = 24576;
+                break;
+            case HW_MHO38V1.GAIN_INPUT_AMP_11_2_MV:
+                fs = 24576;
+                break;
+            case HW_MHO38V1.GAIN_INPUT_AMP_560_MV:
+                fs = 24576;
+                break;
+        }
+        return fs;
+    }
+
+    @Override
+    public void setErrcode(int errcode) {
+        this.errcode = errcode;
+    }
+
+    private volatile int chflag = 0;
+    @Override
+    public boolean onCalibrate() {
+        //等待硬件操作完成
+
+        if (!isFinishedAction())
+            return false;
+
+        if(idx < 0){
+            setErrcode(3005);
+            return true;
+        }
+
+        if(bCheckParam){
+            bCheckParam = checkParam();
+            return false;
+        }
+        Log.d(TAG, "onCalibrate() called");
+        long sum1,sum2;
+        WaveData waveData;
+        HwConfig hwConfig = HwConfig.getInstance();
+        int N;
+
+        //获取每个通道的波形平均值
+        for (int i = 0; i < channelNums; i++) {
+
+            waveData = (WaveData) getWave(i);
+            if (waveData == null || (N = waveData.getWaveLength()) < 10) {
+                Log.d(TAG, "onCalibrate() waveData:" + waveData + "i:" + i);
+                return false;
+            }
+
+            int n = N / ScopeBase.getHorizonGridCnt();
+            int len1 = n * (ScopeBase.getHorizonGridCnt()/2 - 2);
+            sum1 = MathNative.calcSum(waveData.getByteBuffer(), n, len1);
+            sum2 = MathNative.calcSum(waveData.getByteBuffer(), n * (ScopeBase.getHorizonGridCnt()/2 + 1), len1);
+
+            average[i] += Math.abs((double) sum2/len1 - (double)sum1/len1);
+
+        }
+        if(++meatCnt < 5) {
+            return false;
+        }
+
+        for(int i=0; i<channelNums; i++){
+
+            average[i] = average[i] / meatCnt;
+
+            average[i] *= hwConfig.getWavFactor();
+            Log.d(TAG,"ch:" + i + ",average:" + average[i] + ",ch_en:" + ch_en[i]);
+        }
+
+        meatCnt = 0;
+
+        int adIdx = 0;
+        for(int i=0; i<channelNums; i++) {
+            //状态机控制流程
+            if((!ch_en[i])){
+
+                continue;
+            }
+            chflag |= (1 << i);
+            adIdx = i/2;
+            if(step == 0) {
+                switch (idx) {
+                    case HW_MHO38V1.GAIN_INPUT_AMP_40_8_MV:
+                        HW_MHO38V1.gain_pga_stepdb_a40_8[i] = average[i];
+                        HW_MHO38V1.gain_fs_a40_8[i][0] = average[i];
+                        break;
+                    case HW_MHO38V1.GAIN_INPUT_AMP_44_8_MV:
+                        HW_MHO38V1.gain_fs_a44_8[i][0] = average[i];
+                        break;
+                    case HW_MHO38V1.GAIN_INPUT_AMP_257_MV:
+                        HW_MHO38V1.gain_pga_stepdb_a257[i] = average[i];
+                        break;
+                    case HW_MHO38V1.GAIN_INPUT_AMP_25_7_MV:
+                        HW_MHO38V1.gain_pga_lghg_a25_7[i] = average[i];
+                        break;
+                    case HW_MHO38V1.GAIN_INPUT_AMP_11_2_MV:
+                        HW_MHO38V1.gain_fs_a11_2[i][0] = average[i];
+                        break;
+                    case HW_MHO38V1.GAIN_INPUT_AMP_10_2_MV:
+                        HW_MHO38V1.gain_fs_a10_2[i][0] = average[i];
+                        break;
+                    case HW_MHO38V1.GAIN_INPUT_AMP_510_MV:
+                        HW_MHO38V1.gain_fs_a510[i][0] = average[i];
+                        break;
+                    case HW_MHO38V1.GAIN_INPUT_AMP_560_MV:
+                        HW_MHO38V1.gain_fs_a560[i][0] = average[i];
+                        break;
+                }
+            }else{
+                switch (idx){
+                    case HW_MHO38V1.GAIN_INPUT_AMP_40_8_MV:
+                        HW_MHO38V1.gain_fs_a40_8[i][1] = average[adIdx * 2];
+                        HW_MHO38V1.gain_fs_a40_8[i][2] = average[adIdx * 2 + 1];
+                        break;
+                    case HW_MHO38V1.GAIN_INPUT_AMP_44_8_MV:
+                        HW_MHO38V1.gain_fs_a44_8[i][1] = average[adIdx * 2];
+                        HW_MHO38V1.gain_fs_a44_8[i][2] = average[adIdx * 2 + 1];
+                        break;
+                    case HW_MHO38V1.GAIN_INPUT_AMP_257_MV:
+                        break;
+                    case HW_MHO38V1.GAIN_INPUT_AMP_25_7_MV:
+                        break;
+                    case HW_MHO38V1.GAIN_INPUT_AMP_11_2_MV:
+                        HW_MHO38V1.gain_fs_a11_2[i][1] = average[adIdx * 2];
+                        HW_MHO38V1.gain_fs_a11_2[i][2] = average[adIdx * 2 + 1];
+                        break;
+                    case HW_MHO38V1.GAIN_INPUT_AMP_10_2_MV:
+                        HW_MHO38V1.gain_fs_a10_2[i][1] = average[adIdx * 2];
+                        HW_MHO38V1.gain_fs_a10_2[i][2] = average[adIdx * 2 + 1];
+                        break;
+                    case HW_MHO38V1.GAIN_INPUT_AMP_510_MV:
+                        HW_MHO38V1.gain_fs_a510[i][1] = average[adIdx * 2];
+                        HW_MHO38V1.gain_fs_a510[i][2] = average[adIdx * 2 + 1];
+                        break;
+                    case HW_MHO38V1.GAIN_INPUT_AMP_560_MV:
+                        HW_MHO38V1.gain_fs_a560[i][1] = average[adIdx * 2];
+                        HW_MHO38V1.gain_fs_a560[i][2] = average[adIdx * 2 + 1];
+                        break;
+                }
+            }
+        }
+        for(int i=0;i<channelNums;i++){
+            average[i] = 0;
+        }
+        switch (idx){
+            case HW_MHO38V1.GAIN_INPUT_AMP_257_MV:
+            case HW_MHO38V1.GAIN_INPUT_AMP_25_7_MV:
+                step = 2;
+                break;
+        }
+
+        if(step != 2){
+            switchSignelChannel();
+            delaySet(5);
+            return false;
+        }else {
+            FPGACommand fpgaCommand = FPGACommand.getInstance();
+            cabteRegister.calcGain(chflag);
+            fpgaCommand.setADdiffGainCalib(false);
+            step = 0;
+            chflag = 0;
+//            fpgaCommand.SendADData(0, 0x0D, 0x3FFF); //双通道模式
+//            fpgaCommand.SendADData(1, 0x0D, 0x3FFF); //双通道模式
+            fpgaCommand.setADCChannel(new boolean[]{true,true,true,true,true,true,true,true});
+            fpgaCommand.ADCalibrate();
+            rstCalculate();
+            if(errcode == 0) {
+                if (ch < 0) {
+                    for (int i = 0; i < channelNums; i++) {
+                        hw.setCalibrationState(HW_MHO38V1.CALIBRATION_CENTER_CH1GAIN + i * 8 + idx, true);
+                    }
+                } else {
+                    hw.setCalibrationState(HW_MHO38V1.CALIBRATION_CENTER_CH1GAIN + ch * 8 + idx, true);
+                }
+            }
+            return true;
+        }
+    }
+
+
+
+    private void switchSignelChannel(){
+        FPGACommand fpgaCommand = FPGACommand.getInstance();
+        for (int i = 0; i < ChannelFactory.CH_CNT; i++) {
+            finished[i] = true;
+            ch_en[i] = false;
+        }
+        if (ch < 0) {
+            boolean [] sel ={false,false,false,false,false,false,false,false};
+            for (int k = 0; k < channelNums / 2; k++) {
+
+                //fpgaCommand.SendADData(k, 0x0D, 0xFFFF);
+                if ((chIdx & 0x01) == 0) {
+                    //fpgaCommand.SendADData(k, 0x0E, 0x07FF); //单通道ch1或ch3
+
+                } else {
+                    //fpgaCommand.SendADData(k, 0x0E, 0x87FF); //单通道ch2或ch4
+                }
+                sel[k * 2 + chIdx] = true;
+
+
+                fpgaCommand.writeAD_gain(k/2, (k * 2 + chIdx) % 4 / 2,0, getFS());
+                fpgaCommand.writeAD_gain(k/2, (k * 2 + chIdx) % 4 / 2,1, getFS());
+
+                finished[k * 2 + chIdx] = false;
+                ch_en[k * 2 + chIdx] = true;
+            }
+            fpgaCommand.setADCChannel(sel);
+            fpgaCommand.ADCalibrate();
+            chIdx++;
+            step++;
+        } else {
+            step = 2;
+            boolean [] sel ={false,false,false,false,false,false,false,false};
+            //fpgaCommand.SendADData(ch / 2, 0x0D, 0xFFFF);
+            if ((ch & 0x01) == 0) {
+                //fpgaCommand.SendADData(ch / 2, 0x0E, 0x07FF); //单通道ch1或ch3
+                sel[0] = sel[2] = true;
+                sel[4] = sel[6] = true;
+            } else {
+                //fpgaCommand.SendADData(ch / 2, 0x0E, 0x87FF); //单通道ch2或ch4
+                sel[1] = sel[3] = true;
+                sel[5] = sel[7] = true;
+            }
+
+            finished[ch] = false;
+            ch_en[ch] = true;
+            fpgaCommand.writeAD_gain(ch / 4, ch % 4 / 2,0, getFS());
+            fpgaCommand.writeAD_gain(ch / 4, ch % 4 / 2,1, getFS());
+            fpgaCommand.setADCChannel(sel);
+            fpgaCommand.ADCalibrate();
+        }
+
+    }
+
+}

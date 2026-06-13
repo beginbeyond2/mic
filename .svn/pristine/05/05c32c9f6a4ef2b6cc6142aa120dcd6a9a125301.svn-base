@@ -1,0 +1,169 @@
+package com.micsig.tbook.scope.math;
+
+
+import androidx.annotation.IntDef;
+import androidx.annotation.Nullable;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.nio.ByteBuffer;
+
+/**
+ * Created by zhuzh on 2018-4-12.
+ */
+
+public class MathNative {
+
+    @IntDef({MATH_ADD,MATH_SUB,MATH_MUL,MATH_DIV})
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface Math_Operation {}
+
+    public static final int MATH_ADD = 0;
+    public static final int MATH_SUB = 1;
+    public static final int MATH_MUL = 2;
+    public static final int MATH_DIV = 3;
+    private static final int MATH_FFT = 4;
+
+
+    public static double getFFTDCVal(int chIdx){
+        return fftDcVal(chIdx);
+    }
+    public static double getFFTMaxVal(int chIdx){
+        return fftMaxVal(chIdx);
+    }
+    public static int getFFTMaxIdx(int chIdx){
+        return fftMaxValIdx(chIdx);
+    }
+    public static void setVAd(int chIdx,double vol) {csetVAd(chIdx,vol);}
+
+    public static boolean CalcFFT(int chIdx,int fftType, int fftWindow,ByteBuffer dst,ByteBuffer src){
+        boolean bCalc = false;
+        if(dst.isDirect() && src.isDirect()) {
+            bCalc = fft(chIdx,fftType, fftWindow, dst, src);
+        }
+        return bCalc;
+    }
+
+    public static boolean CalcDual(@Math_Operation int oper ,ByteBuffer dst,ByteBuffer src1,ByteBuffer src2){
+        boolean bCalc = false;
+        if(dst.isDirect() && src1.isDirect() && src2.isDirect()){
+            switch (oper){
+                case MATH_ADD:
+                    bCalc = add(dst,src1,src2);
+                    break;
+                case MATH_SUB:
+                    bCalc = sub(dst,src1,src2);
+                    break;
+                case MATH_MUL:
+                    bCalc = mul(dst,src1,src2);
+                    break;
+                case MATH_DIV:
+                    bCalc = div(dst,src1,src2);
+                    break;
+            }
+        }
+        return bCalc;
+    }
+
+    public static boolean setCalcExpr(int chIdx,String exprString){
+        exprString=exprString.replace("μ","u");
+
+        return setExpr(chIdx,exprString);
+    }
+
+    public static double CalcExpr(int chIdx,ByteBuffer dst,
+                                  ByteBuffer [] chArray,double time,
+                                double var1,double var2){
+
+        return calcExpr(chIdx,dst,chArray,time,var1,var2);
+    }
+
+
+    @Nullable
+    public static int[] byteBufferToIntArray(ByteBuffer src){
+        if(src.isDirect())
+            return ByteBufferToIntArray(src);
+        else
+            return null;
+    }
+
+    public static long calcSum(ByteBuffer src){
+        if(src.isDirect()){
+            return sum(src);
+        }
+        return Long.MIN_VALUE;
+    }
+    public static long calcSum(ByteBuffer src, int idx, int len){
+        if(src.isDirect()){
+            return sum1(src, idx, len);
+        }
+        return Long.MIN_VALUE;
+    }
+    public static long calcSum(ByteBuffer src, int idx, int step, int len){
+        if(src.isDirect()){
+            return sum2(src, idx, step, len);
+        }
+        return Long.MIN_VALUE;
+    }
+    public static int calcAverage(ByteBuffer src){
+        if(src.isDirect()){
+            return average(src);
+        }
+        return Integer.MIN_VALUE;
+    }
+    public static int calcMax(ByteBuffer src){
+        if(src.isDirect()){
+            return max(src);
+        }
+        return Integer.MIN_VALUE;
+    }
+    public static int calcMax(ByteBuffer src, int idx, int len){
+        if(src.isDirect()){
+            return max1(src, idx, len);
+        }
+        return Integer.MIN_VALUE;
+    }
+    public static int calcMin(ByteBuffer src){
+        if(src.isDirect()){
+            return min(src);
+        }
+        return Integer.MAX_VALUE;
+    }
+    public static int calcMin(ByteBuffer src, int idx, int len){
+        if(src.isDirect()){
+            return min1(src, idx, len);
+        }
+        return Integer.MAX_VALUE;
+    }
+    public static MathExprError mathExprValid(String exprString){
+        exprString=exprString.replace("μ","u");
+//        Logger.d("limh", "exprString= " + exprString);
+        return isExprValid(exprString);
+    }
+    public static native int CalFFTPointNum(int length);
+    private static native long sum(ByteBuffer src);
+    private static native long sum1(ByteBuffer src, int idx, int len);
+    private static native long sum2(ByteBuffer src, int idx, int step, int len);
+    private static native int average(ByteBuffer src);
+    private static native int max(ByteBuffer src);
+    private static native int max1(ByteBuffer src, int idx, int len);
+    private static native int min(ByteBuffer src);
+    private static native int min1(ByteBuffer src, int idx, int len);
+    private static native boolean add(ByteBuffer dst,ByteBuffer src1,ByteBuffer src2);
+    private static native boolean sub(ByteBuffer dst,ByteBuffer src1,ByteBuffer src2);
+    private static native boolean mul(ByteBuffer dst,ByteBuffer src1,ByteBuffer src2);
+    private static native boolean div(ByteBuffer dst,ByteBuffer src1,ByteBuffer src2);
+    private static native boolean fft(int chIdx,int fftType,int fftWindow,ByteBuffer dst,ByteBuffer src);
+    private static native double fftDcVal(int chIdx);
+    private static native double fftMaxVal(int chIdx);
+    private static native int   fftMaxValIdx(int chIdx);
+    private static native void csetVAd(int chIdx,double vol);
+    private static native int[] ByteBufferToIntArray(ByteBuffer src);
+
+    private static native boolean setExpr(int chIdx,String exprString);
+    private static native double calcExpr(int chIdx,ByteBuffer dst,ByteBuffer [] chArray,double time,double var1,double var2);
+
+    private static native MathExprError isExprValid(String expString);
+
+
+}

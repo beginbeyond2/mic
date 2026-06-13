@@ -1,0 +1,456 @@
+package com.micsig.tbook.tbookscope.wavezone.wave;
+
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
+import android.text.TextPaint;
+import android.util.Log;
+
+import com.chillingvan.canvasgl.ICanvasGL;
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.tbookscope.GlobalVar;
+import com.micsig.tbook.tbookscope.tools.Tools;
+import com.micsig.tbook.tbookscope.util.App;
+import com.micsig.tbook.tbookscope.util.CacheUtil;
+import com.micsig.tbook.tbookscope.wavezone.IWorkMode;
+import com.micsig.tbook.tbookscope.wavezone.WorkModeManage;
+import com.micsig.tbook.ui.util.StrUtil;
+import com.micsig.tbook.ui.wavezone.IWave;
+import com.micsig.tbook.ui.wavezone.TChan;
+
+/**
+ * Created by liwb on 2017/5/19.
+ */
+
+public class ChannelWave implements IWave, IWorkMode {
+    private static final String TAG = "ChannelWave";
+
+    //region  属性
+    private boolean selected;
+    private boolean visible;
+    private int channelId;
+    private long x;
+    private double y;//屏幕上的实际像素位置
+    private double posY;//1000对应的位置
+    private OnMovingWaveEvent onMovingWaveEvent;
+    private OnSelectChangeEvent onSelectChangeEvent;
+    //endregion
+
+
+    //region  私有变量
+    private Context context= App.get().getApplicationContext();
+    private Bitmap[] resBitmap ;
+    private final Bitmap bmp;
+    private Canvas mCanvas;
+    private Paint paint;
+    private TextPaint textPaint;
+    private boolean isChangeBitmap = false;
+    private ICanvasGL canvasGL;
+    public void onRefresh(){
+        if(canvasGL != null){
+            canvasGL.onRefreshTexture();
+        }
+    }
+    private String label;
+    private final Rect labelRect = new Rect();
+
+    //YT is 0,Zoom is 100;
+    //private int topBeginPos=0;
+    //endregion
+    public ChannelWave(Bitmap[] resBitmap) {
+        this.resBitmap = resBitmap;
+        bmp = Bitmap.createBitmap(1800, resBitmap[1].getHeight(), Bitmap.Config.ARGB_8888);
+        mCanvas = new Canvas(bmp);
+        paint = new Paint();
+//        paint.setTypeface(Typeface.MONOSPACE);
+        paint.setTextSize(20);
+        paint.setAntiAlias(true);
+        paint.setDither(true);
+
+        textPaint=new TextPaint();
+        textPaint.setColor(Color.BLACK);
+        textPaint.setTextSize(20);
+        textPaint.setStyle(Paint.Style.STROKE);
+        textPaint.setStrokeWidth(4);
+
+        label = "";
+        draw();
+    }
+
+    public void initLabelRect() {
+        float labelTextW = textPaint.measureText(label);
+        int labelX = CacheUtil.get().getInt(CacheUtil.MAIN_WAVE_LABEL_POSITION + getLineNameID());
+        Logger.i("channelWave = " + getLineNameID() + " labelx= " + labelX);
+        labelRect.left = labelX;
+        labelRect.top = (int) Math.round(getY() - (resBitmap[WaveManage_YT.CH_S].getHeight() - 4));
+        labelRect.right = labelX + Math.round(labelTextW);
+        labelRect.bottom = (int) Math.round(getY() + (resBitmap[WaveManage_YT.CH_S].getHeight() - 4));
+    }
+
+
+    private PorterDuffXfermode clearMode = new PorterDuffXfermode(PorterDuff.Mode.CLEAR);
+    private PorterDuffXfermode srcMode = new PorterDuffXfermode(PorterDuff.Mode.SRC);
+
+    private void draw() {
+        synchronized (bmp) {
+            paint.setXfermode(clearMode);
+            mCanvas.drawPaint(paint);
+            paint.setXfermode(srcMode);
+            int y = (int) Math.round(ScopeBase.changeAccuracy(getPosY() * ScopeBase.getToUICoff()));
+            int h = getTextHeight(label) + (getTextHeight(label) == 0 ? 0 : 3);
+//            Logger.d("limh", "channelId= " + channelId + " visible= " + visible + " select= " + selected + " ,y= " + y);
+            if (this.visible) {
+                if (this.selected) {
+                    if (y < 0) {
+                        mCanvas.drawBitmap(resBitmap[WaveManage_YT.CH_S_UP], 0, 0, paint);
+                    } else if (y > GlobalVar.get().getWaveZoneHeight_Pix(WorkModeManage.getInstance().getmWorkMode())) {
+                        mCanvas.drawBitmap(resBitmap[WaveManage_YT.CH_S_DOWN], 0, 0, paint);
+                    } else {
+                        mCanvas.drawBitmap(resBitmap[WaveManage_YT.CH_S], 0, 0, paint);
+//                        paint.setColor(Color.BLACK);
+//                        mCanvas.drawRect(resBitmap[WaveManage_YT.CH_S].getWidth(), 0
+//                                , resBitmap[WaveManage_YT.CH_S].getWidth() + getTextWidth(label) + 6
+//                                , h, paint);
+                        paint.setColor(TChan.getChannelColor(context, channelId));
+//                        mCanvas.drawText(label, resBitmap[WaveManage_YT.CH_S].getWidth() + 3
+//                                , resBitmap[WaveManage_YT.CH_S].getHeight() - 3, textPaint);
+//                        mCanvas.drawText(label, resBitmap[WaveManage_YT.CH_S].getWidth() + 3
+//                                , resBitmap[WaveManage_YT.CH_S].getHeight() - 3, paint);
+                        mCanvas.drawText(label, labelRect.left, Math.round(y - labelRect.top), textPaint);
+                        mCanvas.drawText(label, labelRect.left, Math.round(y - labelRect.top), paint);
+                    }
+                } else {
+                    if (y < 0) {
+                        mCanvas.drawBitmap(resBitmap[WaveManage_YT.CH_N_UP], 0, 0, paint);
+                    } else if (y > GlobalVar.get().getWaveZoneHeight_Pix(WorkModeManage.getInstance().getmWorkMode())) {
+                        mCanvas.drawBitmap(resBitmap[WaveManage_YT.CH_N_DOWN], 0, 0, paint);
+                    } else {
+                        mCanvas.drawBitmap(resBitmap[WaveManage_YT.CH_N], 0, 0, paint);
+//                        paint.setColor(Color.BLACK);
+//                        mCanvas.drawRect(resBitmap[WaveManage_YT.CH_N].getWidth(), 0
+//                                , resBitmap[WaveManage_YT.CH_N].getWidth() + getTextWidth(label) + 6
+//                                , h, paint);
+                        paint.setColor(TChan.getChannelColor(context, channelId));
+//                        mCanvas.drawText(label, resBitmap[WaveManage_YT.CH_N].getWidth() + 3
+//                                , resBitmap[WaveManage_YT.CH_N].getHeight() - 3, textPaint);
+//                        mCanvas.drawText(label, resBitmap[WaveManage_YT.CH_N].getWidth() + 3
+//                                , resBitmap[WaveManage_YT.CH_N].getHeight() - 3, paint);
+                        mCanvas.drawText(label, labelRect.left, Math.round(y - labelRect.top), textPaint);
+                        mCanvas.drawText(label, labelRect.left, Math.round(y - labelRect.top), paint);
+                    }
+                }
+            }
+            isChangeBitmap = true;
+            onRefresh();
+        }
+    }
+
+    public void changeLabelPos(int x) {
+        float labelTextW = textPaint.measureText(label);
+        Paint.FontMetrics fm = textPaint.getFontMetrics();
+        if ((x + labelTextW) >= ScopeBase.getWidth()) {
+            x = ScopeBase.getWidth() - (int) labelTextW;
+        }
+        if (x <= 40) {
+            x = 40;
+        }
+        labelRect.left = x;
+        labelRect.top = (int) Math.round(getY() - (resBitmap[WaveManage_YT.CH_S].getHeight() - 4));
+        labelRect.right = Math.round(x + labelTextW);
+        labelRect.bottom = (int) Math.round(getY() + (resBitmap[WaveManage_YT.CH_S].getHeight() - 4));
+        draw();
+        CacheUtil.get().putMap(CacheUtil.MAIN_WAVE_LABEL_POSITION + getLineNameID(), String.valueOf(labelRect.left));
+    }
+
+    private int getTextWidth(String text) {
+        paint.getTextBounds(text, 0, text.length(), rect);
+        int w = rect.width();
+        int h = rect.height();
+        return w;
+    }
+
+    private int getTextHeight(String text) {
+        if (!StrUtil.isEmpty(text)) {
+            text = "abcdefghijklmnopqrstuvwxyz";
+        } else {
+            return 0;
+        }
+        paint.getTextBounds(text, 0, text.length(), rect);
+        int w = rect.width();
+        int h = rect.height();
+        return h;
+    }
+
+    //region IWorkMode接口
+
+    @Override
+    public void switchWorkMode(@WorkMode int workMode) {
+
+        switch (workMode) {
+            case IWorkMode.WorkMode_YT:
+                setY(Tools.getYTChannelPositionUI(channelId), true);
+                break;
+            case IWorkMode.WorkMode_YTZOOM:
+                setY(Tools.getZoomChannelPositionUI(channelId), true);
+                break;
+            case IWorkMode.WorkMode_XY:
+                this.isChangeBitmap = true;
+                onRefresh();
+                break;
+        }
+
+    }
+
+
+    //endregion
+
+    //region  IWave接口实现部分
+
+    /***
+     * 不使用
+     * @param offsetX x方向偏移
+     * @param offsetY y方向偏移
+     */
+    @Override
+    public void moveLine(int offsetX, int offsetY) {
+
+    }
+
+
+    @Override
+    public void draw(Canvas canvas) {
+//        synchronized (bmp) {
+//            if (y <= bmp.getHeight()) {
+//                canvas.drawBitmap(bmp, 0, 0, paint);
+//            } else if (y >= GlobalVar.get().getWaveZoneHeight_Pix(WorkModeManage.getInstance().getmWorkMode()) - bmp.getHeight()) {
+//                canvas.drawBitmap(bmp, 0, GlobalVar.get().getWaveZoneHeight_Pix(WorkModeManage.getInstance().getmWorkMode()) - bmp.getHeight(), paint);
+//            } else {
+//                canvas.drawBitmap(bmp, 0, y - resBitmap[WaveManage_YT.CH_S].getHeight() / 2, paint);
+//            }
+//        }
+    }
+
+    @Override
+    public void draw(ICanvasGL canvas) {
+        try {
+            synchronized (bmp) {
+                canvasGL = canvas;
+                int y = (int) Math.round(ScopeBase.changeAccuracy(getPosY() * ScopeBase.getToUICoff()));
+                if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) {
+                    y = (int) Math.round(getPosY());
+                }
+                if (isChangeBitmap) canvas.invalidateTextureContent(bmp,null);
+                if (y < 0) {
+                    canvas.drawBitmap(bmp, 0, 0);
+                } else if (y > GlobalVar.get().getWaveZoneHeight_Pix(WorkModeManage.getInstance().getmWorkMode())) {
+                    canvas.drawBitmap(bmp, 0, GlobalVar.get().getWaveZoneHeight_Pix(WorkModeManage.getInstance().getmWorkMode()) - bmp.getHeight());
+                } else {
+                    canvas.drawBitmap(bmp, 0, y - resBitmap[WaveManage_YT.CH_S].getHeight() / 2);
+                }
+                isChangeBitmap = false;
+            }
+        } catch (Exception ignored) {
+
+        }
+    }
+
+    @Override
+    public void resultIniRect() {
+
+    }
+
+    @Override
+    public void setLineNameId(int nameId) {
+        this.channelId = nameId;
+    }
+
+    @Override
+    public int getLineNameID() {
+        return this.channelId;
+    }
+
+    @Override
+    public long getX() {
+        return this.x;
+    }
+
+    @Override
+    public double getY() {
+        return ScopeBase.changeAccuracy(this.posY * ScopeBase.getToUICoff());
+    }
+
+    public double getPosY() {
+        return posY;
+    }
+
+    @Override
+    public void setX(long x) {
+        this.x = x;
+    }
+
+    @Override
+    public void setY(double y) {
+        int chRange = Tools.getChRange(channelId);
+        y = isYNoValid(y, chRange);
+        this.y = y;
+        if (ScopeBase.getToFPGACoff() == 1.0) {
+            ScopeBase.setConvertScale(CacheUtil.get().getInt(CacheUtil.MAIN_WAVE_ZONE_HEIGHT));
+        }
+        if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) {
+            this.posY = this.y;
+        } else {
+            this.posY = this.y * ScopeBase.getToFPGACoff();
+        }
+        Log.d("Tag.Debug", String.format("ChannelWave.setY: %s , channel: %d", y, getLineNameID()));
+        changeLabelPos(labelRect.left);
+        draw();
+        if (this.onMovingWaveEvent != null) {
+            onMovingWaveEvent.OnMovingWave(this, x, y, false, false);
+        }
+    }
+
+    private double isYNoValid(double y, int range) {
+        int h = ScopeBase.getHeight();
+        if (WorkModeManage.getInstance().getmWorkMode() == WorkMode_YTZOOM) {
+            h = ScopeBase.getZoomHeight();
+        }
+        h /= 2;
+        y = y * ScopeBase.getToFPGACoff();
+        if (y < (h - range)) {
+            y = h - range;
+        }
+        if (y > (h + range)) {
+            y = h + range;
+        }
+        return y * ScopeBase.getToUICoff();
+    }
+
+    private void setY(double y, boolean isSwitchWorkMode) {
+        int chRange = Tools.getChRange(channelId);
+        y = isYNoValid(y, chRange);
+        this.y = y;
+        if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) {
+            this.posY = this.y;
+        } else {
+            this.posY = this.y * ScopeBase.getToFPGACoff();
+        }
+        changeLabelPos(labelRect.left);
+        draw();
+        if (this.onMovingWaveEvent != null) {
+            onMovingWaveEvent.OnMovingWave(this, x, y, true, false);
+        }
+    }
+
+    public void setYFromEventBus(double y) {
+        int chRange = Tools.getChRange(channelId);
+        y = isYNoValid(y, chRange);
+        this.y = y;
+        if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) {
+            this.posY = this.y;
+        } else {
+            this.posY = this.y * ScopeBase.getToFPGACoff();
+        }
+        changeLabelPos(labelRect.left);
+        draw();
+        if (this.onMovingWaveEvent != null) {
+            onMovingWaveEvent.OnMovingWave(this, x, y, false, true);
+        }
+    }
+
+    @Override
+    public void setColor(int color) {
+
+    }
+
+    @Override
+    public int getColor() {
+        return 0;
+    }
+
+    @Override
+    public void setVisible(boolean visible) {
+        this.visible = visible;
+        draw();
+    }
+
+    public String getLabel() {
+        return label;
+    }
+
+    public Rect getLabelRect() {
+        return labelRect;
+    }
+
+    public void setLabel(String label) {
+        this.label = label;
+        int cacheLabelPos = CacheUtil.get().getInt(CacheUtil.MAIN_WAVE_LABEL_POSITION + getLineNameID());
+        if (labelRect.left != cacheLabelPos) labelRect.left = cacheLabelPos;
+        changeLabelPos(labelRect.left);
+        draw();
+    }
+
+    @Override
+    public boolean getVisible() {
+        return this.visible;
+    }
+
+    @Override
+    public void setSelected(boolean selected) {
+        this.selected = selected;
+        draw();
+        if (selected) {
+            if (onSelectChangeEvent != null) onSelectChangeEvent.OnSelectChange(this, true);
+        }
+    }
+
+    @Override
+    public boolean isSelected() {
+        return this.selected;
+    }
+
+    @Override
+    public void movePix(double px) {
+        double y = ScopeBase.changeAccuracy(getPosY() * ScopeBase.getToUICoff());
+        if (WorkModeManage.getInstance().getmWorkMode() == IWorkMode.WorkMode_XY) {
+            y = this.y;
+        }
+//        px = ScopeBase.changeAccuracy(px * ScopeBase.getToUICoff());
+        setY(y + px);
+    }
+
+    @Override
+    public void setOnSelectChangeEvent(OnSelectChangeEvent onSelectChangeEvent) {
+        this.onSelectChangeEvent = onSelectChangeEvent;
+    }
+
+    @Override
+    public void setOnMovingWaveEvent(OnMovingWaveEvent onMovingWaveEvent) {
+        this.onMovingWaveEvent = onMovingWaveEvent;
+    }
+
+    //endregion
+
+    private Rect rect = new Rect();
+
+    public boolean selectCursor(int x, int y) {
+        boolean selected;
+        int temY = (int) Math.round(this.y);
+        if (temY < 0) temY = 0 + bmp.getHeight();
+        else if (temY > GlobalVar.get().getWaveZoneHeight_Pix(WorkModeManage.getInstance().getmWorkMode())) {
+            temY = GlobalVar.get().getWaveZoneHeight_Pix(WorkModeManage.getInstance().getmWorkMode()) - bmp.getHeight();
+        }
+        rect.set(0, temY - resBitmap[WaveManage_YT.CH_S].getHeight() / 2, bmp.getWidth(), bmp.getHeight() + temY - resBitmap[WaveManage_YT.CH_S].getHeight() / 2);
+        selected = rect.contains(x, y);
+        return selected;
+    }
+
+    public void refresh() {
+        draw();
+    }
+}

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/divider_topviewtitle_color" />
+    <item
+        android:bottom="1px"
+        android:drawable="@color/color_Backcolor_MainMenu4" />
+    <item
+        android:bottom="1px"
+        android:left="30px" android:right="30px"
+        android:drawable="@color/textColorNewTopTitleSelect" />
+    <item
+        android:bottom="2px"
+        android:drawable="@color/color_Backcolor_MainMenu4" />
+
+</layer-list>

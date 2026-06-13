@@ -1,0 +1,271 @@
+package com.micsig.tbook.scope.Calibrate;
+
+import android.os.Build;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Message;
+import android.os.SystemClock;
+
+import com.micsig.tbook.hardware.HardwareProduct;
+import com.micsig.tbook.scope.Calibrate.MHO38v1.*;
+import com.micsig.tbook.scope.Calibrate.MHO68v1.*;
+import com.micsig.tbook.scope.Calibrate.MHO68v2.*;
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.ScopeMessage;
+
+import java.util.Observable;
+import java.util.Observer;
+
+/**
+ * Created by zhuzh on 2018-6-29.
+ */
+
+public class CalibrateService  implements Observer {
+    private static final String TAG = "CalibrateService";
+    private static volatile CalibrateService instance = null;
+    public static CalibrateService getInstance() {
+        if (instance == null) {
+            synchronized (CalibrateService.class) {
+                if (instance == null ) {
+                    instance = new CalibrateService();
+                }
+            }
+        }
+        return instance;
+    }
+    public static final int CALIBRATE_MSG = 0x1001;
+    public static final int CALIBRATE_BEGIN_FACTOR = 0x1002;
+    public static final int CALIBRATE_BEGIN_SELF = 0x1003;
+    public static final int CALIBRATE_ITEM_BEGIN = 0x1004;
+    public static final int CALIBRATE_INIT = 0x1005;
+    private static final int CALIBRATE_FPGA_STATUS = 0x1006;
+
+    public static final int CALIBRATE_BEGIN_PROBE = 0x1007;
+
+
+    public static final int MIN_CALIBRATE = 0;
+    public static final int ZERO_CALIBRATE = MIN_CALIBRATE;     //零点校准
+    public static final int AD_OFFSET_CALIBRATE = ZERO_CALIBRATE + 1;     //零点校准
+    public static final int CHCOEF_CALIBRATE = AD_OFFSET_CALIBRATE + 1;     //偏移量系数校准
+    public static final int CHGAIN_CALIBRATE = CHCOEF_CALIBRATE + 1;     //通道增益校准
+
+    public static final int CHCAP_CALIBRATE = CHGAIN_CALIBRATE + 1;      //电容校准
+
+    public static final int CH_ZERO_CALIBRATE = CHCAP_CALIBRATE + 1;      //CH 通大道零点
+
+    public static final int PROBE_DA_CALIBRATE = CH_ZERO_CALIBRATE + 1;     //探头DA
+
+    public static final int CHGAIN_CALIBRATE_EX = PROBE_DA_CALIBRATE + 1;
+    public static final int MAX_CALIBRATE = CHGAIN_CALIBRATE_EX + 1;
+    private Calibrate [] calibrates = new Calibrate[MAX_CALIBRATE];
+    private HandlerThread mHandlerThread;
+    private Handler mHandler;
+    private int calibrateType = -1;
+
+    private CalibrateService() {
+
+        initCalibrate();
+        mHandlerThread = new HandlerThread(TAG);
+        mHandlerThread.start();
+        mHandler = new Handler(mHandlerThread.getLooper()){
+            @Override
+            public void handleMessage(Message msg) {
+                CalibrateService.this.handleMessage(msg);
+            }
+        };
+    }
+
+    private void initCalibrate() {
+        switch (Build.PRODUCT){
+            case HardwareProduct.RK3588_MHO28_V1:
+            case HardwareProduct.RK3588_MHO38_V1:
+                calibrates[ZERO_CALIBRATE] = new MHO38v1_ZeroCalibrateEx(ZERO_CALIBRATE);
+                calibrates[CHCOEF_CALIBRATE] = new MHO38v1_ChCofitCalibrateEx(CHCOEF_CALIBRATE);
+                calibrates[CHGAIN_CALIBRATE] = new MHO38v1_ChGainCalibrate(CHGAIN_CALIBRATE);
+                calibrates[CHCAP_CALIBRATE] = new MHO38v1_ChCapCalibrate(CHCAP_CALIBRATE);
+                calibrates[CH_ZERO_CALIBRATE] = new MHO38v1_ZeroCalibrate(CH_ZERO_CALIBRATE);
+                break;
+            case HardwareProduct.RK3588_MHO68_V1:
+                calibrates[ZERO_CALIBRATE] = new MHO68v1_ZeroCalibrateEx(ZERO_CALIBRATE);
+                calibrates[AD_OFFSET_CALIBRATE] = new MHO68v1_ADOffsetCalibrate(AD_OFFSET_CALIBRATE);
+                calibrates[CHCOEF_CALIBRATE] = new MHO68v1_ChCofitCalibrateEx(CHCOEF_CALIBRATE);
+                calibrates[CHGAIN_CALIBRATE] = new MHO68v1_ChGainCalibrate(CHGAIN_CALIBRATE);
+                calibrates[CHCAP_CALIBRATE] = new MHO68v1_ChCapCalibrate(CHCAP_CALIBRATE);
+                calibrates[CH_ZERO_CALIBRATE] = new MHO68v1_ZeroCalibrate(CH_ZERO_CALIBRATE);
+                calibrates[PROBE_DA_CALIBRATE] = new MHO68v1_ProbeDACalibrate(PROBE_DA_CALIBRATE);
+                calibrates[CHGAIN_CALIBRATE_EX] = new MHO68v1_ChGainCalibrateEx(CHGAIN_CALIBRATE_EX);
+                break;
+            default:
+            case HardwareProduct.RK3588_MHO68_V2:
+                calibrates[ZERO_CALIBRATE] = new MHO68v2_ZeroCalibrateEx(ZERO_CALIBRATE);
+                calibrates[CHCOEF_CALIBRATE] = new MHO68v2_ChCofitCalibrateEx(CHCOEF_CALIBRATE);
+                calibrates[CHGAIN_CALIBRATE] = new MHO68v2_ChGainCalibrate(CHGAIN_CALIBRATE);
+                calibrates[CHCAP_CALIBRATE] = new MHO68v2_ChCapCalibrate(CHCAP_CALIBRATE);
+                calibrates[CH_ZERO_CALIBRATE] = new MHO68v2_ZeroCalibrate(CH_ZERO_CALIBRATE);
+                calibrates[CHGAIN_CALIBRATE_EX] = new MHO68v2_ChGainCalibrateEx(CHGAIN_CALIBRATE_EX);
+                break;
+        }
+
+    }
+
+    private void handleMessage(Message msg){
+        switch (msg.what){
+            case CALIBRATE_MSG:
+            {
+                Calibrate calibrate = (Calibrate)msg.obj;
+                if(calibrate != null){
+                    if(calibrate.onCalibrate()) {
+                        calibrate.setFinished();
+                        calibrate.endCalibrate();
+                        EventFactory.sendEvent(EventFactory.EVENT_CALIBRATE_ITEM_FINISH);
+                    }
+                    calibrate.end();
+                    waveUpdateTimestamp = SystemClock.elapsedRealtime();
+                    fpgaStatus();
+                }
+                break;
+            }
+            case CALIBRATE_BEGIN_FACTOR: {
+                EventFactory.sendEvent(EventFactory.EVENT_FACTOR_CALIBRATE_BEGIN);
+                break;
+            }
+            case CALIBRATE_BEGIN_SELF: {
+                EventFactory.sendEvent(EventFactory.EVENT_SELF_CALIBRATE_BEGIN);
+                break;
+            }
+            case CALIBRATE_ITEM_BEGIN: {
+                EventFactory.sendEvent((EventBase) msg.obj);
+                break;
+            }
+            case CALIBRATE_BEGIN_PROBE:{
+                EventFactory.sendEvent(EventFactory.EVENT_PROBE_CALIBRATE_BEGIN);
+            }
+            break;
+            case CALIBRATE_INIT:{
+                Calibrate calibrate = (Calibrate)msg.obj;
+                if(calibrate != null){
+                    calibrate.iniCalibrate();
+                }
+                waveUpdateTimestamp = SystemClock.elapsedRealtime();
+                fpgaStatus();
+                break;
+            }
+            case CALIBRATE_FPGA_STATUS:{
+                if(bCalibrate) {
+                    if ((SystemClock.elapsedRealtime() - waveUpdateTimestamp) > 30 * 1000) {
+                        Calibrate calibrate = getCalibrate();
+                        calibrate.setErrcode(1001);
+                        calibrate.setFinished();
+                        calibrate.endCalibrate();
+
+                        EventFactory.sendEvent(EventFactory.EVENT_CALIBRATE_ITEM_FINISH);
+                    }
+                    if ((SystemClock.elapsedRealtime() - waveUpdateTimestamp) > 2 * 1000) {
+                        getCalibrate().checkParam();
+                    }
+                    ScopeMessage.getInstance().sendFpgaId();
+                    fpgaStatus();
+                }
+                break;
+            }
+        }
+    }
+    private void fpgaStatus(){
+        if(bCalibrate){
+            if(mHandler.hasMessages(CALIBRATE_FPGA_STATUS)){
+                mHandler.removeMessages(CALIBRATE_FPGA_STATUS);
+            }
+            mHandler.sendEmptyMessageDelayed(CALIBRATE_FPGA_STATUS,3*1000);
+        }
+    }
+    private volatile boolean bCalibrate = false;
+    public void start(int calibrateType){
+        synchronized (this) {
+            if (isCalibrateTypeValid(calibrateType)) {
+                bCalibrate = true;
+                this.calibrateType = calibrateType;
+                //calibrates[calibrateType].iniCalibrate();//校准初始化
+                Message msg = mHandler.obtainMessage();
+                msg.what = CALIBRATE_INIT;
+                msg.obj = getCalibrate();
+                mHandler.sendMessage(msg);
+                EventFactory.addEventObserver(EventFactory.EVENT_CH_WAVE_UPDATE,this);
+
+            }
+        }
+    }
+    public boolean isCalibrate(){
+        return bCalibrate;
+    }
+    public void end(){
+        synchronized (this) {
+            bCalibrate = false;
+            EventFactory.delEventObserver(EventFactory.EVENT_CH_WAVE_UPDATE, this);
+            calibrates[calibrateType].endCalibrate();
+//            this.calibrateType = -1;
+
+        }
+    }
+
+    public Calibrate getCalibrate(){
+        return getCalibrate(calibrateType);
+    }
+
+    public int getCalibrateType(){
+        return calibrateType;
+    }
+
+    public Calibrate getCalibrate(int idx){
+        Calibrate calibrate = null;
+        synchronized (this) {
+            if (isCalibrateTypeValid(idx)) {
+                calibrate = calibrates[idx];
+            }
+        }
+        return calibrate;
+    }
+
+
+
+
+
+    @Override
+    public void update(Observable observable, Object data) {
+        EventBase eventBase = (EventBase)data;
+        if(eventBase.getId() == EventFactory.EVENT_CH_WAVE_UPDATE){
+            //Log.i(TAG, "receive enent: EVENT_CH_WAVE_UPDATE");
+            Calibrate calibrate = getCalibrate();
+            if(calibrate != null && !calibrate.isCalibrate()){
+
+                if(!mHandler.hasMessages(CALIBRATE_MSG)) {
+                    if(calibrate.begin()) {
+                        Message msg = mHandler.obtainMessage();
+                        msg.what = CALIBRATE_MSG;
+                        msg.obj = calibrate;
+                        mHandler.sendMessage(msg);
+                    }else{
+                        calibrate.end();
+                    }
+                }
+                waveUpdateTimestamp = SystemClock.elapsedRealtime();
+            }
+        }
+
+    }
+    private long waveUpdateTimestamp = 0;
+
+    public void sendMsg(int what) {
+        //Message msg = mHandler.obtainMessage();
+        //msg.what = CALIBRATE_BEGIN;
+        mHandler.sendEmptyMessage(what);
+    }
+
+    public void sendMsg(Message message) {
+        mHandler.sendMessage(message);
+    }
+
+    public static boolean isCalibrateTypeValid(int calibrateType){
+        return (calibrateType>=MIN_CALIBRATE && calibrateType<MAX_CALIBRATE);
+    }
+}

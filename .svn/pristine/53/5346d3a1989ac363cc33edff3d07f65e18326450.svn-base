@@ -1,0 +1,59 @@
+package com.micsig.tbook.scope.fpga;
+
+/**
+ * Created by zhuzh on 2018-4-8.
+ */
+
+public class FPGAReg_TRIG_MODE extends FPGAReg {
+    public FPGAReg_TRIG_MODE() {
+        super(FPGA_TRIG_MODE, 16);
+    }
+    //极性
+    public void setTrigPolarityCh(int chIdx,int val){
+        setVal(0+chIdx,1,val);
+    }
+    //相位
+    //public void setPhaseCh(int chIdx,int val){
+    //    setVal(4+chIdx,1,val);
+    //}
+    //是否参与逻辑运算
+    public void setLogicCh(int chIdx,int val){
+        setVal(12+chIdx,1,val);
+    }
+    //
+
+    //触发类型:
+    //0:边沿触发；1: 脉冲触发；2: 逻辑触发；3:视频触发；4:串行总线触发；
+    //5：矮脉冲触发；6：超时触发；7：斜率触发；8：第N边沿触发
+    public void setTrigType(int val){
+        setVal(1,0,4,val);
+    }
+    public void setTrigBus(int val){
+        setVal(1,4,2,val);
+    }
+    public void setExternalTrigger(int val) {//外部触发，FPGA那边判断优先级比setTrigSource高
+        setVal(1, 11, 1, val);
+    }
+    public void setTrigSource(int val){
+        setVal(1,12,3,val);
+    }
+    public void setNomalTrig(int val){
+        setVal(1,15,1,val);
+    }
+    public void setForceTrig(int val){
+        setVal(1,16,1,val);
+    }
+    public void setJiaoZhun(int val){
+        setVal(1,18,1,val);
+    }
+    public void setTrigParam(int val){
+        setVal(1,20,12,val);
+    }
+    public void setTrigValL(int val){
+        setVal(2,val);
+    }
+    public void setTrigValH(int val){
+        setVal(3,val);
+    }
+
+}

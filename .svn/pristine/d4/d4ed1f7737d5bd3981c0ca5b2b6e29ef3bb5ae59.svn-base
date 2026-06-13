@@ -1,0 +1,53 @@
+package com.micsig.tbook.scope.Event;
+
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
+
+import java.util.Observable;
+import java.util.Observer;
+
+
+/**
+ * Created by zhuzh on 2018-7-10.
+ */
+
+public abstract class EventUIObserver implements Observer {
+    public static final int EVENT_TO_MAIN_RUN = 0x1826;
+    private Handler mainHandler;
+
+    public EventUIObserver() {
+        mainHandler = new Handler(Looper.getMainLooper()) {
+            @Override
+            public void handleMessage(Message msg) {
+                if (msg.what == EVENT_TO_MAIN_RUN) {
+                    update(msg.obj);
+                }
+            }
+        };
+    }
+
+    public abstract void update(Object data);
+
+    @Override
+    public void update(Observable observable, Object data) {
+        EventBase eventBase = (EventBase) data;
+        if (isOnMainThread()) {
+            //Logger.i("setMainSender:true" + eventBase.getId());
+            eventBase.setMainSender(true);
+            //如果是主线程发过来的消息，则都是来自于界面设置的反馈，暂时不需要进行下发更新，以免形成循环调用
+//            update(data);
+        } else {
+            //Logger.i("setMainSender:false" + eventBase.getId());
+            eventBase.setMainSender(false);
+            Message msg = mainHandler.obtainMessage();
+            msg.obj = data;
+            msg.what = EVENT_TO_MAIN_RUN;
+            mainHandler.sendMessage(msg);
+        }
+    }
+
+    public static boolean isOnMainThread() {
+        return Thread.currentThread() == Looper.getMainLooper().getThread();
+    }
+}

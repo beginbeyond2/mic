@@ -1,0 +1,431 @@
+
+#include "scpi_cmd_samp.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string>
+#include "scpi_help.h"
+#include "../../SCPICommandCallBackJava.h"
+#include "../../Log.h"
+
+//using namespace OscilloUi;
+//�±�� SampleMode ��Ӧ
+const char *samp_type[] = {
+        "NORMal",
+        "MEAN",
+        "ENVelop",
+        "PEAK",
+        NULL
+};
+
+//���ò�����ʽ
+scpi_result_t SAMP_TYPE(scpi_t *context) {
+//    ERROR_XY_MODE;
+    int param1;
+    if (!SCPI_ParamChoice(context, samp_type, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+
+//    SCPI_CLOSE_MENU;
+//
+//    if(gMainWindow->GetMenuChannel())
+//    {
+//        switch(param1)
+//        {
+//        case 0:
+//            gMainWindow->GetMenuChannel()->on_btnNORMAL_clicked();
+//            break;
+//        case 1:
+//            gMainWindow->GetMenuChannel()->on_btnPEAK_clicked();
+//            break;
+//        case 2:
+//            gMainWindow->GetMenuChannel()->on_btnAVERAGE_clicked();
+//            break;
+//        case 3:
+//            gMainWindow->GetMenuChannel()->on_btnENVEL_clicked();
+//            break;
+//        }
+//    }
+
+    setParam_1Int(context->env, context->param, param1);
+    dealCallBack(context->env, context->obj, context->param, context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+//��ѯ������ʽ
+scpi_result_t SAMP_TYPEQ(scpi_t *context) {
+//    ERROR_XY_MODEQ;
+//    if(gMainWindow->GetMenuChannel())
+//    {
+//        switch(gMainWindow->GetMenuChannel()->getSampTp())
+//        {
+//        case SAMPLE_NORMAL:
+//            SCPI_ResultString(context,samp_type[0]);
+//            break;
+//        case SAMPLE_PEAK:
+//            SCPI_ResultString(context,samp_type[1]);
+//            break;
+//        case SAMPLE_MEAN:
+//            SCPI_ResultString(context,samp_type[2]);
+//            break;
+//        case SAMPLE_ENVELOP:
+//            SCPI_ResultString(context,samp_type[3]);
+//            break;
+//        default:
+//            break;
+//        }
+//    }
+
+    dealCallBack(context->env, context->obj, context->param, context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+const char *samp_mean_num[] = {
+        "2", "4", "8", "16", "32", "64", "128", "256", NULL
+};
+
+//����ƽ�����������������õ�ֵΪ2������������
+scpi_result_t SAMP_MEAN(scpi_t *context) {
+//    ERROR_XY_MODE;
+    int param1;
+    if (!SCPI_ParamChoice(context, samp_mean_num, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+//    if(gMainWindow->GetMenuChannel())
+//    {
+//        if(gMainWindow->GetMenuChannel()->getSampTp() != 2)
+//        {
+//            return SCPI_RES_ERR;
+//        }
+//        SCPI_CLOSE_MENU;
+//        int _param1 = QString(samp_mean_num[param1]).toInt();
+//        gMainWindow->GetMenuChannel()->SetChannelSampleNum(_param1);
+//    }
+    setParam_1Int(context->env, context->param, param1);
+    dealCallBack(context->env, context->obj, context->param, context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+//��ѯƽ����������
+scpi_result_t SAMP_MEANQ(scpi_t *context) {
+//    ERROR_XY_MODEQ;
+//    if(gMainWindow->GetMenuChannel())
+//    {
+//        if(gMainWindow->GetMenuChannel()->getSampTp() != 2)
+//        {
+//            DEBUG_RETURN("ERROR SAMP TYPE NOT MEAN!");
+//            return SCPI_RES_ERR;
+//        }
+//        SCPI_ResultInt(context,gMainWindow->GetMenuChannel()->getSampValue());
+//    }
+
+    dealCallBack(context->env, context->obj, context->param, context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+const char *samp_env_num[] = {
+        "2", "4", "8", "16", "32", "64", "128", "256", "inf", NULL
+};
+
+//���ð�����������������õ�ֵΪ2����������������
+scpi_result_t SAMP_ENV(scpi_t *context) {
+//    ERROR_XY_MODE;
+    int param1;
+    if (!SCPI_ParamChoice(context, samp_env_num, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Int(context->env, context->param, param1);
+    dealCallBack(context->env, context->obj, context->param, context->scpi_command_index);
+//    SCPI_CLOSE_MENU;
+//    if(gMainWindow->GetMenuChannel())
+//    {
+//        if(gMainWindow->GetMenuChannel()->getSampTp() != 3)
+//        {
+//            return SCPI_RES_ERR;
+//        }
+//        int _param1 = (2<<param1);
+//        gMainWindow->GetMenuChannel()->SetChannelSampleNum(_param1);
+//    }
+    return SCPI_RES_OK;
+}
+
+//��ѯ�����������
+scpi_result_t SAMP_ENVQ(scpi_t *context) {
+//    ERROR_XY_MODEQ;
+//    if(gMainWindow->GetMenuChannel())
+//    {
+//        if(gMainWindow->GetMenuChannel()->getSampTp() != 3)
+//        {
+//            DEBUG_RETURN("ERROR SAMP TYPE NOT ENV!");
+//            return SCPI_RES_ERR;
+//        }
+//        int env=gMainWindow->GetMenuChannel()->getSampValue();
+//        QString s;
+//        if (env>256){s="inf";}
+//        else{s=QString::number(env);}
+//        SCPI_ResultString(context,s.toAscii().data());
+//        //SCPI_ResultInt(context,gMainWindow->GetMenuChannel()->getSampValue());
+//    }
+
+    dealCallBack(context->env, context->obj, context->param, context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+//��ѯ��ǰ�Ĳ�����
+scpi_result_t SAMP_SRATQ(scpi_t *context) {
+//    ERROR_XY_MODEQ;
+    dealCallBack(context->env, context->obj, context->param, context->scpi_command_index);
+//    CH_IDX idx = (CH_IDX)getCh(param2);
+//    //printf("-liwb- channel:%d\n",idx);
+//    Device::IModuleDevice *md = Device::IModuleDevice::instance();
+//    double param1 = md->sampleRate(idx/*CI_ACTIVE*/);//800*600����û��
+//    SCPI_ResultDouble(context,param1);
+    return SCPI_RES_OK;
+}
+
+//const char* mDepth[]={
+//        "AUTO",
+//        "1800000000",
+//        "180000000",
+//        "18000000",
+//        "1800000",
+//        "180000",
+////        "18000",
+//        "900000000",
+//        "90000000",
+//        "9000000",
+//        "900000",
+//        "90000",
+////        "9000",
+//        "450000000",
+//        "45000000",
+//        "4500000",
+//        "450000",
+//        "45000",
+//        NULL
+//};
+scpi_result_t SAMP_MDEPS(scpi_t *context){
+//    int param2;
+//    if (!SCPI_ParamChoice(context, mDepth ,&param2, true)) {
+//        dealCallBack_ParamError(context);
+//        return SCPI_RES_ERR;
+//    }
+    const char* param = NULL;
+    size_t len=0;
+    if  (!SCPI_ParamString(context,&param,&len,true)){
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+
+    std::string param1(param,len);
+    setParam_1String(context->env,context->param,param1.c_str());
+//    setParam_1Int(context->env, context->param, param2);
+    dealCallBack(context->env, context->obj, context->param, context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+//��ѯʾ������ǰ�洢���
+scpi_result_t SAMP_MDEPSQ(scpi_t *context) {
+//    ERROR_XY_MODEQ;
+
+//    CH_IDX idx = (CH_IDX)getCh(param2);
+//    //printf("-liwb- channel:%d\n",idx);
+//    Device::IModuleDevice *md = Device::IModuleDevice::instance();
+//    double param1 = md->memDepth(idx/*CI_ACTIVE*/);//800*600����û��
+//    SCPI_ResultDouble(context,param1);
+    dealCallBack(context->env, context->obj, context->param, context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+scpi_result_t SAMP_MDEPS_INDEX(scpi_t* context){
+    return SAMP_SEGM_QTY(context);
+}
+scpi_result_t SAMP_MDEPQ(scpi_t *context) {
+//    ERROR_XY_MODEQ;
+
+//    CH_IDX idx = (CH_IDX)getCh(param2);
+//    //printf("-liwb- channel:%d\n",idx);
+//    Device::IModuleDevice *md = Device::IModuleDevice::instance();
+//    double param1 = md->memDepth(idx/*CI_ACTIVE*/);//800*600����û��
+//    SCPI_ResultDouble(context,param1);
+    dealCallBack(context->env, context->obj, context->param, context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+scpi_result_t SAMP_MDEP_RANGEQ(scpi_t * context){
+    return SAMP_MDEPQ(context);
+}
+scpi_result_t SAMP_MDEP_INITQ(scpi_t* context){
+    return SAMP_MDEPQ(context);
+}
+//���÷ֶδ洢�Ķ���
+scpi_result_t SAMP_SEGM(scpi_t *context) {
+    //Q_UNUSED(context);
+    bool param2;
+    if (!SCPI_ParamBool(context, &param2, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Boolean(context->env, context->param, param2);
+    dealCallBack(context->env, context->obj, context->param, context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+scpi_result_t SAMP_SEGMQ(scpi_t *context) {
+    dealCallBack(context->env, context->obj, context->param, context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+scpi_result_t SAMP_SEGM_NOQ(scpi_t *context) {
+    dealCallBack(context->env, context->obj, context->param, context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+scpi_result_t SAMP_SEGM_QTY(scpi_t *context) {
+    int param1;
+    if (!SCPI_ParamInt(context, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Int(context->env, context->param, param1);
+    dealCallBack(context->env, context->obj, context->param, context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+scpi_result_t SAMP_SEGM_QTYQ(scpi_t *context) {
+    dealCallBack(context->env, context->obj, context->param, context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+scpi_result_t SAMP_SEGM_IS10000Q(scpi_t*context){
+    return SAMP_SEGM_QTYQ(context);
+}
+scpi_result_t SAMP_SEGM_MAX(scpi_t* context){
+    return SAMP_SEGM_QTYQ(context);
+}
+
+const char* seg_display_type[]={
+        "SINGLe",
+        "FIT",
+        NULL
+};
+scpi_result_t SAMP_SEGM_DIST(scpi_t *context) {
+    int param1;
+    if (!SCPI_ParamChoice(context,seg_display_type,&param1,true)){
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Int(context->env,context->param,param1);
+    dealCallBack(context->env, context->obj, context->param, context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+scpi_result_t SAMP_SEGM_DISTQ(scpi_t *context) {
+    dealCallBack(context->env, context->obj, context->param, context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+const char* segment_order[]={
+        "ORDer",
+        "REORder",
+        NULL
+};
+
+scpi_result_t SAMP_SEGMQ_ORD(scpi_t *context) {
+    int param1;
+    if (!SCPI_ParamChoice(context,segment_order,&param1,true)){
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Int(context->env, context->param, param1);
+    dealCallBack(context->env, context->obj, context->param, context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+scpi_result_t SAMP_SEGM_ORDQ(scpi_t *context) {
+    dealCallBack(context->env, context->obj, context->param, context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+scpi_result_t SAMP_SEGM_PLAY(scpi_t *context) {
+    dealCallBack(context->env, context->obj, context->param, context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+scpi_result_t SAMP_SEGM_STOP(scpi_t *context) {
+    dealCallBack(context->env, context->obj, context->param, context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+scpi_result_t SAMP_SEGM_FRA1(scpi_t *context) {
+    int param1;
+    if (!SCPI_ParamInt(context, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Int(context->env, context->param, param1);
+    dealCallBack(context->env, context->obj, context->param, context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+scpi_result_t SAMP_SEGM_FRA1Q(scpi_t *context) {
+    dealCallBack(context->env, context->obj, context->param, context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+scpi_result_t SAMP_SEGM_FRA2(scpi_t *context) {
+    int param1;
+    if (!SCPI_ParamInt(context, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Int(context->env, context->param, param1);
+    dealCallBack(context->env, context->obj, context->param, context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+scpi_result_t SAMP_SEGM_FRA2Q(scpi_t *context) {
+    dealCallBack(context->env, context->obj, context->param, context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+scpi_result_t SAMP_SEGMQ_FRA3(scpi_t *context) {
+    int param1;
+    if (!SCPI_ParamInt(context, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Int(context->env, context->param, param1);
+    dealCallBack(context->env, context->obj, context->param, context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+scpi_result_t SAMP_SEGM_FRA3Q(scpi_t *context) {
+    dealCallBack(context->env, context->obj, context->param, context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+const char* play_speed[]={
+        "1",
+        "2",
+        "4",
+        "8",
+        NULL
+};
+scpi_result_t SAMP_SEGM_PLAY_SPEED(scpi_t *context) {
+    int param1;
+    if (!SCPI_ParamChoice(context,play_speed, &param1, true)) {
+        dealCallBack_ParamError(context);
+        return SCPI_RES_ERR;
+    }
+    setParam_1Int(context->env, context->param, param1);
+    dealCallBack(context->env, context->obj, context->param, context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+scpi_result_t SAMP_SEGMQ_PLAY_SPEEDQ(scpi_t *context) {
+    dealCallBack(context->env, context->obj, context->param, context->scpi_command_index);
+    return SCPI_RES_OK;
+}
+
+
+

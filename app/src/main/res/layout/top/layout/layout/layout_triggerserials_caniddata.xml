@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/canIdData"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="10px">
+
+    <com.micsig.tbook.ui.top.view.TopViewEdit
+        android:id="@+id/canIdDataId"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_marginStart="10px"
+        app:editHint="0000 0000"
+        app:head="@string/topSerialsHeadId" />
+
+    <com.micsig.tbook.ui.top.view.TopViewEdit
+        android:id="@+id/canIdDataDlc"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_toEndOf="@id/canIdDataId"
+        android:layout_marginStart="20px"
+        app:editHint="0"
+        app:head="@string/topSerialsHeadDlc" />
+
+    <com.micsig.tbook.ui.top.view.TopViewEdit
+        android:id="@+id/canIdDataData"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_toEndOf="@id/canIdDataDlc"
+        android:layout_marginStart="20px"
+        app:editHint=""
+        app:head="@string/topSerialsHeadData" />
+</RelativeLayout>

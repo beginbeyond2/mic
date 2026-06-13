@@ -1,0 +1,154 @@
+package com.micsig.tbook.scope.Trigger;
+
+/**
+ * Created by zhuzh on 2018-6-1.
+ */
+
+public class TriggerVideo extends Trigger {
+    public static final int VIDEO_POLARITY_POSITIVE = 0;
+    public static final int VIDEO_POLARITY_NEGATIVE = 1;
+
+    public static final int VIDEO_STANDARD_625_PAL = 0;
+    public static final int VIDEO_STANDARD_SECAM = 1;
+    public static final int VIDEO_STANDARD_525NTSC = 2;
+    public static final int VIDEO_STANDARD_720P = 3;
+    public static final int VIDEO_STANDARD_1080I = 4;
+    public static final int VIDEO_STANDARD_1080P = 5;
+
+    public static final int VIDEO_TRIGGER_ODD_FIELDS = 0;
+    public static final int VIDEO_TRIGGER_EVEN_FIELDS = 1;
+    public static final int VIDEO_TRIGGER_ALL_FIELDS = 2;
+    public static final int VIDEO_TRIGGER_ALL_LINES = 3;
+    public static final int VIDEO_TRIGGER_LINE = 4;
+
+    public static final int VIDEO_FREQUENCY_60HZ = 0;//这五个值可以变，界面调用用的名字而非值
+    public static final int VIDEO_FREQUENCY_50HZ = 1;
+    public static final int VIDEO_FREQUENCY_30HZ = 2;
+    public static final int VIDEO_FREQUENCY_25HZ = 3;
+    public static final int VIDEO_FREQUENCY_24HZ = 4;
+
+
+
+    private int polarity = VIDEO_POLARITY_POSITIVE;
+    private int standard = VIDEO_STANDARD_625_PAL;
+    private int videoTrigger = VIDEO_TRIGGER_ODD_FIELDS;
+
+    private int videoFrequency = VIDEO_FREQUENCY_60HZ;
+    private int line = 1;
+
+    public TriggerVideo() {
+        super(Trigger.TRIG_TYPE_VIDEO);
+    }
+
+    public int getPolarity() {
+        return polarity;
+    }
+
+    public void setPolarity(int polarity) {
+        this.polarity = polarity;
+        triggerParamChange();
+    }
+
+    public int getStandard() {
+        return standard;
+    }
+
+    public void setStandard(int standard) {
+        this.standard = standard;
+        triggerParamChange();
+    }
+
+    public int getVideoTrigger() {
+        return videoTrigger;
+    }
+
+    public void setVideoTrigger(int videoTrigger) {
+        this.videoTrigger = videoTrigger;
+        triggerParamChange();
+    }
+
+    public int  triggerVideoTotalLineCnt(int std)
+    {
+        switch(std){
+            case VIDEO_STANDARD_625_PAL:
+            case VIDEO_STANDARD_SECAM:
+                return 625;
+            case VIDEO_STANDARD_525NTSC:
+                return 525;
+            case VIDEO_STANDARD_720P:
+                return 750;
+            case VIDEO_STANDARD_1080I:
+            case VIDEO_STANDARD_1080P:
+            default:
+                return 1125;
+        }
+    }
+
+    public int   triggerVideoTotalLineCnt()
+    {
+        return triggerVideoTotalLineCnt(standard);
+    }
+
+    public int triggerVideoTimeFieldLine()
+    {
+
+        int cnt=60;
+        switch(videoFrequency)
+        {
+            case VIDEO_FREQUENCY_60HZ:
+                cnt = 60;
+                break;
+            case VIDEO_FREQUENCY_50HZ:
+                cnt = 50;
+                break;
+            case VIDEO_FREQUENCY_30HZ:
+                cnt = 30;
+                break;
+            case VIDEO_FREQUENCY_25HZ:
+                cnt = 25;
+                break;
+            case VIDEO_FREQUENCY_24HZ:
+                cnt = 24;
+                break;
+            default:
+        }
+        int line = triggerVideoTotalLineCnt();
+        return (1000*1000*1000/4)/cnt/line;//行与行的间隔时间 以4ns时钟计算
+    }
+
+
+    public int getVideoFrequency() {
+        return videoFrequency;
+    }
+
+    public void setVideoFrequency(int videoFrequency) {
+        this.videoFrequency = videoFrequency;
+		triggerParamChange();
+    }
+
+    public int getLine() {
+        return line;
+    }
+
+    public void setLine(int line) {
+        this.line = line;
+		triggerParamChange();
+    }
+
+    @Override
+    public int getSrcTriggerLevelCnt() {
+        return 0;
+    }
+
+    @Override
+    public int getTriggerSourceCnt() {
+        return 1;
+    }
+
+    @Override
+    protected boolean isMultitriggerSource() {
+        return false;
+    }
+
+
+}

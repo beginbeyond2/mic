@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="MyRadioGroup">
+        <attr name="maxRows" format="integer" />
+        <attr name="columnSpace" format="dimension" />
+    </declare-styleable>
+</resources>

@@ -1,0 +1,26 @@
+package com.micsig.tbook.scope.fpga;
+
+/**
+ * Created by zhuzh on 2018-4-10.
+ */
+
+public class FPGAReg_CH_DISPLAY extends FPGAReg {
+
+    private static final String TAG = "FPGAReg_CH_DISPLAY";
+    public FPGAReg_CH_DISPLAY() {
+        super(FPGA_CH_DISPLAY, 4);
+
+    }
+
+    public void setChEnable(int idx,int val){
+        setVal(idx,1,val);
+    }
+    public void setCh1Color(int val){
+
+        setVal(4,2,val);
+    }
+    public void setCh2Color(int val){
+        setVal(6,2,val);
+    }
+
+}

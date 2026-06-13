@@ -1,0 +1,509 @@
+package com.micsig.tbook.scope.horizontal;
+
+import com.micsig.tbook.scope.Data.WaveData;
+import com.micsig.tbook.scope.Display.Display;
+import com.micsig.tbook.scope.Event.EventBase;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.Sample.IMemDepth;
+import com.micsig.tbook.scope.Sample.MemDepthFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Observable;
+import java.util.Observer;
+
+public class HorizontalAxisRef implements Observer {
+    private static final String TAG = "HorizontalAxisRef";
+
+    public static final int TSI_MIN = 0;
+    public static final int TSI_1KS = TSI_MIN; //1000s
+    public static final int TSI_500S = 1;//1
+    public static final int TSI_200S = 2;//2
+    public static final int TSI_100S = 3;
+    public static final int TSI_50S = 4;
+    public static final int TSI_20S = 5;//5
+    public static final int TSI_10S = 6;
+    public static final int TSI_5S = 7;
+    public static final int TSI_2S = 8;
+    public static final int TSI_1S = 9;
+    public static final int TSI_500mS = 10;//10
+    public static final int TSI_200mS = 11;
+    public static final int TSI_100mS = 12;
+    public static final int TSI_50mS = 13;
+    public static final int TSI_20mS = 14;
+    public static final int TSI_10mS = 15;//15
+    public static final int TSI_5mS = 16;
+    public static final int TSI_2mS = 17;
+    public static final int TSI_1mS = 18;
+    public static final int TSI_500uS = 19;
+    public static final int TSI_200uS = 20;//20
+    public static final int TSI_100uS = 21;
+    public static final int TSI_50uS = 22;
+    public static final int TSI_20uS = 23;
+    public static final int TSI_10uS = 24;
+    public static final int TSI_5uS = 25;//25
+    public static final int TSI_2uS = 26;
+    public static final int TSI_1uS = 27;
+    public static final int TSI_500nS = 28;
+    public static final int TSI_200nS = 29;
+    public static final int TSI_100nS = 30;//30
+    public static final int TSI_50nS = 31;
+    public static final int TSI_20nS = 32;
+    public static final int TSI_10nS = 33;
+    public static final int TSI_5nS = 34;
+    public static final int TSI_2nS = 35;//35
+    public static final int TSI_1nS = 36;
+    public static final int TSI_500pS = 37;
+    public static final int TSI_250pS = 38;
+    public static final int TSI_MAX = TSI_250pS;//TSI_2nS
+
+    public static final int TSI_HZ_MIN = 0;
+    public static final int TSI_HZ_1KG = TSI_HZ_MIN;
+    public static final int TSI_HZ_500G = 1 + TSI_HZ_1KG;
+    public static final int TSI_HZ_200G = 2 + TSI_HZ_1KG;
+    public static final int TSI_HZ_100G = 3 + TSI_HZ_1KG;
+    public static final int TSI_HZ_50G = 4 + TSI_HZ_1KG;
+    public static final int TSI_HZ_20G = 5 + TSI_HZ_1KG;
+    public static final int TSI_HZ_10G = 6 + TSI_HZ_1KG;
+    public static final int TSI_HZ_5G = 7 + TSI_HZ_1KG;
+    public static final int TSI_HZ_2G = 8 + TSI_HZ_1KG;
+    public static final int TSI_HZ_1G = 9 + TSI_HZ_1KG;
+    public static final int TSI_HZ_500M = 1 + TSI_HZ_1G;
+    public static final int TSI_HZ_200M = 2 + TSI_HZ_1G;
+    public static final int TSI_HZ_100M = 3 + TSI_HZ_1G;
+    public static final int TSI_HZ_50M = 4 + TSI_HZ_1G;
+    public static final int TSI_HZ_20M = 5 + TSI_HZ_1G;
+    public static final int TSI_HZ_10M = 6 + TSI_HZ_1G;
+    public static final int TSI_HZ_5M = 7 + TSI_HZ_1G;
+    public static final int TSI_HZ_2M = 8 + TSI_HZ_1G;
+    public static final int TSI_HZ_1M = 9 + TSI_HZ_1G;
+    public static final int TSI_HZ_500K = 1 + TSI_HZ_1M;
+    public static final int TSI_HZ_200K = 2 + TSI_HZ_1M;
+    public static final int TSI_HZ_100K = 3 + TSI_HZ_1M;
+    public static final int TSI_HZ_50K = 4 + TSI_HZ_1M;
+    public static final int TSI_HZ_20K = 5 + TSI_HZ_1M;
+    public static final int TSI_HZ_10K = 6 + TSI_HZ_1M;
+    public static final int TSI_HZ_5K = 7 + TSI_HZ_1M;
+    public static final int TSI_HZ_2K = 8 + TSI_HZ_1M;
+    public static final int TSI_HZ_1K = 9 + TSI_HZ_1M;
+    public static final int TSI_HZ_500 = 1 + TSI_HZ_1K;
+    public static final int TSI_HZ_200 = 2 + TSI_HZ_1K;
+    public static final int TSI_HZ_100 = 3 + TSI_HZ_1K;
+    public static final int TSI_HZ_50 = 4 + TSI_HZ_1K;
+    public static final int TSI_HZ_20 = 5 + TSI_HZ_1K;
+    public static final int TSI_HZ_10 = 6 + TSI_HZ_1K;
+    public static final int TSI_HZ_5 = 7 + TSI_HZ_1K;
+    public static final int TSI_HZ_2 = 8 + TSI_HZ_1K;
+    public static final int TSI_HZ_1 = 9 + TSI_HZ_1K;
+    public static final int TSI_HZ_MAX = TSI_HZ_1;
+    public static final int TSI_HZ_CNT = TSI_HZ_MAX - TSI_HZ_MIN + 1;
+
+    public static final int WPI_STANDARD = 0;
+    public static final int WPI_SMALL = WPI_STANDARD;
+    public static final int WPI_LARGE = 1;
+
+    public static final int REFTYPE_DYNAMICCH = 0;
+    public static final int REFTYPE_MATHDUAL = 1;
+    public static final int REFTYPE_MATHFFT = 2;
+
+    private List<Double> xAxis = new ArrayList<>();
+    private List<Double> xAxisRatio = new ArrayList<>();
+    private int refType = REFTYPE_DYNAMICCH;//0:DynamicCh 1:MathDual 2:MathFft
+    private double sampleRate = 0;
+    private int waveLength = 0;
+
+    private long timePoseMain = 0;
+    private long timePoseZoom = 0;
+    private int timeScaleIdMain = TSI_5mS;
+    private int timeScaleIdZoom = TSI_5mS;
+    private int startX = 0;
+    private int endX = 0;
+    private int memDepthSet = MemDepthFactory.getDefaultMemDepth();
+    private int memDepthItemIdx = 0;
+
+    public HorizontalAxisRef() {
+        EventFactory.addEventObserver(EventFactory.EVENT_CHANNEL_OPEN, this);
+        EventFactory.addEventObserver(EventFactory.EVENT_CHANNEL_CLOSE, this);
+        EventFactory.addEventObserver(EventFactory.EVENT_CHANNEL_ACTIVE, this);
+        EventFactory.addEventObserver(EventFactory.EVENT_REF_WAVE_UPDATE, this);
+        initAxis();
+    }
+
+    public void setRefType(int refType) {
+        this.refType = refType;
+    }
+
+    public int getRefType() {
+        return this.refType;
+    }
+
+    public void setSampleRate(double sampleRate) {
+        this.sampleRate = sampleRate;
+    }
+
+    public void setWaveLength(int waveLength) {
+        this.waveLength = waveLength;
+    }
+
+    public void setMemDepthSet(@MemDepthFactory.MEM_DEPTH int memDepth) {
+        this.memDepthSet = memDepth;
+    }
+
+    public void setMemDepthItemIdx(int memDepthItemIdx) {
+        this.memDepthItemIdx = memDepthItemIdx;
+    }
+
+    private void initAxis() {
+        generateHorizontalAxis(0);
+    }
+
+    public List<Double> getxAxis() {
+        synchronized (this) {
+            return new ArrayList<>(xAxis);
+        }
+    }
+
+    public List<Double> getxAxisRatio() {
+        synchronized (this) {
+            return xAxisRatio;
+        }
+    }
+
+    public List<Double> generateHorizontalAxis(double scaleVal) {
+        return generateHorizontalAxis(scaleVal, refType);
+    }
+
+    public List<Double> generateHorizontalAxis(int baseScaleId) {
+        return generateHorizontalAxis(timeScaleIdVal(baseScaleId));
+    }
+
+    public List<Double> generateHorizontalAxis(double scaleVal, int refType) {
+        if (refType == 2) {
+            return generateMathFftAxis(scaleVal, refType);
+        } else {
+            return generateChannelAxis(scaleVal, refType);
+        }
+    }
+
+    private List<Double> generateChannelAxis(double scaleVal, int refType) {
+        xAxis.clear();
+        double val = scaleVal;
+        xAxis.add(val);
+        for (int i = TSI_MIN; i <= TSI_MAX; i++) {
+            val = timeScaleIdVal(i, refType);
+            if(val < scaleVal) {
+                xAxis.add(val);
+            }
+        }
+        return xAxis;
+    }
+
+    private List<Double> generateMathFftAxis(double freqVal, int refType) {
+        xAxis.clear();
+        double val = freqVal;
+        int i=TSI_HZ_MAX;
+        for(; i>=TSI_HZ_MIN; i--) {
+            val = fftTimeScaleIdVal(i);
+            if(freqVal < val*1.001) {
+                xAxis.add(val);
+                i++;
+                break;
+            }
+        }
+        for(; i<=TSI_HZ_MAX; i++) {
+            val = fftTimeScaleIdVal(i);
+            xAxis.add(val);
+        }
+        return xAxis;
+
+    }
+
+//    public List<Double> generateHorizontalAxisRatio(int baseScaleId) {
+//        return generateHorizontalAxisRatio(baseScaleId, refType);
+//    }
+
+//    public List<Double> generateHorizontalAxisRatio(int baseScaleId, int refType) {
+//        if (refType == 2) {
+//            return generateMathFftAxisRatio(baseScaleId);
+//        } else {
+//            return generateChannelAxisRatio(baseScaleId);
+//        }
+//    }
+
+//    private List<Double> generateChannelAxisRatio(int baseScaleId) {
+//        xAxisRatio.clear();
+//        if (baseScaleId < TSI_MIN || baseScaleId > TSI_MIN) {
+//            baseScaleId = TSI_MIN;
+//        }
+//        for (int i = baseScaleId; i < TSI_CNT; i++) {
+//            xAxisRatio.add(1.0);
+//        }
+//        return xAxisRatio;
+//    }
+
+//    private List<Double> generateMathFftAxisRatio(int baseScaleId) {
+//        xAxisRatio.clear();
+//        if (baseScaleId < TSI_HZ_MIN || baseScaleId > TSI_HZ_MIN) {
+//            baseScaleId = TSI_HZ_MIN;
+//        }
+//        double ratio = fftFrequneceRatio();
+//        for (int i = baseScaleId; i < TSI_HZ_CNT; i++) {
+//            xAxisRatio.add(timeScaleIdVal(i, 2) / ScopeBase.getHorizonPerGridPixels() / ratio);
+//        }
+//        return xAxisRatio;
+//    }
+
+    public double timeScaleIdVal(int timeScaleId) {
+        return timeScaleIdVal(timeScaleId, refType);
+    }
+
+    public double timeScaleIdVal(int timeScaleId, int refType) {
+        if (refType == WaveData.FFT_WAVE) {
+            return fftTimeScaleIdVal(timeScaleId);
+        } else {
+            //根据存储深度计算档位移动的处理
+            double val = stdTimeScaleIdVal(timeScaleId);
+//            IMemDepth memDepth = MemDepthFactory.getMemDepthObj(memDepthSet);
+//            if(memDepth.isSpecialTimeScale()) {
+//                double timeScaleRatio = memDepth.getTimeScaleRatio(timeScaleId, memDepthItemIdx);
+//                val *= timeScaleRatio;
+//            }
+//            Logger.i(TAG, "timeScaleIdVal() ==>"
+//                    +" timeScaleId:"+timeScaleId+" refType:"+refType
+//                    +" memDepthSet:"+memDepthSet+" memDepthItemIdx:"+memDepthItemIdx+" val:"+val);
+            return val;
+        }
+    }
+
+    public double timeScaleVal(double timeScaleVal) {
+        return timeScaleVal(timeScaleVal, refType);
+    }
+
+    public double timeScaleVal(double timeScaleVal, int refType) {
+        if (refType == 2) {
+            return fftTimeScaleIdVal(fftTimeScaleId(timeScaleVal));
+        } else {
+            return stdTimeScaleIdVal(stdTimeScaleId(timeScaleVal));
+        }
+    }
+
+    public int timeScaleId(double timeScaleVal) {
+        return timeScaleId(timeScaleVal, refType);
+    }
+
+    public int timeScaleId(double timeScaleVal, int refType) {
+        if (refType == 2) {
+            return fftTimeScaleId(timeScaleVal);
+        } else {
+            return stdTimeScaleId(timeScaleVal);
+        }
+    }
+
+    public int timeScaleId_ui(double priTimeScaleVal, double timeScaleVal, int refType) {
+        if (refType == 2) {
+            return fftTimeScaleId(timeScaleVal) - fftTimeScaleId(priTimeScaleVal);
+        } else {
+            return stdTimeScaleId(timeScaleVal) - stdTimeScaleId(priTimeScaleVal);
+        }
+    }
+
+    private double stdTimeScaleIdVal(int timeScaleId) {
+        double timeScaleArray[] = {
+                1000,
+                500, 200, 100, 50, 20, 10, 5, 2, 1,
+                500e-3, 200e-3, 100e-3, 50e-3, 20e-3, 10e-3, 5e-3, 2e-3, 1e-3,
+                500e-6, 200e-6, 100e-6, 50e-6, 20e-6, 10e-6, 5e-6, 2e-6, 1e-6,
+                500e-9, 200e-9, 100e-9, 50e-9, 20e-9, 10e-9, 5e-9, 2e-9, 1e-9,
+                500e-12, 250e-12
+        };
+        if (timeScaleId < TSI_MIN) timeScaleId = TSI_MIN;
+        if (timeScaleId > TSI_MAX) timeScaleId = TSI_MAX;
+        return timeScaleArray[timeScaleId];
+    }
+
+    public int stdTimeScaleId(double timeScaleVal) {
+        double timeScaleArray[] = {
+                1000,
+                500, 200, 100, 50, 20, 10, 5, 2, 1,
+                500e-3, 200e-3, 100e-3, 50e-3, 20e-3, 10e-3, 5e-3, 2e-3, 1e-3,
+                500e-6, 200e-6, 100e-6, 50e-6, 20e-6, 10e-6, 5e-6, 2e-6, 1e-6,
+                500e-9, 200e-9, 100e-9, 50e-9, 20e-9, 10e-9, 5e-9, 2e-9, 1e-9,
+                500e-12, 250e-12
+        };
+        int ret = TSI_MIN;
+        for (int i = TSI_MIN; i <= TSI_MAX; i++) {
+            if (timeScaleVal > (timeScaleArray[i] - timeScaleArray[i] / 10)) {
+                ret = i;
+                break;
+            }
+        }
+        return ret;
+    }
+
+
+    public double fftFrequneceRatio() {
+        return sampleRate / (waveLength - 1);
+    }
+
+    public double fftTimeScaleIdVal(int timeScaleId) {
+        double timeScaleArray[] = {
+                1000e9,
+                500e9, 200e9, 100e9, 50e9, 20e9, 10e9, 5e9, 2e9, 1e9,//G
+                500e6, 200e6, 100e6, 50e6, 20e6, 10e6, 5e6, 2e6, 1e6,//M
+                500e3, 200e3, 100e3, 50e3, 20e3, 10e3, 5e3, 2e3, 1e3,//K
+                500, 200, 100, 50, 20, 10, 5, 2, 1
+        };
+        if (timeScaleId < TSI_HZ_MIN) timeScaleId = TSI_HZ_MIN;
+        if (timeScaleId > TSI_HZ_MAX) timeScaleId = TSI_HZ_MAX;
+        return timeScaleArray[timeScaleId];
+    }
+
+    public int fftTimeScaleId(double timeScaleVal) {
+        double timeScaleArray[] = {
+                1000e9,
+                500e9, 200e9, 100e9, 50e9, 20e9, 10e9, 5e9, 2e9, 1e9,//G
+                500e6, 200e6, 100e6, 50e6, 20e6, 10e6, 5e6, 2e6, 1e6,//M
+                500e3, 200e3, 100e3, 50e3, 20e3, 10e3, 5e3, 2e3, 1e3,//K
+                500, 200, 100, 50, 20, 10, 5, 2, 1
+        };
+        int ret = 0;/*
+        for (int i = 0; i < timeScaleArray.length; i++) {
+            if (timeScaleVal > (timeScaleArray[i] - timeScaleArray[i] / 10)) {
+                ret = i;
+                break;
+            }
+        }
+        */
+        for (int i = timeScaleArray.length-1; i >= 0; i--) {
+            if (timeScaleVal < timeScaleArray[i]*1.001) {
+                ret = i;
+                break;
+            }
+        }
+
+        return ret;
+    }
+
+    public int getWPIId() {
+        int id = WPI_STANDARD;
+        if (Display.getInstance().isZoom())
+            id = WPI_LARGE;
+        return id;
+    }
+
+    public int getTimeScaleIdOfView() {
+        return getTimeScaleIdOfView(getWPIId());
+    }
+
+    public void setTimeScaleIdOfView(int timeScaleId) {
+        setTimeScaleIdOfView(getWPIId(), timeScaleId);
+    }
+
+    public void setTimeScaleIdOfView(int WPIId, int timeScaleId) {
+        if (WPIId == WPI_LARGE) {
+            timeScaleIdZoom = timeScaleId;
+        } else {
+            timeScaleIdMain = timeScaleId;
+        }
+    }
+
+    public int getTimeScaleIdOfView(int WPIId) {
+        if (WPIId == WPI_LARGE) return timeScaleIdZoom;
+        return timeScaleIdMain;
+    }
+
+    public long getTimePosOfView() {
+        return getTimePosOfView(getWPIId());
+    }
+
+    public void setTimePosOfView(long timePos) {
+        setTimePosOfView(getWPIId(), timePos);
+    }
+
+    public long getTimePosOfView(int WPIId) {
+        if (WPIId == WPI_LARGE) {
+            return timePoseZoom;
+        } else {
+            return timePoseMain;
+        }
+    }
+
+    public void setTimePosOfView(int WPIId, long timePos) {
+        if (WPIId == WPI_LARGE) {
+            timePoseZoom = timePos;
+        } else {
+            timePoseMain = timePos;
+        }
+    }
+
+    public int getStartX() {
+        return startX;
+    }
+
+    public void setStartX(int startX) {
+        this.startX = startX;
+    }
+
+    public int getEndX() {
+        return endX;
+    }
+
+    public void setEndX(int endX) {
+        this.endX = endX;
+    }
+
+    @Override
+    public void update(Observable observable, Object data) {
+        EventBase eventBase = (EventBase) data;
+        switch (eventBase.getId()) {
+            case EventFactory.EVENT_CHANNEL_OPEN:
+            case EventFactory.EVENT_CHANNEL_CLOSE:
+            case EventFactory.EVENT_CHANNEL_ACTIVE:
+                break;
+            case EventFactory.EVENT_REF_WAVE_UPDATE:
+                // TODO 刷新xAxis内容
+                break;
+        }
+    }
+
+    //档位标准化函数：分解原档位值
+    static double decomposeStandardScale(double scale, int rank, int littleRank) {
+        rank = 0;
+        while (scale > 1e3) {
+            scale /= 1e3;
+            (rank)++;
+        }
+        while (scale < 1 && scale != 0) {
+            scale *= 1e3;
+            (rank)--;
+        }
+        littleRank = 0;
+        while (scale > 10) {
+            scale /= 10;
+            (littleRank)++;
+        }
+        if (10 - scale < 1) {//防止出现9.99的现象
+            scale /= 10;
+            (littleRank)++;
+        }
+        return scale;
+    }
+
+    //档位标准化函数：还原分解值
+    static double combinateStandardScale(double scale, int rank, int littleRank) {
+        while (littleRank > 0) {
+            scale *= 10;
+            littleRank--;
+        }
+        while (rank != 0) {
+            if (rank > 0) {
+                scale *= 1e3;
+                rank--;
+            } else {
+                scale *= 1e-3;
+                rank++;
+            }
+        }
+        return scale;
+    }
+}

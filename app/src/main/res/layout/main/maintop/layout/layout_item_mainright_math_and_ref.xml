@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/item_channel_master"
+    android:layout_width="76px"
+    android:layout_height="68px"
+    android:orientation="vertical">
+
+    <ImageView
+        android:id="@+id/background"
+        android:layout_width="76px"
+        android:layout_height="68px"
+        android:src="@drawable/svg_right_ch1234_close"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+
+        <TextView
+            android:id="@+id/channelText"
+            style="@style/textStyleMiddlebarRightMain"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:text="M1"
+            android:textSize="18px"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/dataLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center">
+
+            <LinearLayout
+                android:id="@+id/ll_probe"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="horizontal"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <TextView
+                    android:id="@+id/probeTypeNum"
+                    style="@style/textStyleMiddlebarRight"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:textColor="#FF808080"
+                    android:textSize="16px"
+                    android:textStyle="bold"
+                    app:layout_constraintHorizontal_chainStyle="packed"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintRight_toLeftOf="@+id/probeTypeUnit"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:id="@+id/probeTypeUnit"
+                    style="@style/textStyleMiddlebarRight"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="#FF808080"
+                    android:textSize="16px"
+                    android:textStyle="bold"
+                    app:layout_constraintLeft_toRightOf="@id/probeTypeNum"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/refTimebase"
+                style="@style/textStyleMiddlebarRight"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textSize="16px"
+                android:textStyle="bold"
+                android:visibility="gone"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/ll_probe" />
+
+
+            <TextView
+                android:id="@+id/rightBandWidth"
+                style="@style/textStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="20px"
+                android:layout_marginStart="8px"
+                android:layout_marginTop="0px"
+                android:gravity="center"
+                android:hint="20M"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textSize="18px"
+                android:textStyle="bold"
+                android:visibility="gone"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/ll_probe" />
+
+            <TextView
+                android:id="@+id/impedance"
+                style="@style/textStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="20px"
+                android:layout_marginStart="8px"
+                android:layout_marginTop="0px"
+                android:layout_marginEnd="10px"
+                android:gravity="center"
+                android:hint="50Ω"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textSize="18px"
+                android:textStyle="bold"
+                android:visibility="gone"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/ll_probe" />
+
+            <TextView
+                android:id="@+id/prob"
+                style="@style/textStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="20px"
+                android:layout_marginStart="8px"
+                android:layout_marginTop="0px"
+                android:layout_marginEnd="10px"
+                android:gravity="center"
+                android:hint="10x"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textSize="18px"
+                android:textStyle="bold"
+                android:visibility="gone"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/rightBandWidth" />
+
+            <ImageView
+                android:id="@+id/rightCouple"
+                android:layout_width="22px"
+                android:layout_height="15px"
+                android:layout_marginTop="4px"
+                android:layout_marginEnd="10px"
+                android:src="@drawable/coupling_dc"
+                android:visibility="gone"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/impedance" />
+
+            <TextView
+                android:id="@+id/leftPosition"
+                style="@style/textStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="20px"
+                android:layout_marginStart="5px"
+                android:layout_marginTop="0px"
+                android:layout_marginEnd="10px"
+                android:gravity="center"
+                android:hint="500mV"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textSize="18px"
+                android:textStyle="bold"
+                android:visibility="gone"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/prob" />
+
+            <TextView
+                android:id="@+id/refTriggerTime"
+                style="@style/textStyleMiddlebarRight"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="100 ns"
+                android:textSize="16px"
+                android:textStyle="bold"
+                android:layout_marginEnd="10px"
+                android:visibility="gone"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/prob" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/smallLight"
+        android:layout_width="25px"
+
+        android:layout_height="wrap_content"
+        android:layout_marginTop="7px"
+        android:src="@drawable/ic_bg_ch1_light"
+        android:visibility="gone"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+
+    <Button
+        android:id="@+id/btnSmall"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@null"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

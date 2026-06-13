@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="10px">
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_layout_calibration"
+        android:padding="10px">
+
+        <EditText
+            android:id="@+id/editText1"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="5px"
+            android:singleLine="true"
+            android:imeOptions="actionDone"
+            />
+
+        <Button
+            android:id="@+id/btnReset"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="5px"
+            android:layout_toEndOf="@+id/editText1"
+            android:text="清空校准数据" />
+        <Button
+            android:id="@+id/btnDeliveryDate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="5px"
+            android:layout_toEndOf="@+id/btnReset"
+            android:text="设置出厂日期" />
+
+        <Button
+            android:id="@+id/btnBandWidth"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="5px"
+            android:layout_toEndOf="@+id/btnDeliveryDate"
+            android:text="设置最大带宽" />
+
+        <Button
+            android:id="@+id/btnTest"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="5px"
+            android:layout_toEndOf="@+id/btnBandWidth"
+            android:text="Test"
+            />
+
+        <TextView
+            android:id="@+id/fpgatv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="5px"
+            android:layout_toEndOf="@+id/btnTest"
+            android:text="fpga ver:"
+
+            android:focusable="false"
+            />
+
+        <TextView
+            android:id="@+id/netip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="5px"
+            android:layout_toEndOf="@+id/fpgatv"
+            />
+    </RelativeLayout>
+
+
+    <TextView
+        android:id="@+id/tvCabteTime"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        />
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_layout_calibration"
+        android:padding="10px">
+
+        <TextView
+            android:id="@+id/topZeroTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/textColor"
+            android:textSize="14px" />
+
+        <TextView
+            android:id="@+id/topZeroDetail"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/topZeroTitle"
+            android:textColor="@color/textColor"
+            android:textSize="14px" />
+
+        <Button
+            android:id="@+id/topBtn"
+            style="@style/buttonStyle"
+            android:layout_width="120px"
+            android:layout_height="40px"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:gravity="center"
+            android:text="@string/topBtn"
+            android:textAllCaps="false"
+            android:textColor="@color/textColor"
+            android:textSize="14px" />
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="@drawable/bg_layout_calibration"
+        android:padding="5px">
+
+        <TextView
+            android:id="@+id/centerChGainTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/textColor"
+            android:textSize="14px" />
+
+
+
+        <TextView
+            android:id="@+id/centerChGainTitleDetail"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/centerChGainTitle"
+            android:textColor="@color/textColor"
+            android:layout_marginTop="5px"
+            android:textSize="12px" />
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_layout_calibration"
+        android:padding="5px">
+
+        <TextView
+            android:id="@+id/centerChOffsetTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/textColor"
+            android:textSize="14px" />
+
+
+        <TextView
+            android:id="@+id/centerChOffsetTitleDetail"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/centerChOffsetTitle"
+            android:textColor="@color/textColor"
+            android:layout_marginTop="5px"
+            android:textSize="12px" />
+    </RelativeLayout>
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_layout_calibration"
+        android:padding="5px">
+
+        <TextView
+            android:id="@+id/centerChCapTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/textColor"
+            android:textSize="14px" />
+
+
+        <TextView
+            android:id="@+id/centerChCapTitleDetail"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/centerChCapTitle"
+            android:textColor="@color/textColor"
+            android:layout_marginTop="5px"
+            android:textSize="12px" />
+    </RelativeLayout>
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="@drawable/bg_layout_calibration"
+        android:padding="5px">
+
+        <TextView
+            android:id="@+id/centerChGainTitle_2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/textColor"
+            android:textSize="14px" />
+
+
+        <TextView
+            android:id="@+id/centerChGainTitleDetail_2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/centerChGainTitle_2"
+            android:textColor="@color/textColor"
+            android:layout_marginTop="5px"
+            android:textSize="12px" />
+    </RelativeLayout>
+
+
+
+</LinearLayout>

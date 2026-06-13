@@ -1,0 +1,26 @@
+package com.micsig.tbook.scope.fpga;
+
+/**
+ * Created by zhuzh on 2018-7-11.
+ */
+
+public class FPGAReg_STATUS_ID extends FPGAReg {
+    private FPGAReg recvReg;
+
+    public FPGAReg_STATUS_ID() {
+        super(FPGA_STATUS_ID, 4, true);
+        recvReg = new FPGAReg(FPGA_STATUS_ID,4);
+    }
+    public int getId(){
+        return recvReg.getVal(0);
+    }
+    public FPGAReg getRecvReg(){
+        return recvReg;
+    }
+
+    @Override
+    public void setFpgaIdx(int fpgaIdx) {
+        super.setFpgaIdx(fpgaIdx);
+        recvReg.setFpgaIdx(fpgaIdx);
+    }
+}

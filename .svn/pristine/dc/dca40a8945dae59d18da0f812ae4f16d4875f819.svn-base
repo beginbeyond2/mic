@@ -1,0 +1,196 @@
+package com.micsig.tbook.scope.Display;
+
+import com.micsig.tbook.scope.Event.EventFactory;
+
+/**
+ * Created by zhuzh on 2018/3/15.
+ */
+
+public class Display {
+    private static final String TAG = "Display";
+    private static volatile Display instance = null;
+
+    public static Display getInstance() {
+        if (instance == null) {
+            synchronized (Display.class) {
+                if (instance == null ) {
+                    instance = new Display();
+                }
+            }
+        }
+        return instance;
+    }
+    public static final int DISPLAY_YT = 0;
+    public static final int DISPLAY_XY = 1;
+    public static final int HORREF_CENTER = 0;
+    public static final int HORREF_TRIGPOS = 1;
+    public static final int DRAWTYPE_DOTS = 0;
+    public static final int DRAWTYPE_LINE = 1;
+    public static final int PERSIST_TYPE_NONE = 0;
+    public static final int PERSIST_TYPE_AUTO = 1;
+    public static final int PERSIST_TYPE_NORMAL = 2;
+    public static final int PERSIST_TYPE_INFINITE = 3;
+
+    private static int HIGH_REFRESH_COUNTER = 0;
+    public static void setHighRefreshCounter(int counter){
+        HIGH_REFRESH_COUNTER = counter;
+    }
+    public static int getHighRefreshCounter(){
+        return HIGH_REFRESH_COUNTER;
+    }
+
+    private volatile int persistType = PERSIST_TYPE_AUTO;
+
+    private volatile int fftPersistType = PERSIST_TYPE_AUTO;
+    private int horRef = HORREF_CENTER;
+    private int displayMode = DISPLAY_YT;
+    private int drawType = DRAWTYPE_LINE;
+
+    private DisplayAction displayAction;
+    private volatile boolean zoom = false;
+    private volatile boolean roll = true;
+    private volatile boolean cct = false;
+    private volatile int brightness = 50;
+    private volatile int persistAdjustTime = 200;//200ms
+
+    private volatile int fftPersistAdjustTime = 200;
+    public Display(){
+        displayAction = new DisplayAction(this);
+    }
+    public void clearPersist(){
+        displayAction.clearPersist();
+    }
+
+    public void clearFftPersist() {
+        displayAction.clearFftPersist();
+    }
+
+    public void clearWave(){
+        displayAction.clearWave();
+    }
+    // ms
+    public int getPersistAdjustTime() {
+        return persistAdjustTime;
+    }
+    public int getFftPersistAdjustTime(){
+        return fftPersistAdjustTime;
+    }
+    public int getFftPersistType(){
+        return fftPersistType;
+    }
+    // ms
+    public void setPersistAdjustTime(int persistAdjustTime) {
+        this.persistAdjustTime = persistAdjustTime;
+        displayAction.persistAdjustTimeChange();
+    }
+
+    public void setFftPersistAdjustTime(int persistAdjustTime){
+        synchronized (this) {
+            this.fftPersistAdjustTime = persistAdjustTime;
+        }
+        EventFactory.sendEvent(EventFactory.EVENT_AFTERGLOW_MATH,true);
+    }
+    public void setFftPersistType(int persistType){
+        synchronized (this){
+            this.fftPersistType = persistType;
+        }
+        EventFactory.sendEvent(EventFactory.EVENT_AFTERGLOW_MATH,true);
+    }
+
+    public int getPersistType() {
+        synchronized (this) {
+            return persistType;
+        }
+    }
+
+    public void setPersistType(int persistType) {
+        synchronized (this) {
+            this.persistType = persistType;
+        }
+        displayAction.persistTypeChange();
+    }
+
+    public int getBrightness() {
+        return brightness;
+    }
+
+    public void setBrightness(int brightness) {
+        this.brightness = brightness;
+        displayAction.brightnessChange();
+    }
+
+    public int getDrawType() {
+        return drawType;
+    }
+
+    public void setDrawType(int drawType) {
+        this.drawType = drawType;
+        displayAction.drawTypeChange();
+    }
+
+    public int getHorRef() {
+        return horRef;
+    }
+
+    public void setHorRef(int horRef) {
+        this.horRef = horRef;
+        displayAction.horRefChange();
+    }
+    public  void setCCT(boolean bEnable){
+        synchronized (this) {
+            this.cct = bEnable;
+        }
+        displayAction.cctChange();
+    }
+    public  boolean isCCT(){
+        synchronized (this) {
+            return this.cct;
+        }
+    }
+    public boolean isZoom(){
+        return zoom;
+    }
+    public void setZoomFlags(int flags) {
+        displayAction.setZoomChangeFlags(flags);
+    }
+    public void setZoom(boolean bEnable){
+        setZoom(bEnable, true);
+    }
+    public void setZoom(boolean bEnable, boolean bModify){
+        zoom = bEnable;
+        if(bModify) {
+            displayAction.zoomChange(false);
+        }
+    }
+    public void zoomChange(){
+        if(isZoom()){
+            displayAction.zoomChange(true);
+        }
+    }
+    public synchronized boolean isXYMode(){
+
+        return displayMode == DISPLAY_XY;
+    }
+    public boolean isYTMode(){
+        return displayMode == DISPLAY_YT;
+    }
+    public int getDisplayMode(){
+        return displayMode;
+    }
+    public void setDisplayMode(int dispMode){
+        synchronized (this) {
+            displayMode = dispMode;
+        }
+        displayAction.displayModeChange();
+    }
+    public boolean isRoll(){
+        return roll;
+    }
+    public void setRoll(boolean bEnable){
+        if(roll != bEnable) {
+            roll = bEnable;
+            displayAction.rollChange();
+        }
+    }
+
+}

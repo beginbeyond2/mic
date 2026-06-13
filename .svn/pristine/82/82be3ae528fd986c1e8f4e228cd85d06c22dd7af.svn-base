@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingBottom="10px"
+    android:paddingTop="10px"
+    >
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/topViewSample"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="33px"
+        app:headWidth="100px"
+        />
+
+    <com.micsig.tbook.ui.top.view.selectHorList.TopViewSelectHorListToHead
+        android:id="@+id/sampleSelectListToHead"
+        android:layout_width="match_parent"
+        android:layout_height="60px"
+        android:layout_alignBottom="@id/topViewSample"
+        android:layout_alignTop="@+id/topViewSample"
+        android:layout_marginStart="40px"
+        android:layout_toEndOf="@id/topViewSample" />
+</RelativeLayout>

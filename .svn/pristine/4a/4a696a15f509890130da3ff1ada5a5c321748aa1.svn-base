@@ -1,0 +1,145 @@
+package com.micsig.tbook.tbookscope.wavezone;
+
+import android.content.Context;
+import android.graphics.Color;
+import android.os.SystemClock;
+import android.view.MotionEvent;
+import android.view.ViewGroup;
+
+import com.chillingvan.canvasgl.ICanvasGL;
+import com.chillingvan.canvasgl.glview.texture.GLTextureView;
+import com.micsig.base.Logger;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.tbookscope.util.CacheUtil;
+import com.micsig.tbook.tbookscope.wavezone.display.WaveGridManage;
+import com.micsig.tbook.tbookscope.wavezone.display.WaveMaskLayer_YTZoom;
+import com.micsig.tbook.tbookscope.wavezone.display.WaveMaskLayer_YTZoomAction;
+
+/**
+ * Created by liwb on 2017/6/16.
+ */
+
+public class WaveZoneDisplay_YTZoom extends GLTextureView {
+    private static final String TAG = "WaveZoneDisplay_YTZoom";
+
+    private Context context;
+    private ICanvasGL canvasGL;
+    private long startTime, endTime, dt;
+
+
+    //region 属性
+
+
+    //endregion
+
+    public ICanvasGL getCanvasGL() {
+        return canvasGL;
+    }
+
+    public WaveZoneDisplay_YTZoom(Context context) {
+        super(context);
+        this.context = context;
+        this.setOpaque(false);
+        startTime = System.currentTimeMillis();
+        new WaveMaskLayer_YTZoomAction(context);
+    }
+
+    //    public WaveZoneDisplay_YTZoom(Context context, AttributeSet attrs) {
+//        super(context, attrs);
+//        this.context = context;
+//        this.setOpaque(false);
+//    }
+
+
+    @Override
+    protected void init() {
+        super.init();
+    }
+
+    @Override
+    protected void onGLDraw(ICanvasGL canvas) {
+        //25帧
+
+
+        this.canvasGL = canvas;
+        if (((ViewGroup) (this.getParent())).getVisibility() == GONE) {
+            canvas.clearBuffer();
+            return;
+        }
+        canvas.clearBuffer(Color.TRANSPARENT);
+        WaveGridManage.getInstance().draw(IWorkMode.WorkMode_YTZOOM, canvas);
+        WaveMaskLayer_YTZoom.getInstance().draw(canvas);
+        CacheUtil.get().setLoadMenuState(CacheUtil.LOAD_WaveZoneDisplayManage, true);
+    }
+
+
+    int downX, downY, oldX, oldY;
+    int LayerWidth = 0;  //空隔宽度
+    private long ClickTS = 0;
+    private int X = 0;
+    private int Y = 0;
+    private void doubleClick(int x,int y){
+        long ts = SystemClock.elapsedRealtime();
+
+        if((ts - ClickTS) < 500){
+            if(Math.abs(x - X) < 50 && Math.abs(y - Y) < 50){
+
+                Scope.getInstance().doubleClicked(x);
+            }
+            ClickTS = 0;
+        }else {
+            ClickTS = ts;
+        }
+        this.X = x;
+        this.Y = y;
+    }
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        int x = (int) event.getX();
+        int y = (int) event.getY();
+        switch (event.getAction() & MotionEvent.ACTION_MASK) {
+            case MotionEvent.ACTION_DOWN: {
+                downX = oldX = (int) event.getX();
+                //downY = oldY = (int) event.getY();
+            }
+            break;
+            case MotionEvent.ACTION_MOVE: {
+                zoomChangeOffset(event);
+            }
+            break;
+            case MotionEvent.ACTION_UP:{
+                doubleClick(x,y);
+            }
+            break;
+            case MotionEvent.ACTION_POINTER_UP: {
+                int id = event.getActionIndex();
+                if (id == 0) {
+                    downX = oldX = (int) event.getX(1);
+                    downY = oldY = (int) event.getY(1);
+                } else {
+                    downX = oldX = (int) event.getX(0);
+                    downY = oldY = (int) event.getY(0);
+                }
+                doubleClick(x,y);
+            }
+            break;
+            case MotionEvent.ACTION_POINTER_DOWN: {
+                downX = oldX = (int) event.getX(0);
+                downY = oldY = (int) event.getY(0);
+            }
+            break;
+        }
+        return true;
+        //return super.onTouchEvent(event);
+    }
+
+    //改变X的偏移
+    private void zoomChangeOffset(MotionEvent event) {
+        int offset = (int) event.getX() - downX;
+        if(offset != 0) {
+            downX = (int) event.getX();
+            WaveMaskLayer_YTZoom.getInstance().layerX_move(offset);
+        }
+    }
+
+}

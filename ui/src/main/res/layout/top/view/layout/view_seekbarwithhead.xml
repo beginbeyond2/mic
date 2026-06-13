@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="60px"
+    android:orientation="horizontal"
+    android:layout_centerVertical="true" >
+
+    <TextView
+        android:id="@+id/title"
+        style="@style/textStyle"
+        android:layout_width="100px"
+        android:layout_height="60px"
+        android:gravity="center"
+        android:layout_gravity="center_vertical"
+        android:layout_marginRight="16px"
+        android:maxLines="2"
+        android:text="@string/view_seekbarwithhead_title" />
+    <TextView
+        android:id="@+id/triggerSensitivityLow"
+        style="@style/textStyle"
+        android:layout_width="60px"
+        android:layout_height="40px"
+        android:gravity="center_vertical|right"
+        android:layout_gravity="center_vertical"
+        android:layout_marginRight="5px"
+        android:text="@string/TriggerSensitivityLow"
+        android:visibility="gone"/>
+    <SeekBar
+        android:id="@+id/seekbar"
+        android:layout_width="480px"
+        android:layout_height="60px"
+        android:max="100"
+        android:maxHeight="52px"
+        android:minHeight="52px"
+        android:paddingStart="0px"
+        android:paddingEnd="0px"
+        android:layout_gravity="center_vertical"
+        android:thumb="@drawable/svg_seekbar_chute_slider"
+        android:thumbOffset="0px"
+        android:progressDrawable="@drawable/layer_seekbar_chute"
+        android:background="@null"
+        android:splitTrack="false"
+        android:progress="50" />
+    <TextView
+        android:id="@+id/triggerSensitivityHigh"
+        style="@style/textStyle"
+        android:layout_width="60px"
+        android:layout_height="40px"
+        android:gravity="center_vertical|left"
+        android:layout_gravity="center_vertical"
+        android:layout_marginLeft="5px"
+        android:text="@string/TriggerSensitivityHigh"
+        android:visibility="gone"/>
+    <Button
+        android:id="@+id/show"
+        style="@style/textStyle"
+        android:layout_width="60px"
+        android:layout_height="40px"
+        android:layout_marginStart="3dp"
+        android:layout_gravity="center_vertical"
+        android:gravity="center"
+        android:text="@string/view_seekbarwithhead_show"
+        android:background="@null" />
+<!--        android:background="@drawable/bg_button_bg_unstroke"-->
+</LinearLayout>

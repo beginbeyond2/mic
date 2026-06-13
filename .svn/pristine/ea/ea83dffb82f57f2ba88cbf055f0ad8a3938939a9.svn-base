@@ -1,0 +1,326 @@
+<resources>
+    <dimen name="dp_1">1dp</dimen>
+    <!-- divider -->
+    <dimen name="dividerSize">1px</dimen>
+
+    <!-- main -->
+    <dimen name="screenWidth">1920px</dimen>
+    <dimen name="screenHeight">1200px</dimen>
+    <dimen name="mainCenterWidth">1800px</dimen>
+
+
+    <dimen name="mainCenterHeightMeasureRow4">920px</dimen>
+    <dimen name="mainCenterHeightMeasureRow3">950px</dimen>
+    <dimen name="mainCenterHeightMeasureRow2">980px</dimen>
+    <dimen name="mainCenterHeightMeasureRow1">1000px</dimen>
+    <dimen name="mainCenterHeightMeasureRow0">1040px</dimen>
+    
+    <dimen name="mainCenterWidthWithDivider">1174px</dimen>
+    <dimen name="mainCenterHeightWithDivider">652px</dimen>
+    <dimen name="mainTopWidth">@dimen/screenWidth</dimen>
+    <dimen name="mainTopHeight">76px</dimen>
+    <dimen name="newMainTopHeight">40px</dimen>
+    <dimen name="mainBottomWidth">@dimen/screenWidth</dimen>
+    <dimen name="mainBottomHeight">76px</dimen>
+    <dimen name="mainBottomMeasureItemHeight0">40px</dimen>
+    <dimen name="mainBottomMeasureItemHeight1">30px</dimen>
+
+    <!-- timeBaseEx -->
+    <dimen name="mTimeBaseExWidth">169px</dimen>
+    <dimen name="mTimeBaseExHeight">169px</dimen>
+    <dimen name="mTimeBaseExX">267px</dimen>
+    <dimen name="mTimeBaseExY">431px</dimen>
+    <!-- mainCenterChannel -->
+    <dimen name="mainCenterChannelX">0px</dimen>
+    <dimen name="mainCenterChannelY">0px</dimen>
+
+    <!-- mainTop -->
+    <dimen name="mainTopPadTop">5px</dimen>
+    <dimen name="mainTopLeftWidth">250px</dimen>
+    <dimen name="mainTopLeftHeight">30px</dimen>
+    <dimen name="mainTopCenterWidth">200px</dimen>
+    <dimen name="mainTopCenterHeight">30px</dimen>
+    <dimen name="mainTopRightWidth">350px</dimen>
+    <dimen name="mainTopRightHeight">30px</dimen>
+    <!-- mainTopLeft -->
+    <dimen name="mainTopLeftLogoWidth">123px</dimen>
+    <dimen name="mainTopLeftLogoHeight">31px</dimen>
+    <dimen name="mainTopLeftLogoX">5px</dimen>
+    <dimen name="mainTopLeftLogoY">2px</dimen>
+    <dimen name="mainTopLeftStateWidth">55px</dimen>
+    <dimen name="mainTopLeftStateHeight">33px</dimen>
+    <dimen name="mainTopLeftStateX">100px</dimen>
+    <dimen name="mainTopLeftStateY">2px</dimen>
+    <dimen name="mainTopLeftStateTextSize">@dimen/textSize16</dimen>
+    <dimen name="mainTopLeftSDWidth">45px</dimen>
+    <dimen name="mainTopLeftSDHeight">30px</dimen>
+    <dimen name="mainTopLeftSDX">145px</dimen>
+    <dimen name="mainTopLeftSDY">2px</dimen>
+    <dimen name="mainTopLeftSDTextSize">@dimen/textSize16</dimen>
+    <dimen name="mainTopLeftLengthWidth">60px</dimen>
+    <dimen name="mainTopLeftLengthHeight">14px</dimen>
+    <dimen name="mainTopLeftLengthX">189px</dimen>
+    <dimen name="mainTopLeftLengthY">3px</dimen>
+    <dimen name="mainTopLeftLengthTextSize">@dimen/textSize10</dimen>
+    <dimen name="mainTopLeftRateWidth">60px</dimen>
+    <dimen name="mainTopLeftRateHeight">14px</dimen>
+    <dimen name="mainTopLeftRateX">189px</dimen>
+    <dimen name="mainTopLeftRateY">16px</dimen>
+    <dimen name="mainTopLeftRateTextSize">@dimen/textSize10</dimen>
+    <!-- mainTopCenter -->
+    <dimen name="mainTopCenterMarginBottom">2px</dimen>
+    <dimen name="mainTopCenterIconWidth">14px</dimen>
+    <dimen name="mainTopCenterIconHeight">14px</dimen>
+    <dimen name="mainTopCenterIconPadding">3px</dimen>
+    <dimen name="mainTopCenterShowHeight">13px</dimen>
+    <dimen name="mainTopCenterShowTextSize">@dimen/textSize10</dimen>
+    <dimen name="mainTopCenterSliderHeight">15px</dimen>
+    <dimen name="mainTopCenterRadioGroupPadding">15px</dimen>
+    <dimen name="mainTopCenterRadioButtonWidth">86px</dimen>
+    <dimen name="mainTopCenterRadioButtonHeight">60px</dimen>
+    <dimen name="mainTopCenterRadioButtonPaddingLeft">15px</dimen>
+    <dimen name="mainTopCenterRadioButtonTextSize">@dimen/textSize16</dimen>
+    <dimen name="mainTopCenterRadioIconWidth">14px</dimen>
+    <!-- mainTopRight -->
+    <dimen name="mainTopRightIconWidth">28px</dimen>
+    <dimen name="mainTopRightIconHeight">14px</dimen>
+    <dimen name="mainTopRightDetailMarginRight">30px</dimen>
+
+    <!-- mainBottom -->
+    <dimen name="mainBottomFineLeftWidth">46px</dimen>
+    <dimen name="mainBottomFineLeftHeight">46px</dimen>
+    <dimen name="mainBottomFineLeftX">0px</dimen>
+    <dimen name="mainBottomFineLeftY">9px</dimen>
+    <dimen name="mainBottomFineRightWidth">46px</dimen>
+    <dimen name="mainBottomFineRightHeight">46px</dimen>
+    <dimen name="mainBottomFineRightX">93px</dimen>
+    <dimen name="mainBottomFineRightY">9px</dimen>
+    <dimen name="mainBottomFineTextWidth">46px</dimen>
+    <dimen name="mainBottomFineTextHeight">46px</dimen>
+    <dimen name="mainBottomFineTextX">47px</dimen>
+    <dimen name="mainBottomFineTextY">9px</dimen>
+    <dimen name="mainBottomFineTextSize">@dimen/textSize20</dimen>
+    <dimen name="mainBottomSaveWidth">61px</dimen>
+    <dimen name="mainBottomSaveHeight">53px</dimen>
+    <dimen name="mainBottomSaveX">160px</dimen>
+    <dimen name="mainBottomSaveY">9px</dimen>
+    <dimen name="mainBottomSaveTextSize">@dimen/textSize16</dimen>
+    <dimen name="mainBottomSaveTextX">12px</dimen>
+    <dimen name="mainBottomSaveTextY">2px</dimen>
+    <dimen name="mainBottomTimeBaseWidth">169px</dimen>
+    <dimen name="mainBottomTimeBaseHeight">68px</dimen>
+    <dimen name="mainBottomTimeBaseX">267px</dimen>
+    <dimen name="mainBottomTimeBaseY">0px</dimen>
+    <dimen name="mainBottomCurrentWidth">60px</dimen>
+    <dimen name="mainBottomCurrentHeight">60px</dimen>
+    <dimen name="mainBottomCurrentX">505px</dimen>
+    <dimen name="mainBottomCurrentY">2px</dimen>
+    <dimen name="mainBottomCursorHWidth">60px</dimen>
+    <dimen name="mainBottomCursorHHeight">60px</dimen>
+    <dimen name="mainBottomCursorHX">575px</dimen>
+    <dimen name="mainBottomCursorHY">2px</dimen>
+    <dimen name="mainBottomCursorHTextSize">@dimen/textSize16</dimen>
+    <dimen name="mainBottomCursorHTextX">13px</dimen>
+    <dimen name="mainBottomCursorHTextY">30px</dimen>
+    <dimen name="mainBottomCursorVWidth">60px</dimen>
+    <dimen name="mainBottomCursorVHeight">60px</dimen>
+    <dimen name="mainBottomCursorVX">640px</dimen>
+    <dimen name="mainBottomCursorVY">2px</dimen>
+    <dimen name="mainBottomCursorVTextSize">@dimen/textSize16</dimen>
+    <dimen name="mainBottomCursorVTextX">13px</dimen>
+    <dimen name="mainBottomCursorVTextY">30px</dimen>
+    <dimen name="mainBottomSlipDownWidth">50px</dimen>
+    <dimen name="mainBottomSlipDownHeight">50px</dimen>
+    <dimen name="mainBottomSlipDownX">700px</dimen>
+    <dimen name="mainBottomSlipDownY">2px</dimen>
+    <dimen name="mainBottomUsbPcLinkWidth">16px</dimen>
+    <dimen name="mainBottomUsbPcLinkHeight">16px</dimen>
+    <dimen name="mainBottomUsbPcLinkX">750px</dimen>
+    <dimen name="mainBottomUsbPcLinkY">40px</dimen>
+    <dimen name="mainBottomPowerWidth">12px</dimen>
+    <dimen name="mainBottomPowerHeight">20px</dimen>
+    <dimen name="mainBottomPowerX">770px</dimen>
+    <dimen name="mainBottomPowerY">40px</dimen>
+    <dimen name="mainBottomTimeHeight">10px</dimen>
+    <dimen name="mainBottomTimeX">750px</dimen>
+    <dimen name="mainBottomTimeY">-5px</dimen>
+    <!-- mainBottomQuick -->
+    <dimen name="mainBottomQuickWidth">700px</dimen>
+    <dimen name="mainBottomQuickHeight">76px</dimen>
+    <dimen name="mainBottomQuickX">0px</dimen>
+    <dimen name="mainBottomQuickY">600px</dimen>
+    <dimen name="mainBottomQuickItemWidth">50px</dimen>
+    <dimen name="mainBottomQuickItemHeight">50px</dimen>
+    <dimen name="mainBottomQuickItemY">10px</dimen>
+    <dimen name="mainBottomQuickItemScreenX">72px</dimen>
+    <dimen name="mainBottomQuickItemZoomX">72px</dimen>
+    <dimen name="mainBottomQuickItemVideoX">172px</dimen>
+    <dimen name="mainBottomQuickItemFullMeasureX">272px</dimen>
+    <dimen name="mainBottomQuickItemSerialBusTxtX">372px</dimen>
+    <!-- mainRight -->
+    <dimen name="mainRightWidth">100px</dimen>
+    <dimen name="mainRightX">702px</dimen>
+    <dimen name="mainRightY">0px</dimen>
+    <dimen name="mainRightTriggerLevelWidth">120px</dimen>
+    <dimen name="mainRightTriggerLevelHeight">106px</dimen>
+    <dimen name="mainRightTriggerLevelX">1800px</dimen>
+    <dimen name="mainRightTriggerLevelY">485px</dimen>
+    <dimen name="mainRightChannel2MarginTop">5px</dimen>
+    <dimen name="mainRightChannel3MarginTop">10px</dimen>
+    <dimen name="mainRightChannel4MarginTop">-8px</dimen>
+    <dimen name="mainRightChannel1TextMarginTop">45px</dimen>
+    <dimen name="mainRightChannel2TextMarginTop">11px</dimen>
+    <dimen name="mainRightChannel3TextMarginTop">77px</dimen>
+    <dimen name="mainRightChannel4TextMarginTop">45px</dimen>
+    <dimen name="mainRightChannelDoubleItemMargin">60px</dimen>
+    <dimen name="mainRightChannelDoubleItemTextMargin">44px</dimen>
+    <dimen name="mainRightSampleMarginLeft">8px</dimen>
+    <dimen name="mainRightSampleMarginTop">8px</dimen>
+    <dimen name="mainRightOtherItemWidth">97px</dimen>
+    <dimen name="mainRightOtherItemHeight">121px</dimen>
+    <dimen name="mainRightOtherMathX">0px</dimen>
+    <dimen name="mainRightOtherMathY">0px</dimen>
+    <dimen name="mainRightOtherRefX">0px</dimen>
+    <dimen name="mainRightOtherRefY">125px</dimen>
+    <dimen name="mainRightOtherRefTextX">14px</dimen>
+    <dimen name="mainRightOtherSerials1X">0px</dimen>
+    <dimen name="mainRightOtherSerials1Y">255px</dimen>
+    <dimen name="mainRightOtherSerials1TextX">16px</dimen>
+    <dimen name="mainRightOtherSerials2X">0px</dimen>
+    <dimen name="mainRightOtherSerials2Y">380px</dimen>
+    <dimen name="mainRightOtherSerials2TextX">16px</dimen>
+
+    <!-- rightSlip -->
+    <dimen name="rightSlipChannelWidth">410px</dimen>
+    <dimen name="rightSlipChannelHeight">1040px</dimen>
+    <dimen name="rightSlipMathWidth">458px</dimen>
+    <dimen name="rightSlipRefWidth">458px</dimen>
+    <dimen name="rightSlipSerialsWidth">595px</dimen>
+    <dimen name="rightDialogHeight">1045px</dimen>
+    <dimen name="rightChannelDialogWidth">456px</dimen>
+    <dimen name="rightMathDialogWidth">456px</dimen>
+    <dimen name="rightRefDialogWidth">456px</dimen>
+    <dimen name="rightSerialsDialogWidth">592px</dimen>
+    <dimen name="rightDialogY">77px</dimen>
+    <dimen name="newRightDialogY">41px</dimen>
+    <dimen name="rightChannelDialogX">1390px</dimen>
+    <dimen name="rightMathDialogX">1343px</dimen>
+    <dimen name="rightRefDialogX">1343px</dimen>
+    <dimen name="rightSerialsDialogX">1207px</dimen>
+    <dimen name="rightSlipLevelWidth">242px</dimen>
+    <dimen name="rightSlipX">1800px</dimen>
+    <dimen name="rightSlipY">0px</dimen>
+    <dimen name="rightSlipMiddleBarWaveZoomHeight">250px</dimen>
+    <dimen name="leftBarWidth">0px</dimen>
+    <dimen name="dialogSelectColorWidth">633px</dimen>
+
+    <dimen name="rightSlipMarginVerticalSmall">4px</dimen>
+    <dimen name="rightSlipMarginVerticalMiddle">9px</dimen>
+    <dimen name="rightSlipMarginVerticalBig">14px</dimen>
+
+    <dimen name="rightSlipOtherYSmall">93px</dimen>
+    <dimen name="rightSlipOtherYMiddle">133px</dimen>
+    <dimen name="rightSlipOtherYBig">173px</dimen>
+
+
+    <dimen name="rightDialogFormulaKeyBoardRow4">435px</dimen>
+    <dimen name="rightDialogFormulaKeyBoardRow3">475px</dimen>
+    <dimen name="rightDialogFormulaKeyBoardRow2">515px</dimen>
+    <dimen name="rightDialogFormulaKeyBoardRow1">555px</dimen>
+    <dimen name="rightDialogFormulaKeyBoardRow0">595px</dimen>
+
+    <dimen name="rightDialogFloatKeyBoardRow4">545px</dimen>
+    <dimen name="rightDialogFloatKeyBoardRow3">585px</dimen>
+    <dimen name="rightDialogFloatKeyBoardRow2">625px</dimen>
+    <dimen name="rightDialogFloatKeyBoardRow1">665px</dimen>
+    <dimen name="rightDialogFloatKeyBoardRow0">705px</dimen>
+
+    <dimen name="rightDialogNumberKeyBoardRow4">599px</dimen>
+    <dimen name="rightDialogNumberKeyBoardRow3">639px</dimen>
+    <dimen name="rightDialogNumberKeyBoardRow2">679px</dimen>
+    <dimen name="rightDialogNumberKeyBoardRow1">719px</dimen>
+    <dimen name="rightDialogNumberKeyBoardRow0">759px</dimen>
+
+    <!-- topSlip -->
+    <dimen name="topSlipWidth">@dimen/mainCenterWidth</dimen>
+    <dimen name="topSlipHeight">740px</dimen>
+    <dimen name="topSlipX">0px</dimen>
+    <dimen name="topSlipY">-740px</dimen>
+
+    <!-- serialsWord -->
+    <dimen name="formHeightTitle">64px</dimen>
+    <dimen name="formHeightDetail">40px</dimen>
+
+    <dimen name="formWidthSmall">50px</dimen>
+    <dimen name="formWidthMiddle">70px</dimen>
+    <dimen name="formWidthLarge">100px</dimen>
+
+    <dimen name="formMsgHeight">70px</dimen>
+    <dimen name="formBtnClearWidth">120px</dimen>
+    <dimen name="formBtnClearHeight">60px</dimen>
+    <dimen name="formBtnClearMarginEnd">30px</dimen>
+    <dimen name="formBtnClearMarginBottom">80px</dimen>
+    <dimen name="formBtnClearMarginBottomNew">5px</dimen>
+
+<!--    <dimen name="uart_hex_bit9_width">440px</dimen>-->
+<!--    <dimen name="uart_hex_bitOther_width">380px</dimen>-->
+<!--    <dimen name="uart_bin_width">540px</dimen>-->
+<!--    <dimen name="uart_ascii_width">440px</dimen>-->
+
+    <dimen name="serials_word_divider_width">2px</dimen>
+
+    <dimen name="uart_hex_bit9_width">1210px</dimen>
+    <dimen name="uart_hex_bitOther_width">1090px</dimen>
+    <dimen name="uart_bin_width">1500px</dimen>
+
+    <dimen name="lin_ch_width">120px</dimen>
+    <dimen name="lin_time_width">200px</dimen>
+    <dimen name="lin_id_width">120px</dimen>
+    <dimen name="lin_data_width">992px</dimen>
+    <dimen name="lin_error_width">120px</dimen>
+    <dimen name="lin_crc_width">120px</dimen>
+    <dimen name="lin_trigger_width">120px</dimen>
+
+    <dimen name="can_ch_width">120px</dimen>
+    <dimen name="can_time_width">200px</dimen>
+    <dimen name="can_id_width">200px</dimen>
+    <dimen name="can_type_width">120px</dimen>
+    <dimen name="can_dlc_width">120px</dimen>
+    <dimen name="can_data_width">670px</dimen>
+    <dimen name="can_crc_width">120px</dimen>
+    <dimen name="can_error_width">120px</dimen>
+    <dimen name="can_trigger_width">120px</dimen>
+
+    <dimen name="spi_ch_width">120px</dimen>
+    <dimen name="spi_time_width">200px</dimen>
+    <dimen name="spi_data_width">1355px</dimen>
+    <dimen name="spi_trigger_width">120px</dimen>
+
+    <dimen name="i2c_ch_width">120px</dimen>
+    <dimen name="i2c_time_width">200px</dimen>
+    <dimen name="i2c_addr_width">120px</dimen>
+    <dimen name="i2c_data_width">992px</dimen>
+    <dimen name="i2c_confirm_width">120px</dimen>
+    <dimen name="i2c_trigger_width">120px</dimen>
+    <dimen name="i2c_restart_width">120px</dimen>
+
+    <dimen name="arin429_ch_width">120px</dimen>
+    <dimen name="arin429_time_width">200px</dimen>
+    <dimen name="arin429_label_width">120px</dimen>
+    <dimen name="arin429_sdi_width">120px</dimen>
+    <dimen name="arin429_data_width">870px</dimen>
+    <dimen name="arin429_ssm_width">120px</dimen>
+    <dimen name="arin429_error_width">120px</dimen>
+    <dimen name="arin429_trigger_width">120px</dimen>
+
+    <dimen name="s1553b_ch_width">120px</dimen>
+    <dimen name="s1553b_time_width">200px</dimen>
+    <dimen name="s1553b_type_width">120px</dimen>
+    <dimen name="s1553b_raddr_width">200px</dimen>
+    <dimen name="s1553b_data_width">912px</dimen>
+    <dimen name="s1553b_trigger_width">120px</dimen>
+    <dimen name="s1553b_error_width">120px</dimen>
+
+    <dimen name="top_ref_time_base">130px</dimen>
+
+</resources>

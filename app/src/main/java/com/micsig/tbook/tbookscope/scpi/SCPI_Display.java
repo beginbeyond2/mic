@@ -1,0 +1,142 @@
+package com.micsig.tbook.tbookscope.scpi;
+
+import com.micsig.tbook.tbookscope.middleware.command.Command;
+
+/**
+ * Created by liwb on 2018/1/12.
+ */
+
+public class SCPI_Display {
+//      new SCPICommandStruct(":DISPlay:WAVeform","SCPI_Display","WaveForm"),//设置屏幕中波形的显示方式
+//            new SCPICommandStruct(":DISPlay:WAVeform?","SCPI_Display","WaveFormQ"),//查询屏幕中波形的显示方式
+//            new SCPICommandStruct(":DISPlay:BRIGhtness","SCPI_Display","Brightness"),//设置屏幕中波形显示的亮度
+//            new SCPICommandStruct(":DISPlay:BRIGhtness?","SCPI_Display","BrightnessQ"),//查询屏幕中波形显示的亮度
+//            new SCPICommandStruct(":DISPlay:GRATicule","SCPI_Display","Graticule"),//设置屏幕显示的网格类型
+//            new SCPICommandStruct(":DISPlay:GRATicule?","SCPI_Display","GraticuleQ"),//查询屏幕显示的网格类型
+//            new SCPICommandStruct(":DISPlay:INTensity","SCPI_Display","Intensity"),//设置屏幕中网格显示的亮度
+//            new SCPICommandStruct(":DISPlay:INTensity?","SCPI_Display","IntensityQ"),//查询屏幕中网格显示的亮度
+//            new SCPICommandStruct(":DISPlay:PERSist:MODE","SCPI_Display","Persist_Mode"),//设置余辉显示模式
+//            new SCPICommandStruct(":DISPlay:PERSist:MODE?","SCPI_Display","Persist_ModeQ"),//查询余辉显示模式
+//            new SCPICommandStruct(":DISPlay:PERSist:ADJust","SCPI_Display","Persist_Adjust"),//设置余辉普通显示模式下余辉时间
+//            new SCPICommandStruct(":DISPlay:PERSist:ADJust?","SCPI_Display","Persist_AdjustQ"),//查询余辉普通显示模式下余辉时间
+//            new SCPICommandStruct(":DISPlay:PERSist:CLEar","SCPI_Display","Persist_Clear"),//清除余辉显示
+//            new SCPICommandStruct(":DISPlay:HIGH","SCPI_Display","High"),//打开或关闭高刷新
+//            new SCPICommandStruct(":DISPlay:HIGH?","SCPI_Display","HighQ"),//查询高刷新打开或关闭
+//            new SCPICommandStruct(":DISPlay:HORRef","SCPI_Display","HorRef"),//设置屏幕水平展开中心模式
+//            new SCPICommandStruct(":DISPlay:HORRef?","SCPI_Display","HorRefQ"),//查询屏幕水平展开中心模式
+//            new SCPICommandStruct(":DISPlay:ZOOM","SCPI_Display","Zoom"),//打开或关闭ZOOM
+//            new SCPICommandStruct(":DISPlay:ZOOM?","SCPI_Display","ZoomQ"),//查询ZOOM打开或关闭
+//            new SCPICommandStruct(":DISPlay:CCT","SCPI_Display","CCT"),//打开或关闭ZOOM
+//            new SCPICommandStruct(":DISPlay:CCT?","SCPI_Display","CCTQ"),//查询ZOOM打开或关闭
+
+    public static void WaveForm(SCPIParam param) {
+        Command.get().getDisplay().WaveForm(param.iParam1, true);
+    }
+
+    public static String WaveFormQ(SCPIParam param) {
+        int i=Command.get().getDisplay().WaveFormQ();
+        return ToolsSCPI.getDisplayWaveForm(i);
+    }
+
+    public static void Background(SCPIParam param){
+        Command.get().getDisplay().Background(param.iParam1,true);
+    }
+    public static String BackgroundQ(SCPIParam param){
+        int i=Command.get().getDisplay().BackgroundQ();
+        return ToolsSCPI.getDisplayBackground(i);
+    }
+    public static void Brightness(SCPIParam param) {
+        Command.get().getDisplay().Brightness(param.iParam1, true);
+    }
+
+    public static String BrightnessQ(SCPIParam param) {
+        int i=Command.get().getDisplay().BrightnessQ();
+        return ToolsSCPI.getInt(i);
+    }
+
+    public static void Graticule(SCPIParam param) {
+        Command.get().getDisplay().Graticule(param.iParam1, true);
+    }
+
+    public static String GraticuleQ(SCPIParam param) {
+        int i=Command.get().getDisplay().GraticuleQ();
+        return ToolsSCPI.getDisplayGraticule(i);
+    }
+
+    public static void Intensity(SCPIParam param) {
+        Command.get().getDisplay().Intensity(param.iParam1, true);
+    }
+
+    public static String IntensityQ(SCPIParam param) {
+        int i=Command.get().getDisplay().IntensityQ();
+        return ToolsSCPI.getInt(i);
+    }
+
+    public static void Persist_Mode(SCPIParam param) {
+        Command.get().getDisplay().Persist_Mode(param.iParam1, true);
+    }
+
+    public static String Persist_ModeQ(SCPIParam param) {
+        int i= Command.get().getDisplay().Persist_ModeQ();
+        return ToolsSCPI.getDisplayPersistMode(i);
+    }
+
+    public static void FftPersist_Mode(SCPIParam param) {
+        Command.get().getDisplay().FftPersist_Mode(param.iParam1, true);
+    }
+
+    public static String FftPersist_ModeQ(SCPIParam param) {
+        int i= Command.get().getDisplay().FftPersist_ModeQ();
+        return ToolsSCPI.getDisplayFftPersistMode(i);
+    }
+
+    public static void Persist_Adjust(SCPIParam param) {
+        Command.get().getDisplay().Persist_Adjust(param.iParam1, true);
+    }
+
+    public static String Persist_AdjustQ(SCPIParam param) {
+        int i=Command.get().getDisplay().Persist_AdjustQ();
+//        return ToolsSCPI.getDisplayPersistAdjust(i);
+        return String.valueOf(i);
+    }
+
+    public static void Persist_Clear(SCPIParam param) {
+        Command.get().getDisplay().Persist_Clear(true);
+    }
+
+    public static void High(SCPIParam param) {
+        Command.get().getDisplay().High(param.bParam1, true);
+    }
+
+    public static String HighQ(SCPIParam param) {
+        boolean b=Command.get().getDisplay().HighQ();
+        return ToolsSCPI.getOpenState(b);
+    }
+
+    public static void HorRef(SCPIParam param) {
+        Command.get().getDisplay().HorRef(param.iParam1, true);
+    }
+
+    public static String HorRefQ(SCPIParam param) {
+        int i=Command.get().getDisplay().HorRefQ();
+        return ToolsSCPI.getDisplayHorRef(i);
+    }
+
+    public static void Zoom(SCPIParam param) {
+        Command.get().getDisplay().Zoom(param.bParam1, true);
+    }
+
+    public static String ZoomQ(SCPIParam param) {
+        boolean b=Command.get().getDisplay().ZoomQ();
+        return ToolsSCPI.getOpenState(b);
+    }
+
+    public static void CCT(SCPIParam param){
+        Command.get().getDisplay().Cct(param.bParam1,true);
+    }
+    public static String CCTQ(SCPIParam param){
+        boolean b=Command.get().getDisplay().CctQ();
+        return ToolsSCPI.getOpenState(b);
+    }
+
+}

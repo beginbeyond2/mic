@@ -1,0 +1,26 @@
+package com.micsig.tbook.scope.fpga;
+
+import com.micsig.tbook.scope.Sample.Sample;
+import com.micsig.tbook.scope.Scope;
+
+/**
+ * Created by zhuzh on 2018/3/16.
+ */
+
+public class FPGAReg_ZUN_DEPTH extends FPGAReg {
+    public FPGAReg_ZUN_DEPTH() {
+        super(FPGAReg.FPGA_ZUN_DEPTH,4);
+    }
+
+    //慢时基时使用：第一次刷新显示时，需要多少数据量
+    public void Set_zunDepth(int depth){
+        setVal(0, 32, depth);
+    }
+
+    @Override
+    public void onCommand() {
+        if (!Scope.getInstance().isInSlowScaleMode()) {//非慢时基模式处理
+            setVal(0, 32, Sample.getInstance().getSampleMemDepth());
+        }
+    }
+}

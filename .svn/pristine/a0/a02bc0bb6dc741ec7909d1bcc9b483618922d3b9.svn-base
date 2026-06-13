@@ -1,0 +1,348 @@
+package com.micsig.tbook.scope.Calibrate.MHO68v1;
+
+import android.util.Log;
+
+import com.micsig.tbook.hardware.HardwareProduct;
+import com.micsig.tbook.scope.Calibrate.CabteRegister;
+import com.micsig.tbook.scope.Calibrate.Calibrate;
+import com.micsig.tbook.scope.Calibrate.HwConfig;
+import com.micsig.tbook.scope.Data.WaveData;
+import com.micsig.tbook.scope.Sample.Sample;
+import com.micsig.tbook.scope.ScopeBase;
+import com.micsig.tbook.scope.Trigger.Trigger;
+import com.micsig.tbook.scope.Trigger.TriggerCommon;
+import com.micsig.tbook.scope.Trigger.TriggerEdge;
+import com.micsig.tbook.scope.Trigger.TriggerFactory;
+import com.micsig.tbook.scope.channel.Channel;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+import com.micsig.tbook.scope.horizontal.HorizontalAxis;
+import com.micsig.tbook.scope.math.MathNative;
+import com.micsig.tbook.scope.vertical.VerticalAxis;
+
+public class MHO68v1_ChCapCalibrate extends Calibrate {
+    public MHO68v1_ChCapCalibrate(int calibrateType) {
+        super(calibrateType);
+
+    }
+    @Override
+    public void setErrcode(int errcode) {
+        this.errcode = errcode;
+    }
+    private int errcode;
+    private final String TAG = "ChCap";
+    private final String TAG1=TAG_PRI+":"+TAG;
+
+    private volatile int ch=0;
+    private double vScaleVal = VerticalAxis.getScaleIdValById(VerticalAxis.DANG_500mV);
+
+    private volatile int meatCnt=0;
+    private volatile int step;
+    private volatile double average[][]={{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0}};
+
+    private volatile double []minVal={Double.MAX_VALUE,Double.MAX_VALUE,Double.MAX_VALUE,Double.MAX_VALUE
+            ,Double.MAX_VALUE,Double.MAX_VALUE,Double.MAX_VALUE,Double.MAX_VALUE};
+    private volatile int [] dcpVal = {0,0,0,0,0,0,0,0};
+    private volatile int [] minNum = {0,0,0,0,0,0,0,0};
+    @Override
+    public String getTAG() {
+        return TAG1;
+    }
+
+    @Override
+    public int getErrcode() {
+        //=1：校验错误
+        return errcode;
+    }
+    private static final int CAP_MAX_VAL = 0xFFFF ;
+    private static final int CAP_REF_VAL = CAP_MAX_VAL/2;
+
+    private int dwIdx = 0;
+
+    //校准下一档初始化
+    private void rstCalculate(){
+
+        for (int i = 0; i < channelNums; i++) {
+            for(int j=0; j< 2;j++) {
+                average[j][i] =0;
+                refVal[i] = CAP_REF_VAL;
+                minVal[i] = Double.MAX_VALUE;
+                dcpVal[i] = 0;
+                minNum[i] = 0;
+            }
+        }
+        meatCnt = 0;
+    }
+
+    @Override
+    public void iniCalibrateReg(){
+        if(ChannelFactory.isDynamicCh(ch)){
+            //cabteRegister.getChCapacitanceHigh()[ch] = 127;
+        }
+    }
+
+    /**
+     * 设置校准参数
+     * @param vol
+     * vol为int[];
+     * 第1个值为通道：0~3,-1；（-1表示所有通道）
+     * 第2个值为档位；
+     */
+    @Override
+    public void setParam(Object vol) {
+        ch = ChannelFactory.CH1;
+//        vScaleVal = VerticalAxis.getScaleIdValById(VerticalAxis.DANG_500mV);
+
+        if(vol instanceof double[]) {
+            double[] param=(double[])vol;
+            if(param.length >= 2){
+                int ix =(int)(param[0] + 0.1);
+                if(param[0] < 0){
+                    ix = -1;
+                }
+                if(ix == -1 || ChannelFactory.isDynamicCh(ix)) {
+                    ch = ix;
+                    vScaleVal = param[1];
+                    Log.d(TAG,"ch:" + ch + ",vScaleVal:" + vScaleVal);
+                }
+            }
+        }
+    }
+
+    int []param=new int[2];
+    @Override
+    public Object getParam() {
+        param[0] = ch;
+        param[1] = dwIdx;
+        return param;
+    }
+
+    @Override
+    public void calibratePrepare() {
+        delaySet(1000);
+        dwIdx = CabteRegister.getRatioIdx(Channel.RESISTANCE_1M,vScaleVal);
+
+
+        HorizontalAxis horizontalAxis = HorizontalAxis.getInstance();
+
+        horizontalAxis.setTimeScaleIdOfView(HorizontalAxis.TSI_10uS);
+        horizontalAxis.setTimePoseOfViewPix(ScopeBase.getWidth()/2-ScopeBase.getHorizonPerGridPixels()/2);
+        TriggerFactory triggerFactory=TriggerFactory.getInstance();
+        triggerFactory.getTriggerCommon().setTriggerMode(TriggerCommon.TM_NORMAL);
+        TriggerEdge triggerEdge=(TriggerEdge)(triggerFactory.getTrigger(Trigger.TRIG_TYPE_EDGE));
+        triggerEdge.setTriggerEdge(TriggerEdge.TET_ASC);
+        if(ChannelFactory.isDynamicCh(ch)){
+            triggerEdge.setTriggerSource(ch);
+        }else{
+            triggerEdge.setTriggerSource(0);
+            ch = -1;
+        }
+        ms_sleep(100);
+
+        for(int i=0; i<channelNums; i++) {
+            channel[i].setProbeRate(1);
+            channel[i].setVScaleVal(vScaleVal);
+            channel[i].setPos(-ScopeBase.getVerticalPerGridPixels() * 4);
+            if(ch == -1 || i == ch) {
+                refVal[i] = CAP_REF_VAL;
+                cabteRegister.setChCapacitanceHigh(i,dwIdx,CAP_REF_VAL);
+            }
+        }
+        Sample.getInstance().setSampleType(Sample.SAMPLE_TYPE_NORMAL);
+        int level = ScopeBase.getVerticalPerGridPixels() * 4;
+        triggerEdge.getTriggerLevel().setPos(level);
+
+        for(int i=0;i<3;i++) {
+            ms_sleep(1100);
+            checkParam();
+        }
+        meatCnt = 0;
+        step = 0;
+        errcode = 0;
+        rstCalculate();
+        fpgaSync();
+        delaySet(2);
+        resultString.add("<<<<<<<<<< chCapCalibrate start ......");
+        Log.i(TAG1,"<<<<<<<<<< chCapCalibrate start ......");
+
+    }
+
+    public boolean checkParam(){
+        boolean bChange = false;
+        int chidx = ch;
+        if(ch < 0){
+            chidx = 0;
+        }
+
+        if(ChannelFactory.isDynamicCh(chidx)) {
+            TriggerFactory triggerFactory = TriggerFactory.getInstance();
+
+            TriggerEdge triggerEdge = (TriggerEdge) (triggerFactory.getTrigger(Trigger.TRIG_TYPE_EDGE));
+            if (!triggerEdge.isTriggerSource(chidx)) {
+                triggerEdge.setTriggerSource(chidx);
+                bChange = true;
+            }
+
+            if (triggerEdge.getTriggerLevel().getPos() != (ScopeBase.getVerticalPerGridPixels() * 4)) {
+                triggerEdge.getTriggerLevel().setPos(ScopeBase.getVerticalPerGridPixels() * 4);
+                bChange = true;
+            }
+        }
+        if(bChange){
+            ms_sleep(100);
+            rstCalculate();
+            fpgaSync();
+
+        }
+        return bChange;
+    }
+    private volatile int [] refVal = {CAP_REF_VAL,CAP_REF_VAL,CAP_REF_VAL,CAP_REF_VAL,CAP_REF_VAL,CAP_REF_VAL,CAP_REF_VAL,CAP_REF_VAL};
+    private static final int STD_VAL = ScopeBase.getVerticalPerGridPixels() * 8;
+    @Override
+    public boolean onCalibrate() {
+        //等待硬件操作完成
+
+        if (!isFinishedAction())
+            return false;
+
+
+        if(step == 0){
+            delaySet(2);
+            step++;
+            return false;
+        }
+        if(step == 1){
+            delaySet(0);
+            step++;
+            meatCnt = 0;
+            return false;
+        }
+        if(meatCnt == 0){
+            delaySet(0);
+        }
+
+        if(checkParam()){
+            rstCalculate();
+            return false;
+        }
+
+//        int []chCapHigh = cabteRegister.getChCapacitanceHigh();
+
+        HwConfig hwConfig = HwConfig.getInstance();
+        WaveData waveData;
+        int N;
+        int gridCnt = ScopeBase.getHorizonGridCnt();
+        int xx = ScopeBase.getHorizonPerGridPixels();
+        //获取每个通道的波形平均值
+        for (int i = 0; i < channelNums; i++) {
+            waveData = (WaveData) getWave(i);
+            if (waveData == null || (N = waveData.getWaveLength()) < 10)
+                return false;
+            int len1 = N/gridCnt;
+            int len2 = len1/xx;
+            N = len1/2;
+            int n = len2 * 10;
+            average[0][i] += (double) MathNative.calcSum(waveData.getByteBuffer(), N + len2 * 5, n) / n;
+            average[1][i] += (double) MathNative.calcSum(waveData.getByteBuffer(), N + len1 * 8, n) / n;
+
+        }
+
+
+
+        if(++meatCnt > 5) {
+            for (int i = 0; i < channelNums; i++) {
+                average[0][i] /= meatCnt;
+                average[1][i] /= meatCnt;
+
+                average[0][i] *= hwConfig.getWavFactor();
+                average[1][i] *= hwConfig.getWavFactor();
+
+                Log.d(TAG, "ch:" + ch + ",step:" + step +",====average: " + average[0][i] + "," + average[1][i] + ",STD_VAL:" +STD_VAL);
+//                if(ch == i || ch == -1){
+//                    if(Math.abs(average[1][i] - STD_VAL)/STD_VAL > 0.25){
+//                        errcode = 705;
+//                        return true;
+//                    }
+//                }
+            }
+        }else {
+            return false;
+        }
+        meatCnt = 0;
+        if(step == 2){
+            double TVAL = 0.1;
+            boolean [] bOk = {false,false,false,false,false,false,false,false};
+            int idx;
+            for (int i = 0; i < channelNums; i++) {
+                if (ch == i || ch == -1) {
+                    if(!bOk[i]) {
+                        double val = average[1][i] - average[0][i];
+//                        idx = HardwareProduct.isMHO10008() ? i * 4 + dwIdx : i;
+                        if (Math.abs(val) < minVal[i]) {
+                            minVal[i] = Math.abs(val);
+                            dcpVal[i] = cabteRegister.getChCapacitanceHigh(i,dwIdx);//chCapHigh[idx];
+                            minNum[i] = 0;
+                        } else {
+                            minNum[i]++;
+                        }
+                        refVal[i] /= 2;
+                        if (refVal[i] == 0) {
+                            refVal[i] = 1;
+                        }
+                        if (minNum[i] > 6) {
+//                            chCapHigh[idx] = dcpVal[i];
+                            cabteRegister.setChCapacitanceHigh(i,dwIdx,dcpVal[i]);
+                            bOk[i] = true;
+                        } else if (Math.abs(val) > TVAL) {
+                            int xvv = cabteRegister.getChCapacitanceHigh(i,dwIdx);
+                            if (val > TVAL) {
+                                xvv += refVal[i];
+                                if (xvv > CAP_MAX_VAL) {
+                                    xvv = 0;
+                                }
+                            } else if (val < -TVAL) {
+                                xvv -= refVal[i];
+                                if (xvv < 0) {
+                                    xvv = CAP_MAX_VAL;
+                                }
+                            }
+                            cabteRegister.setChCapacitanceHigh(i,dwIdx,xvv);
+                        }else{
+                            bOk[i] = true;
+                        }
+                        Log.d(TAG, "chCapHigh[" + i + "," + dwIdx + "] = " + cabteRegister.getChCapacitanceHigh(i,dwIdx));
+                    }
+                    average[0][i] = 0;
+                    average[1][i] = 0;
+                }
+            }
+            boolean bx = false;
+            if(ch == -1){
+                int i =0;
+                for(;i<channelNums;i++){
+                    if(!bOk[i]){
+                       break;
+                    }
+                }
+                bx = (i == channelNums);
+            }else{
+                bx = bOk[ch];
+            }
+            if(bx){
+                step++;
+            }
+            updateSync();
+            Sample.getInstance().setSampleType(Sample.SAMPLE_TYPE_NORMAL);
+        }
+
+        if (step != 3) {
+            return false;
+        }
+
+        for (int i = 0; i < channelNums; i++){
+//            int idx = HardwareProduct.isMHO10008() ? i * 4 + dwIdx : i;
+            resultString.add("chCapHigh[" + i + "] = " + cabteRegister.getChCapacitanceHigh(i,dwIdx));
+        }
+        resultString.add("chCapCalibrate Calibrate end >>>>>>>>>>>");
+        return true;
+    }
+}

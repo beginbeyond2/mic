@@ -1,0 +1,93 @@
+package com.micsig.tbook.scope.fpga;
+
+import com.micsig.tbook.scope.Bus.IBus;
+import com.micsig.tbook.scope.Bus.LinBus;
+
+/**
+ * Created by zhuzh on 2018-5-30.
+ */
+
+public class FPGAReg_BUS_LIN extends FPGAReg_BUS {
+    public FPGAReg_BUS_LIN(int addr) {
+        super(addr, 20);
+    }
+    public void setSrc(int val){
+        setVal(0,2,val);
+    }
+    public void setRate(int val){
+        setVal(4,13,val);
+    }
+    public void setClk(int val){
+        setVal(20,1,val);
+    }
+    public void setDataLength(int length) {
+        setVal(21, 3, length);
+    }
+    public void setTriggerMode(int val){
+        setVal(28,4,val);
+    }
+    public void setId(int val){
+        setVal(1,0,6,val);
+    }
+    public void setData(int idx,int val){
+        setVal(idx + 2,val);
+    }
+
+    public void setDataL(int val){
+        setData(1,val);
+    }
+    public void setDataH(int val){
+        setData(0,val);
+    }
+
+    private int swap32(int val) {
+        return ((val & 0xFF)<<24) | ((val&0xff0000)>>8) | ((val&0xff00)<<8) | (val>>>24) ;
+    }
+
+    @Override
+    public void configBus(int fpgaIdx,IBus iBus) {
+
+        LinBus bus = (LinBus)iBus;
+        int baudRate = bus.getBaudRate();
+        int clk = 0;
+        int triggerType = bus.getTriggerType();
+        int id = bus.getFrameId(triggerType);
+        long data = bus.getData();
+        int dataLength = bus.getDataLength();
+        int src = bus.getSrcChIdx();
+        FPGAReg_BUS_LEVEL busLevel = (FPGAReg_BUS_LEVEL) FPGACommand.getReg(fpgaIdx,FPGA_BUS_LEVEL);
+        setSrc(chIdx2BusSrc(src));
+        busLevel.setBusSrcExt(getBusIdx(),((src>>2)&0x1));
+        if(baudRate <= 20*1000){
+            baudRate = 7812500/baudRate - 1;
+            clk = 0;
+        }else{
+            baudRate = 250000000/baudRate - 1;
+            clk = 1;
+        }
+        setRate(baudRate);
+        setClk(clk);
+        setDataLength((dataLength >> 1) - 1);//用数0-7代表1-8个字节
+        setTriggerMode(triggerType);
+        setId(id);
+        int maxSize = 4;
+        //根据数据实际有效长度进行匹配转换
+        if (dataLength <= 4) {
+            data = ((data & 0xff00) >> 8) | ((data & 0x00ff) << 8);
+        } else if (dataLength <= 8) {
+            data = swap32((int) (data & 0xFFFFFFFFL)) & 0xFFFFFFFFL;
+            maxSize = 8;
+        } else {
+            long l = swap32((int) (data & 0xFFFFFFFFL)) & 0xFFFFFFFFL;
+            long h = swap32((int) (data >>> 32)) & 0xFFFFFFFFL;
+            data = l << 32 | h;
+            maxSize = 16;
+        }
+        data = data >>> (maxSize - dataLength) * 4;
+        setDataL((int) (data >>> 32));
+        setDataH((int) (data & 0xFFFFFFFFL));
+
+        setLevel(busLevel,src,bus.getIdleLevel());
+        FPGACommand.sendCmd(busLevel);
+    }
+}

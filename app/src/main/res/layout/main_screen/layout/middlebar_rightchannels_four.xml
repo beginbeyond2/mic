@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/middlebarChannel"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_main_outside"
+    android:clickable="true"
+    android:orientation="vertical">
+
+    <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannel
+        android:id="@+id/ch1Layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:bgLeftChecked="@drawable/l_ch1"
+        app:bgLeftUnChecked="@drawable/l_unclick"
+        app:bgProbeDetail="@drawable/ch1_10x"
+        app:bgRightBottomTouchDown="@drawable/ch1_v_press"
+        app:bgRightBottomTouchUp="@drawable/ch1_v"
+        app:bgRightTopTouchDown="@drawable/ch1_mv_press"
+        app:bgRightTopTouchUp="@drawable/ch1_mv"
+        app:checked="false"
+        app:showLayoutMarginTop="@dimen/mainRightChannel1TextMarginTop"
+        app:text="CH1" />
+
+    <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannel
+        android:id="@+id/ch2Layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/ch1Layout"
+        android:layout_marginTop="@dimen/mainRightChannel2MarginTop"
+        app:bgLeftChecked="@drawable/l_ch2"
+        app:bgLeftUnChecked="@drawable/l_unclick"
+        app:bgProbeDetail="@drawable/ch2_10x"
+        app:bgRightBottomTouchDown="@drawable/ch2_v_press"
+        app:bgRightBottomTouchUp="@drawable/ch2_v"
+        app:bgRightTopTouchDown="@drawable/ch2_mv_press"
+        app:bgRightTopTouchUp="@drawable/ch2_mv"
+        app:checked="false"
+        app:showLayoutMarginTop="@dimen/mainRightChannel2TextMarginTop"
+        app:text="CH2" />
+
+    <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannel
+        android:id="@+id/ch3Layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/ch2Layout"
+        android:layout_marginTop="@dimen/mainRightChannel3MarginTop"
+        app:bgLeftChecked="@drawable/l_ch3"
+        app:bgLeftUnChecked="@drawable/l_unclick"
+        app:bgProbeDetail="@drawable/ch3_10x"
+        app:bgRightBottomTouchDown="@drawable/ch3_v_press"
+        app:bgRightBottomTouchUp="@drawable/ch3_v"
+        app:bgRightTopTouchDown="@drawable/ch3_mv_press"
+        app:bgRightTopTouchUp="@drawable/ch3_mv"
+        app:checked="false"
+        app:showLayoutMarginTop="@dimen/mainRightChannel3TextMarginTop"
+        app:text="CH3" />
+
+    <com.micsig.tbook.tbookscope.main.mainright.MainRightLayoutItemChannel
+        android:id="@+id/ch4Layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/ch3Layout"
+        android:layout_marginTop="@dimen/mainRightChannel4MarginTop"
+        app:bgLeftChecked="@drawable/l_ch4"
+        app:bgLeftUnChecked="@drawable/l_unclick"
+        app:bgProbeDetail="@drawable/ch4_10x"
+        app:bgRightBottomTouchDown="@drawable/ch4_v_press"
+        app:bgRightBottomTouchUp="@drawable/ch4_v"
+        app:bgRightTopTouchDown="@drawable/ch4_mv_press"
+        app:bgRightTopTouchUp="@drawable/ch4_mv"
+        app:checked="false"
+        app:showLayoutMarginTop="@dimen/mainRightChannel4TextMarginTop"
+        app:text="CH4" />
+
+    <TextView
+        android:id="@+id/sample"
+        style="@style/textStyleMiddlebarRight"
+        android:layout_width="56px"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:text="@string/mainRightSample"
+        android:textSize="12px"
+        android:gravity="center"/>
+</RelativeLayout>

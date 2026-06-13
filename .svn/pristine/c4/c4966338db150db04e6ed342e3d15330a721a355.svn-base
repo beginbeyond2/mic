@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/displayDrawType"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:array="@array/displayDrawType"
+        android:layout_marginStart="13px"
+        app:headWidth="120px"
+        app:head="@string/displayDrawType" />
+
+    <com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup
+        android:id="@+id/displayBackground"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:array="@array/displayBackground"
+        android:layout_marginStart="100px"
+        android:layout_toRightOf="@+id/displayDrawType"
+        app:headWidth="120px"
+        app:head="@string/displayBackground" />
+    <com.micsig.tbook.ui.top.view.TopViewSeekBar
+        android:id="@+id/brightness"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="160px"
+        app:headWidth="120px"
+        />
+</RelativeLayout>

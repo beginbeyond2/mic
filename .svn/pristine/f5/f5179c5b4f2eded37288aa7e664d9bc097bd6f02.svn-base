@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AbsoluteLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <!--不需要展示的按钮包起来都隐藏，原来各个按钮的逻辑保留-->
+<!--    <LinearLayout-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:visibility="gone"-->
+<!--        app:layout_constraintRight_toRightOf="parent"-->
+<!--        app:layout_constraintTop_toTopOf="parent">-->
+
+        <CheckBox
+            android:id="@+id/cursorH"
+            android:layout_width="84px"
+            android:layout_height="68px"
+            android:layout_x="1159px"
+            android:layout_y="4px"
+            android:background="@drawable/selector_cursor_heng"
+            android:button="@null"
+            android:gravity="center|bottom"
+            android:text="@string/main_cursor_heng"
+            android:textColor="@drawable/selector_text_color"
+            android:textSize="20px"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <CheckBox
+            android:id="@+id/cursorV"
+            android:layout_width="84px"
+            android:layout_height="68px"
+            android:layout_x="1291px"
+            android:layout_y="4px"
+            android:background="@drawable/selector_cursor_shu"
+            android:button="@null"
+            android:gravity="center|bottom"
+            android:text="@string/main_cursor_shu"
+            android:textColor="@drawable/selector_text_color"
+            android:textSize="20px" />
+
+
+        <Button
+            android:id="@+id/RunStop"
+            style="@style/buttonStyle"
+            android:layout_width="84px"
+            android:layout_height="68px"
+            android:layout_x="1452px"
+            android:layout_y="4px"
+            android:button="@null"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:lineSpacingExtra="-1dp"
+            android:text="@string/mainCenterMenuRunStop"
+            android:textAllCaps="false"
+            android:textSize="24px" />
+
+        <Button
+            android:id="@+id/Auto"
+            style="@style/buttonStyle"
+            android:layout_width="84px"
+            android:layout_height="68px"
+            android:layout_x="1716px"
+            android:layout_y="4px"
+            android:button="@null"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:lineSpacingExtra="-2dp"
+            android:text="@string/mainCenterMenuAuto"
+            android:textAllCaps="false"
+            android:textSize="24px" />
+
+        <Button
+            android:id="@+id/SEQ"
+            style="@style/buttonStyle"
+            android:layout_width="84px"
+            android:layout_height="68px"
+            android:layout_x="1584px"
+            android:layout_y="4px"
+            android:button="@null"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:lineSpacingExtra="-2dp"
+            android:text="@string/mainCenterMenuSEQ"
+            android:textAllCaps="false"
+            android:textSize="24px" />
+
+<!--    </LinearLayout>-->
+
+    <!--隐藏-->
+    <ImageView
+        android:id="@+id/logo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="7px"
+        android:layout_marginRight="4px"
+        android:src="@drawable/logo_new"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:visibility="gone"
+        />
+
+    <!--隐藏-->
+    <TextView
+        android:id="@+id/tx_runstop"
+        style="@style/textStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4px"
+        android:gravity="center"
+        android:layout_marginEnd="100px"
+        android:text="@string/mainCenterMenuRunStop"
+        app:layout_constraintBottom_toBottomOf="@+id/logo"
+        app:layout_constraintRight_toLeftOf="@+id/statusBar"
+        app:layout_constraintTop_toTopOf="@+id/logo"
+        android:visibility="gone"
+        />
+
+
+
+</AbsoluteLayout>

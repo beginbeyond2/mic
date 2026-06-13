@@ -1,0 +1,27 @@
+package com.micsig.tbook.tbookscope.wavezone;
+
+
+import androidx.annotation.IntDef;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+
+/**
+ * Created by liwb on 2017/6/15.
+ */
+
+public interface IWorkMode {
+    public static final int WorkMode_None = -1;
+    public static final int WorkMode_YT = 0x00;
+    public static final int WorkMode_YTZOOM = 0x01;
+    public static final int WorkMode_XY = 0x02;
+
+    @IntDef({WorkMode_None,WorkMode_XY, WorkMode_YT, WorkMode_YTZOOM})
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface WorkMode {
+    }
+
+
+    void switchWorkMode(@WorkMode int workMode);
+
+}

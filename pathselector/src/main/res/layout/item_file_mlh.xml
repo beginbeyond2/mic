@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<com.daimajia.swipe.SwipeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_height="60px"
+    android:layout_width="match_parent"
+    android:id="@+id/swipe_layout"
+    app:drag_edge="right">
+    <LinearLayout
+        android:layout_width="48dp"
+        android:orientation="horizontal"
+        android:layout_height="match_parent">
+        <ImageView
+            android:id="@+id/tv_delete"
+            android:layout_width="24dp"
+            android:layout_height="wrap_content"
+            app:srcCompat = "@drawable/icon_delete"
+             />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/linl_item_file_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:background="@color/black_mlh">
+
+        <RelativeLayout
+            android:layout_width="40dp"
+            android:layout_height="40dp">
+
+            <ImageView
+                android:id="@+id/imgv_item_file_ico"
+                android:layout_width="30dp"
+                android:layout_height="24dp"
+                app:srcCompat="@drawable/icon_folder_close"
+                android:layout_centerInParent="true" />
+        </RelativeLayout>
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_weight="1"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/tv_item_file_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="4"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:gravity="center_vertical"
+                    android:textColor="@color/folder_text_color"
+                    android:textSize="14sp" />
+                <TextView
+                    android:id="@+id/tv_item_file_detail"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:gravity="center_vertical"
+                    android:textColor="@color/detail_text_color"
+                    android:textSize="8sp" />
+            </LinearLayout>
+
+
+            <ImageView
+               android:id = "@+id/checkbox_item_file_choose"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:clickable="false"
+                android:visibility="invisible"
+                app:srcCompat="@drawable/icon_select"/>
+
+
+            <ImageView
+                android:id="@+id/imgv_item_file_enter"
+                android:layout_width="50dp"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="10dp"
+                android:src="@drawable/style_click_rectangle_transp_black_mlh" />
+
+        </LinearLayout>
+
+
+    </LinearLayout>
+
+</com.daimajia.swipe.SwipeLayout>

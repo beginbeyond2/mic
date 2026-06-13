@@ -1,0 +1,116 @@
+package com.micsig.tbook.scope.Calibrate;
+
+import android.util.Log;
+
+import java.util.Arrays;
+
+public class ADC_B12DJ3200NBB extends ADC {
+    public ADC_B12DJ3200NBB() {
+
+    }
+    @Override
+    public void Init() {
+    }
+
+    @Override
+    public void setOffset(int fpgaIdx, int adIdx, int i0_q1, int vol) {
+
+    }
+
+    @Override
+    public void setGain(int fpgaIdx,int adcIdx, int i0_q1, int vol) {
+
+       final int[] addr = {0x32,0x30};
+        if (i0_q1 >= 0 && i0_q1 < addr.length) {
+            SendADData(fpgaIdx, adcIdx, addr[i0_q1], vol & 0xFF);
+            SendADData(fpgaIdx, adcIdx, addr[i0_q1] + 1, (vol >> 8) & 0xFF);
+        }
+    }
+
+    @Override
+    public void setChannel(int cnt, boolean[] sel) {
+
+        int fpgaIdx = 0;
+        int v = 0;
+
+        for(int i=0;i<sel.length;i+=4){
+            fpgaIdx = i / 4;
+            v = ((sel[i] ? 2 : 1) | (1<<4)) | (((sel[i + 2] ? 2 : 1) | (1<<4)) << 8) ;
+            AD_JMode(fpgaIdx,cnt == 8 ? 2  : 1,v);
+        }
+
+        try {
+            Thread.sleep(300);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        if(fpgaCommand != null){
+            fpgaCommand.adSync();
+        }
+    }
+
+    @Override
+    protected void SendADData(int fpgaIdx, int adIdx, int addr, int val) {
+        super.SendADData(fpgaIdx, adIdx, addr, val);
+    }
+
+
+    @Override
+    public int getSampleChannel(boolean[] sel) {
+        int nums = 0;
+        if ((sel[0] && sel[1])
+                || (sel[2] && sel[3])
+                || (sel[4] && sel[5])
+                || (sel[6] && sel[7])) {
+            Arrays.fill(sel, true);
+            nums = 8;
+        } else {
+            int a1,a2;
+            a1 = a2 = 0;
+            for(int i=0;i<4;i++){
+                if(sel[i]){
+                    a1++;
+                }
+                if(sel[i + 4]){
+                    a2++;
+                }
+            }
+
+            nums = Math.max(a1,a2) < 2 ? 2 : 4;
+
+            if(nums == 4) {
+                for (int i = 0; i < sel.length; i += 2) {
+                    if ((!sel[i]) && (!sel[i + 1])) {
+                        sel[i] = true;
+                    }
+                }
+            }else{
+                if(a1 == 0){
+                    sel[0] = true;
+                }
+                if(a2 == 0){
+                    sel[4] = true;
+                }
+            }
+        }
+
+        return nums;
+    }
+
+    @Override
+    public int getMaxAdInClk() {
+        return 6000;
+    }
+
+    @Override
+    public int getMaxChNums() {
+        return 2;
+    }
+
+
+    @Override
+    public boolean isChChangeReset() {
+        return true;
+    }
+}

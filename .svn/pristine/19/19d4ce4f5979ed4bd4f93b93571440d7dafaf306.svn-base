@@ -1,0 +1,17 @@
+package com.micsig.tbook.scope.fpga;
+
+/**
+ * Created by zhuzh on 2018-4-8.
+ */
+
+public class FPGAReg_TRIG_AUTO_TRIG_TIME extends FPGAReg {
+    public FPGAReg_TRIG_AUTO_TRIG_TIME() {
+        super(FPGA_TRIG_AUTO_TRIG_TIME, 4);
+    }
+    public void setTrigTime(int val,int val2){
+        setVal(0,25,val);
+        setVal(25,7,val2);
+    }
+
+
+}

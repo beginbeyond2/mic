@@ -1,0 +1,83 @@
+package com.micsig.tbook.scope.surface;
+
+import android.content.Context;
+import android.hardware.DeviceManager;
+import android.os.ParcelFileDescriptor;
+
+import java.io.FileDescriptor;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+
+
+public abstract class HwDevice {
+    private final static String TAG = "HwDevice";
+    private long mDevice;
+
+    protected int idx = 0;
+    private SurfaceNative surfaceNative;
+
+    protected int devCnt = 1;
+
+    public int getDevCnt(){
+        return devCnt;
+    }
+    public synchronized void setSurfaceNative(int idx,SurfaceNative surfaceNative){
+        this.surfaceNative = surfaceNative;
+    }
+    public synchronized void setSurfaceNative(SurfaceNative surfaceNative){
+        this.surfaceNative = surfaceNative;
+    }
+    protected synchronized SurfaceNative getSurfaceNative(){
+        return this.surfaceNative;
+    }
+    protected DeviceManager deviceManager;
+    public HwDevice(Context context,int idx){
+        this.idx = idx;
+        deviceManager = (DeviceManager)context.getSystemService("device");
+    }
+    public HwDevice(Context context){
+        this(context,0);
+    }
+
+    public int getIdx(){
+        return idx;
+    }
+    public boolean openFpga(){return false;}
+    public boolean closeFpga(){return false;}
+    public abstract boolean openDevice();
+    public abstract void closeDevice();
+    public abstract ByteBuffer lockBuffer(int idx);
+    public abstract void unlockBuffer(int idx);
+
+    public abstract void clear();
+
+    public abstract ByteBuffer getBarBuffer(int idx);
+
+    public abstract boolean store(RandomAccessFile randomAccessFile);
+    public abstract boolean restore(RandomAccessFile randomAccessFile);
+
+    public abstract void stop();
+
+    public abstract int getSaveRecoveryProgress();
+
+    public abstract boolean isOpen();
+
+    public abstract void resume();
+    public abstract void suspend();
+
+    public boolean isAsyncOpen(){
+        return false;
+    }
+
+    protected static void ms_sleep(long ms){
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+}

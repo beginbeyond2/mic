@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Button xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/text"
+    android:layout_width="match_parent"
+    android:layout_height="80px"
+    android:layout_margin="5px"
+    android:background="@drawable/selector_rightslip_button"
+    android:button="@null"
+    android:gravity="center"
+    android:paddingTop="6px"
+    android:paddingBottom="6px"
+    android:textAllCaps="false"
+    android:textColor="@drawable/bg_keyboard_item_textcolor"
+    android:textStyle="bold" />

@@ -1,0 +1,270 @@
+package com.micsig.tbook.tbookscope.middleware.command;
+
+
+import android.util.Log;
+
+import com.micsig.tbook.scope.horizontal.HorizontalAxis;
+import com.micsig.tbook.tbookscope.rxjava.RxBus;
+import com.micsig.tbook.tbookscope.rxjava.RxEnum;
+import com.micsig.tbook.tbookscope.tools.Tools;
+import com.micsig.tbook.tbookscope.wavezone.display.CursorManage;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Created by liwb on 2018/1/12.
+ */
+
+public class Command_Timebase {
+//     new SCPICommandStruct(":TIMebase:EXTent","SCPI_Timebase","Extent"),//设置水平时基档位
+//            new SCPICommandStruct(":TIMebase:PLUS:EXTent","SCPI_Timebase","Plus_Extent"),//设置水平时基档位
+//            new SCPICommandStruct(":TIMebase:EXTent?","SCPI_Timebase","ExtentQ"),//查询水平时基档位
+//            new SCPICommandStruct(":TIMebase:MODE","SCPI_Timebase","Mode"),//设置屏幕时基显示方式
+//            new SCPICommandStruct(":TIMebase:MODE?","SCPI_Timebase","ModeQ"),//查询屏幕时基显示方式
+//            new SCPICommandStruct(":TIMebase:ROLL:DISPlay","SCPI_Timebase","Roll_Display"),//滚屏设置
+//            new SCPICommandStruct(":TIMebase:ROLL:DISPlay?","SCPI_Timebase","Roll_DisplayQ"),//滚屏查询
+//            new SCPICommandStruct(":TIMebase:XY1:DISPlay","SCPI_Timebase","XY1_Display"),//打开或关闭通道1和通道2的XY模式显示
+//            new SCPICommandStruct(":TIMebase:XY1:DISPlay?","SCPI_Timebase","XY1_DisplayQ"),//查询通道1和通道2的XY模式显示
+//    //timerbase:offset 协议1.1 换名为 timerbase:position 2016.12.8
+//            new SCPICommandStruct(":TIMebase:POSition","SCPI_Timebase","Position"),//设置波形显示的水平偏移
+//            new SCPICommandStruct(":TIMebase:OFFSet","SCPI_Timebase","Offset"),//设置波形显示的水平偏移
+//            new SCPICommandStruct(":TIMebase:PLUS:OFFSet","SCPI_Timebase","Plus_Offset"),//设置波形显示的水平偏移
+//            new SCPICommandStruct(":TIMebase:PLUS:POSition","SCPI_Timebase","Plus_Position"),//设置波形显示的水平偏移
+//            new SCPICommandStruct(":TIMebase:POSition?","SCPI_Timebase","PositionQ"),//设置波形显示的水平偏移
+//            new SCPICommandStruct(":TIMebase:OFFSet?","SCPI_Timebase","OffsetQ"),//查询波形显示的水平偏移
+//            new SCPICommandStruct(":TIMebase:ZOOm:SCAle","SCPI_Timebase","Scale"),
+//            new SCPICommandStruct(":TIMebase:ZOOm:SCAle?","SCPI_Timebase","ScaleQ"),
+
+    private double extent;
+    /**
+     * const char * tim_mode[] = {
+     * "YT",
+     * "ROLL",
+     * "XY",
+     * NULL
+     * };
+     */
+    private int mode;
+    private int xY1_Display;
+    private double position;
+    private double offset;
+    private double scale;
+    /**
+     * 设置水平时基档位
+     */
+    public void Extent(int chIndex, double extent, boolean isUpdateUI) {
+//        if (this.extent == extent) return;
+        List<Double> axis = HorizontalAxis.getInstance().getxAxis();
+        boolean flag=false;
+        for(int i=0;i<axis.size();i++){
+           if (Math.abs(extent-axis.get(i))<1E-15 || 0==(extent-axis.get(i)) ){
+              flag=true;
+              break;
+           }
+        }
+        if (!flag) return;
+        this.extent = extent;
+        if (isUpdateUI) {
+            CommandMsgToUI msgToUI = Command.get().getMsgToUI();
+            msgToUI.setFlag(CommandMsgToUI.FLAG_TIMEBASE_EXTENT);
+            String param = String.valueOf(chIndex) + CommandMsgToUI.PARAM_SPLIT + String.valueOf(extent);
+            msgToUI.setParam(param);
+//            CursorManage.getInstance().setCursorTrace(true);
+            RxBus.getInstance().post(RxEnum.COMMAND_TO_UI, msgToUI);
+//            CursorManage.setCursorByTimebaseTrace();
+//            CursorManage.getInstance().setCursorTrace(false);
+        }
+    }
+
+    /**
+     * 设置水平时基档位
+     */
+    public void Plus_Extent(int index, boolean isUpdateUI) {
+        if (index == 1) {
+            //增加一个档位
+        } else if (index == -1) {
+            //减少一个档位
+        }
+        if (isUpdateUI) {
+        }
+    }
+
+    /**
+     * 查询水平时基档位
+     */
+    public double ExtentQ() {
+        return extent;
+    }
+
+    /**
+     * 设置屏幕时基显示方式
+     * @param mode 0:YT 1:Roll 2:xy
+     */
+    public void Mode(int mode, boolean isUpdateUI) {
+//        if (this.mode == mode) return;
+        this.mode = mode;
+        if (isUpdateUI) {
+            CommandMsgToUI msgToUI = Command.get().getMsgToUI();
+            msgToUI.setFlag(CommandMsgToUI.FLAG_TIMEBASE_MODE);
+            msgToUI.setParam(String.valueOf(mode));
+            RxBus.getInstance().post(RxEnum.COMMAND_TO_UI, msgToUI);
+        }
+    }
+
+    /**
+     * 查询屏幕时基显示方式
+     */
+    public int ModeQ() {
+        return mode;
+    }
+
+    private boolean isRoll;
+    public  void Roll_Display(boolean isRoll,boolean isUpdateUI)
+    {
+            this.isRoll=isRoll;
+            if (isUpdateUI){
+                CommandMsgToUI msgToUI = Command.get().getMsgToUI();
+                msgToUI.setFlag(CommandMsgToUI.FLAG_TIMEBASE_ROLL);
+                msgToUI.setParam(String.valueOf(isRoll));
+                RxBus.getInstance().post(RxEnum.COMMAND_TO_UI, msgToUI);
+            }
+    }
+    public boolean Roll_DisplayQ(){
+            return this.isRoll;
+    }
+
+    /**
+     * 打开或关闭通道1和通道2的XY模式显示
+     */
+    public void XY1_Display(int index, boolean isUpdateUI) {
+    }
+
+    /**
+     * 查询通道1和通道2的XY模式显示
+     */
+    public int XY1_DisplayQ() {
+        return 0;
+    }
+
+    /**
+     * 设置波形显示的水平偏移
+     */
+    public void Position(double position, boolean isUpdateUI) {
+//        if (this.position == position) return;
+        this.position = position;
+        if (isUpdateUI) {
+            CommandMsgToUI msgToUI = Command.get().getMsgToUI();
+            msgToUI.setFlag(CommandMsgToUI.FLAG_TIMEBASE_POSITION);
+            msgToUI.setParam(String.valueOf(position));
+//            CursorManage.getInstance().setCursorTrace(true);
+            RxBus.getInstance().post(RxEnum.COMMAND_TO_UI, msgToUI);
+//            CursorManage.setCursorByTimebaseTrace();
+//            CursorManage.getInstance().setCursorTrace(false);
+        }
+    }
+
+    /**
+     * 设置波形显示的水平偏移
+     */
+    public void Offset(double offset, boolean isUpdateUI) {
+        Position(offset,isUpdateUI);
+//        if (this.offset == offset) return;
+//        this.offset = offset;
+//        if (isUpdateUI) {
+//        }
+    }
+
+    /**
+     * 设置波形显示的水平偏移
+     */
+    public void Plus_Offset(int index, boolean isUpdateUI) {
+        Plus_Position(index,isUpdateUI);
+//        if (index == 1) {
+//
+//        } else if (index == -1) {
+//
+//        }
+//        if (isUpdateUI) {
+//        }
+    }
+
+    /**
+     * 设置波形显示的水平偏移
+     */
+    public void Plus_Position(int index, boolean isUpdateUI) {
+        if (index == 1) {
+
+        } else if (index == -1) {
+
+        }
+        if (isUpdateUI) {
+        }
+    }
+
+    /**
+     * 设置波形显示的水平偏移
+     */
+    public double PositionQ() {
+        return position;
+    }
+
+    /**
+     * 查询波形显示的水平偏移
+     */
+    public double OffsetQ() {
+        return PositionQ();
+        //return offset;
+    }
+
+    public void Scale(int chIndex, double d, boolean isUpdateUI) {
+        List<Double> axis = HorizontalAxis.getInstance().getxAxis();
+        List<Double> newAxis=new ArrayList<>();
+        for(int i=0;i<axis.size();i++){
+            if ( ((extent-axis.get(i))>1E-15 || Double.compare(extent,axis.get(i))==0) && Double.compare(extent,d)>=0 ){
+                newAxis.add(axis.get(i));
+            }
+        }
+
+        //最大值的左边界
+        if(newAxis.size()==0){
+            d=extent;
+        }
+        //最小值的右边界
+        if(newAxis.size()>0 && Double.compare(d, newAxis.get(newAxis.size()-1))<0){
+            d=newAxis.get(newAxis.size()-1);
+        }
+        double finalD = d;
+        int index= Tools.indexOf(axis, t->Double.compare(finalD,t)==0);
+//        Logger.i(Command.TAG,"d:"+d+",extent:"+extent+",index:"+index);
+//        Logger.i(Command.TAG, "list:"+Arrays.toString(newAxis.toArray()));
+        if (index==-1)return;
+
+        this.scale = d;
+        if (isUpdateUI){
+            CommandMsgToUI msgToUI = Command.get().getMsgToUI();
+            msgToUI.setFlag(CommandMsgToUI.FLAG_TIMEBASE_ZOOM_SCALE);
+            String param = String.valueOf(chIndex) + CommandMsgToUI.PARAM_SPLIT + String.valueOf(scale);
+            msgToUI.setParam(param);
+            RxBus.getInstance().post(RxEnum.COMMAND_TO_UI, msgToUI);
+        }
+    }
+    public double ScaleQ(){
+        return scale;
+    }
+
+    public String ListQ(){
+        List<Double> axis= HorizontalAxis.getInstance().getxAxis();
+        StringBuilder sb=new StringBuilder();
+        for(int i=0;i<axis.size();i++){
+            sb.append(axis.get(i).toString());
+            if (i!= axis.size()-1) {
+                sb.append(",");
+            }
+        }
+//        Log.d("Tag.Debug", String.format("Command_Timebase.ListQ: %s ,len:%s",axis.size(),sb.toString().length() ));
+
+        return sb.toString();
+    }
+
+}

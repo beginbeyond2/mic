@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/arinc429LabelSsm"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="10px">
+
+    <com.micsig.tbook.ui.top.view.TopViewEdit
+        android:id="@+id/arinc429LabelSsmLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_marginStart="10px"
+        app:editHint="000"
+        app:head="@string/topSerialsHeadLabel" />
+
+    <com.micsig.tbook.ui.top.view.TopViewEdit
+        android:id="@+id/arinc429LabelSsmSsm"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_toEndOf="@id/arinc429LabelSsmLabel"
+        android:layout_marginStart="20px"
+        app:editHint="00"
+        app:head="@string/topSerialsHeadSsm" />
+</RelativeLayout>

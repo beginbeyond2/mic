@@ -1,0 +1,63 @@
+package com.micsig.tbook.scope.Auto;
+
+import com.micsig.tbook.scope.Action.FPGAMessage;
+import com.micsig.tbook.scope.Action.UiMessage;
+import com.micsig.tbook.scope.Action.XAction;
+import com.micsig.tbook.scope.Event.EventFactory;
+import com.micsig.tbook.scope.Scope;
+import com.micsig.tbook.scope.channel.ChannelFactory;
+
+/**
+ * Created by zhuzh on 2018-7-13.
+ */
+
+public class FreqCounter extends XAction {
+    private static class FreqCounterHolder {
+        public static final FreqCounter instance = new FreqCounter();
+    }
+
+    public static FreqCounter getInstance() {
+        return FreqCounter.FreqCounterHolder.instance;
+    }
+    private int chIdx = 0;
+    private double freqVal = 0;
+
+
+    public int getChIdx() {
+        return chIdx;
+    }
+
+    public void setChIdx(int chIdx) {
+        if(ChannelFactory.isDynamicCh(chIdx)){
+            this.chIdx = chIdx;
+            AutoService.setFreqCounter(true);
+        }else{
+            AutoService.setFreqCounter(false);
+            this.chIdx = 0;
+        }
+        freqVal = -1;
+        sendFpgaMsg(FPGAMessage.FPGA_CMD_SAMP_MODE);
+        sendUiMsg(UiMessage.UI_MESSAGE_DEPTH_SAMPFRE);
+        sendEvent(EventFactory.EVENT_FREQ_COUNTER);
+//        Logger.d("zhuzh","EVENT_FREQ_COUNTER");
+    }
+
+    public boolean IsVaild(){
+
+        return Scope.getInstance().isChannelInSample(chIdx) && freqVal > 0;
+    }
+
+    public double getFreqVal() {
+        return freqVal;
+    }
+
+    public void setFreqVal(double freqVal) {
+        this.freqVal = freqVal;
+        //Logger.d("ch  = " + chIdx + ",freq = " + freqVal + " Hz");
+        sendEvent(EventFactory.EVENT_FREQ_COUNTER);
+    }
+
+    public boolean isFreqCounterEnable(){
+        return AutoService.isFreqCounterEnable();
+    }
+}

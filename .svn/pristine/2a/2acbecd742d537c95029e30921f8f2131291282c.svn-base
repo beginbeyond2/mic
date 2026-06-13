@@ -1,0 +1,30 @@
+package com.micsig.tbook.scope.fpga;
+
+
+public class FPGAReg_Resistance extends FPGAReg {
+    FPGAReg_Resistance(){
+        super(FPGAReg.FPGA_CH_RESISTANCE, 4);
+    }
+    void setResistanceCh1(int vol){
+        setVal(0, 1, vol);
+    }
+    void setResistanceCh2(int vol){
+        setVal(1, 1, vol);
+    }
+    void setResistanceCh3(int vol){
+        setVal(2, 1, vol);
+    }
+    void setResistanceCh4(int vol){
+        setVal(3, 1, vol);
+    }
+    void setResistance(int chIdx,int vol){
+        setVal(chIdx, 1, vol);
+    }
+
+    void setExtTrigger(int val){
+        setVal(8,1,val);
+    }
+    void setResistanceSel(int chIdx,int v){
+        setVal(16+chIdx,1,v);
+    }
+}

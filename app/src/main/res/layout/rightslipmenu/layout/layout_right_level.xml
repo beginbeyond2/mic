@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="@dimen/rightSlipLevelWidth"
+    android:layout_height="1040px">
+
+    <LinearLayout
+        android:layout_width="@dimen/rightSlipLevelWidth"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:layout_centerInParent="true"
+        android:background="@drawable/shape_frame_bg_black"
+        android:orientation="vertical"
+        android:paddingHorizontal="9px"
+        android:paddingTop="8px"
+        android:paddingBottom="8px">
+
+        <FrameLayout
+            android:id="@+id/group"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="0px"
+            app:layout_constraintBottom_toTopOf="@+id/rightLevelMiddleLayout"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_chainStyle="packed">
+
+            <RadioGroup
+                android:id="@+id/rightLevelTopLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10px"
+                android:orientation="vertical">
+
+                <RadioButton
+                    android:id="@+id/rightLevelTop1"
+                    style="@style/buttonStyle"
+                    android:layout_width="94px"
+                    android:layout_height="94px"
+                    android:layout_gravity="center"
+                    android:background="@drawable/bg_right_level_click_top"
+                    android:button="@null" />
+
+                <RadioButton
+                    android:id="@+id/rightLevelTop2"
+                    style="@style/buttonStyle"
+                    android:layout_width="94px"
+                    android:layout_height="94px"
+                    android:layout_gravity="center"
+                    android:background="@drawable/bg_right_level_click_middle"
+                    android:button="@null"
+                    android:checked="true" />
+
+                <RadioButton
+                    android:id="@+id/rightLevelTop3"
+                    style="@style/buttonStyle"
+                    android:layout_width="94px"
+                    android:layout_height="94px"
+                    android:layout_gravity="center"
+                    android:background="@drawable/bg_right_level_click_bottom"
+                    android:button="@null" />
+            </RadioGroup>
+
+            <LinearLayout
+                android:id="@+id/rightLevelShowTopLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignStart="@+id/rightLevelTopLayout"
+                android:layout_alignTop="@+id/rightLevelTopLayout"
+                android:layout_alignEnd="@+id/rightLevelTopLayout"
+                android:layout_alignBottom="@+id/rightLevelTopLayout"
+                android:layout_marginTop="10px"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:id="@+id/rightLevelShowTop1"
+                    android:layout_width="94px"
+                    android:layout_height="94px"
+                    android:layout_gravity="center"
+                    android:scaleType="center"
+                    android:src="@drawable/bg_right_level_rising" />
+
+                <ImageView
+                    android:id="@+id/rightLevelShowTop2"
+                    android:layout_width="94px"
+                    android:layout_height="94px"
+                    android:layout_gravity="center"
+                    android:scaleType="center"
+                    android:src="@drawable/bg_right_level_falling" />
+
+                <ImageView
+                    android:id="@+id/rightLevelShowTop3"
+                    android:layout_width="94px"
+                    android:layout_height="94px"
+                    android:layout_gravity="center"
+                    android:scaleType="center"
+                    android:src="@drawable/bg_right_level_double" />
+            </LinearLayout>
+        </FrameLayout>
+
+        <RadioGroup
+            android:id="@+id/rightLevelMiddleLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10px"
+            android:layout_marginBottom="10px"
+            android:orientation="vertical">
+
+
+            <RadioButton
+                android:id="@+id/rightLevelAuto"
+                style="@style/buttonStyle"
+                android:layout_width="94px"
+                android:layout_height="94px"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_right_level_click_top"
+                android:button="@null"
+                android:gravity="center"
+                android:text="@string/mainTopLeftStateAuto" />
+
+            <RadioButton
+                android:id="@+id/rightLevelNormal"
+                style="@style/buttonStyle"
+                android:layout_width="94px"
+                android:layout_height="94px"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_right_level_click_bottom"
+                android:button="@null"
+                android:gravity="center"
+                android:text="@string/mainTopLeftStateNormal" />
+        </RadioGroup>
+
+        <com.micsig.base.widget.MyRadioGroup
+            android:id="@+id/rightLevelBottomLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10px"
+            android:gravity="center"
+            android:orientation="vertical"
+            app:maxRows="4">
+
+            <RadioButton
+                android:id="@+id/rightLevelBottom1"
+                style="@style/buttonStyle"
+                android:layout_width="94px"
+                android:layout_height="94px"
+                android:layout_gravity="center"
+                android:layout_marginHorizontal="4px"
+                android:background="@drawable/bg_right_level_click_top"
+                android:button="@null"
+                android:gravity="center"
+                android:text="CH1"
+                android:textColor="@color/colorCh1" />
+
+            <RadioButton
+                android:id="@+id/rightLevelBottom2"
+                style="@style/buttonStyle"
+                android:layout_width="94px"
+                android:layout_height="94px"
+                android:layout_gravity="center"
+                android:layout_marginHorizontal="4px"
+                android:background="@drawable/bg_right_level_click_middle"
+                android:button="@null"
+                android:checked="true"
+                android:gravity="center"
+                android:text="CH2"
+                android:textColor="@color/colorCh2" />
+
+            <RadioButton
+                android:id="@+id/rightLevelBottom3"
+                style="@style/buttonStyle"
+                android:layout_width="94px"
+                android:layout_height="94px"
+                android:layout_gravity="center"
+                android:layout_marginHorizontal="4px"
+                android:background="@drawable/bg_right_level_click_middle"
+                android:button="@null"
+                android:checked="true"
+                android:gravity="center"
+                android:text="CH3"
+                android:textColor="@color/colorCh3" />
+
+            <RadioButton
+                android:id="@+id/rightLevelBottom4"
+                style="@style/buttonStyle"
+                android:layout_width="94px"
+                android:layout_height="94px"
+                android:layout_gravity="center"
+                android:layout_marginHorizontal="4px"
+                android:background="@drawable/bg_right_level_click_bottom"
+                android:button="@null"
+                android:gravity="center"
+                android:text="CH4"
+                android:textColor="@color/colorCh4" />
+
+            <RadioButton
+                android:id="@+id/rightLevelBottom5"
+                style="@style/buttonStyle"
+                android:layout_width="94px"
+                android:layout_height="94px"
+                android:layout_gravity="center"
+                android:layout_marginHorizontal="4px"
+                android:background="@drawable/bg_right_level_click_top"
+                android:button="@null"
+                android:gravity="center"
+                android:text="CH5"
+                android:textColor="@color/colorCh5" />
+
+            <RadioButton
+                android:id="@+id/rightLevelBottom6"
+                style="@style/buttonStyle"
+                android:layout_width="94px"
+                android:layout_height="94px"
+                android:layout_gravity="center"
+                android:layout_marginHorizontal="4px"
+                android:background="@drawable/bg_right_level_click_middle"
+                android:button="@null"
+                android:checked="true"
+                android:gravity="center"
+                android:text="CH6"
+                android:textColor="@color/colorCh6" />
+
+            <RadioButton
+                android:id="@+id/rightLevelBottom7"
+                style="@style/buttonStyle"
+                android:layout_width="94px"
+                android:layout_height="94px"
+                android:layout_gravity="center"
+                android:layout_marginHorizontal="4px"
+                android:background="@drawable/bg_right_level_click_middle"
+                android:button="@null"
+                android:checked="true"
+                android:gravity="center"
+                android:text="CH7"
+                android:textColor="@color/colorCh7" />
+
+            <RadioButton
+                android:id="@+id/rightLevelBottom8"
+                style="@style/buttonStyle"
+                android:layout_width="94px"
+                android:layout_height="94px"
+                android:layout_marginHorizontal="4px"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_right_level_click_bottom"
+                android:button="@null"
+                android:gravity="center"
+                android:text="CH8"
+                android:textColor="@color/colorCh8" />
+
+            <RadioButton
+                android:id="@+id/rightLevelBottom9"
+                style="@style/buttonStyle"
+                android:layout_width="94px"
+                android:layout_height="94px"
+                android:layout_gravity="center"
+                android:layout_marginHorizontal="4px"
+                android:background="@drawable/bg_right_level_click_bottom"
+                android:button="@null"
+                android:gravity="center"
+                android:text="外部"
+                android:textColor="@color/colorChCommon" />
+
+        </com.micsig.base.widget.MyRadioGroup>
+
+    </LinearLayout>
+
+</RelativeLayout>

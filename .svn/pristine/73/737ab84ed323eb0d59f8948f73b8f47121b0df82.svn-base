@@ -1,0 +1,17 @@
+package com.micsig.tbook.scope.fpga;
+
+public class CHAZHI_COEF {
+
+    public static int [] chazhiCoef_sgl = MHO68V2_CHAZHI_COEF.chazhiCoef_sgl;
+    public static int [] chazhiCoef_dub = MHO68V2_CHAZHI_COEF.chazhiCoef_dub;
+    public static int [] chazhiCoef_Line = MHO68V2_CHAZHI_COEF.chazhiCoef_Line;
+
+    public static void Init(int[] sgl,int [] dub,int [] line){
+        chazhiCoef_sgl = sgl;
+        chazhiCoef_dub = dub;
+        chazhiCoef_Line = line;
+    }
+
+
+
+}

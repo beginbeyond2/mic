@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="819px"
+    android:layout_height="907px"
+    android:orientation="vertical">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/top_channel_title"
+        android:layout_width="match_parent"
+        android:layout_height="70px"
+        android:orientation="horizontal"
+        android:visibility="invisible"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/channel_title"
+            android:layout_width="185px"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="M1"
+            android:textSize="24px"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <View
+            android:layout_width="2px"
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_right_layout_divider"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/channel_title"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/btn_delete_channel"
+            style="@style/buttonStyle"
+            android:layout_width="108px"
+            android:layout_height="48px"
+            android:layout_marginEnd="28px"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:text="@string/mathRefSerialsSlip_delete"
+            android:textSize="18px"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/cl_top_channel_group"
+        android:layout_width="match_parent"
+        android:layout_height="70px"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <RadioGroup
+            android:id="@+id/top_channel_group"
+            android:layout_width="wrap_content"
+            android:layout_height="70px"
+            android:orientation="horizontal"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <RadioButton
+                android:id="@+id/channelMath"
+                android:layout_width="185px"
+                android:layout_height="match_parent"
+                android:button="@null"
+                android:checked="true"
+                android:gravity="center"
+                android:text="@string/mathRefSerialsSlip_math"
+                android:textColor="@color/textcolor_radiobutton_channel_math"
+                android:textSize="24px" />
+
+            <RadioButton
+                android:id="@+id/channelRef"
+                android:layout_width="185px"
+                android:layout_height="match_parent"
+                android:button="@null"
+                android:checked="false"
+                android:gravity="center"
+                android:text="@string/mathRefSerialsSlip_ref"
+                android:textColor="@color/textcolor_radiobutton_channel_ref"
+                android:textSize="24px" />
+
+            <RadioButton
+                android:id="@+id/channelSerials"
+                android:layout_width="185px"
+                android:layout_height="match_parent"
+                android:button="@null"
+                android:checked="false"
+                android:gravity="center"
+                android:text="@string/mathRefSerialsSlip_serials"
+                android:textColor="@color/textcolor_radiobutton_channel_bus"
+                android:textSize="24px" />
+
+        </RadioGroup>
+
+        <TextView
+            android:id="@+id/btn_add_channel"
+            style="@style/buttonStyle"
+            android:layout_width="54px"
+            android:layout_height="54px"
+            android:layout_marginTop="8px"
+            android:layout_marginEnd="28px"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:text="+"
+            android:textSize="30px"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+    <View
+        android:id="@+id/driver1"
+        android:layout_width="match_parent"
+        android:layout_height="2px"
+        android:background="@drawable/bg_right_layout_divider"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/top_channel_title" />
+
+
+    <com.micsig.tbook.ui.rightslipmenu.RightViewSelect
+        android:id="@+id/math_channel_type"
+        android:layout_width="185px"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="21px"
+        android:gravity="center"
+        app:array="@array/math_channel_type"
+        app:itemHeight="54px"
+        app:itemMargin="7px"
+        app:itemTextLines="2"
+        app:itemWidth="108px"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/driver1" />
+
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/cl_img_btn"
+        android:layout_width="96px"
+        android:layout_height="192px"
+        android:layout_marginBottom="29px"
+        app:layout_constraintBottom_toTopOf="@+id/space"
+        app:layout_constraintEnd_toEndOf="@+id/math_channel_type"
+        app:layout_constraintStart_toStartOf="@+id/math_channel_type">
+
+        <ImageView
+            android:id="@+id/img_back_src"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@drawable/svg_right_chx_button_88x174" />
+
+        <Button
+            android:id="@+id/btnTop"
+            android:layout_width="match_parent"
+            android:layout_height="96px"
+            android:background="@null"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <Button
+            android:id="@+id/btnBottom"
+            android:layout_width="match_parent"
+            android:layout_height="96px"
+            android:background="@null"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <LinearLayout
+        android:id="@+id/ll_display_switch"
+        android:layout_width="185px"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="15px"
+        android:gravity="center"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toTopOf="@+id/cl_img_btn"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <TextView
+            android:id="@+id/channelVisibleHead"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="@string/mathRefSerialsSlip_display"
+            android:textColor="@color/textColorNewRightViewEnable"
+            android:textSize="20px" />
+
+        <com.micsig.tbook.ui.MSwitchBox
+            android:id="@+id/channel_switch"
+            android:layout_width="72px"
+            android:layout_height="36px"
+            android:layout_marginTop="10px"
+            app:switchHeight="36px"
+            app:switchWidth="72px" />
+
+
+    </LinearLayout>
+
+    <com.micsig.tbook.ui.top.view.TopViewEdit
+        android:id="@+id/chLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="15px"
+        app:editCenter="true"
+        app:editWidth="129px"
+        app:head="@string/channelLabel"
+        app:headMarginBottom="10px"
+        app:headTextSize="20px"
+        app:headWidth="80px"
+        app:layout_constraintBottom_toTopOf="@+id/ll_display_switch"
+        app:layout_constraintEnd_toEndOf="@+id/math_channel_type"
+        app:layout_constraintStart_toStartOf="@+id/math_channel_type"
+        app:orientationV="true" />
+
+    <com.micsig.tbook.ui.top.view.TopViewEdit
+        android:id="@+id/select_color"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="15px"
+        app:editCenter="true"
+        app:editWidth="129px"
+        app:head="@string/channelColor"
+        app:headTextSize="20px"
+        app:headWidth="80px"
+        app:layout_constraintBottom_toTopOf="@+id/chLabel"
+        app:layout_constraintEnd_toEndOf="@+id/math_channel_type"
+        app:layout_constraintStart_toStartOf="@+id/math_channel_type"
+        app:headMarginBottom="10px"
+        app:orientationV="true" />
+
+    <View
+        android:id="@+id/driver2"
+        android:layout_width="2px"
+        android:layout_height="0dp"
+        android:background="@drawable/bg_right_layout_divider"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/math_channel_type"
+        app:layout_constraintTop_toBottomOf="@+id/driver1" />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/right_content_zone"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@+id/mathVerticalBaseLayout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/driver2"
+        app:layout_constraintTop_toBottomOf="@+id/driver1">
+
+        <include layout="@layout/layout_math_channel_double_wave" />
+
+        <include layout="@layout/layout_math_channel_fft" />
+
+        <include layout="@layout/layout_math_channel_ax_b" />
+
+        <include layout="@layout/layout_math_channel_advance_math" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/mathVerticalBaseLayout"
+        android:layout_width="0dp"
+        android:layout_height="97px"
+        android:paddingStart="28px"
+        android:paddingEnd="29px"
+        app:layout_constraintBottom_toTopOf="@+id/space"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/driver2">
+
+        <View
+            android:id="@+id/last_divider"
+            android:layout_width="match_parent"
+            android:layout_height="2px"
+            android:background="@drawable/bg_right_layout_divider"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/mathVerticalBaseTitle"
+            style="@style/textStylePrompt"
+            android:layout_width="150px"
+            android:layout_height="54px"
+            android:layout_centerVertical="true"
+            android:layout_marginTop="14px"
+            android:gravity="center_vertical"
+            android:text="@string/mathVertical"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/last_divider" />
+
+        <com.micsig.tbook.ui.rightslipmenu.RightViewSelect
+            android:id="@+id/mathVerticalBaseDetail"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14px"
+            app:array="@array/mathVertical"
+            app:arrayOrientation="horizontalEachRow2"
+            app:itemHalfCornerEach="each_120_60"
+            app:itemHeight="54px"
+            app:itemStartAndEndBgHalfCorner="true"
+            app:itemWidth="108px"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/last_divider" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+    <View
+        android:id="@+id/space"
+        android:layout_width="match_parent"
+        android:layout_height="70px"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+
+    <com.micsig.tbook.ui.top.view.TopViewEdit
+        android:id="@+id/for_doubleClick"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="15px"
+        app:editCenter="true"
+        app:editWidth="129px"
+        app:head="@string/ref_pahse_delay"
+        app:headTextSize="20px"
+        app:headWidth="185px"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:headMarginBottom="10px"
+        android:visibility="gone"
+        app:orientationV="true" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
