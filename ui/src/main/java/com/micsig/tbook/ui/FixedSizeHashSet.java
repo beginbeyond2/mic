@@ -1,61 +1,183 @@
-package com.micsig.tbook.ui;
+package com.micsig.tbook.ui; // UI组件库根包，包含示波器自定义UI控件
 
-import android.annotation.SuppressLint;
+import android.annotation.SuppressLint; // 抑制lint警告的注解
 
-import androidx.annotation.NonNull;
+import androidx.annotation.NonNull; // 非空注解
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
+import java.util.ArrayList; // 动态数组
+import java.util.Collections; // 集合工具类
+import java.util.Iterator; // 迭代器接口
+import java.util.LinkedHashSet; // 有序哈希集合
+
+/**
+ * ╔══════════════════════════════════════════════════════════════════════════════╗
+ * ║                   FixedSizeHashSet - 固定大小的有序哈希集合                     ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║ 【模块定位】                                                                  ║
+ * ║   UI组件库 > 工具类 > 数据结构                                                 ║
+ * ║   MHO系列示波器软件通用数据结构                                                ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║ 【核心职责】                                                                  ║
+ * ║   1. 提供固定最大容量的有序哈希集合                                            ║
+ * ║   2. 自动淘汰最旧的元素（FIFO策略）                                            ║
+ * ║   3. 支持元素重复添加时移动到最新位置                                          ║
+ * ║   4. 提供正向和反向列表转换方法                                                ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║ 【架构设计】                                                                  ║
+ * ║   继承关系: FixedSizeHashSet<E> extends LinkedHashSet<E>                      ║
+ * ║   设计模式: 装饰器模式，扩展LinkedHashSet功能                                   ║
+ * ║   淘汰策略: 先进先出（FIFO），当达到最大容量时移除最早添加的元素                  ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║ 【使用场景】                                                                  ║
+ * ║   1. 历史记录管理（如最近使用的文件列表）                                       ║
+ * ║   2. 缓存实现（固定大小的LRU缓存）                                             ║
+ * ║   3. 最近操作列表                                                            ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║ 【使用示例】                                                                  ║
+ * ║   // 创建最大容量为5的集合                                                    ║
+ * ║   FixedSizeHashSet<String> set = new FixedSizeHashSet<>(5);                   ║
+ * ║   set.add("A");  // 添加元素                                                  ║
+ * ║   set.add("B");                                                              ║
+ * ║   set.add("A");  // 重复添加，A会移动到最新位置                                ║
+ * ║   List<String> recentList = set.getReverseList();  // 获取反向列表            ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║ 【注意事项】                                                                  ║
+ * ║   1. 最大容量必须为正数                                                      ║
+ * ║   2. 重复添加已存在的元素会将其移动到最新位置                                   ║
+ * ║   3. 线程不安全，多线程环境需外部同步                                         ║
+ * ╚══════════════════════════════════════════════════════════════════════════════╝
+ * 
+ * @author liwb
+ * @version 1.0
+ * @param <E> 集合元素的类型
+ */
 
 public class FixedSizeHashSet<E> extends LinkedHashSet<E> {
-    private final int maxSize;
+    // ================================ 成员变量定义 ================================
+    
+    /**
+     * 集合的最大容量
+     * 当元素数量达到此值时，会自动移除最早添加的元素
+     */
+    private final int maxSize; // 最大容量，不可修改
 
-    public FixedSizeHashSet(int maxSize) {
-        super();
-        if (maxSize <= 0) {
-            throw new IllegalArgumentException("FixedSizeHashSet Max size must be positive!");
+    /**
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 构造方法
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 【功能说明】
+     *   创建一个指定最大容量的FixedSizeHashSet
+     * 
+     * 【参数说明】
+     *   @param maxSize 集合的最大容量，必须为正数
+     * 
+     * 【异常说明】
+     *   @throws IllegalArgumentException 如果maxSize小于等于0
+     */
+    public FixedSizeHashSet(int maxSize) { // 构造方法：指定最大容量
+        super(); // 调用父类构造方法
+        if (maxSize <= 0) { // 检查最大容量是否有效
+            throw new IllegalArgumentException("FixedSizeHashSet Max size must be positive!"); // 抛出非法参数异常
         }
-        this.maxSize = maxSize;
+        this.maxSize = maxSize; // 设置最大容量
     }
 
 
+    /**
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 方法：add
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 【功能说明】
+     *   添加元素到集合中
+     *   如果元素已存在，先移除再添加（移动到最新位置）
+     *   如果达到最大容量，移除最早添加的元素
+     * 
+     * 【参数说明】
+     *   @param e 要添加的元素
+     * 
+     * 【返回值】
+     *   @return true如果集合发生了变化
+     * 
+     * 【覆写说明】
+     *   重写LinkedHashSet.add方法，实现固定容量和元素更新逻辑
+     */
     @Override
-    public boolean add(E e) {
-        if (contains(e)) {
-            remove(e);
+    public boolean add(E e) { // 添加元素
+        if (contains(e)) { // 如果元素已存在
+            remove(e); // 先移除旧元素
         }
-        if (size() >= maxSize) {
-            Iterator<E> iterator = iterator();
-            if (iterator.hasNext()) {
-                iterator.next();
-                iterator.remove();
+        if (size() >= maxSize) { // 如果已达到最大容量
+            Iterator<E> iterator = iterator(); // 获取迭代器
+            if (iterator.hasNext()) { // 如果有元素
+                iterator.next(); // 获取第一个（最早添加的）元素
+                iterator.remove(); // 移除最早添加的元素
             }
         }
-        return super.add(e);
+        return super.add(e); // 调用父类方法添加元素
     }
 
-    public int getMaxSize() {
-        return maxSize;
+    /**
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 方法：getMaxSize
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 【功能说明】
+     *   获取集合的最大容量
+     * 
+     * 【返回值】
+     *   @return 最大容量值
+     */
+    public int getMaxSize() { // 获取最大容量
+        return maxSize; // 返回最大容量
     }
 
-    public ArrayList<E> getReverseList() {//反向
-        ArrayList<E> list = new ArrayList<>(this);
-        Collections.reverse(list);
-        return list;
+    /**
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 方法：getReverseList
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 【功能说明】
+     *   获取元素的反向列表（最新元素在前）
+     *   用于获取最近添加的元素列表
+     * 
+     * 【返回值】
+     *   @return 反向排列的元素列表
+     */
+    public ArrayList<E> getReverseList() { // 获取反向列表
+        ArrayList<E> list = new ArrayList<>(this); // 创建包含所有元素的列表
+        Collections.reverse(list); // 反转列表顺序
+        return list; // 返回反转后的列表
     }
 
-    public ArrayList<E> getPositiveList() {//正向
-        return new ArrayList<>(this);
+    /**
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 方法：getPositiveList
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 【功能说明】
+     *   获取元素的正向列表（最早元素在前）
+     *   用于按添加顺序获取元素列表
+     * 
+     * 【返回值】
+     *   @return 正向排列的元素列表
+     */
+    public ArrayList<E> getPositiveList() { // 获取正向列表
+        return new ArrayList<>(this); // 返回按添加顺序排列的列表
     }
 
 
-    @SuppressLint("DefaultLocale")
-    @NonNull
+    /**
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 方法：toString
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 【功能说明】
+     *   返回集合的字符串表示，包含当前大小、最大容量和元素列表
+     * 
+     * 【返回值】
+     *   @return 格式化的字符串表示
+     */
+    @SuppressLint("DefaultLocale") // 抑制默认locale警告
+    @NonNull // 返回值非空
     @Override
-    public String toString() {
-        return String.format("FixedSizeHashSet [%d/%d elements] %s", size(), maxSize, getReverseList().toString());
+    public String toString() { // 转换为字符串
+        return String.format("FixedSizeHashSet [%d/%d elements] %s", size(), maxSize, getReverseList().toString()); // 返回格式化字符串
     }
 
 }

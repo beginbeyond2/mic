@@ -35,227 +35,296 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 /**
- * Created by yangj on 2017/7/14.
+ * ┌─────────────────────────────────────────────────────────────────────────────┐
+ * │                           C A C H E   U T I L                              │
+ * │                         缓 存 工 具 类（全 局 参 数 中 心）                  │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │                                                                             │
+ * │  【模块定位】                                                               │
+ * │  MHO系列示波器Android应用的缓存管理核心类，负责所有UI参数的存储、           │
+ * │  读取、默认值初始化和持久化。是整个应用的"参数中枢"，所有界面组件           │
+ * │  的状态均通过本类进行缓存和恢复。                                           │
+ * │                                                                             │
+ * │  【核心职责】                                                               │
+ * │  1. 定义200+缓存Key常量，覆盖通道/触发/串口/测量/存储/显示等全部参数       │
+ * │  2. 提供类型安全的读取接口：getInt/getDouble/getLong/getString/getBoolean   │
+ * │  3. 管理两个HashMap缓存：map（主参数）和otherMap（杂项/路径/校准）         │
+ * │  4. 提供巨大的默认值初始化表（getValueFromInit/getValueFromInit1）          │
+ * │  5. 缓存持久化：通过SaveManage写入/读取文件                                │
+ * │  6. 加载状态管理：跟踪各UI模块的参数加载完成情况                           │
+ * │  7. 参数合法性校验：启动时检查REF文件、通道选择等状态                      │
+ * │  8. 串口阈值电平初始值管理：UART/LIN/CAN/SPI/I2C/M429/M1553B              │
+ * │                                                                             │
+ * │  【架构设计】                                                               │
+ * │  ┌──────────┐    读取     ┌──────────┐    持久化    ┌──────────┐          │
+ * │  │  UI组件   │ ────────→ │ CacheUtil │ ────────→  │SaveManage│          │
+ * │  │(各Layout) │ ←──────── │ (单例)    │ ←────────  │ (文件IO) │          │
+ * │  └──────────┘    写入     └──────────┘    加载     └──────────┘          │
+ * │       ↑                         │                                           │
+ * │       │                         ↓                                           │
+ * │       │               ┌──────────────────┐                                 │
+ * │       │               │ getValueFromInit │                                 │
+ * │       │               │ (默认值初始化表)  │                                 │
+ * │       │               └──────────────────┘                                 │
+ * │                                                                             │
+ * │  【数据流向】                                                               │
+ * │  应用启动 → CacheUtil单例创建 → 加载持久化参数 → 各UI模块读取缓存         │
+ * │  → 用户操作 → putMap写入缓存 → 标记isChange → 定时/退出时持久化           │
+ * │                                                                             │
+ * │  【依赖关系】                                                               │
+ * │  ← GlobalVar（全局变量：通道数/波形区域尺寸）                              │
+ * │  ← SaveManage（持久化：文件读写）                                          │
+ * │  ← TChan（通道编号常量）                                                   │
+ * │  ← ChannelFactory（通道工厂）                                              │
+ * │  ← HorizontalAxis/VerticalAxis（轴参数）                                   │
+ * │  ← Scope/ScopeBase（示波器核心）                                           │
+ * │  ← RightLayoutSerials（串口解码常量）                                      │
+ * │  → 被所有UI Layout类依赖（读取/写入参数）                                  │
+ * │                                                                             │
+ * │  【缓存结构】                                                               │
+ * │  map：主参数缓存，存储通道/触发/串口/测量/显示等核心参数                   │
+ * │  otherMap：杂项缓存，存储路径/文件名/校准/语言/序号等辅助参数              │
+ * │  mapLoadProcess：加载状态跟踪，ConcurrentHashMap保证线程安全               │
+ * │                                                                             │
+ * │  【使用示例】                                                               │
+ * │  // 读取通道1的垂直档位ID                                                  │
+ * │  int vScaleId = CacheUtil.get().getInt(CacheUtil.MAIN_CHAN_V_SCALE_ID      │
+ * │      + TChan.Ch1);                                                         │
+ * │  // 写入运行/停止状态                                                      │
+ * │  CacheUtil.get().putMap(CacheUtil.MAIN_LEFT_RUNSTOP,                       │
+ * │      String.valueOf(true));                                                │
+ * │  // 读取其他缓存（路径）                                                   │
+ * │  String path = CacheUtil.get().getOtherString(                             │
+ * │      CacheUtil.TOP_SLIP_SAVE_WAVE_PATH + WAVE_TYPE_WAV);                  │
+ * │                                                                             │
+ * │  【线程安全】                                                               │
+ * │  - map和otherMap为非线程安全的HashMap，应在主线程访问                      │
+ * │  - mapLoadProcess使用ConcurrentHashMap，支持多线程加载状态标记             │
+ * │  - loadComplete使用volatile修饰，保证多线程可见性                          │
+ * │                                                                             │
+ * └─────────────────────────────────────────────────────────────────────────────┘
+ *
+ * @author yangj
+ * @since 2017/7/14
  */
-
-public class CacheUtil {
-    private static final String TAG = "CacheUtil";
+public class CacheUtil { // 缓存工具类，全局参数中心
+    private static final String TAG = "CacheUtil"; // 日志标签
 
     //region key值定义
-    public static final String MAIN_LEFT_RUNSTOP = "mainLeftRunStop";
-    public static final String MAIN_LEFT_SEQ = "mainLeftSEQ";
-    public static final String MAIN_LEFT_AUTO = "mainLeftAuto";
+    public static final String MAIN_LEFT_RUNSTOP = "mainLeftRunStop"; // 运行/停止状态
+    public static final String MAIN_LEFT_SEQ = "mainLeftSEQ"; // 序列模式
+    public static final String MAIN_LEFT_AUTO = "mainLeftAuto"; // 自动模式
 
-    public static final String MAIN_CHANNEL_OPEN_STATE = "MAIN_CHANNEL_OPEN_STATE";
+    public static final String MAIN_CHANNEL_OPEN_STATE = "MAIN_CHANNEL_OPEN_STATE"; // 通道开启状态
 
-    public static final String MAIN_RIGHT_MATH = "mainRightMath";
+    public static final String MAIN_RIGHT_MATH = "mainRightMath"; // Math通道总开关
 
-    public static final String MAIN_RIGHT_REF = "mainRightRef";
-    public static final String MAIN_RIGHT_SERIAL = "mainRightSERIAL";
-    public static final String MAIN_CHAN_V_SCALE_ID = "MAIN_CHAN_V_EXTENT_ID";
+    public static final String MAIN_RIGHT_REF = "mainRightRef"; // Ref通道总开关
+    public static final String MAIN_RIGHT_SERIAL = "mainRightSERIAL"; // 串口解码总开关
+    public static final String MAIN_CHAN_V_SCALE_ID = "MAIN_CHAN_V_EXTENT_ID"; // 通道垂直档位ID
 
     public static final String MAIN_RIGHT_MATH_FFT_INFO_DISPLAY = "MAIN_RIGHT_MATH_FFT_INFO_DISPLAY";//显示哪个通道的FftInfo
     public static final String MAIN_RIGHT_MATH_FFT_INFO_DISPLAY_SWITCH = "MAIN_RIGHT_MATH_FFT_INFO_DISPLAY_SWITCH";//是否显示FftInfo
-    public static final String MAIN_RIGHT_MATH_DW_VSCALE_ID = "MAIN_RIGHT_MATH_DW_VSCALE_ID";
-    public static final String MAIN_RIGHT_MATH_FFT_DB_VSCALE_ID = "MAIN_RIGHT_MATH_FFT_DB_VSCALE_ID";
-    public static final String MAIN_RIGHT_MATH_FFT_RMS_VSCALE_ID = "MAIN_RIGHT_MATH_FFT_RMS_VSCALE_ID";
-    public static final String MAIN_RIGHT_MATH_AXB_VSCALE_ID = "MAIN_RIGHT_MATH_AXB_VSCALE_ID";
-    public static final String MAIN_RIGHT_MATH_AM_VSCALE_ID = "MAIN_RIGHT_MATH_AM_VSCALE_ID";
+    public static final String MAIN_RIGHT_MATH_DW_VSCALE_ID = "MAIN_RIGHT_MATH_DW_VSCALE_ID"; // Math双波形垂直档位ID
+    public static final String MAIN_RIGHT_MATH_FFT_DB_VSCALE_ID = "MAIN_RIGHT_MATH_FFT_DB_VSCALE_ID"; // Math FFT dB垂直档位ID
+    public static final String MAIN_RIGHT_MATH_FFT_RMS_VSCALE_ID = "MAIN_RIGHT_MATH_FFT_RMS_VSCALE_ID"; // Math FFT RMS垂直档位ID
+    public static final String MAIN_RIGHT_MATH_AXB_VSCALE_ID = "MAIN_RIGHT_MATH_AXB_VSCALE_ID"; // Math A×B垂直档位ID
+    public static final String MAIN_RIGHT_MATH_AM_VSCALE_ID = "MAIN_RIGHT_MATH_AM_VSCALE_ID"; // Math高级运算垂直档位ID
 
-    public static final String MAIN_CHAN_REF_VSCALE_ID = "MAIN_CHAN_REF_VSCALE_ID";
+    public static final String MAIN_CHAN_REF_VSCALE_ID = "MAIN_CHAN_REF_VSCALE_ID"; // Ref通道垂直档位ID
 
-    public static final String MAIN_BOTTOM_TIMEBASE_NORMAL_SCALE = "mainBottomTimeBaseNormalScale";
-    public static final String ZOOM_BOTTOM_TIMEBASE_LARGE_SCALE = "zoomBottomTimeBaseLargeScale";
-    public static final String MAIN_BOTTOM_TIMEBASE_FFT_SCALE = "mainBottomTimeBaseFftScale";
-    public static final String MAIN_BOTTOM_TIMEBASE_REF_SCALE = "mainBottomTimeBaseRefScale";
+    public static final String MAIN_BOTTOM_TIMEBASE_NORMAL_SCALE = "mainBottomTimeBaseNormalScale"; // 普通模式时基档位
+    public static final String ZOOM_BOTTOM_TIMEBASE_LARGE_SCALE = "zoomBottomTimeBaseLargeScale"; // Zoom模式时基档位
+    public static final String MAIN_BOTTOM_TIMEBASE_FFT_SCALE = "mainBottomTimeBaseFftScale"; // FFT模式时基档位
+    public static final String MAIN_BOTTOM_TIMEBASE_REF_SCALE = "mainBottomTimeBaseRefScale"; // Ref模式时基档位
 
-    public static final String MAIN_BOTTOM_TIMEBASE_Rn_SCALE = "mainBottomTimeBaseR%dScale";
-    public static final String MAIN_BOTTOM_CHANNELLIST_VISIBLE = "mainBottomChannelListVisible";
-    public static final String MAIN_BOTTOM_FINE = "MAIN_BOTTOM_FINE";
-    public static final String MAIN_WAVE_YT_CURSORH_POSITION = "mainBottomCursorHPosition";
-    public static final String MAIN_WAVE_YT_CURSORV_POSITION = "mainBottomCursorVPosition";
-    public static final String MAIN_WAVE_YT_CURSOR_LABEL_X = "MAIN_WAVE_YT_CURSOR_LABEL_X";
-    public static final String MAIN_WAVE_YT_CURSOR_LABEL_Y = "MAIN_WAVE_YT_CURSOR_LABEL_Y";
+    public static final String MAIN_BOTTOM_TIMEBASE_Rn_SCALE = "mainBottomTimeBaseR%dScale"; // RefN时基档位（格式化字符串，%d为通道号）
+    public static final String MAIN_BOTTOM_CHANNELLIST_VISIBLE = "mainBottomChannelListVisible"; // 通道列表可见性
+    public static final String MAIN_BOTTOM_FINE = "MAIN_BOTTOM_FINE"; // 微调模式
+    public static final String MAIN_WAVE_YT_CURSORH_POSITION = "mainBottomCursorHPosition"; // YT模式水平光标位置
+    public static final String MAIN_WAVE_YT_CURSORV_POSITION = "mainBottomCursorVPosition"; // YT模式垂直光标位置
+    public static final String MAIN_WAVE_YT_CURSOR_LABEL_X = "MAIN_WAVE_YT_CURSOR_LABEL_X"; // YT模式光标X标签
+    public static final String MAIN_WAVE_YT_CURSOR_LABEL_Y = "MAIN_WAVE_YT_CURSOR_LABEL_Y"; // YT模式光标Y标签
 
-    public static final String MAIN_WAVE_YT_CURSOR_SINGLE_LABLE_Y = "MAIN_WAVE_YT_CURSOR_SINGLE_LABLE_Y";
-    public static final String MAIN_WAVE_YT_CURSOR_SINGLE_LABLE_X = "MAIN_WAVE_YT_CURSOR_SINGLE_LABLE_X";
+    public static final String MAIN_WAVE_YT_CURSOR_SINGLE_LABLE_Y = "MAIN_WAVE_YT_CURSOR_SINGLE_LABLE_Y"; // YT模式单光标Y标签
+    public static final String MAIN_WAVE_YT_CURSOR_SINGLE_LABLE_X = "MAIN_WAVE_YT_CURSOR_SINGLE_LABLE_X"; // YT模式单光标X标签
 
-    public static final String MAIN_WAVE_CURSOR_POSITION_X1="MAIN_WAVE_CURSOR_POSITION_X1";
-    public static final String MAIN_WAVE_CURSOR_POSITION_X2="MAIN_WAVE_CURSOR_POSITION_X2";
-    public static final String MAIN_WAVE_CURSOR_POSITION_Y1="MAIN_WAVE_CURSOR_POSITION_Y1";
-    public static final String MAIN_WAVE_CURSOR_POSITION_Y2="MAIN_WAVE_CURSOR_POSITION_Y2";
-    public static final String MAIN_WAVE_CURSOR_POSITION_X1_HZ="MAIN_WAVE_CURSOR_POSITION_X1_HZ";
-    public static final String MAIN_WAVE_CURSOR_POSITION_X2_HZ="MAIN_WAVE_CURSOR_POSITION_X2_HZ";
-    public static final String MAIN_WAVE_XY_CURSORH_POSITION = "mainBottomXYCursorHPosition";
-    public static final String MAIN_WAVE_XY_CURSORV_POSITION = "mainBottomXYCursorVPosition";
-    public static final String MAIN_WAVE_YT_CURSORH_VISIBLE = "mainBottomCursorHVisible";
-    public static final String MAIN_WAVE_YT_CURSORV_VISIBLE = "mainBottomCursorVVisible";
-    public static final String MAIN_WAVE_XY_CURSORH_VISIBLE = "mainBottomXYCursorHVisible";
-    public static final String MAIN_WAVE_XY_CURSORV_VISIBLE = "mainBottomXYCursorVVisible";
-    public static final String MAIN_BOTTOM_RIGHTSWITCH_CHANNEL = "mainBottomRightSwitch";
-    public static final String MAIN_BOTTOM_SLIP_ALLMEASURE = "mainBottomSlipAllMeasure";
-    public static final String MAIN_BOTTOM_SLIP_SERIALBUSTXT = "mainBottomSlipSerialBusTxt";
-    public static final String MAIN_BOTTOM_SLIP_ZOOM = "mainBottomSlipZoom";
-    public static final String MAIN_BOTTOM_SLIP_MENU = "mainBottomSlipMenu";
-    public static final String MAIN_CENTER_CHANNELS_X = "mainCenterChannelsX";
-    public static final String MAIN_CENTER_CHANNELS_Y = "mainCenterChannelsY";
+    public static final String MAIN_WAVE_CURSOR_POSITION_X1="MAIN_WAVE_CURSOR_POSITION_X1"; // 光标X1位置
+    public static final String MAIN_WAVE_CURSOR_POSITION_X2="MAIN_WAVE_CURSOR_POSITION_X2"; // 光标X2位置
+    public static final String MAIN_WAVE_CURSOR_POSITION_Y1="MAIN_WAVE_CURSOR_POSITION_Y1"; // 光标Y1位置
+    public static final String MAIN_WAVE_CURSOR_POSITION_Y2="MAIN_WAVE_CURSOR_POSITION_Y2"; // 光标Y2位置
+    public static final String MAIN_WAVE_CURSOR_POSITION_X1_HZ="MAIN_WAVE_CURSOR_POSITION_X1_HZ"; // 光标X1频率值
+    public static final String MAIN_WAVE_CURSOR_POSITION_X2_HZ="MAIN_WAVE_CURSOR_POSITION_X2_HZ"; // 光标X2频率值
+    public static final String MAIN_WAVE_XY_CURSORH_POSITION = "mainBottomXYCursorHPosition"; // XY模式水平光标位置
+    public static final String MAIN_WAVE_XY_CURSORV_POSITION = "mainBottomXYCursorVPosition"; // XY模式垂直光标位置
+    public static final String MAIN_WAVE_YT_CURSORH_VISIBLE = "mainBottomCursorHVisible"; // YT模式水平光标可见性
+    public static final String MAIN_WAVE_YT_CURSORV_VISIBLE = "mainBottomCursorVVisible"; // YT模式垂直光标可见性
+    public static final String MAIN_WAVE_XY_CURSORH_VISIBLE = "mainBottomXYCursorHVisible"; // XY模式水平光标可见性
+    public static final String MAIN_WAVE_XY_CURSORV_VISIBLE = "mainBottomXYCursorVVisible"; // XY模式垂直光标可见性
+    public static final String MAIN_BOTTOM_RIGHTSWITCH_CHANNEL = "mainBottomRightSwitch"; // 底部右侧切换通道
+    public static final String MAIN_BOTTOM_SLIP_ALLMEASURE = "mainBottomSlipAllMeasure"; // 全部测量滑出菜单
+    public static final String MAIN_BOTTOM_SLIP_SERIALBUSTXT = "mainBottomSlipSerialBusTxt"; // 串口总线文本滑出菜单
+    public static final String MAIN_BOTTOM_SLIP_ZOOM = "mainBottomSlipZoom"; // Zoom模式滑出菜单
+    public static final String MAIN_BOTTOM_SLIP_MENU = "mainBottomSlipMenu"; // 底部滑出菜单
+    public static final String MAIN_CENTER_CHANNELS_X = "mainCenterChannelsX"; // 中心通道X坐标
+    public static final String MAIN_CENTER_CHANNELS_Y = "mainCenterChannelsY"; // 中心通道Y坐标
     public static final String MAIN_RECOVERY_CHANNEL_SELECT = "mainRecoveryChannelSelect";//保存设置时的当前通道
     public static final String MAIN_CENTER_CHANNELS_SELECT = "mainCenterChannelsSelect";//当前通道
     public static final String MAIN_CENTER_CHANNELS_SELECT_WILL_NULL = "MAIN_CENTER_CHANNELS_SELECT_WILL_NULL";//当前通道即将变成无通道时的最后关闭的通道
     public static final String MAIN_CENTER_CHANNELS_SELECT_UNXY = "mainCenterChannelsSelectResIdUnXY";//非xy模式下的当前通道的控件resId
-    public static final String MAIN_CENTER_MENU_X = "mainCenterMenuX";
-    public static final String MAIN_CENTER_MENU_Y = "mainCenterMenuY";
-    public static final String MAIN_CENTER_SEGMENTED_VISIBLE = "mainCenterSegmentedVisible";
-    public static final String MAIN_CENTER_SEGMENTED_X = "mainCenterSegmentedX";
-    public static final String MAIN_CENTER_SEGMENTED_Y = "mainCenterSegmentedY";
+    public static final String MAIN_CENTER_MENU_X = "mainCenterMenuX"; // 中心菜单X坐标
+    public static final String MAIN_CENTER_MENU_Y = "mainCenterMenuY"; // 中心菜单Y坐标
+    public static final String MAIN_CENTER_SEGMENTED_VISIBLE = "mainCenterSegmentedVisible"; // 分段采样可见性
+    public static final String MAIN_CENTER_SEGMENTED_X = "mainCenterSegmentedX"; // 分段采样X坐标
+    public static final String MAIN_CENTER_SEGMENTED_Y = "mainCenterSegmentedY"; // 分段采样Y坐标
 
-    public static final String RIGHT_SLIP_REF_CLOSE_SAVE = "RIGHT_SLIP_REF_CLOSE_SAVE";
+    public static final String RIGHT_SLIP_REF_CLOSE_SAVE = "RIGHT_SLIP_REF_CLOSE_SAVE"; // Ref关闭时保存的通道号
 
     public static final String RIGHT_SLIP_MAX_CHANNEL_NUMBER_REF = "rightSlipMaxChannelNumberRef";//保存的最大ref通道号
-    public static final String RIGHT_SLIP_REF_CHECK = "rightSlipRefCheck";
+    public static final String RIGHT_SLIP_REF_CHECK = "rightSlipRefCheck"; // Ref通道开关
     public static final String RIGHT_SLIP_ADD_BY_USER_REF = "rightSlipAddByUserRef";//用户手动添加的ref通道
     public static final String RIGHT_SLIP_REF_DATA_FROM = "rightSlipRefDataFrom";//Ref数据来源
     public static final String RIGHT_SLIP_REF_CSV_INDEX = "rightSlipRefCsvIndex";//Ref csv列表旋钮选中的是第几个
 
     public static final String RIGHT_SLIP_MAX_CHANNEL_NUMBER_MATH = "rightSlipMaxChannelNumberMath";//保存的最大Math通道号
-    public static final String RIGHT_SLIP_MATH_TYPE = "rightSlipMathType";
-    public static final String RIGHT_SLIP_REF_TYPE = "rightSlipRefType";
+    public static final String RIGHT_SLIP_MATH_TYPE = "rightSlipMathType"; // Math运算类型
+    public static final String RIGHT_SLIP_REF_TYPE = "rightSlipRefType"; // Ref数据类型
     public static final String RIGHT_SLIP_ADD_BY_USER_MATH = "rightSlipAddByUserMath";//用户手动添加的math通道
-    public static final int MATHTYPE_DW = 0;
-    public static final int MATHTYPE_FFT = 1;
-    public static final int MATHTYPE_AXB = 2;
-    public static final int MATHTYPE_AM = 3;
+    public static final int MATHTYPE_DW = 0; // Math类型：双波形运算(A+B/A-B/A×B/A÷B)
+    public static final int MATHTYPE_FFT = 1; // Math类型：FFT频谱分析
+    public static final int MATHTYPE_AXB = 2; // Math类型：A×B标量运算
+    public static final int MATHTYPE_AM = 3; // Math类型：高级运算(Advanced Math)
 
-    public static final int REFTYPE_WAV = 0;
-    public static final int REFTYPE_CSV = 1;
-    public static final int REFTYPE_BIN = 2;
-    public static final int REFTYPE_ALL = 3;
+    public static final int REFTYPE_WAV = 0; // Ref类型：WAV波形文件
+    public static final int REFTYPE_CSV = 1; // Ref类型：CSV数据文件
+    public static final int REFTYPE_BIN = 2; // Ref类型：BIN二进制文件
+    public static final int REFTYPE_ALL = 3; // Ref类型：全部文件
 
-    public static final String RIGHT_SLIP_MATH_DW_SOURCE1 = "rightSlipMathDwSource1";
-    public static final String RIGHT_SLIP_MATH_DW_SOURCE2 = "rightSlipMathDwSource2";
-    public static final String RIGHT_SLIP_MATH_DW_SYMBOL = "rightSlipMathSymbol";
-    public static final String RIGHT_SLIP_MATH_FFT_TYPE_ID = "rightSlipMathFftTypeId";
-    public static final String RIGHT_SLIP_MATH_FFT_SOURCE = "rightSlipMathFftSource";
-    public static final String RIGHT_SLIP_MATH_FFT_WINDOW = "rightSlipMathFftWindow";
-    public static final String RIGHT_SLIP_MATH_FFT_PERSIST = "rightSlipMathFftPersist";
-    public static final String RIGHT_SLIP_MATH_FFT_PERSIST_VALUE = "rightSlipMathFFTPersistValue";
-    public static final String RIGHT_SLIP_MATH_AXB_UNIT = "rightSlipMathAxbUnit";
-    public static final String RIGHT_SLIP_MATH_AXB_SOURCE = "rightSlipMathAxbSource";
-    public static final String RIGHT_SLIP_MATH_AXB_A = "rightSlipMathAxbA";
-    public static final String RIGHT_SLIP_MATH_AXB_B = "rightSlipMathAxbB";
-    public static final String RIGHT_SLIP_MATH_AM_UNIT = "RIGHT_SLIP_MATH_AM_UNIT";
-    public static final String RIGHT_SLIP_MATH_AM_FORMULA = "RIGHT_SLIP_MATH_AM_FORMULA";
-    public static final String RIGHT_SLIP_MATH_AM_FORMULA_DIFF_HAVE = "RIGHT_SLIP_MATH_AM_FORMULA_DIFF_HAVE";
-    public static final String RIGHT_SLIP_MATH_AM_FORMULA_DIFF_RESET = "RIGHT_SLIP_MATH_AM_FORMULA_DIFF_RESET";
-    public static final String RIGHT_SLIP_MATH_AM_VAR1_NUMBER = "RIGHT_SLIP_MATH_AM_VAR1_NUMBER";
-    public static final String RIGHT_SLIP_MATH_AM_VAR1_POWER = "RIGHT_SLIP_MATH_AM_VAR1_POWER";
-    public static final String RIGHT_SLIP_MATH_AM_VAR2_NUMBER = "RIGHT_SLIP_MATH_AM_VAR2_NUMBER";
-    public static final String RIGHT_SLIP_MATH_AM_VAR2_POWER = "RIGHT_SLIP_MATH_AM_VAR2_POWER";
-    public static final String RIGHT_SLIP_MATH_VERTICALBASE = "rightSlipMathVerticalBase";
+    public static final String RIGHT_SLIP_MATH_DW_SOURCE1 = "rightSlipMathDwSource1"; // 双波形运算源1
+    public static final String RIGHT_SLIP_MATH_DW_SOURCE2 = "rightSlipMathDwSource2"; // 双波形运算源2
+    public static final String RIGHT_SLIP_MATH_DW_SYMBOL = "rightSlipMathSymbol"; // 双波形运算符号(+/-/×/÷)
+    public static final String RIGHT_SLIP_MATH_FFT_TYPE_ID = "rightSlipMathFftTypeId"; // FFT类型ID
+    public static final String RIGHT_SLIP_MATH_FFT_SOURCE = "rightSlipMathFftSource"; // FFT源通道
+    public static final String RIGHT_SLIP_MATH_FFT_WINDOW = "rightSlipMathFftWindow"; // FFT窗函数
+    public static final String RIGHT_SLIP_MATH_FFT_PERSIST = "rightSlipMathFftPersist"; // FFT余辉开关
+    public static final String RIGHT_SLIP_MATH_FFT_PERSIST_VALUE = "rightSlipMathFFTPersistValue"; // FFT余辉值
+    public static final String RIGHT_SLIP_MATH_AXB_UNIT = "rightSlipMathAxbUnit"; // A×B运算单位
+    public static final String RIGHT_SLIP_MATH_AXB_SOURCE = "rightSlipMathAxbSource"; // A×B运算源通道
+    public static final String RIGHT_SLIP_MATH_AXB_A = "rightSlipMathAxbA"; // A×B运算系数A
+    public static final String RIGHT_SLIP_MATH_AXB_B = "rightSlipMathAxbB"; // A×B运算系数B
+    public static final String RIGHT_SLIP_MATH_AM_UNIT = "RIGHT_SLIP_MATH_AM_UNIT"; // 高级运算单位
+    public static final String RIGHT_SLIP_MATH_AM_FORMULA = "RIGHT_SLIP_MATH_AM_FORMULA"; // 高级运算公式
+    public static final String RIGHT_SLIP_MATH_AM_FORMULA_DIFF_HAVE = "RIGHT_SLIP_MATH_AM_FORMULA_DIFF_HAVE"; // 高级运算微分是否存在
+    public static final String RIGHT_SLIP_MATH_AM_FORMULA_DIFF_RESET = "RIGHT_SLIP_MATH_AM_FORMULA_DIFF_RESET"; // 高级运算微分重置
+    public static final String RIGHT_SLIP_MATH_AM_VAR1_NUMBER = "RIGHT_SLIP_MATH_AM_VAR1_NUMBER"; // 高级运算变量1系数
+    public static final String RIGHT_SLIP_MATH_AM_VAR1_POWER = "RIGHT_SLIP_MATH_AM_VAR1_POWER"; // 高级运算变量1幂次
+    public static final String RIGHT_SLIP_MATH_AM_VAR2_NUMBER = "RIGHT_SLIP_MATH_AM_VAR2_NUMBER"; // 高级运算变量2系数
+    public static final String RIGHT_SLIP_MATH_AM_VAR2_POWER = "RIGHT_SLIP_MATH_AM_VAR2_POWER"; // 高级运算变量2幂次
+    public static final String RIGHT_SLIP_MATH_VERTICALBASE = "rightSlipMathVerticalBase"; // Math垂直基准
 
-    public static final String RIGHT_SLIP_CH_FINE_ENABLE = "RIGHT_SLIP_CH_FINE_ENABLE";
-    public static final String RIGHT_SLIP_CH_INVERT = "rightSlipChannelInvert";
-    public static final String RIGHT_SLIP_CH_COUPLE = "rightSlipChannelCouple";
-    public static final String RIGHT_SLIP_CH_PROBE_TYPE = "rightSlipChannelProbeType";
-    public static final String RIGHT_SLIP_CH_PROBE_MULTIPLE = "rightSlipChannelProbeMultiple";
-    public static final String RIGHT_SLIP_CH_PROBE_MULTIPLE_USERDEFINE = "rightSlipChannelProbeMultipleUserdefine";
-    public static final String RIGHT_SLIP_CH_BANDWIDTH = "rightSlipChannelBandWidth";
-    public static final String RIGHT_SLIP_CH_VERTICALBASE = "rightSlipChannelVerticalBase";
-    public static final String RIGHT_SLIP_CH_IMPED = "rightSlipChannelImped";
-    public static final String RIGHT_SLIP_CH_BANDWIDTH_HIGH_EDIT = "rightSlipChannelBandWidthHighEdit";
-    public static final String RIGHT_SLIP_CH_BANDWIDTH_LOW_EDIT = "rightSlipChannelBandWidthLowEdit";
-    public static final String RIGHT_SLIP_CH_LABEL = "rightSlipChannelLabel";
-    public static final String RIGHT_SLIP_CH_LABEL_USERDEFINE = "rightSlipChannelLabelUserdefine";
-    public static final String RIGHT_SLIP_CH_DELAY = "rightSlipChannelDelay";
-    public static final String RIGHT_SLIP_CH_OFFSET = "rightSlipChannelOffset";
-    public static final String RIGHT_SLIP_CH_POSITION = "rightSlipChannelPosition";
-    public static final String RIGHT_SLIP_CH_FINE_EXTENT = "RIGHT_SLIP_CH_FINE_EXTENT";
-    public static final String RIGHT_SLIP_CH_PROBE_BANDWIDTH = "RIGHT_SLIP_CH_PROBE_BANDWIDTH";
+    public static final String RIGHT_SLIP_CH_FINE_ENABLE = "RIGHT_SLIP_CH_FINE_ENABLE"; // 通道微调使能
+    public static final String RIGHT_SLIP_CH_INVERT = "rightSlipChannelInvert"; // 通道反相
+    public static final String RIGHT_SLIP_CH_COUPLE = "rightSlipChannelCouple"; // 通道耦合方式(AC/DC)
+    public static final String RIGHT_SLIP_CH_PROBE_TYPE = "rightSlipChannelProbeType"; // 探头类型
+    public static final String RIGHT_SLIP_CH_PROBE_MULTIPLE = "rightSlipChannelProbeMultiple"; // 探头倍率
+    public static final String RIGHT_SLIP_CH_PROBE_MULTIPLE_USERDEFINE = "rightSlipChannelProbeMultipleUserdefine"; // 探头自定义倍率
+    public static final String RIGHT_SLIP_CH_BANDWIDTH = "rightSlipChannelBandWidth"; // 通道带宽限制
+    public static final String RIGHT_SLIP_CH_VERTICALBASE = "rightSlipChannelVerticalBase"; // 通道垂直基准
+    public static final String RIGHT_SLIP_CH_IMPED = "rightSlipChannelImped"; // 通道阻抗(1MΩ/50Ω)
+    public static final String RIGHT_SLIP_CH_BANDWIDTH_HIGH_EDIT = "rightSlipChannelBandWidthHighEdit"; // 高带宽限制编辑值
+    public static final String RIGHT_SLIP_CH_BANDWIDTH_LOW_EDIT = "rightSlipChannelBandWidthLowEdit"; // 低带宽限制编辑值
+    public static final String RIGHT_SLIP_CH_LABEL = "rightSlipChannelLabel"; // 通道标签
+    public static final String RIGHT_SLIP_CH_LABEL_USERDEFINE = "rightSlipChannelLabelUserdefine"; // 通道自定义标签
+    public static final String RIGHT_SLIP_CH_DELAY = "rightSlipChannelDelay"; // 通道延迟
+    public static final String RIGHT_SLIP_CH_OFFSET = "rightSlipChannelOffset"; // 通道偏移
+    public static final String RIGHT_SLIP_CH_POSITION = "rightSlipChannelPosition"; // 通道垂直位置
+    public static final String RIGHT_SLIP_CH_FINE_EXTENT = "RIGHT_SLIP_CH_FINE_EXTENT"; // 通道微调档位
+    public static final String RIGHT_SLIP_CH_PROBE_BANDWIDTH = "RIGHT_SLIP_CH_PROBE_BANDWIDTH"; // 探头带宽
 
 //    public static final String RIGHT_SLIP_SAMPLE = "rightSlipSample";
 //    public static final String RIGHT_SLIP_SAMPLE_DETAIL_INDEX = "rightSlipSampleDetailIndex";
 
     public static final String RIGHT_SLIP_MAX_CHANNEL_NUMBER_SERIALS = "rightSlipMaxChannelNumberSerials";//保存的最大Serial通道号
     public static final String RIGHT_SLIP_ADD_BY_USER_SERIALS = "rightSlipAddByUserSerials";//用户手动添加的Serial通道
-    public static final String RIGHT_SLIP_SERIALS = "rightSlipSerials";
+    public static final String RIGHT_SLIP_SERIALS = "rightSlipSerials"; // 串口总线类型
     public static final String RIGHT_SLIP_OTHERS_CHANNEL_ORDER = "rightSlipOrderChannelOrder";//Math/Ref/Serials通道顺序
-    public static final String RIGHT_SLIP_SERIALS_UART_RX = "rightSlipSerialsUartRx";
-    public static final String RIGHT_SLIP_SERIALS_UART_IDLE = "rightSlipSerialsUartIdle";
-    public static final String RIGHT_SLIP_SERIALS_UART_CHECK = "rightSlipSerialsUartCheck";
-    public static final String RIGHT_SLIP_SERIALS_UART_BITS = "rightSlipSerialsUartBits";
-    public static final String RIGHT_SLIP_SERIALS_UART_DISPLAY = "rightSlipSerialsUartDisplay";
-    public static final String RIGHT_SLIP_SERIALS_UART_BAUDRATE = "rightSlipSerialsUartBaudRate";
-    public static final String RIGHT_SLIP_SERIALS_UART_USERDEFINE = "rightSlipSerialsUartUserDefine";
+    public static final String RIGHT_SLIP_SERIALS_UART_RX = "rightSlipSerialsUartRx"; // UART Rx通道
+    public static final String RIGHT_SLIP_SERIALS_UART_IDLE = "rightSlipSerialsUartIdle"; // UART空闲电平
+    public static final String RIGHT_SLIP_SERIALS_UART_CHECK = "rightSlipSerialsUartCheck"; // UART校验位
+    public static final String RIGHT_SLIP_SERIALS_UART_BITS = "rightSlipSerialsUartBits"; // UART数据位
+    public static final String RIGHT_SLIP_SERIALS_UART_DISPLAY = "rightSlipSerialsUartDisplay"; // UART显示格式
+    public static final String RIGHT_SLIP_SERIALS_UART_BAUDRATE = "rightSlipSerialsUartBaudRate"; // UART波特率
+    public static final String RIGHT_SLIP_SERIALS_UART_USERDEFINE = "rightSlipSerialsUartUserDefine"; // UART自定义波特率
 
-    public static final String RIGHT_SLIP_SERIALS_LIN_SOURCE = "rightSlipSerialsLinSource";
-    public static final String RIGHT_SLIP_SERIALS_LIN_TYPE = "rightSlipSerialsLinType";
-    public static final String RIGHT_SLIP_SERIALS_LIN_IDLE = "rightSlipSerialsLinIdle";
-    public static final String RIGHT_SLIP_SERIALS_LIN_BAUDRATE = "rightSlipSerialsLinBaudRate";
-    public static final String RIGHT_SLIP_SERIALS_LIN_USERDEFINE = "rightSlipSerialsLinUserDefine";
+    public static final String RIGHT_SLIP_SERIALS_LIN_SOURCE = "rightSlipSerialsLinSource"; // LIN源通道
+    public static final String RIGHT_SLIP_SERIALS_LIN_TYPE = "rightSlipSerialsLinType"; // LIN类型
+    public static final String RIGHT_SLIP_SERIALS_LIN_IDLE = "rightSlipSerialsLinIdle"; // LIN空闲电平
+    public static final String RIGHT_SLIP_SERIALS_LIN_BAUDRATE = "rightSlipSerialsLinBaudRate"; // LIN波特率
+    public static final String RIGHT_SLIP_SERIALS_LIN_USERDEFINE = "rightSlipSerialsLinUserDefine"; // LIN自定义波特率
 
-    public static final String RIGHT_SLIP_SERIALS_CAN_SOURCE = "rightSlipSerialsCanSource";
-    public static final String RIGHT_SLIP_SERIALS_CAN_SIGNAL = "rightSlipSerialsCanSignal";
-    public static final String RIGHT_SLIP_SERIALS_CAN_BAUDRATE = "rightSlipSerialsCanBaudRate";
-    public static final String RIGHT_SLIP_SERIALS_CAN_USERDEFINE = "rightSlipSerialsCanUserDefine";
-    public static final String RIGHT_SLIP_SERIALS_CAN_FDBAUDRATE = "rightSlipSerialsCanFDBaudRate";
-    public static final String RIGHT_SLIP_SERIALS_CAN_FDUSERDEFINE = "rightSlipSerialsCanFDUserDefine";
-    public static final String RIGHT_SLIP_SERIALS_CAN_PERCENT = "RIGHT_SLIP_SERIALS_CAN_PERCENT";
-    public static final String RIGHT_SLIP_SERIALS_CAN_FDPERCENT = "RIGHT_SLIP_SERIALS_CAN_FDPERCENT";
-    public static final String RIGHT_SLIP_SERIALS_CAN_ISO = "RIGHT_SLIP_SERIALS_CAN_ISO";
+    public static final String RIGHT_SLIP_SERIALS_CAN_SOURCE = "rightSlipSerialsCanSource"; // CAN源通道
+    public static final String RIGHT_SLIP_SERIALS_CAN_SIGNAL = "rightSlipSerialsCanSignal"; // CAN信号类型
+    public static final String RIGHT_SLIP_SERIALS_CAN_BAUDRATE = "rightSlipSerialsCanBaudRate"; // CAN波特率
+    public static final String RIGHT_SLIP_SERIALS_CAN_USERDEFINE = "rightSlipSerialsCanUserDefine"; // CAN自定义波特率
+    public static final String RIGHT_SLIP_SERIALS_CAN_FDBAUDRATE = "rightSlipSerialsCanFDBaudRate"; // CAN FD波特率
+    public static final String RIGHT_SLIP_SERIALS_CAN_FDUSERDEFINE = "rightSlipSerialsCanFDUserDefine"; // CAN FD自定义波特率
+    public static final String RIGHT_SLIP_SERIALS_CAN_PERCENT = "RIGHT_SLIP_SERIALS_CAN_PERCENT"; // CAN采样点
+    public static final String RIGHT_SLIP_SERIALS_CAN_FDPERCENT = "RIGHT_SLIP_SERIALS_CAN_FDPERCENT"; // CAN FD采样点
+    public static final String RIGHT_SLIP_SERIALS_CAN_ISO = "RIGHT_SLIP_SERIALS_CAN_ISO"; // CAN ISO模式
 
-    public static final String RIGHT_SLIP_SERIALS_SPI_CLK = "rightSlipSerialsSpiClk";
-    public static final String RIGHT_SLIP_SERIALS_SPI_DATA = "rightSlipSerialsSpiData";
-    public static final String RIGHT_SLIP_SERIALS_SPI_CS = "rightSlipSerialsSpiCs";
-    public static final String RIGHT_SLIP_SERIALS_SPI_BIT = "rightSlipSerialsSpiBit";
-    public static final String RIGHT_SLIP_SERIALS_SPI_CLKCHECK = "rightSlipSerialsSpiClkCheck";
-    public static final String RIGHT_SLIP_SERIALS_SPI_DATACHECK = "rightSlipSerialsSpiDataCheck";
-    public static final String RIGHT_SLIP_SERIALS_SPI_CSCHECK = "rightSlipSerialsSpiCsCheck";
-    public static final String RIGHT_SLIP_SERIALS_SPI_CSSWITCH = "rightSlipSerialsSpiCsSwitch";
+    public static final String RIGHT_SLIP_SERIALS_SPI_CLK = "rightSlipSerialsSpiClk"; // SPI时钟通道
+    public static final String RIGHT_SLIP_SERIALS_SPI_DATA = "rightSlipSerialsSpiData"; // SPI数据通道
+    public static final String RIGHT_SLIP_SERIALS_SPI_CS = "rightSlipSerialsSpiCs"; // SPI片选通道
+    public static final String RIGHT_SLIP_SERIALS_SPI_BIT = "rightSlipSerialsSpiBit"; // SPI数据位宽
+    public static final String RIGHT_SLIP_SERIALS_SPI_CLKCHECK = "rightSlipSerialsSpiClkCheck"; // SPI时钟极性
+    public static final String RIGHT_SLIP_SERIALS_SPI_DATACHECK = "rightSlipSerialsSpiDataCheck"; // SPI数据极性
+    public static final String RIGHT_SLIP_SERIALS_SPI_CSCHECK = "rightSlipSerialsSpiCsCheck"; // SPI片选极性
+    public static final String RIGHT_SLIP_SERIALS_SPI_CSSWITCH = "rightSlipSerialsSpiCsSwitch"; // SPI片选开关
 
-    public static final String RIGHT_SLIP_SERIALS_I2C_SDA = "rightSlipSerialsSda";
-    public static final String RIGHT_SLIP_SERIALS_I2C_SCL = "rightSlipSerialsScl";
+    public static final String RIGHT_SLIP_SERIALS_I2C_SDA = "rightSlipSerialsSda"; // I2C SDA通道
+    public static final String RIGHT_SLIP_SERIALS_I2C_SCL = "rightSlipSerialsScl"; // I2C SCL通道
 
-    public static final String RIGHT_SLIP_SERIALS_M429_SOURCE = "rightSlipSerialsM429Source";
-    public static final String RIGHT_SLIP_SERIALS_M429_FORMAT = "rightSlipSerialsM429Format";
-    public static final String RIGHT_SLIP_SERIALS_M429_DISPLAY = "rightSlipSerialsM429Display";
-    public static final String RIGHT_SLIP_SERIALS_M429_BAUDRATE = "rightSlipSerialsM429BaudRate";
+    public static final String RIGHT_SLIP_SERIALS_M429_SOURCE = "rightSlipSerialsM429Source"; // M429源通道
+    public static final String RIGHT_SLIP_SERIALS_M429_FORMAT = "rightSlipSerialsM429Format"; // M429数据格式
+    public static final String RIGHT_SLIP_SERIALS_M429_DISPLAY = "rightSlipSerialsM429Display"; // M429显示格式
+    public static final String RIGHT_SLIP_SERIALS_M429_BAUDRATE = "rightSlipSerialsM429BaudRate"; // M429波特率
 
-    public static final String RIGHT_SLIP_SERIALS_M1553B_SOURCE = "rightSlipSerialsM1553bSource";
-    public static final String RIGHT_SLIP_SERIALS_M1553B_DISPLAY = "rightSlipSerialsM1553bDisplay";
+    public static final String RIGHT_SLIP_SERIALS_M1553B_SOURCE = "rightSlipSerialsM1553bSource"; // M1553B源通道
+    public static final String RIGHT_SLIP_SERIALS_M1553B_DISPLAY = "rightSlipSerialsM1553bDisplay"; // M1553B显示格式
 
-    public static final String TOP_SLIP = "topSlip";
-    public static final String TOP_SLIP_MEASURE = "TOP_SLIP_MEASURE";
-    public static final String TOP_SLIP_MEASURE_STATIC_ALL = "TOP_SLIP_MEASURE_STATIC_ALL";
-    public static final String TOP_SLIP_MEASURE_STATIC_MEAN = "TOP_SLIP_MEASURE_STATIC_MEAN";
-    public static final String TOP_SLIP_MEASURE_STATIC_MAX = "TOP_SLIP_MEASURE_STATIC_MAX";
-    public static final String TOP_SLIP_MEASURE_STATIC_MIN = "TOP_SLIP_MEASURE_STATIC_MIN";
-    public static final String TOP_SLIP_MEASURE_STATIC_DELTA = "TOP_SLIP_MEASURE_STATIC_DELTA";
-    public static final String TOP_SLIP_MEASURE_STATIC_COUNT = "TOP_SLIP_MEASURE_STATIC_COUNT";
+    public static final String TOP_SLIP = "topSlip"; // 顶部滑出菜单
+    public static final String TOP_SLIP_MEASURE = "TOP_SLIP_MEASURE"; // 测量菜单
+    public static final String TOP_SLIP_MEASURE_STATIC_ALL = "TOP_SLIP_MEASURE_STATIC_ALL"; // 静态测量-全部
+    public static final String TOP_SLIP_MEASURE_STATIC_MEAN = "TOP_SLIP_MEASURE_STATIC_MEAN"; // 静态测量-均值
+    public static final String TOP_SLIP_MEASURE_STATIC_MAX = "TOP_SLIP_MEASURE_STATIC_MAX"; // 静态测量-最大值
+    public static final String TOP_SLIP_MEASURE_STATIC_MIN = "TOP_SLIP_MEASURE_STATIC_MIN"; // 静态测量-最小值
+    public static final String TOP_SLIP_MEASURE_STATIC_DELTA = "TOP_SLIP_MEASURE_STATIC_DELTA"; // 静态测量-差值
+    public static final String TOP_SLIP_MEASURE_STATIC_COUNT = "TOP_SLIP_MEASURE_STATIC_COUNT"; // 静态测量-计数
 
-    public static final String TOP_SLIP_MEASURE_SETTING_INDICATOR = "TOP_SLIP_MEASURE_SETTING_INDICATOR";
-    public static final String TOP_SLIP_MEASURE_SETTING_RANGE = "TOP_SLIP_MEASURE_SETTING_RANGE";
-    public static final String TOP_SLIP_MEASURE_SETTING_CHANNEL_SELECT = "TOP_SLIP_MEASURE_SETTING_CHANNEL_SELECT";
-    public static final String TOP_SLIP_MEASURE_SETTING_THRESHOLDS = "TOP_SLIP_MEASURE_SETTING_THRESHOLDS";
-    public static final String TOP_SLIP_MEASURE_SETTING_HIGH = "TOP_SLIP_MEASURE_SETTING_HIGH";
-    public static final String TOP_SLIP_MEASURE_SETTING_MIDDLE = "TOP_SLIP_MEASURE_SETTING_MIDDLE";
-    public static final String TOP_SLIP_MEASURE_SETTING_LOW = "TOP_SLIP_MEASURE_SETTING_LOW";
+    public static final String TOP_SLIP_MEASURE_SETTING_INDICATOR = "TOP_SLIP_MEASURE_SETTING_INDICATOR"; // 测量设置-指示器
+    public static final String TOP_SLIP_MEASURE_SETTING_RANGE = "TOP_SLIP_MEASURE_SETTING_RANGE"; // 测量设置-范围
+    public static final String TOP_SLIP_MEASURE_SETTING_CHANNEL_SELECT = "TOP_SLIP_MEASURE_SETTING_CHANNEL_SELECT"; // 测量设置-通道选择
+    public static final String TOP_SLIP_MEASURE_SETTING_THRESHOLDS = "TOP_SLIP_MEASURE_SETTING_THRESHOLDS"; // 测量设置-阈值
+    public static final String TOP_SLIP_MEASURE_SETTING_HIGH = "TOP_SLIP_MEASURE_SETTING_HIGH"; // 测量设置-高阈值
+    public static final String TOP_SLIP_MEASURE_SETTING_MIDDLE = "TOP_SLIP_MEASURE_SETTING_MIDDLE"; // 测量设置-中阈值
+    public static final String TOP_SLIP_MEASURE_SETTING_LOW = "TOP_SLIP_MEASURE_SETTING_LOW"; // 测量设置-低阈值
 
-    public static final String TOP_SLIP_MEASURE_CHANNEL_SELECT = "topSlipMeasureChannelSelect";
-    public static final String TOP_SLIP_MEASURE_SELECT_LIST_CHANNEL = "topSlipMeasureSelectListChannel";
-    public static final String TOP_SLIP_MEASURE_SELECT_LIST_INDEX = "topSlipMeasureSelectListIndex";
-    public static final String TOP_SLIP_MEASURE_SELECT_LIST_NO = "topSlipMeasureSelectListNo";
-    public static final String MEASURE_SELECT_LIST_SLIP = ",";
-    public static final String TOP_SLIP_MEASURE_DELAY_DATA = "topSlipMeasureDelayData";
-    public static final String DELAY_SLIP = ",";
-    public static final String TOP_SLIP_MEASURE_PHASE_DATA = "topSlipMeasurePhaseData";
+    public static final String TOP_SLIP_MEASURE_CHANNEL_SELECT = "topSlipMeasureChannelSelect"; // 测量通道选择
+    public static final String TOP_SLIP_MEASURE_SELECT_LIST_CHANNEL = "topSlipMeasureSelectListChannel"; // 测量选择列表通道
+    public static final String TOP_SLIP_MEASURE_SELECT_LIST_INDEX = "topSlipMeasureSelectListIndex"; // 测量选择列表索引
+    public static final String TOP_SLIP_MEASURE_SELECT_LIST_NO = "topSlipMeasureSelectListNo"; // 测量选择列表编号
+    public static final String MEASURE_SELECT_LIST_SLIP = ","; // 测量选择列表分隔符
+    public static final String TOP_SLIP_MEASURE_DELAY_DATA = "topSlipMeasureDelayData"; // 延迟测量数据
+    public static final String DELAY_SLIP = ","; // 延迟数据分隔符
+    public static final String TOP_SLIP_MEASURE_PHASE_DATA = "topSlipMeasurePhaseData"; // 相位测量数据
 
-    public static final String TOP_SLIP_MEASURE_TVALUE_DATA = "topSlipMeasureTValueData";
-    public static final String TOP_SLIP_SAVE = "topSlipSave";
-    public static final String WAVE_STORE_PATH_SLIP = ";";
+    public static final String TOP_SLIP_MEASURE_TVALUE_DATA = "topSlipMeasureTValueData"; // T值测量数据
+    public static final String TOP_SLIP_SAVE = "topSlipSave"; // 保存菜单
+    public static final String WAVE_STORE_PATH_SLIP = ";"; // 波形存储路径分隔符
 
-    public static final String TOP_SLIP_MEASURE_TVALUE_X1 = "topSlipMeasureTValueX1";
+    public static final String TOP_SLIP_MEASURE_TVALUE_X1 = "topSlipMeasureTValueX1"; // T值测量X1
 
-    public static final String TOP_SLIP_MEASURE_TVALUE_X2 = "topSlipMeasureTValueX2";
+    public static final String TOP_SLIP_MEASURE_TVALUE_X2 = "topSlipMeasureTValueX2"; // T值测量X2
 
     public static final String TOP_SLIP_SAVE_WAVE_NAME = "topSlipSaveWaveName"; //保存波形 文件名
     public static final String TOP_SLIP_SAVE_WAVE_PATH = "topSlipSaveStorePath";//保存波形文件的路径
@@ -314,173 +383,173 @@ public class CacheUtil {
     public static final String RIGHT_SLIP_REF_DATA_PATH_CURRENT = "rightSlipRefDataPathCurrent";//ref菜单页面中选择的 当前路径
     public static final String RIGHT_SLIP_REF_DATA_SELECT_CURRENT = "rightSlipRefDataSelectCurrent";//ref菜单页面中当前当前选中的文件全路径名
 
-    public static final String TOP_SLIP_SAVE_STORE = "topSlipSaveStore";
-    public static final String TOP_SLIP_INVOKE_STORE = "topSlipInvokeStore";
-    public static final String TOP_SLIP_AUTO_SAVE_STORE = "topSlipAutoSaveStore";
-    public static final String TOP_SLIP_SAVE_CHANNEL_SELECT = "topSlipSaveChannelSelect";
-    public static final String TOP_SLIP_SAVE_ALL_SEGMENT_VISIBLE = "topSlipSaveAllSegmentVisible";
-    public static final String TOP_SLIP_SAVE_ALL_SEGMENT_CHECK = "topSlipSaveAllSegmentCheck";
-    public static final String TOP_SLIP_SAVE_DIR = "topSlipSaveDir";
-    public static final String TOP_SLIP_SAVE_TYPE = "topSlipSaveType";
-    public static final String TOP_SLIP_CURSOR = "TOP_SLIP_CURSOR";
-    public static final String TOP_SLIP_CURSOR_COMMON = "TOP_SLIP_CURSOR_COMMON";
-    public static final String TOP_SLIP_CURSOR_COMMON_SOURCE = "TOP_SLIP_CURSOR_COMMON_SOURCE";
-    public static final String TOP_SLIP_CURSOR_SETTING_TRANCE="TOP_SLIP_CURSOR_SETTING_TRANCE";
-    public static final String TOP_SLIP_CURSOR_SETTING_MODE="TOP_SLIP_CURSOR_SETTING_MODE";
+    public static final String TOP_SLIP_SAVE_STORE = "topSlipSaveStore"; // 保存存储
+    public static final String TOP_SLIP_INVOKE_STORE = "topSlipInvokeStore"; // 调用存储
+    public static final String TOP_SLIP_AUTO_SAVE_STORE = "topSlipAutoSaveStore"; // 自动保存存储
+    public static final String TOP_SLIP_SAVE_CHANNEL_SELECT = "topSlipSaveChannelSelect"; // 保存通道选择
+    public static final String TOP_SLIP_SAVE_ALL_SEGMENT_VISIBLE = "topSlipSaveAllSegmentVisible"; // 保存全部分段可见性
+    public static final String TOP_SLIP_SAVE_ALL_SEGMENT_CHECK = "topSlipSaveAllSegmentCheck"; // 保存全部分段选中
+    public static final String TOP_SLIP_SAVE_DIR = "topSlipSaveDir"; // 保存目录
+    public static final String TOP_SLIP_SAVE_TYPE = "topSlipSaveType"; // 保存类型
+    public static final String TOP_SLIP_CURSOR = "TOP_SLIP_CURSOR"; // 光标菜单
+    public static final String TOP_SLIP_CURSOR_COMMON = "TOP_SLIP_CURSOR_COMMON"; // 光标通用设置
+    public static final String TOP_SLIP_CURSOR_COMMON_SOURCE = "TOP_SLIP_CURSOR_COMMON_SOURCE"; // 光标源通道
+    public static final String TOP_SLIP_CURSOR_SETTING_TRANCE="TOP_SLIP_CURSOR_SETTING_TRANCE"; // 光标追踪设置
+    public static final String TOP_SLIP_CURSOR_SETTING_MODE="TOP_SLIP_CURSOR_SETTING_MODE"; // 光标模式设置
 
-    public static final String TOP_SLIP_SAMPLE = "topSlipSample";
-    public static final String TOP_SLIP_SAMPLE_MODE = "rightSlipSample";
-    public static final String TOP_SLIP_SAMPLE_MODE_DETAIL_INDEX = "rightSlipSampleDetailIndex";
-    public static final String TOP_SLIP_SAMPLE_DEPTH = "topSlipUsersetDepth";
-    public static final String TOP_SLIP_SAMPLE_SEGMENTED_STATE = "topSlipSampleSegmentedState";
-    public static final String TOP_SLIP_SAMPLE_SEGMENTED_NUMBER = "topSlipSampleSegmentedNumber";
-    public static final String TOP_SLIP_SAMPLE_SEGMENTED_NUMBER_USERDEFINE = "topSlipSampleSegmentedNumberUserDefine";
-    public static final String TOP_SLIP_SAMPLE_SEGMENTED_DISPLAY = "topSlipSampleSegmentedDisplay";
-    public static final String TOP_SLIP_SAMPLE_SEGMENTED_DISPLAY_FIT_START = "topSlipSampleSegmentedDisplayFitStart";
-    public static final String TOP_SLIP_SAMPLE_SEGMENTED_DISPLAY_FIT_END = "topSlipSampleSegmentedDisplayFitEnd";
-    public static final String TOP_SLIP_SAMPLE_SEGMENTED_ORDER = "topSlipSampleSegmentedPlay";
-    public static final String MAIN_CENTER_SAMPLE_SEGMENTED_PLAY_SPEED = "mainCenterSampleSegmentedPlaySpeed";
-    public static final String TOP_SLIP_DISPLAY = "topSlipDisplay";
-    public static final String TOP_SLIP_DISPLAY_COMMON_HORREF = "topSlipDisplayCommonHorRef";
-    public static final String TOP_SLIP_DISPLAY_COMMON_TIMEBASE = "topSlipDisplayCommonTimeBase";
-    public static final String TOP_SLIP_DISPLAY_COMMON_ROLL = "topSlipDisplayCommonRoll";
-    public static final String TOP_SLIP_DISPLAY_COMMON_CCT = "topSlipDisplayCommonCCT";
-    public static final String TOP_SLIP_DISPLAY_COMMON_SCALE= "topSlipDisplayCommonScale";
-    public static final String TOP_SLIP_DISPLAY_COMMON_ALPHA = "topSlipDisplayCommonAlpha";
-    public static final String TOP_SLIP_DISPLAY_WAVEFORM_DRAWTYPE = "topSlipDisplayWaveformDrawType";
-    public static final String TOP_SLIP_DISPLAY_WAVEFORM_BACKGROUND = "topSlipDisplayWaveformBackground";
-    public static final String TOP_SLIP_DISPLAY_WAVEFORM_BRIGHT = "topSlipDisplayWaveformBright";
-    public static final String TOP_SLIP_DISPLAY_GRATICULE_MODE = "topSlipDisplayGraticuleMode";
-    public static final String TOP_SLIP_DISPLAY_GRATICULE_INTENSITY = "topSlipDisplayGraticuleIntensity";
-    public static final String TOP_SLIP_DISPLAY_FFT_PERSIST_PERSIST = "topSlipDisplayFftPersistPersist";
-    public static final String TOP_SLIP_DISPLAY_PERSIST_PERSIST = "topSlipDisplayPersistPersist";
-    public static final String TOP_SLIP_DISPLAY_FFT_PERSIST_SELECT = "topSlipDisplayFftPersistSELECT";
-    public static final String TOP_SLIP_DISPLAY_PERSIST_SELECT = "topSlipDisplayPersistSELECT";
-    public static final String TOP_SLIP_AUTO = "topSlipAuto";
-    public static final String TOP_SLIP_AUTO_SET_CHANNEL = "topSlipAutoSetChannel";
-    public static final String TOP_SLIP_AUTO_SET_SOURCE = "topSlipAutoSetSource";
-    public static final String TOP_SLIP_AUTO_SET_LEVELSELECT = "topSlipAutoSetLevelSelect";
+    public static final String TOP_SLIP_SAMPLE = "topSlipSample"; // 采样菜单
+    public static final String TOP_SLIP_SAMPLE_MODE = "rightSlipSample"; // 采样模式
+    public static final String TOP_SLIP_SAMPLE_MODE_DETAIL_INDEX = "rightSlipSampleDetailIndex"; // 采样模式详情索引
+    public static final String TOP_SLIP_SAMPLE_DEPTH = "topSlipUsersetDepth"; // 存储深度
+    public static final String TOP_SLIP_SAMPLE_SEGMENTED_STATE = "topSlipSampleSegmentedState"; // 分段采样状态
+    public static final String TOP_SLIP_SAMPLE_SEGMENTED_NUMBER = "topSlipSampleSegmentedNumber"; // 分段采样段数
+    public static final String TOP_SLIP_SAMPLE_SEGMENTED_NUMBER_USERDEFINE = "topSlipSampleSegmentedNumberUserDefine"; // 分段采样自定义段数
+    public static final String TOP_SLIP_SAMPLE_SEGMENTED_DISPLAY = "topSlipSampleSegmentedDisplay"; // 分段采样显示
+    public static final String TOP_SLIP_SAMPLE_SEGMENTED_DISPLAY_FIT_START = "topSlipSampleSegmentedDisplayFitStart"; // 分段采样显示适配起始
+    public static final String TOP_SLIP_SAMPLE_SEGMENTED_DISPLAY_FIT_END = "topSlipSampleSegmentedDisplayFitEnd"; // 分段采样显示适配结束
+    public static final String TOP_SLIP_SAMPLE_SEGMENTED_ORDER = "topSlipSampleSegmentedPlay"; // 分段采样播放顺序
+    public static final String MAIN_CENTER_SAMPLE_SEGMENTED_PLAY_SPEED = "mainCenterSampleSegmentedPlaySpeed"; // 分段采样播放速度
+    public static final String TOP_SLIP_DISPLAY = "topSlipDisplay"; // 显示菜单
+    public static final String TOP_SLIP_DISPLAY_COMMON_HORREF = "topSlipDisplayCommonHorRef"; // 显示通用-水平Ref
+    public static final String TOP_SLIP_DISPLAY_COMMON_TIMEBASE = "topSlipDisplayCommonTimeBase"; // 显示通用-时基
+    public static final String TOP_SLIP_DISPLAY_COMMON_ROLL = "topSlipDisplayCommonRoll"; // 显示通用-滚屏
+    public static final String TOP_SLIP_DISPLAY_COMMON_CCT = "topSlipDisplayCommonCCT"; // 显示通用-CCT色温
+    public static final String TOP_SLIP_DISPLAY_COMMON_SCALE= "topSlipDisplayCommonScale"; // 显示通用-刻度
+    public static final String TOP_SLIP_DISPLAY_COMMON_ALPHA = "topSlipDisplayCommonAlpha"; // 显示通用-透明度
+    public static final String TOP_SLIP_DISPLAY_WAVEFORM_DRAWTYPE = "topSlipDisplayWaveformDrawType"; // 波形绘制类型
+    public static final String TOP_SLIP_DISPLAY_WAVEFORM_BACKGROUND = "topSlipDisplayWaveformBackground"; // 波形背景色
+    public static final String TOP_SLIP_DISPLAY_WAVEFORM_BRIGHT = "topSlipDisplayWaveformBright"; // 波形亮度
+    public static final String TOP_SLIP_DISPLAY_GRATICULE_MODE = "topSlipDisplayGraticuleMode"; // 网格模式
+    public static final String TOP_SLIP_DISPLAY_GRATICULE_INTENSITY = "topSlipDisplayGraticuleIntensity"; // 网格亮度
+    public static final String TOP_SLIP_DISPLAY_FFT_PERSIST_PERSIST = "topSlipDisplayFftPersistPersist"; // FFT余辉-余辉值
+    public static final String TOP_SLIP_DISPLAY_PERSIST_PERSIST = "topSlipDisplayPersistPersist"; // 余辉-余辉值
+    public static final String TOP_SLIP_DISPLAY_FFT_PERSIST_SELECT = "topSlipDisplayFftPersistSELECT"; // FFT余辉-选择
+    public static final String TOP_SLIP_DISPLAY_PERSIST_SELECT = "topSlipDisplayPersistSELECT"; // 余辉-选择
+    public static final String TOP_SLIP_AUTO = "topSlipAuto"; // 自动菜单
+    public static final String TOP_SLIP_AUTO_SET_CHANNEL = "topSlipAutoSetChannel"; // 自动设置通道
+    public static final String TOP_SLIP_AUTO_SET_SOURCE = "topSlipAutoSetSource"; // 自动设置源
+    public static final String TOP_SLIP_AUTO_SET_LEVELSELECT = "topSlipAutoSetLevelSelect"; // 自动设置电平选择
     public static final String TOP_SLIP_AUTO_SET_LEVELDETAIL = "topSlipAutoSetLevelDetail";//保存的是实际的mV数值int型，最大值为99V999mV
-    public static final String TOP_SLIP_AUTO_RANGE_RANGE = "topSlipAutoRangeRange";
-    public static final String TOP_SLIP_AUTO_RANGE_VERTICAL = "topSlipAutoRangeVertical";
-    public static final String TOP_SLIP_AUTO_RANGE_HORIZONTAL = "topSlipAutoRangeHorizontal";
-    public static final String TOP_SLIP_AUTO_RANGE_LEVEL = "topSlipAutoRangeLevel";
-    public static final String TOP_SLIP_FREQUENCY_METER = "topSlipFrequencyMeter";
-    public static final String TOP_SLIP_USERSET = "topSlipUserset";
+    public static final String TOP_SLIP_AUTO_RANGE_RANGE = "topSlipAutoRangeRange"; // 自动范围-范围
+    public static final String TOP_SLIP_AUTO_RANGE_VERTICAL = "topSlipAutoRangeVertical"; // 自动范围-垂直
+    public static final String TOP_SLIP_AUTO_RANGE_HORIZONTAL = "topSlipAutoRangeHorizontal"; // 自动范围-水平
+    public static final String TOP_SLIP_AUTO_RANGE_LEVEL = "topSlipAutoRangeLevel"; // 自动范围-电平
+    public static final String TOP_SLIP_FREQUENCY_METER = "topSlipFrequencyMeter"; // 频率计
+    public static final String TOP_SLIP_USERSET = "topSlipUserset"; // 用户设置菜单
     //    public static final String TOP_SLIP_USERSET_DEPTH = "topSlipUsersetDepth";
-    public static final String TOP_SLIP_USERSET_TIMESTAMP = "topSlipUsersetTimestamp";
-    public static final String TOP_SLIP_USERSET_SCREENINVERT = "topSlipUsersetScreenInvert";
-    public static final String TOP_SLIP_USERSET_SAVETHUMBNAIL = "topSlipUsersetSaveThumbnail";
-    public static final String TOP_SLIP_USERSET_TRIGGER = "topSlipUsersetTrigger";
-    public static final String TOP_SLIP_USERSET_CLOCK = "topSlipUsersetClock";
-    public static final String TOP_SLIP_USERSET_REF_TIMEBASE = "topSlipUserSetRefTimeBase";
+    public static final String TOP_SLIP_USERSET_TIMESTAMP = "topSlipUsersetTimestamp"; // 用户设置-时间戳
+    public static final String TOP_SLIP_USERSET_SCREENINVERT = "topSlipUsersetScreenInvert"; // 用户设置-屏幕反转
+    public static final String TOP_SLIP_USERSET_SAVETHUMBNAIL = "topSlipUsersetSaveThumbnail"; // 用户设置-保存缩略图
+    public static final String TOP_SLIP_USERSET_TRIGGER = "topSlipUsersetTrigger"; // 用户设置-触发
+    public static final String TOP_SLIP_USERSET_CLOCK = "topSlipUsersetClock"; // 用户设置-时钟
+    public static final String TOP_SLIP_USERSET_REF_TIMEBASE = "topSlipUserSetRefTimeBase"; // 用户设置-Ref时基
 
-    public static final String TOP_SLIP_TRIGGER = "topSlipTrigger";
-    public static final String TOP_SLIP_TRIGGER_COMMON_TIME = "topSlipTriggerCommonTime";
-    public static final String TOP_SLIP_TRIGGER_COMMON_MODE = "topSlipTriggerCommonMode";
+    public static final String TOP_SLIP_TRIGGER = "topSlipTrigger"; // 触发菜单
+    public static final String TOP_SLIP_TRIGGER_COMMON_TIME = "topSlipTriggerCommonTime"; // 触发通用-时间
+    public static final String TOP_SLIP_TRIGGER_COMMON_MODE = "topSlipTriggerCommonMode"; // 触发通用-模式
 
-    public static final String TOP_SLIP_TRIGGER_SENSITIVITY = "topSlipTriggerSensitivity";
+    public static final String TOP_SLIP_TRIGGER_SENSITIVITY = "topSlipTriggerSensitivity"; // 触发灵敏度
     /**
      * trigger中所有source公用一套channel，包括当前选择及triggerLevel值
      */
     public static final String TOP_SLIP_TRIGGER_SOURCE = "topSlipTriggerSource";
-    public static final String TOP_SLIP_TRIGGER_EDGE_EDGE = "topSlipTriggerEdgeEdge";
-    public static final String TOP_SLIP_TRIGGER_EDGE_COUPLE = "topSlipTriggerEdgeCouple";
-    public static final String TOP_SLIP_TRIGGER_PULSEWIDTH_POLAR = "topSlipTriggerPulsewidthPolar";
-    public static final String TOP_SLIP_TRIGGER_PULSEWIDTH_CONDITION = "topSlipTriggerPulsewidthCondition";
-    public static final String TOP_SLIP_TRIGGER_PULSEWIDTH_PULSEWIDTH = "topSlipTriggerPulsewidthPulsewidth";
-    public static final String TOP_SLIP_TRIGGER_PULSEWIDTH_TIME_HIGH = "topSlipTriggerPulsewidthTimeHigh";
-    public static final String TOP_SLIP_TRIGGER_PULSEWIDTH_TIME_LOW = "topSlipTriggerPulsewidthTimeLow";
-    public static final String TOP_SLIP_TRIGGER_LOGIC_CH1 = "topSlipTriggerLogicCh1";
-    public static final String TOP_SLIP_TRIGGER_LOGIC_CH2 = "topSlipTriggerLogicCh2";
-    public static final String TOP_SLIP_TRIGGER_LOGIC_CH3 = "topSlipTriggerLogicCh3";
-    public static final String TOP_SLIP_TRIGGER_LOGIC_CH4 = "topSlipTriggerLogicCh4";
-    public static final String TOP_SLIP_TRIGGER_LOGIC_CH5 = "topSlipTriggerLogicCh5";
-    public static final String TOP_SLIP_TRIGGER_LOGIC_CH6 = "topSlipTriggerLogicCh6";
-    public static final String TOP_SLIP_TRIGGER_LOGIC_CH7 = "topSlipTriggerLogicCh7";
-    public static final String TOP_SLIP_TRIGGER_LOGIC_CH8 = "topSlipTriggerLogicCh8";
-    public static final String TOP_SLIP_TRIGGER_LOGIC_LOGIC = "topSlipTriggerLogicLogic";
-    public static final String TOP_SLIP_TRIGGER_LOGIC_CONDITION = "topSlipTriggerLogicCondition";
-    public static final String TOP_SLIP_TRIGGER_LOGIC_TVLOGIC = "topSlipTriggerLogicTvLogic";
-    public static final String TOP_SLIP_TRIGGER_LOGIC_TIME_HIGH = "topSlipTriggerLogicTimeHigh";
-    public static final String TOP_SLIP_TRIGGER_LOGIC_TIME_LOW = "topSlipTriggerLogicTimeLow";
-    public static final String TOP_SLIP_TRIGGER_NEDGE_SLOPE = "topSlipTriggerNEdgeSlope";
-    public static final String TOP_SLIP_TRIGGER_NEDGE_IDLE = "topSlipTriggerNEdgeIdle";
-    public static final String TOP_SLIP_TRIGGER_NEDGE_EDGE = "topSlipTriggerNEdgeEdge";
-    public static final String TOP_SLIP_TRIGGER_RUNT_POLAR = "topSlipTriggerRuntPolar";
-    public static final String TOP_SLIP_TRIGGER_RUNT_CONDITION = "topSlipTriggerRuntCondition";
-    public static final String TOP_SLIP_TRIGGER_RUNT_TIME_HIGH = "topSlipTriggerRuntTimeHigh";
-    public static final String TOP_SLIP_TRIGGER_RUNT_TIME_LOW = "topSlipTriggerRuntTimeLow";
-    public static final String TOP_SLIP_TRIGGER_SLOPE_EDGE = "topSlipTriggerSlopeEdge";
-    public static final String TOP_SLIP_TRIGGER_SLOPE_CONDITION = "topSlipTriggerSlopeCondition";
-    public static final String TOP_SLIP_TRIGGER_SLOPE_TIME_HIGH = "topSlipTriggerSlopeTimeHigh";
-    public static final String TOP_SLIP_TRIGGER_SLOPE_TIME_LOW = "topSlipTriggerSlopeTimeLow";
-    public static final String TOP_SLIP_TRIGGER_TIMEOUT_POLAR = "topSlipTriggerTimeoutPolar";
-    public static final String TOP_SLIP_TRIGGER_TIMEOUT_OVERTIME = "topSlipTriggerTimeoutOverTime";
-    public static final String TOP_SLIP_TRIGGER_VIDEO_POLAR = "topSlipTriggerVideoPolar";
-    public static final String TOP_SLIP_TRIGGER_VIDEO_STANDARD = "topSlipTriggerVideoStandard";
-    public static final String TOP_SLIP_TRIGGER_VIDEO_TRIGGER = "topSlipTriggerVideoTrigger";
-    public static final String TOP_SLIP_TRIGGER_VIDEO_FREQUENCY = "topSlipTriggerVideoFrequency";
-    public static final String TOP_SLIP_TRIGGER_VIDEO_LINE = "topSlipTriggerVideoLine";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_UART = "topSlipTriggerSerialsUart";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_LIN = "topSlipTriggerSerialsLin";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_CAN = "topSlipTriggerSerialsCan";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_SPI = "topSlipTriggerSerialsSpi";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_I2C = "topSlipTriggerSerialsI2c";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_M429 = "topSlipTriggerSerialsM429";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_M1553B = "topSlipTriggerSerialsM1553b";
+    public static final String TOP_SLIP_TRIGGER_EDGE_EDGE = "topSlipTriggerEdgeEdge"; // 边沿触发-边沿类型(上升/下降/双边沿)
+    public static final String TOP_SLIP_TRIGGER_EDGE_COUPLE = "topSlipTriggerEdgeCouple"; // 边沿触发-耦合
+    public static final String TOP_SLIP_TRIGGER_PULSEWIDTH_POLAR = "topSlipTriggerPulsewidthPolar"; // 脉宽触发-极性
+    public static final String TOP_SLIP_TRIGGER_PULSEWIDTH_CONDITION = "topSlipTriggerPulsewidthCondition"; // 脉宽触发-条件(大于/小于/等于)
+    public static final String TOP_SLIP_TRIGGER_PULSEWIDTH_PULSEWIDTH = "topSlipTriggerPulsewidthPulsewidth"; // 脉宽触发-脉宽值
+    public static final String TOP_SLIP_TRIGGER_PULSEWIDTH_TIME_HIGH = "topSlipTriggerPulsewidthTimeHigh"; // 脉宽触发-时间上限
+    public static final String TOP_SLIP_TRIGGER_PULSEWIDTH_TIME_LOW = "topSlipTriggerPulsewidthTimeLow"; // 脉宽触发-时间下限
+    public static final String TOP_SLIP_TRIGGER_LOGIC_CH1 = "topSlipTriggerLogicCh1"; // 逻辑触发-CH1逻辑值
+    public static final String TOP_SLIP_TRIGGER_LOGIC_CH2 = "topSlipTriggerLogicCh2"; // 逻辑触发-CH2逻辑值
+    public static final String TOP_SLIP_TRIGGER_LOGIC_CH3 = "topSlipTriggerLogicCh3"; // 逻辑触发-CH3逻辑值
+    public static final String TOP_SLIP_TRIGGER_LOGIC_CH4 = "topSlipTriggerLogicCh4"; // 逻辑触发-CH4逻辑值
+    public static final String TOP_SLIP_TRIGGER_LOGIC_CH5 = "topSlipTriggerLogicCh5"; // 逻辑触发-CH5逻辑值
+    public static final String TOP_SLIP_TRIGGER_LOGIC_CH6 = "topSlipTriggerLogicCh6"; // 逻辑触发-CH6逻辑值
+    public static final String TOP_SLIP_TRIGGER_LOGIC_CH7 = "topSlipTriggerLogicCh7"; // 逻辑触发-CH7逻辑值
+    public static final String TOP_SLIP_TRIGGER_LOGIC_CH8 = "topSlipTriggerLogicCh8"; // 逻辑触发-CH8逻辑值
+    public static final String TOP_SLIP_TRIGGER_LOGIC_LOGIC = "topSlipTriggerLogicLogic"; // 逻辑触发-逻辑运算(AND/OR)
+    public static final String TOP_SLIP_TRIGGER_LOGIC_CONDITION = "topSlipTriggerLogicCondition"; // 逻辑触发-条件
+    public static final String TOP_SLIP_TRIGGER_LOGIC_TVLOGIC = "topSlipTriggerLogicTvLogic"; // 逻辑触发-TV逻辑
+    public static final String TOP_SLIP_TRIGGER_LOGIC_TIME_HIGH = "topSlipTriggerLogicTimeHigh"; // 逻辑触发-时间上限
+    public static final String TOP_SLIP_TRIGGER_LOGIC_TIME_LOW = "topSlipTriggerLogicTimeLow"; // 逻辑触发-时间下限
+    public static final String TOP_SLIP_TRIGGER_NEDGE_SLOPE = "topSlipTriggerNEdgeSlope"; // N边沿触发-斜率
+    public static final String TOP_SLIP_TRIGGER_NEDGE_IDLE = "topSlipTriggerNEdgeIdle"; // N边沿触发-空闲电平
+    public static final String TOP_SLIP_TRIGGER_NEDGE_EDGE = "topSlipTriggerNEdgeEdge"; // N边沿触发-边沿数
+    public static final String TOP_SLIP_TRIGGER_RUNT_POLAR = "topSlipTriggerRuntPolar"; // 矮脉冲触发-极性
+    public static final String TOP_SLIP_TRIGGER_RUNT_CONDITION = "topSlipTriggerRuntCondition"; // 矮脉冲触发-条件
+    public static final String TOP_SLIP_TRIGGER_RUNT_TIME_HIGH = "topSlipTriggerRuntTimeHigh"; // 矮脉冲触发-时间上限
+    public static final String TOP_SLIP_TRIGGER_RUNT_TIME_LOW = "topSlipTriggerRuntTimeLow"; // 矮脉冲触发-时间下限
+    public static final String TOP_SLIP_TRIGGER_SLOPE_EDGE = "topSlipTriggerSlopeEdge"; // 斜率触发-边沿
+    public static final String TOP_SLIP_TRIGGER_SLOPE_CONDITION = "topSlipTriggerSlopeCondition"; // 斜率触发-条件
+    public static final String TOP_SLIP_TRIGGER_SLOPE_TIME_HIGH = "topSlipTriggerSlopeTimeHigh"; // 斜率触发-时间上限
+    public static final String TOP_SLIP_TRIGGER_SLOPE_TIME_LOW = "topSlipTriggerSlopeTimeLow"; // 斜率触发-时间下限
+    public static final String TOP_SLIP_TRIGGER_TIMEOUT_POLAR = "topSlipTriggerTimeoutPolar"; // 超时触发-极性
+    public static final String TOP_SLIP_TRIGGER_TIMEOUT_OVERTIME = "topSlipTriggerTimeoutOverTime"; // 超时触发-超时时间
+    public static final String TOP_SLIP_TRIGGER_VIDEO_POLAR = "topSlipTriggerVideoPolar"; // 视频触发-极性
+    public static final String TOP_SLIP_TRIGGER_VIDEO_STANDARD = "topSlipTriggerVideoStandard"; // 视频触发-标准(PAL/NTSC)
+    public static final String TOP_SLIP_TRIGGER_VIDEO_TRIGGER = "topSlipTriggerVideoTrigger"; // 视频触发-触发方式
+    public static final String TOP_SLIP_TRIGGER_VIDEO_FREQUENCY = "topSlipTriggerVideoFrequency"; // 视频触发-频率
+    public static final String TOP_SLIP_TRIGGER_VIDEO_LINE = "topSlipTriggerVideoLine"; // 视频触发-行号
+    public static final String TOP_SLIP_TRIGGER_SERIALS_UART = "topSlipTriggerSerialsUart"; // 串口触发-UART
+    public static final String TOP_SLIP_TRIGGER_SERIALS_LIN = "topSlipTriggerSerialsLin"; // 串口触发-LIN
+    public static final String TOP_SLIP_TRIGGER_SERIALS_CAN = "topSlipTriggerSerialsCan"; // 串口触发-CAN
+    public static final String TOP_SLIP_TRIGGER_SERIALS_SPI = "topSlipTriggerSerialsSpi"; // 串口触发-SPI
+    public static final String TOP_SLIP_TRIGGER_SERIALS_I2C = "topSlipTriggerSerialsI2c"; // 串口触发-I2C
+    public static final String TOP_SLIP_TRIGGER_SERIALS_M429 = "topSlipTriggerSerialsM429"; // 串口触发-M429
+    public static final String TOP_SLIP_TRIGGER_SERIALS_M1553B = "topSlipTriggerSerialsM1553b"; // 串口触发-M1553B
 
-    public static final String TOP_SLIP_TRIGGER_SERIALS_M429_DATA = "topSlipTriggerSerialsM429DataData";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_M429_LABEL = "topSlipTriggerSerialsM429Label";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_M429_LABELDATA_LABEL = "topSlipTriggerSerialsM429LabelDataLabel";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_M429_LABELDATA_DATA = "topSlipTriggerSerialsM429LabelDataData";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_M429_LABELSDI_LABEL = "topSlipTriggerSerialsM429LabelSdiLabel";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_M429_LABELSDI_SDI = "topSlipTriggerSerialsM429LabelSdiSdi";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_M429_LABELSSM_LABEL = "topSlipTriggerSerialsM429LabelSsmLabel";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_M429_LABELSSM_SSM = "topSlipTriggerSerialsM429LabelSsmSsm";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_M429_SDI = "topSlipTriggerSerialsM429Sdi";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_M429_SSM = "topSlipTriggerSerialsM429Ssm";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_CAN_DATAID = "topSlipTriggerSerialsCanDataId";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_CAN_IDDATA_ID = "topSlipTriggerSerialsCanIdDataId";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_CAN_IDDATA_DLC = "topSlipTriggerSerialsCanIdDataDic";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_CAN_IDDATA_DATA = "topSlipTriggerSerialsCanIdDataData";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_CAN_RDID = "topSlipTriggerSerialsCanRdId";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_CAN_REMOTEID = "topSlipTriggerSerialsCanRemoteId";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_I2C_10WRITEFRAME_ADDR = "topSlipTriggerSerialsI2c10WriteFrameAddr";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_I2C_10WRITEFRAME_DATA = "topSlipTriggerSerialsI2c10WriteFrameData";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_I2C_FRAME1_ADDR = "topSlipTriggerSerialsI2cFrame1Addr";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_I2C_FRAME1_DATA = "topSlipTriggerSerialsI2cFrame1Data";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_I2C_FRAME2_ADDR = "topSlipTriggerSerialsI2cFrame2Addr";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_I2C_FRAME2_DATA1 = "topSlipTriggerSerialsI2cFrame2Data1";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_I2C_FRAME2_DATA2 = "topSlipTriggerSerialsI2cFrame2Data2";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_I2C_NOACKINADR = "topSlipTriggerSerialsI2cNoAckInAdr";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_I2C_ROMDATA_CONDITION = "topSlipTriggerSerialsI2cRomDataCondition";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_I2C_ROMDATA_DATA = "topSlipTriggerSerialsI2cRomDataData";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_LIN_FRAMEID = "topSlipTriggerSerialsLinFrameId";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_LIN_IDDATA_ID = "topSlipTriggerSerialsLinIdDataId";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_LIN_IDDATA_DATA = "topSlipTriggerSerialsLinIdDataData";
+    public static final String TOP_SLIP_TRIGGER_SERIALS_M429_DATA = "topSlipTriggerSerialsM429DataData"; // M429触发-数据
+    public static final String TOP_SLIP_TRIGGER_SERIALS_M429_LABEL = "topSlipTriggerSerialsM429Label"; // M429触发-标签
+    public static final String TOP_SLIP_TRIGGER_SERIALS_M429_LABELDATA_LABEL = "topSlipTriggerSerialsM429LabelDataLabel"; // M429触发-标签+数据-标签
+    public static final String TOP_SLIP_TRIGGER_SERIALS_M429_LABELDATA_DATA = "topSlipTriggerSerialsM429LabelDataData"; // M429触发-标签+数据-数据
+    public static final String TOP_SLIP_TRIGGER_SERIALS_M429_LABELSDI_LABEL = "topSlipTriggerSerialsM429LabelSdiLabel"; // M429触发-标签+SDI-标签
+    public static final String TOP_SLIP_TRIGGER_SERIALS_M429_LABELSDI_SDI = "topSlipTriggerSerialsM429LabelSdiSdi"; // M429触发-标签+SDI-SDI
+    public static final String TOP_SLIP_TRIGGER_SERIALS_M429_LABELSSM_LABEL = "topSlipTriggerSerialsM429LabelSsmLabel"; // M429触发-标签+SSM-标签
+    public static final String TOP_SLIP_TRIGGER_SERIALS_M429_LABELSSM_SSM = "topSlipTriggerSerialsM429LabelSsmSsm"; // M429触发-标签+SSM-SSM
+    public static final String TOP_SLIP_TRIGGER_SERIALS_M429_SDI = "topSlipTriggerSerialsM429Sdi"; // M429触发-SDI
+    public static final String TOP_SLIP_TRIGGER_SERIALS_M429_SSM = "topSlipTriggerSerialsM429Ssm"; // M429触发-SSM
+    public static final String TOP_SLIP_TRIGGER_SERIALS_CAN_DATAID = "topSlipTriggerSerialsCanDataId"; // CAN触发-数据ID
+    public static final String TOP_SLIP_TRIGGER_SERIALS_CAN_IDDATA_ID = "topSlipTriggerSerialsCanIdDataId"; // CAN触发-ID+数据-ID
+    public static final String TOP_SLIP_TRIGGER_SERIALS_CAN_IDDATA_DLC = "topSlipTriggerSerialsCanIdDataDic"; // CAN触发-ID+数据-DLC
+    public static final String TOP_SLIP_TRIGGER_SERIALS_CAN_IDDATA_DATA = "topSlipTriggerSerialsCanIdDataData"; // CAN触发-ID+数据-数据
+    public static final String TOP_SLIP_TRIGGER_SERIALS_CAN_RDID = "topSlipTriggerSerialsCanRdId"; // CAN触发-远程帧ID
+    public static final String TOP_SLIP_TRIGGER_SERIALS_CAN_REMOTEID = "topSlipTriggerSerialsCanRemoteId"; // CAN触发-远程ID
+    public static final String TOP_SLIP_TRIGGER_SERIALS_I2C_10WRITEFRAME_ADDR = "topSlipTriggerSerialsI2c10WriteFrameAddr"; // I2C触发-10位写帧地址
+    public static final String TOP_SLIP_TRIGGER_SERIALS_I2C_10WRITEFRAME_DATA = "topSlipTriggerSerialsI2c10WriteFrameData"; // I2C触发-10位写帧数据
+    public static final String TOP_SLIP_TRIGGER_SERIALS_I2C_FRAME1_ADDR = "topSlipTriggerSerialsI2cFrame1Addr"; // I2C触发-帧1地址
+    public static final String TOP_SLIP_TRIGGER_SERIALS_I2C_FRAME1_DATA = "topSlipTriggerSerialsI2cFrame1Data"; // I2C触发-帧1数据
+    public static final String TOP_SLIP_TRIGGER_SERIALS_I2C_FRAME2_ADDR = "topSlipTriggerSerialsI2cFrame2Addr"; // I2C触发-帧2地址
+    public static final String TOP_SLIP_TRIGGER_SERIALS_I2C_FRAME2_DATA1 = "topSlipTriggerSerialsI2cFrame2Data1"; // I2C触发-帧2数据1
+    public static final String TOP_SLIP_TRIGGER_SERIALS_I2C_FRAME2_DATA2 = "topSlipTriggerSerialsI2cFrame2Data2"; // I2C触发-帧2数据2
+    public static final String TOP_SLIP_TRIGGER_SERIALS_I2C_NOACKINADR = "topSlipTriggerSerialsI2cNoAckInAdr"; // I2C触发-地址中无ACK
+    public static final String TOP_SLIP_TRIGGER_SERIALS_I2C_ROMDATA_CONDITION = "topSlipTriggerSerialsI2cRomDataCondition"; // I2C触发-ROM数据条件
+    public static final String TOP_SLIP_TRIGGER_SERIALS_I2C_ROMDATA_DATA = "topSlipTriggerSerialsI2cRomDataData"; // I2C触发-ROM数据
+    public static final String TOP_SLIP_TRIGGER_SERIALS_LIN_FRAMEID = "topSlipTriggerSerialsLinFrameId"; // LIN触发-帧ID
+    public static final String TOP_SLIP_TRIGGER_SERIALS_LIN_IDDATA_ID = "topSlipTriggerSerialsLinIdDataId"; // LIN触发-ID+数据-ID
+    public static final String TOP_SLIP_TRIGGER_SERIALS_LIN_IDDATA_DATA = "topSlipTriggerSerialsLinIdDataData"; // LIN触发-ID+数据-数据
     public static final String TOP_SLIP_TRIGGER_SERIALS_LIN_DATADATA_ID = "topSlipTriggerSerialsLinDataDataId";//用于存储帧ID输入为X时候的值
-    public static final String TOP_SLIP_TRIGGER_SERIALS_M1553B_CSWORD = "topSlipTriggerSerialsM1553bCsWord";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_M1553B_DATAWORD = "topSlipTriggerSerialsM1553bDataWord";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_M1553B_RTADDR = "topSlipTriggerSerialsM1553bRrAddr";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_SPI_DATA = "topSlipTriggerSerialsSpiData";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_UART_0DATA_CONDITION = "topSlipTriggerSerialsUart0DataCondition";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_UART_0DATA_EDIT = "topSlipTriggerSerialsUart0DataEdit";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_UART_1DATA_CONDITION = "topSlipTriggerSerialsUart1DataCondition";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_UART_1DATA_EDIT = "topSlipTriggerSerialsUart1DataEdit";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_UART_DATA_CONDITION = "topSlipTriggerSerialsUartDataCondition";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_UART_DATA_EDIT = "topSlipTriggerSerialsUartDataEdit";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_UART_XDATA_CONDITION = "topSlipTriggerSerialsUartxDataCondition";
-    public static final String TOP_SLIP_TRIGGER_SERIALS_UART_XDATA_EDIT = "topSlipTriggerSerialsUartxDataEdit";
+    public static final String TOP_SLIP_TRIGGER_SERIALS_M1553B_CSWORD = "topSlipTriggerSerialsM1553bCsWord"; // M1553B触发-命令字
+    public static final String TOP_SLIP_TRIGGER_SERIALS_M1553B_DATAWORD = "topSlipTriggerSerialsM1553bDataWord"; // M1553B触发-数据字
+    public static final String TOP_SLIP_TRIGGER_SERIALS_M1553B_RTADDR = "topSlipTriggerSerialsM1553bRrAddr"; // M1553B触发-RT地址
+    public static final String TOP_SLIP_TRIGGER_SERIALS_SPI_DATA = "topSlipTriggerSerialsSpiData"; // SPI触发-数据
+    public static final String TOP_SLIP_TRIGGER_SERIALS_UART_0DATA_CONDITION = "topSlipTriggerSerialsUart0DataCondition"; // UART触发-0数据条件
+    public static final String TOP_SLIP_TRIGGER_SERIALS_UART_0DATA_EDIT = "topSlipTriggerSerialsUart0DataEdit"; // UART触发-0数据编辑值
+    public static final String TOP_SLIP_TRIGGER_SERIALS_UART_1DATA_CONDITION = "topSlipTriggerSerialsUart1DataCondition"; // UART触发-1数据条件
+    public static final String TOP_SLIP_TRIGGER_SERIALS_UART_1DATA_EDIT = "topSlipTriggerSerialsUart1DataEdit"; // UART触发-1数据编辑值
+    public static final String TOP_SLIP_TRIGGER_SERIALS_UART_DATA_CONDITION = "topSlipTriggerSerialsUartDataCondition"; // UART触发-数据条件
+    public static final String TOP_SLIP_TRIGGER_SERIALS_UART_DATA_EDIT = "topSlipTriggerSerialsUartDataEdit"; // UART触发-数据编辑值
+    public static final String TOP_SLIP_TRIGGER_SERIALS_UART_XDATA_CONDITION = "topSlipTriggerSerialsUartxDataCondition"; // UART触发-X数据条件
+    public static final String TOP_SLIP_TRIGGER_SERIALS_UART_XDATA_EDIT = "topSlipTriggerSerialsUartxDataEdit"; // UART触发-X数据编辑值
 
 
-    public static final String WAVE_TYPE_WAV = "0";
-    public static final String WAVE_TYPE_CSV = "1";
-    public static final String WAVE_TYPE_BIN = "2";
-    public static final String SAVE_TYPE_SETTING = "3";
-    public static final String SAVE_TYPE_PICTURE = "4";
-    public static final String SAVE_TYPE_SESSION = "5";
-    public static final String SAVE_TYPE_AUTOSAVE = "6";
+    public static final String WAVE_TYPE_WAV = "0"; // 波形类型：WAV
+    public static final String WAVE_TYPE_CSV = "1"; // 波形类型：CSV
+    public static final String WAVE_TYPE_BIN = "2"; // 波形类型：BIN
+    public static final String SAVE_TYPE_SETTING = "3"; // 保存类型：设置
+    public static final String SAVE_TYPE_PICTURE = "4"; // 保存类型：图片
+    public static final String SAVE_TYPE_SESSION = "5"; // 保存类型：会话
+    public static final String SAVE_TYPE_AUTOSAVE = "6"; // 保存类型：自动保存
     public static final String TOP_SLIP_WAVE_INVOKE_TYPE = "topSlipWaveInvokeType";//当前选中的波形文件类型
 
     public static final String TOP_SLIP_WAVE_FILE_PATH = "topSlipWaveFilePath";//调用 wav/csv/bin文件路径
@@ -510,24 +579,24 @@ public class CacheUtil {
     public static final String HIGH = "high";                         //当电平需要两个时，高的那个需要添加HIGH
     public static final String TRIGGER_CHANNEL = "TRIGGER_CHANNEL";   //用于一般触发的触发电平值
     public static final String VALUE_CHANNEL = "VALUE_CHANNEL";       //用于串口的阈值电平
-    public static final String TRIGGER_CHANNEL_H = TRIGGER_CHANNEL + HIGH;
-    public static final String VALUE_CHANNEL_H = VALUE_CHANNEL + HIGH;
+    public static final String TRIGGER_CHANNEL_H = TRIGGER_CHANNEL + HIGH; // 高触发电平key后缀
+    public static final String VALUE_CHANNEL_H = VALUE_CHANNEL + HIGH; // 高阈值电平key后缀
     public static final String TRIGGER_CHANNEL_TEMP = "TRIGGER_CHANNEL_TEMP";   //用于超出屏幕外的触发电平值的显示
     public static final String VALUE_CHANNEL_TEMP = "VALUE_CHANNEL_TEMP";       //用于超出屏幕外的阈值电平值的显示
-    public static final String TRIGGER_CHANNEL_TEMP_H = TRIGGER_CHANNEL_TEMP + HIGH;
-    public static final String VALUE_CHANNEL_TEMP_H = VALUE_CHANNEL_TEMP + HIGH;
+    public static final String TRIGGER_CHANNEL_TEMP_H = TRIGGER_CHANNEL_TEMP + HIGH; // 超出屏幕外的高触发电平key后缀
+    public static final String VALUE_CHANNEL_TEMP_H = VALUE_CHANNEL_TEMP + HIGH; // 超出屏幕外的高阈值电平key后缀
 
     //region 临时变量
     // BUG:0009859
     //使用情况：当触发不在串型触时，切入串型文本解码后，自动跳转串型触发，当无操作，返回YT模式要切换到之前的触发类型，否则不切换到之前的触发类型
     //是否操作的定义包括：二级标题及内容的选择，点击等操作
-    public static final String SAVE_TEMP_TRIGGER_INDEX = "SAVE_TEMP_TRIGGER_INDEX";
-    public static final String SAVE_TEMP_TRIGGER_IS_OPTION = "SAVE_TEM_TRIGGER_IS_OPTION";
+    public static final String SAVE_TEMP_TRIGGER_INDEX = "SAVE_TEMP_TRIGGER_INDEX"; // 临时保存的触发类型索引
+    public static final String SAVE_TEMP_TRIGGER_IS_OPTION = "SAVE_TEM_TRIGGER_IS_OPTION"; // 临时保存的触发是否已操作
     //endregion
     //BUG:08887
-    public static final String SAVE_TEMP_IS_CALIBRATION = "SAVE_TEMP_IS_CALIBRATION";
+    public static final String SAVE_TEMP_IS_CALIBRATION = "SAVE_TEMP_IS_CALIBRATION"; // 临时保存的校准标记
 
-    public static final String USER_TOUCH = "USER_TOUCH";
+    public static final String USER_TOUCH = "USER_TOUCH"; // 用户触摸事件标记
     /**
      * 信号	    初始电平值
      * UART	    1V
@@ -545,39 +614,43 @@ public class CacheUtil {
     /**
      * 这里保存的是电平值
      */
-    private final double valueInitUart = 1;
-    private final double valueInitLin = 1;
-    private final double valueInitCan0 = 3;
-    private final double valueInitCan1 = 2;
-    private final double valueInitCan2 = 1;
-    private final double valueInitCan3 = 1;
-    private final double valueInitCan4 = 1;
-    private final double valueInitCan5 = 1;
-    private final double valueInitSpi = 1;
-    private final double valueInitI2c = 1;
-    private final double valueInit429H = 3;
-    private final double valueInit429L = -3;
-    private final double valueInit1553b = -0.25;
+    private final double valueInitUart = 1; // UART初始阈值电平：1V
+    private final double valueInitLin = 1; // LIN初始阈值电平：1V
+    private final double valueInitCan0 = 3; // CAN_H初始阈值电平：3V
+    private final double valueInitCan1 = 2; // CAN_L初始阈值电平：2V
+    private final double valueInitCan2 = 1; // CAN H_L初始阈值电平：1V
+    private final double valueInitCan3 = 1; // CAN L_H初始阈值电平：1V
+    private final double valueInitCan4 = 1; // CAN Rx初始阈值电平：1V
+    private final double valueInitCan5 = 1; // CAN Tx初始阈值电平：1V
+    private final double valueInitSpi = 1; // SPI初始阈值电平：1V
+    private final double valueInitI2c = 1; // I2C初始阈值电平：1V
+    private final double valueInit429H = 3; // M429高电平初始值：3V
+    private final double valueInit429L = -3; // M429低电平初始值：-3V
+    private final double valueInit1553b = -0.25; // M1553B初始阈值电平：-250mV
     /**
      * 当前总线类型下的阈值电平值是否是使用的初始值
      * 一般形式的key为：VALUE_INIT + S1 + UART + CH1
      */
     public static final String VALUE_INIT = "VALUE_INIT";
-    public static final int S1 = 1;
-    public static final int S2 = 2;
-    public static final int S3 = 3;
-    public static final int S4 = 4;
-    public static final int UART = 0;
-    public static final int LIN = 1;
-    public static final int CAN = 2;
-    public static final int SPI = 3;
-    public static final int I2C = 4;
-    public static final int M429 = 5;
-    public static final int M1553B = 6;
+    public static final int S1 = 1; // 串口槽位1
+    public static final int S2 = 2; // 串口槽位2
+    public static final int S3 = 3; // 串口槽位3
+    public static final int S4 = 4; // 串口槽位4
+    public static final int UART = 0; // 总线类型：UART
+    public static final int LIN = 1; // 总线类型：LIN
+    public static final int CAN = 2; // 总线类型：CAN
+    public static final int SPI = 3; // 总线类型：SPI
+    public static final int I2C = 4; // 总线类型：I2C
+    public static final int M429 = 5; // 总线类型：ARINC429(M429)
+    public static final int M1553B = 6; // 总线类型：MIL-STD-1553B
 
+    /**
+     * 遍历串口槽位S1到S3（不含S4），对每个槽位执行指定操作
+     * @param action 对每个槽位编号执行的操作
+     */
     public static void foreachS1ToS4(Consumer<Integer> action) {
-        for (int i = S1; i < S4; i++) {
-            action.accept(i);
+        for (int i = S1; i < S4; i++) { // 从S1遍历到S3
+            action.accept(i); // 对当前槽位执行操作
         }
     }
 
@@ -598,53 +671,53 @@ public class CacheUtil {
      * 最后一次更改总线类型的操作是s1进行的还是s2进行的，默认是s1返回1
      */
     public static final String LASTSET_SERIALS = "LASTSET_SERIALS";
-    public static final String MAIN_WAVE_CH_Y_ZERO_POSITION = "mainWaveChYZeroPosition";
-    public static final String MAIN_WAVE_CH_XY_POSITION = "mainWaveChXYPosition";
-    public static final String MAIN_WAVE_CH_Y_POSITION = "mainWaveChannelYPosition";
-    public static final String MAIN_WAVE_CH_Y_POSITION_YT = "mainWaveChannelYPositionYT";
-    public static final String MAIN_WAVE_MATH_DW_Y_POSITION = "MAIN_WAVE_MATH_DW_Y_POSITION";
-    public static final String MAIN_WAVE_MATH_FFT_DB_Y_POSITION = "MAIN_WAVE_MATH_FFT_DB_Y_POSITION";
-    public static final String MAIN_WAVE_MATH_FFT_RMS_Y_POSITION = "MAIN_WAVE_MATH_FFT_RMS_Y_POSITION";
-    public static final String MAIN_WAVE_MATH_AXB_Y_POSITION = "MAIN_WAVE_MATH_AXB_Y_POSITION";
-    public static final String MAIN_WAVE_MATH_AM_Y_POSITION = "MAIN_WAVE_MATH_AM_Y_POSITION";
-    public static final String MAIN_WAVE_REF_Y_POSITION = "mainWaveRefYPosition";
-    public static final String MAIN_WAVE_SERIAL_Y_POSITION = "MAIN_WAVE_SERIAL_Y_POSITION";
-    public static final String MAIN_WAVE_TIMEBASE_POSITION_NORMAL = "MAIN_WAVE_TIMEBASE_POSITION_NORMAL";
-    public static final String MAIN_WAVE_TIMEBASE_POSITION_FFTMOD = "MAIN_WAVE_TIMEBASE_POSITION_FFTMOD";
-    public static final String MAIN_WAVE_TIMEBASE_POSITION_RN = "MAIN_WAVE_TIMEBASE_POSITION_RN";
+    public static final String MAIN_WAVE_CH_Y_ZERO_POSITION = "mainWaveChYZeroPosition"; // 通道零频线Y位置
+    public static final String MAIN_WAVE_CH_XY_POSITION = "mainWaveChXYPosition"; // XY模式通道位置
+    public static final String MAIN_WAVE_CH_Y_POSITION = "mainWaveChannelYPosition"; // 通道Y位置
+    public static final String MAIN_WAVE_CH_Y_POSITION_YT = "mainWaveChannelYPositionYT"; // YT模式通道Y位置
+    public static final String MAIN_WAVE_MATH_DW_Y_POSITION = "MAIN_WAVE_MATH_DW_Y_POSITION"; // Math双波形Y位置
+    public static final String MAIN_WAVE_MATH_FFT_DB_Y_POSITION = "MAIN_WAVE_MATH_FFT_DB_Y_POSITION"; // Math FFT dB Y位置
+    public static final String MAIN_WAVE_MATH_FFT_RMS_Y_POSITION = "MAIN_WAVE_MATH_FFT_RMS_Y_POSITION"; // Math FFT RMS Y位置
+    public static final String MAIN_WAVE_MATH_AXB_Y_POSITION = "MAIN_WAVE_MATH_AXB_Y_POSITION"; // Math A×B Y位置
+    public static final String MAIN_WAVE_MATH_AM_Y_POSITION = "MAIN_WAVE_MATH_AM_Y_POSITION"; // Math高级运算Y位置
+    public static final String MAIN_WAVE_REF_Y_POSITION = "mainWaveRefYPosition"; // Ref通道Y位置
+    public static final String MAIN_WAVE_SERIAL_Y_POSITION = "MAIN_WAVE_SERIAL_Y_POSITION"; // 串口通道Y位置
+    public static final String MAIN_WAVE_TIMEBASE_POSITION_NORMAL = "MAIN_WAVE_TIMEBASE_POSITION_NORMAL"; // 普通模式时基位置
+    public static final String MAIN_WAVE_TIMEBASE_POSITION_FFTMOD = "MAIN_WAVE_TIMEBASE_POSITION_FFTMOD"; // FFT模式时基位置
+    public static final String MAIN_WAVE_TIMEBASE_POSITION_RN = "MAIN_WAVE_TIMEBASE_POSITION_RN"; // RefN时基位置
 
-    public static final String MAIN_WAVE_TIMEBASE_MIN = "MAIN_WAVE_TIMEBASE_MIN";
-    public static final String MAIN_WAVE_TIMEBASE_MAX = "MAIN_WAVE_TIMEBASE_MAX";
+    public static final String MAIN_WAVE_TIMEBASE_MIN = "MAIN_WAVE_TIMEBASE_MIN"; // 时基最小值
+    public static final String MAIN_WAVE_TIMEBASE_MAX = "MAIN_WAVE_TIMEBASE_MAX"; // 时基最大值
     public static final String MAIN_WAVE_ZONE_HEIGHT = "MAIN_WAVE_ZONE_HEIGHT";//当前波形区域的高
     public static final String MAIN_WAVE_LABEL_POSITION = "MAIN_WAVE_LABEL_POSITION";//波形标签的水平位置
-    public static final String MAIN_CHANNEL_COLOR = "MAIN_CHANNEL_COLOR";
+    public static final String MAIN_CHANNEL_COLOR = "MAIN_CHANNEL_COLOR"; // 通道颜色
 
     //factoryCalibration
-    public static final String CALIBRATION_TOP_ZERO = "CALIBRATION_TOP_ZERO";
-    public static final String CALIBRATION_TOP_ADGAIN = "CALIBRATION_TOP_ADGAIN";
-    public static final String CALIBRATION_TOP_ADZERO = "CALIBRATION_TOP_ADZERO";
-    public static final String CALIBRATION_CENTER_CH1GAIN = "CALIBRATION_CENTER_CH1GAIN";
-    public static final String CALIBRATION_CENTER_CH2GAIN = "CALIBRATION_CENTER_CH2GAIN";
-    public static final String CALIBRATION_CENTER_CH3GAIN = "CALIBRATION_CENTER_CH3GAIN";
-    public static final String CALIBRATION_CENTER_CH4GAIN = "CALIBRATION_CENTER_CH4GAIN";
-    public static final String CALIBRATION_BOTTOM_ZERO = "CALIBRATION_BOTTOM_ZERO";
-    public static final String CALIBRATION_BOTTOM_OFFSET = "CALIBRATION_BOTTOM_OFFSET";
-    public static final String CALIBRATION_BOTTOM_CHDIFF = "CALIBRATION_BOTTOM_CHDIFF";
+    public static final String CALIBRATION_TOP_ZERO = "CALIBRATION_TOP_ZERO"; // 校准-顶部零点
+    public static final String CALIBRATION_TOP_ADGAIN = "CALIBRATION_TOP_ADGAIN"; // 校准-顶部AD增益
+    public static final String CALIBRATION_TOP_ADZERO = "CALIBRATION_TOP_ADZERO"; // 校准-顶部AD零点
+    public static final String CALIBRATION_CENTER_CH1GAIN = "CALIBRATION_CENTER_CH1GAIN"; // 校准-中心CH1增益
+    public static final String CALIBRATION_CENTER_CH2GAIN = "CALIBRATION_CENTER_CH2GAIN"; // 校准-中心CH2增益
+    public static final String CALIBRATION_CENTER_CH3GAIN = "CALIBRATION_CENTER_CH3GAIN"; // 校准-中心CH3增益
+    public static final String CALIBRATION_CENTER_CH4GAIN = "CALIBRATION_CENTER_CH4GAIN"; // 校准-中心CH4增益
+    public static final String CALIBRATION_BOTTOM_ZERO = "CALIBRATION_BOTTOM_ZERO"; // 校准-底部零点
+    public static final String CALIBRATION_BOTTOM_OFFSET = "CALIBRATION_BOTTOM_OFFSET"; // 校准-底部偏移
+    public static final String CALIBRATION_BOTTOM_CHDIFF = "CALIBRATION_BOTTOM_CHDIFF"; // 校准-底部通道差分
 
     //其它保存 othermap定义
-    public static final String LANGUAGE = "language";
-    public static final String USERSET = "userset";
-    public static final String USERSET_DEFAULTNAME = "USERSET_";
-    public static final String GENNAME_INDEXDATE_WAV = "genName_indexDate_WAV";
-    public static final String GENNAME_INDEXDATE_CSV = "genName_indexDate_CSV";
-    public static final String GENNAME_INDEXDATE_BIN = "genName_indexDate_BIN";
+    public static final String LANGUAGE = "language"; // 系统语言
+    public static final String USERSET = "userset"; // 用户设置名称
+    public static final String USERSET_DEFAULTNAME = "USERSET_"; // 用户设置默认名称前缀
+    public static final String GENNAME_INDEXDATE_WAV = "genName_indexDate_WAV"; // WAV文件名日期索引
+    public static final String GENNAME_INDEXDATE_CSV = "genName_indexDate_CSV"; // CSV文件名日期索引
+    public static final String GENNAME_INDEXDATE_BIN = "genName_indexDate_BIN"; // BIN文件名日期索引
     public static final String GENNAME_INDEXDATE_SBT = "genName_indexDate_SBT";//seriasBusText
-    public static final String GENNAME_INDEX_WAV = "genName_index_WAV";
-    public static final String GENNAME_INDEX_CSV = "genName_index_CSV";
-    public static final String GENNAME_INDEX_BIN = "genName_index_BIN";
+    public static final String GENNAME_INDEX_WAV = "genName_index_WAV"; // WAV文件名序号索引
+    public static final String GENNAME_INDEX_CSV = "genName_index_CSV"; // CSV文件名序号索引
+    public static final String GENNAME_INDEX_BIN = "genName_index_BIN"; // BIN文件名序号索引
     public static final String GENNAME_INDEX_SBT = "genName_index_SBT";//seriasBusText
-    public static final String GENNAME_INDEX_FIRST = "0001";
-    public static final String MAIN_BOTTOM_USB_PATH = "MAIN_BOTTOM_USB_PATH";
+    public static final String GENNAME_INDEX_FIRST = "0001"; // 文件名序号初始值
+    public static final String MAIN_BOTTOM_USB_PATH = "MAIN_BOTTOM_USB_PATH"; // USB存储路径
 
     public static final String LAST_OBJECT_IS_CURSOR = "LAST_OBJECT_IS_CURSOR";
     //endregion
@@ -655,32 +728,45 @@ public class CacheUtil {
     //endregion
 
     //region 单例创建
-    private static CacheUtil cacheUtil;
+    private static CacheUtil cacheUtil; // 单例实例引用
 
+    /**
+     * 私有构造函数，初始化缓存
+     * 清空两个HashMap，加载otherMap默认值，初始化缓存机制
+     */
     private CacheUtil() {
-        map.clear();
-        otherMap.clear();
-//        getCacheMap();
-        getOtherMap();
-        initCache();
+        map.clear(); // 清空主参数缓存
+        otherMap.clear(); // 清空杂项缓存
+//        getCacheMap(); // 不在此处加载主缓存，延迟到首次读取时加载
+        getOtherMap(); // 加载杂项缓存默认值
+        initCache(); // 初始化缓存机制（定时持久化等）
     }
 
+    /**
+     * 获取CacheUtil单例实例（懒汉式）
+     * 首次调用时创建实例，后续调用直接返回已有实例
+     * @return CacheUtil单例实例
+     */
     public static CacheUtil get() {
-        if (cacheUtil == null) {
-            cacheUtil = new CacheUtil();
+        if (cacheUtil == null) { // 如果单例尚未创建
+            cacheUtil = new CacheUtil(); // 创建新实例
         }
-        return cacheUtil;
+        return cacheUtil; // 返回单例实例
     }
     //endregion
 
     //region map读写
-    private HashMap<String, String> map = new HashMap<>();
+    private HashMap<String, String> map = new HashMap<>(); // 主参数缓存，存储所有UI参数（通道/触发/串口/测量/显示等）
     /**
      * 杂项：保存记录名称、语言
      */
-    private HashMap<String, String> otherMap = new HashMap<>();
+    private HashMap<String, String> otherMap = new HashMap<>(); // 杂项缓存，存储路径/文件名/校准/语言/序号等辅助参数
 
 
+    /**
+     * 从持久化文件加载主参数缓存（延迟加载）
+     * 仅在map为空时执行加载，避免重复IO操作
+     */
     private void loadMapFromUserSet() {
         if (map.isEmpty()) {
             try {
@@ -692,6 +778,10 @@ public class CacheUtil {
         }
     }
 
+    /**
+     * 从持久化文件加载杂项缓存（延迟加载）
+     * 仅在otherMap为空时执行加载，避免重复IO操作
+     */
     private void loadOtherMapFromUserSet() {
         if (otherMap.isEmpty()) {
             try {
@@ -703,10 +793,20 @@ public class CacheUtil {
         }
     }
 
+    /**
+     * 判断当前是否为Ref时基模式
+     * @return true表示Ref时基模式，false表示普通时基模式
+     */
     public boolean isRefTimebase(){
-        return bRefTimebase;
+        return bRefTimebase; // 返回Ref时基标记
     }
-    private boolean bRefTimebase = false;
+    private boolean bRefTimebase = false; // Ref时基模式标记（由clearTempSaveParam设置）
+
+    /**
+     * 清除临时保存的参数
+     * 处理校准标记和Ref时基模式标记，在加载参数后调用
+     * @param map 要清除临时参数的缓存Map
+     */
     public void clearTempSaveParam(HashMap<String, String> map) {
         if (map != null ) {
             if(map.containsKey(SAVE_TEMP_IS_CALIBRATION)) {
@@ -726,6 +826,13 @@ public class CacheUtil {
 
     }
 
+    /**
+     * 从主缓存读取int类型值
+     * 如果缓存中没有该key，从默认值初始化表获取
+     * TValue类型参数默认返回-1，其他默认返回0
+     * @param key 缓存键名
+     * @return 对应的int值
+     */
     public int getInt(String key) {
         loadMapFromUserSet();
 
@@ -884,17 +991,31 @@ public class CacheUtil {
 
     /**
      * 此参数主要用于界面初始化时阈值电平的获取。阈值电平的一般值是不区分s1和s2的，但是初始值是区分的。
+     * 0表示未指定，1~4对应S1~S4
      */
-    private int serialsId = 0;
+    private int serialsId = 0; // 当前操作的串口通道编号
 
+    /**
+     * 设置当前操作的串口通道编号（用于阈值电平初始值计算）
+     * @param serialsId 串口通道编号（S1=1, S2=2, S3=3, S4=4）
+     */
     public void setValueLevelSerials(int serialsId) {
         this.serialsId = serialsId;
     }
 
+    /**
+     * 获取当前操作的串口通道编号
+     * @return 串口通道编号（0=未指定, 1=S1, 2=S2, 3=S3, 4=S4）
+     */
     public int getValueLevelSerials() {
         return this.serialsId;
     }
 
+    /**
+     * 获取最后一次设置总线类型的串口通道编号
+     * 根据各串口通道的开启状态判断：仅一个开启则返回该通道，多个开启则返回LASTSET_SERIALS
+     * @return 串口通道编号（1~4），0表示无串口通道开启
+     */
     private int getLastSetSerials() {
         boolean s1Check = CacheUtil.get().getBoolean(CacheUtil.MAIN_RIGHT_SERIAL + CacheUtil.S1);
         boolean s2Check = CacheUtil.get().getBoolean(CacheUtil.MAIN_RIGHT_SERIAL + CacheUtil.S2);
@@ -916,7 +1037,10 @@ public class CacheUtil {
     }
 
     /**
-     * 是否是使用的初始值
+     * 判断指定key对应的阈值电平是否使用初始值
+     * 根据当前串口通道的总线类型和通道号，查询VALUE_INIT标记
+     * @param key 阈值电平的缓存key（包含VALUE_CHANNEL前缀）
+     * @return true表示使用初始值，false表示使用用户自定义值
      */
     public boolean isValueInit(String key) {
         boolean isInit = false;
@@ -989,6 +1113,12 @@ public class CacheUtil {
         return isInit;
     }
 
+    /**
+     * 从主缓存读取double类型值
+     * 对于阈值电平，如果使用初始值，则根据总线类型和通道垂直档位计算初始电平值
+     * @param key 缓存键名
+     * @return 对应的double值
+     */
     public double getDouble(String key) {
         loadMapFromUserSet();
         if (!map.containsKey(key)) {
@@ -1135,6 +1265,11 @@ public class CacheUtil {
         }
     }
 
+    /**
+     * 从主缓存读取long类型值
+     * @param key 缓存键名
+     * @return 对应的long值，默认0
+     */
     public long getLong(String key) {
         loadMapFromUserSet();
         if (!map.containsKey(key)) {
@@ -1148,6 +1283,11 @@ public class CacheUtil {
     }
 
 
+    /**
+     * 从主缓存读取String类型值
+     * @param key 缓存键名
+     * @return 对应的String值，默认空字符串
+     */
     public String getString(String key) {
         loadMapFromUserSet();
         if (!map.containsKey(key)) {
@@ -1160,6 +1300,11 @@ public class CacheUtil {
         }
     }
 
+    /**
+     * 从主缓存读取boolean类型值
+     * @param key 缓存键名
+     * @return 对应的boolean值，默认false
+     */
     public boolean getBoolean(String key) {
         loadMapFromUserSet();
         if (!map.containsKey(key)) {
@@ -1172,6 +1317,11 @@ public class CacheUtil {
         }
     }
 
+    /**
+     * 从杂项缓存读取double类型值
+     * @param key 缓存键名
+     * @return 对应的double值，默认0
+     */
     public double getOtherDouble(String key) {
         loadOtherMapFromUserSet();
         if (!otherMap.containsKey(key)) {
@@ -1184,6 +1334,11 @@ public class CacheUtil {
         }
     }
 
+    /**
+     * 从杂项缓存读取long类型值
+     * @param key 缓存键名
+     * @return 对应的long值，默认0
+     */
     public long getOtherLong(String key) {
         loadOtherMapFromUserSet();
         if (!otherMap.containsKey(key)) {
@@ -1196,6 +1351,11 @@ public class CacheUtil {
         }
     }
 
+    /**
+     * 从杂项缓存读取String类型值
+     * @param key 缓存键名
+     * @return 对应的String值，默认空字符串
+     */
     public String getOtherString(String key) {
         loadOtherMapFromUserSet();
         if (!otherMap.containsKey(key)) {
@@ -1208,6 +1368,11 @@ public class CacheUtil {
         }
     }
 
+    /**
+     * 从杂项缓存读取boolean类型值
+     * @param key 缓存键名
+     * @return 对应的boolean值，默认false
+     */
     public boolean getOtherBoolean(String key) {
         loadOtherMapFromUserSet();
         if (!otherMap.containsKey(key)) {
@@ -1220,6 +1385,12 @@ public class CacheUtil {
         }
     }
 
+    /**
+     * 从杂项缓存读取int类型值
+     * 支持波特率格式（包含"b/s"）的自动解析
+     * @param key 缓存键名
+     * @return 对应的int值，默认0
+     */
     public int getOtherInt(String key) {
         loadOtherMapFromUserSet();
         if (!otherMap.containsKey(key)) {
@@ -1236,6 +1407,9 @@ public class CacheUtil {
         }
     }
 
+    /**
+     * 清空主参数缓存并持久化空缓存到文件
+     */
     public void clearCacheMap() {
         map.clear();
         try {
@@ -1245,6 +1419,9 @@ public class CacheUtil {
         }
     }
 
+    /**
+     * 清空杂项缓存并持久化空缓存到文件
+     */
     public void clearOtherMap() {
         otherMap.clear();
         try {
@@ -1256,7 +1433,15 @@ public class CacheUtil {
 
 
     /**
-     * 各种设置的初始化
+     * 各种设置的初始化 —— 主缓存默认值表（第一部分）
+     * 巨型switch语句，为每个缓存key提供默认值
+     * 由于Java方法大小限制（64KB），分为getValueFromInit和getValueFromInit1两个方法
+     * getValueFromInit处理：左侧菜单、通道开关、Math/Ref/Serial开关、垂直档位、时基、
+     * 光标位置、通道选择、Ref/Math参数、通道参数、串口参数、顶部菜单、测量、
+     * 采样、显示、自动设置、用户设置、触发、串口触发、触发电平、阈值电平、
+     * VALUE_INIT标记、通道位置、零点位置等
+     * @param key 缓存键名
+     * @return 默认值字符串，空字符串表示无默认值
      */
     private String getValueFromInit(String key) {
         Point mainWaveYT = GlobalVar.get().getMainWave();
@@ -3385,6 +3570,13 @@ public class CacheUtil {
         }
     }
 
+    /**
+     * 主缓存默认值表（第二部分）
+     * 处理：波形标签位置、波形调用类型、Ref时基模式、Ref数据路径、
+     * 通道颜色、TValue测量数据、保存缩略图等
+     * @param key 缓存键名
+     * @return 默认值字符串，空字符串表示无默认值
+     */
     private String getValueFromInit1(String key) {
         switch (key) {
             case MAIN_WAVE_LABEL_POSITION + TChan.Ch1:
@@ -3543,6 +3735,11 @@ public class CacheUtil {
     }
 
 
+    /**
+     * 设置最后操作对象是否为光标
+     * 如果不是光标，则清除光标选中状态
+     * @param isCursor true表示最后操作的是光标
+     */
     public void setLastObjectIsCursor(boolean isCursor) {
         cacheUtil.putMap(LAST_OBJECT_IS_CURSOR, String.valueOf(isCursor));
         if (isCursor == false) {
@@ -3550,12 +3747,19 @@ public class CacheUtil {
         }
     }
 
+    /**
+     * 获取最后操作对象是否为光标
+     * @return true表示最后操作的是光标
+     */
     public boolean getLastObjectIsCursor() {
         return cacheUtil.getBoolean(LAST_OBJECT_IS_CURSOR);
     }
 
     /**
-     * 此处只读，向map写入需要使用putMap()
+     * 获取主参数缓存的只读引用
+     * 如果缓存为空，先从持久化文件加载
+     * 注意：此处只读，向map写入需要使用putMap()
+     * @return 主参数缓存的HashMap引用
      */
     public HashMap<String, String> getCacheMap() {
         if (map.isEmpty()) {
@@ -3570,12 +3774,22 @@ public class CacheUtil {
         return map;
     }
 
+    /**
+     * 向主缓存写入键值对（modify=false，加载完成前不写入）
+     * @param key 缓存键名
+     * @param value 缓存值
+     */
     public void putMap(String key, String value) {
         putMap(key, value, false);
     }
 
     /**
-     * 此处用来写入map
+     * 向主缓存写入键值对
+     * 加载完成前（modify=false）不写入，防止覆盖默认值
+     * 如果修改的是串口总线类型，自动更新LASTSET_SERIALS
+     * @param key 缓存键名
+     * @param value 缓存值
+     * @param modify true表示强制写入（即使加载未完成），false表示加载完成后才写入
      */
     public void putMap(String key, String value, boolean modify) {
         //初始化加载完成之前，不进行保存
@@ -3602,6 +3816,12 @@ public class CacheUtil {
         }
     }
 
+    /**
+     * 在参数加载完成前向主缓存写入键值对（用于初始化/校验阶段）
+     * 与putMap不同，此方法不受加载完成状态限制
+     * @param key 缓存键名
+     * @param value 缓存值
+     */
     private void putMapBeforeLoadParam(String key, String value) {
         if (!value.equals(map.get(key))) {
             if (key.equals(CacheUtil.RIGHT_SLIP_SERIALS + S1)
@@ -3623,6 +3843,12 @@ public class CacheUtil {
         }
     }
 
+    /**
+     * 强制向主缓存写入键值对（不受加载完成状态限制）
+     * 使用key.contains匹配串口总线类型key，比精确匹配更宽泛
+     * @param key 缓存键名
+     * @param value 缓存值
+     */
     public void putMapInForce(String key, String value) {
         if (!value.equals(map.get(key))) {
             if (key.contains(CacheUtil.RIGHT_SLIP_SERIALS)) {
@@ -3639,6 +3865,11 @@ public class CacheUtil {
         }
     }
 
+    /**
+     * 批量替换主缓存内容
+     * 清空现有缓存，将目标Map全部写入
+     * @param targetMap 要写入的目标Map
+     */
     public void putMapAll(HashMap<String, String> targetMap) {
         if (!targetMap.isEmpty()) {
             map.clear();
@@ -3647,6 +3878,11 @@ public class CacheUtil {
         isChange = true;
     }
 
+    /**
+     * 获取杂项缓存（延迟加载）
+     * 如果缓存为空，先从持久化文件加载
+     * @return 杂项缓存的HashMap引用
+     */
     private HashMap<String, String> getOtherMap() {
         if (otherMap.isEmpty()) {
             boolean b = false;
@@ -3660,14 +3896,28 @@ public class CacheUtil {
         return otherMap;
     }
 
+    /**
+     * 获取主参数缓存的直接引用（不触发延迟加载）
+     * @return 主参数缓存HashMap引用
+     */
     public HashMap<String, String> getCurrMap() {
         return map;
     }
 
+    /**
+     * 获取杂项缓存的直接引用（不触发延迟加载）
+     * @return 杂项缓存HashMap引用
+     */
     public HashMap<String, String> getCurrOtherMap() {
         return otherMap;
     }
 
+    /**
+     * 杂项缓存默认值表
+     * 提供用户设置名称、语言、文件名索引、校准参数、保存路径等默认值
+     * @param key 缓存键名
+     * @return 默认值字符串
+     */
     public String getOtherMapValue(String key) {
         if (!otherMap.containsKey(key)) {
             Date date = new Date(System.currentTimeMillis());
@@ -3935,6 +4185,12 @@ public class CacheUtil {
         return otherMap.get(key);
     }
 
+    /**
+     * 向杂项缓存写入键值对（不立即持久化）
+     * 空值将被忽略
+     * @param key 缓存键名
+     * @param value 缓存值
+     */
     public void putOtherMap(String key, String value) {
         if (StrUtil.isEmpty(value)) return;
         if (!value.equals(otherMap.get(key))) {
@@ -3943,6 +4199,12 @@ public class CacheUtil {
         isChange = true;
     }
 
+    /**
+     * 向杂项缓存写入键值对并立即持久化到文件
+     * 空值将被忽略
+     * @param key 缓存键名
+     * @param value 缓存值
+     */
     public void putOtherMapAndSave(String key, String value) {
         if (StrUtil.isEmpty(value)) return;
         if (!value.equals(otherMap.get(key))) {
@@ -3956,6 +4218,10 @@ public class CacheUtil {
         }
     }
 
+    /**
+     * 批量替换杂项缓存内容
+     * @param targetMap 要写入的目标Map
+     */
     public void putOtherMapAll(HashMap<String, String> targetMap) {
         if (!targetMap.isEmpty()) {
             otherMap.clear();
@@ -3967,11 +4233,14 @@ public class CacheUtil {
     //endregion
 
     //region 缓存机制
-    private boolean isChange = false;
-    private int time = 1000 * 60 * 60 * 24;
+    private boolean isChange = false; // 缓存变更标记，true表示有未持久化的变更
+    private int time = 1000 * 60 * 60 * 24; // 定时持久化间隔（24小时，当前未启用定时机制）
     //private static Handler handler = new Handler();
 //    private Thread thread;
 
+    /**
+     * 初始化缓存机制（当前为空实现，原定时持久化线程已注释）
+     */
     private void initCache() {
 //        thread = new Thread(new Runnable() {
 //            @Override
@@ -3990,10 +4259,18 @@ public class CacheUtil {
 //        thread.start();
     }
 
+    /**
+     * 暂停缓存机制，立即执行一次持久化
+     * 通常在应用退出或进入后台时调用
+     */
     public void pause() {
         putCache();
     }
 
+    /**
+     * 执行缓存持久化
+     * 只有isChange为true时才执行，将主缓存和杂项缓存写入文件
+     */
     private void putCache() {
         if (isChange) {
             Logger.i("putCache start");
@@ -4011,299 +4288,347 @@ public class CacheUtil {
     }
     //endregion
 
-    //region  加载状态标记
-    public static final String LOAD_Command = "Command";
-    public static final String LOAD_ExternalKeysOnBindService = "ExternalKeysOnBindService";
-    public static final String LOAD_MainHolderBottom = "MainHolderBottom";
-    public static final String LOAD_MainHolderBottomQuick = "MainHolderBottomQuick";
-    public static final String LOAD_MainHolderLeftMenu = "MainHolderLeftMenu";
-    public static final String LOAD_MainHolderRightChannels = "MainHolderRightChannels";
-    public static final String LOAD_MainHolderRightOthers = "MainHolderRightOthers";
-    public static final String LOAD_MainLayoutCenterChannel = "MainLayoutCenterChannel";
-    public static final String LOAD_RightLayoutChannel = "RightLayoutChannel";
-    public static final String LOAD_RightLayoutMath = "RightLayoutMath";
-    public static final String LOAD_RightLayoutRef = "RightLayoutRef";
-    public static final String LOAD_RightLayoutSerials = "RightLayoutSerials";
-    public static final String LOAD_RightLayoutSerialsCan = "RightLayoutSerialsCan";
-    public static final String LOAD_RightLayoutSerialsI2c = "RightLayoutSerialsI2c";
-    public static final String LOAD_RightLayoutSerialsLin = "RightLayoutSerialsLin";
-    public static final String LOAD_RightLayoutSerialsM1553B = "RightLayoutSerialsM1553B";
-    public static final String LOAD_RightLayoutSerialsM429 = "RightLayoutSerialsM429";
-    public static final String LOAD_RightLayoutSerialsSpi = "RightLayoutSerialsSpi";
-    public static final String LOAD_RightLayoutSerialsUart = "RightLayoutSerialsUart";
-    public static final String LOAD_TMessage = "TMessage";
-    public static final String LOAD_TopLayoutAuto = "TopLayoutAuto";
-    public static final String LOAD_TopLayoutAutoRange = "TopLayoutAutoRange";
-    public static final String LOAD_TopLayoutAutoSet = "TopLayoutAutoSet";
-    public static final String LOAD_TopLayoutDisplay = "TopLayoutDisplay";
-    public static final String LOAD_TopLayoutDisplayCommon = "TopLayoutDisplayCommon";
-    public static final String LOAD_TopLayoutDisplayGraticule = "TopLayoutDisplayGraticule";
-    public static final String LOAD_TopLayoutDisplayPersist = "TopLayoutDisplayPersist";
-    public static final String LOAD_TopLayoutDisplayWaveform = "TopLayoutDisplayWaveform";
-    public static final String LOAD_TopLayoutFactoryCalibration = "TopLayoutFactoryCalibration";
-    public static final String LOAD_TopLayoutFrequencyMeter = "TopLayoutFrequencyMeter";
-    public static final String LOAD_TopLayoutMeasure = "TopLayoutMeasure";
-    public static final String LOAD_TopLayoutMeasureCommon = "TopLayoutMeasureCommon";
-    public static final String LOAD_TopLayoutPopWindow = "TopLayoutPopWindow";
-    public static final String LOAD_TopLayoutSave = "TopLayoutSave";
-    public static final String LOAD_TopLayoutSaveWave = "TopLayoutSaveWave";
-    public static final String LOAD_TopLayoutSample = "TopLayoutUserset";
-    public static final String LOAD_TopLayoutSampleMode = "TopLayoutUsersetMode";
-    public static final String LOAD_TopLayoutSampleDepth = "TopLayoutUsersetDepth";
-    public static final String LOAD_TopLayoutSampleSegmented = "TopLayoutUsersetSegmented";
-    public static final String LOAD_TopLayoutTrigger = "TopLayoutTrigger";
-    public static final String LOAD_TopLayoutTriggerCommon = "TopLayoutTriggerCommon";
-    public static final String LOAD_TopLayoutTriggerEdge = "TopLayoutTriggerEdge";
-    public static final String LOAD_TopLayoutTriggerLogic = "TopLayoutTriggerLogic";
-    public static final String LOAD_TopLayoutTriggerNEdge = "TopLayoutTriggerNEdge";
-    public static final String LOAD_TopLayoutTriggerPulsewidth = "TopLayoutTriggerPulsewidth";
-    public static final String LOAD_TopLayoutTriggerRunt = "TopLayoutTriggerRunt";
-    public static final String LOAD_TopLayoutTriggerSerials = "TopLayoutTriggerSerials";
-    public static final String LOAD_TopLayoutTriggerSerialsBaseDetail = "TopLayoutTriggerSerialsBaseDetail";
-    public static final String LOAD_TopLayoutTriggerSlope = "TopLayoutTriggerSlope";
-    public static final String LOAD_TopLayoutTriggerTimeout = "TopLayoutTriggerTimeout";
-    public static final String LOAD_TopLayoutTriggerVideo = "TopLayoutTriggerVideo";
-    public static final String LOAD_TopLayoutUserset = "TopLayoutUserset";
-    public static final String LOAD_TopLayoutUsersetDepth = "TopLayoutUsersetDepth";
-    public static final String LOAD_TopLayoutUsersetSaveRecovery = "TopLayoutUsersetSaveRecovery";
-    public static final String LOAD_WaveManage = "WaveManage";
-    public static final String LOAD_WaveZoneDisplayManage = "WaveZoneDisplayManage";
+    //region  加载状态标记 —— 跟踪各UI模块的参数加载完成情况
+    public static final String LOAD_Command = "Command"; // 命令模块加载标记
+    public static final String LOAD_ExternalKeysOnBindService = "ExternalKeysOnBindService"; // 外部按键服务加载标记
+    public static final String LOAD_MainHolderBottom = "MainHolderBottom"; // 底部菜单加载标记
+    public static final String LOAD_MainHolderBottomQuick = "MainHolderBottomQuick"; // 底部快捷菜单加载标记
+    public static final String LOAD_MainHolderLeftMenu = "MainHolderLeftMenu"; // 左侧菜单加载标记
+    public static final String LOAD_MainHolderRightChannels = "MainHolderRightChannels"; // 右侧通道菜单加载标记
+    public static final String LOAD_MainHolderRightOthers = "MainHolderRightOthers"; // 右侧其他菜单加载标记
+    public static final String LOAD_MainLayoutCenterChannel = "MainLayoutCenterChannel"; // 中心通道布局加载标记
+    public static final String LOAD_RightLayoutChannel = "RightLayoutChannel"; // 通道布局加载标记
+    public static final String LOAD_RightLayoutMath = "RightLayoutMath"; // Math布局加载标记
+    public static final String LOAD_RightLayoutRef = "RightLayoutRef"; // Ref布局加载标记
+    public static final String LOAD_RightLayoutSerials = "RightLayoutSerials"; // 串口布局加载标记
+    public static final String LOAD_RightLayoutSerialsCan = "RightLayoutSerialsCan"; // CAN布局加载标记
+    public static final String LOAD_RightLayoutSerialsI2c = "RightLayoutSerialsI2c"; // I2C布局加载标记
+    public static final String LOAD_RightLayoutSerialsLin = "RightLayoutSerialsLin"; // LIN布局加载标记
+    public static final String LOAD_RightLayoutSerialsM1553B = "RightLayoutSerialsM1553B"; // M1553B布局加载标记
+    public static final String LOAD_RightLayoutSerialsM429 = "RightLayoutSerialsM429"; // M429布局加载标记
+    public static final String LOAD_RightLayoutSerialsSpi = "RightLayoutSerialsSpi"; // SPI布局加载标记
+    public static final String LOAD_RightLayoutSerialsUart = "RightLayoutSerialsUart"; // UART布局加载标记
+    public static final String LOAD_TMessage = "TMessage"; // T消息加载标记
+    public static final String LOAD_TopLayoutAuto = "TopLayoutAuto"; // 自动设置布局加载标记
+    public static final String LOAD_TopLayoutAutoRange = "TopLayoutAutoRange"; // 自动范围布局加载标记
+    public static final String LOAD_TopLayoutAutoSet = "TopLayoutAutoSet"; // 自动设置详细布局加载标记
+    public static final String LOAD_TopLayoutDisplay = "TopLayoutDisplay"; // 显示布局加载标记
+    public static final String LOAD_TopLayoutDisplayCommon = "TopLayoutDisplayCommon"; // 显示通用布局加载标记
+    public static final String LOAD_TopLayoutDisplayGraticule = "TopLayoutDisplayGraticule"; // 网格显示布局加载标记
+    public static final String LOAD_TopLayoutDisplayPersist = "TopLayoutDisplayPersist"; // 持久化显示布局加载标记
+    public static final String LOAD_TopLayoutDisplayWaveform = "TopLayoutDisplayWaveform"; // 波形显示布局加载标记
+    public static final String LOAD_TopLayoutFactoryCalibration = "TopLayoutFactoryCalibration"; // 出厂校准布局加载标记
+    public static final String LOAD_TopLayoutFrequencyMeter = "TopLayoutFrequencyMeter"; // 频率计布局加载标记
+    public static final String LOAD_TopLayoutMeasure = "TopLayoutMeasure"; // 测量布局加载标记
+    public static final String LOAD_TopLayoutMeasureCommon = "TopLayoutMeasureCommon"; // 测量通用布局加载标记
+    public static final String LOAD_TopLayoutPopWindow = "TopLayoutPopWindow"; // 弹窗布局加载标记
+    public static final String LOAD_TopLayoutSave = "TopLayoutSave"; // 保存布局加载标记
+    public static final String LOAD_TopLayoutSaveWave = "TopLayoutSaveWave"; // 保存波形布局加载标记
+    public static final String LOAD_TopLayoutSample = "TopLayoutUserset"; // 采样/用户设置布局加载标记
+    public static final String LOAD_TopLayoutSampleMode = "TopLayoutUsersetMode"; // 采样模式布局加载标记
+    public static final String LOAD_TopLayoutSampleDepth = "TopLayoutUsersetDepth"; // 存储深度布局加载标记
+    public static final String LOAD_TopLayoutSampleSegmented = "TopLayoutUsersetSegmented"; // 分段采集布局加载标记
+    public static final String LOAD_TopLayoutTrigger = "TopLayoutTrigger"; // 触发布局加载标记
+    public static final String LOAD_TopLayoutTriggerCommon = "TopLayoutTriggerCommon"; // 触发通用布局加载标记
+    public static final String LOAD_TopLayoutTriggerEdge = "TopLayoutTriggerEdge"; // 边沿触发布局加载标记
+    public static final String LOAD_TopLayoutTriggerLogic = "TopLayoutTriggerLogic"; // 逻辑触发布局加载标记
+    public static final String LOAD_TopLayoutTriggerNEdge = "TopLayoutTriggerNEdge"; // N边沿触发布局加载标记
+    public static final String LOAD_TopLayoutTriggerPulsewidth = "TopLayoutTriggerPulsewidth"; // 脉宽触发布局加载标记
+    public static final String LOAD_TopLayoutTriggerRunt = "TopLayoutTriggerRunt"; // 矮脉冲触发布局加载标记
+    public static final String LOAD_TopLayoutTriggerSerials = "TopLayoutTriggerSerials"; // 串口触发布局加载标记
+    public static final String LOAD_TopLayoutTriggerSerialsBaseDetail = "TopLayoutTriggerSerialsBaseDetail"; // 串口触发详细布局加载标记
+    public static final String LOAD_TopLayoutTriggerSlope = "TopLayoutTriggerSlope"; // 斜率触发布局加载标记
+    public static final String LOAD_TopLayoutTriggerTimeout = "TopLayoutTriggerTimeout"; // 超时触发布局加载标记
+    public static final String LOAD_TopLayoutTriggerVideo = "TopLayoutTriggerVideo"; // 视频触发布局加载标记
+    public static final String LOAD_TopLayoutUserset = "TopLayoutUserset"; // 用户设置布局加载标记
+    public static final String LOAD_TopLayoutUsersetDepth = "TopLayoutUsersetDepth"; // 用户设置深度布局加载标记
+    public static final String LOAD_TopLayoutUsersetSaveRecovery = "TopLayoutUsersetSaveRecovery"; // 保存恢复布局加载标记
+    public static final String LOAD_WaveManage = "WaveManage"; // 波形管理加载标记
+    public static final String LOAD_WaveZoneDisplayManage = "WaveZoneDisplayManage"; // 波形区域显示管理加载标记
 
     //private Map<String, Boolean> mapLoadProcess = new HashMap<>();
 //    private CopyOnWriteArrayList map=new CopyOnWriteArrayList();
+    /** 各UI模块的参数加载状态跟踪表，key为LOAD_*常量，value为是否加载完成；使用ConcurrentHashMap保证多线程安全 */
     private ConcurrentHashMap<String, Boolean> mapLoadProcess = new ConcurrentHashMap<>();
+    /** 全局参数加载完成标志，volatile保证多线程可见性；所有UI模块参数加载完毕后置为true */
     private volatile boolean loadComplete = false;
+    /** 是否点击了恢复出厂设置按钮，true表示用户刚执行了Factory Reset操作 */
     private boolean clickFactoryReset = false;
 
+    /**
+     * 设置全局参数加载完成标志
+     * @param loadComplete true表示所有参数加载完成，false表示尚未完成
+     */
     public void setLoadComplete(boolean loadComplete) {
-        this.loadComplete = loadComplete;
-    }
-
-    public boolean isLoadComplete() {
-        return loadComplete;
-    }
-
-    public boolean isClickFactoryReset() {
-        return clickFactoryReset;
-    }
-
-    public void setClickFactoryReset(boolean clickFactoryReset) {
-        this.clickFactoryReset = clickFactoryReset;
+        this.loadComplete = loadComplete; // 设置加载完成标志
     }
 
     /**
-     * 初始化setCache的标志位
+     * 判断全局参数是否加载完成
+     * @return true表示所有参数已加载完成，false表示尚未完成
+     */
+    public boolean isLoadComplete() {
+        return loadComplete; // 返回加载完成标志
+    }
+
+    /**
+     * 判断是否点击了恢复出厂设置按钮
+     * @return true表示用户刚执行了Factory Reset操作，false表示未执行
+     */
+    public boolean isClickFactoryReset() {
+        return clickFactoryReset; // 返回出厂设置点击标记
+    }
+
+    /**
+     * 设置恢复出厂设置按钮的点击状态
+     * @param clickFactoryReset true表示刚点击了Factory Reset，false表示重置标记
+     */
+    public void setClickFactoryReset(boolean clickFactoryReset) {
+        this.clickFactoryReset = clickFactoryReset; // 设置出厂设置点击标记
+    }
+
+    /**
+     * 初始化各UI模块的参数加载状态标志位
+     * 将所有活跃的UI模块标记为"未加载"（false），被注释掉的模块表示已废弃或合并到其他模块中。
+     * 各UI模块在完成自身参数加载后，通过setLoadMenuState()将对应标志位置为true。
+     * isLoadParamComplete()会遍历此表检查是否所有模块都加载完成。
      */
     public void initStateCacheLoad() {
-        mapLoadProcess.put(LOAD_Command, false);
-        mapLoadProcess.put(LOAD_ExternalKeysOnBindService, false);
-        mapLoadProcess.put(LOAD_MainHolderBottom, false);
-        mapLoadProcess.put(LOAD_MainHolderBottomQuick, false);
-        mapLoadProcess.put(LOAD_MainHolderLeftMenu, false);
-        mapLoadProcess.put(LOAD_MainHolderRightChannels, false);
-        mapLoadProcess.put(LOAD_MainHolderRightOthers, false);
-        mapLoadProcess.put(LOAD_MainLayoutCenterChannel, false);
-        mapLoadProcess.put(LOAD_RightLayoutChannel, false);
-        mapLoadProcess.put(LOAD_RightLayoutMath, false);
-        mapLoadProcess.put(LOAD_RightLayoutRef, false);
-//        mapLoadProcess.put(LOAD_RightLayoutSerials, false);
-//        mapLoadProcess.put(LOAD_RightLayoutSerialsCan, false);
-//        mapLoadProcess.put(LOAD_RightLayoutSerialsI2c, false);
-//        mapLoadProcess.put(LOAD_RightLayoutSerialsLin, false);
-//        mapLoadProcess.put(LOAD_RightLayoutSerialsM1553B, false);
-//        mapLoadProcess.put(LOAD_RightLayoutSerialsM429, false);
-//        mapLoadProcess.put(LOAD_RightLayoutSerialsSpi, false);
-//        mapLoadProcess.put(LOAD_RightLayoutSerialsUart, false);
-        //mapLoadProcess.put(LOAD_TMessage, false);
-        mapLoadProcess.put(LOAD_TopLayoutAuto, false);
-        mapLoadProcess.put(LOAD_TopLayoutAutoRange, false);
-        mapLoadProcess.put(LOAD_TopLayoutAutoSet, false);
-        mapLoadProcess.put(LOAD_TopLayoutSample, false);
-        mapLoadProcess.put(LOAD_TopLayoutSampleMode, false);
-        mapLoadProcess.put(LOAD_TopLayoutSampleDepth, false);
-//        mapLoadProcess.put(LOAD_TopLayoutSampleSegmented, false);
-        mapLoadProcess.put(LOAD_TopLayoutDisplay, false);
-        mapLoadProcess.put(LOAD_TopLayoutDisplayCommon, false);
-        mapLoadProcess.put(LOAD_TopLayoutDisplayGraticule, false);
-        mapLoadProcess.put(LOAD_TopLayoutDisplayPersist, false);
-        mapLoadProcess.put(LOAD_TopLayoutDisplayWaveform, false);
-//        mapLoadProcess.put(LOAD_TopLayoutFactoryCalibration, false);
-        mapLoadProcess.put(LOAD_TopLayoutFrequencyMeter, false);
-        mapLoadProcess.put(LOAD_TopLayoutMeasure, false);
-        mapLoadProcess.put(LOAD_TopLayoutMeasureCommon, false);
-        mapLoadProcess.put(LOAD_TopLayoutPopWindow, false);
-        mapLoadProcess.put(LOAD_TopLayoutSave, false);
-        mapLoadProcess.put(LOAD_TopLayoutSaveWave, false);
-//        mapLoadProcess.put(LOAD_TopLayoutTrigger, false);
-//        mapLoadProcess.put(LOAD_TopLayoutTriggerCommon, false);
-//        mapLoadProcess.put(LOAD_TopLayoutTriggerEdge, false);
-//        mapLoadProcess.put(LOAD_TopLayoutTriggerLogic, false);
-//        mapLoadProcess.put(LOAD_TopLayoutTriggerNEdge, false);
-//        mapLoadProcess.put(LOAD_TopLayoutTriggerPulsewidth, false);
-//        mapLoadProcess.put(LOAD_TopLayoutTriggerRunt, false);
-//        mapLoadProcess.put(LOAD_TopLayoutTriggerSerials, false);
-//        mapLoadProcess.put(LOAD_TopLayoutTriggerSerialsBaseDetail, false);
-//        mapLoadProcess.put(LOAD_TopLayoutTriggerSlope, false);
-//        mapLoadProcess.put(LOAD_TopLayoutTriggerTimeout, false);
-//        mapLoadProcess.put(LOAD_TopLayoutTriggerVideo, false);
-        mapLoadProcess.put(LOAD_TopLayoutUserset, false);
-        mapLoadProcess.put(LOAD_TopLayoutUsersetDepth, false);
-        // mapLoadProcess.put(LOAD_TopLayoutUsersetSaveRecovery, false);
-        mapLoadProcess.put(LOAD_WaveManage, false);
-        mapLoadProcess.put(LOAD_WaveZoneDisplayManage, false);
-    }
-
-    public void setLoadMenuState(String key, boolean isComplete) {
-
-        mapLoadProcess.put(key, isComplete);
+        mapLoadProcess.put(LOAD_Command, false); // 命令模块加载标记
+        mapLoadProcess.put(LOAD_ExternalKeysOnBindService, false); // 外部按键绑定服务加载标记
+        mapLoadProcess.put(LOAD_MainHolderBottom, false); // 主界面底部栏加载标记
+        mapLoadProcess.put(LOAD_MainHolderBottomQuick, false); // 主界面底部快捷栏加载标记
+        mapLoadProcess.put(LOAD_MainHolderLeftMenu, false); // 主界面左侧菜单加载标记
+        mapLoadProcess.put(LOAD_MainHolderRightChannels, false); // 主界面右侧通道区加载标记
+        mapLoadProcess.put(LOAD_MainHolderRightOthers, false); // 主界面右侧其他区加载标记
+        mapLoadProcess.put(LOAD_MainLayoutCenterChannel, false); // 主界面中心通道加载标记
+        mapLoadProcess.put(LOAD_RightLayoutChannel, false); // 右滑通道布局加载标记
+        mapLoadProcess.put(LOAD_RightLayoutMath, false); // 右滑Math布局加载标记
+        mapLoadProcess.put(LOAD_RightLayoutRef, false); // 右滑Ref布局加载标记
+//        mapLoadProcess.put(LOAD_RightLayoutSerials, false); // 已废弃：串口总布局
+//        mapLoadProcess.put(LOAD_RightLayoutSerialsCan, false); // 已废弃：CAN串口布局
+//        mapLoadProcess.put(LOAD_RightLayoutSerialsI2c, false); // 已废弃：I2C串口布局
+//        mapLoadProcess.put(LOAD_RightLayoutSerialsLin, false); // 已废弃：LIN串口布局
+//        mapLoadProcess.put(LOAD_RightLayoutSerialsM1553B, false); // 已废弃：M1553B串口布局
+//        mapLoadProcess.put(LOAD_RightLayoutSerialsM429, false); // 已废弃：M429串口布局
+//        mapLoadProcess.put(LOAD_RightLayoutSerialsSpi, false); // 已废弃：SPI串口布局
+//        mapLoadProcess.put(LOAD_RightLayoutSerialsUart, false); // 已废弃：UART串口布局
+        //mapLoadProcess.put(LOAD_TMessage, false); // 已废弃：T消息布局
+        mapLoadProcess.put(LOAD_TopLayoutAuto, false); // 顶部自动菜单加载标记
+        mapLoadProcess.put(LOAD_TopLayoutAutoRange, false); // 顶部自动范围菜单加载标记
+        mapLoadProcess.put(LOAD_TopLayoutAutoSet, false); // 顶部自动设置菜单加载标记
+        mapLoadProcess.put(LOAD_TopLayoutSample, false); // 顶部采样菜单加载标记
+        mapLoadProcess.put(LOAD_TopLayoutSampleMode, false); // 顶部采样模式加载标记
+        mapLoadProcess.put(LOAD_TopLayoutSampleDepth, false); // 顶部采样深度加载标记
+//        mapLoadProcess.put(LOAD_TopLayoutSampleSegmented, false); // 已废弃：分段采样
+        mapLoadProcess.put(LOAD_TopLayoutDisplay, false); // 顶部显示菜单加载标记
+        mapLoadProcess.put(LOAD_TopLayoutDisplayCommon, false); // 顶部显示通用设置加载标记
+        mapLoadProcess.put(LOAD_TopLayoutDisplayGraticule, false); // 顶部显示网格设置加载标记
+        mapLoadProcess.put(LOAD_TopLayoutDisplayPersist, false); // 顶部显示余辉设置加载标记
+        mapLoadProcess.put(LOAD_TopLayoutDisplayWaveform, false); // 顶部显示波形设置加载标记
+//        mapLoadProcess.put(LOAD_TopLayoutFactoryCalibration, false); // 已废弃：出厂校准
+        mapLoadProcess.put(LOAD_TopLayoutFrequencyMeter, false); // 顶部频率计加载标记
+        mapLoadProcess.put(LOAD_TopLayoutMeasure, false); // 顶部测量菜单加载标记
+        mapLoadProcess.put(LOAD_TopLayoutMeasureCommon, false); // 顶部测量通用设置加载标记
+        mapLoadProcess.put(LOAD_TopLayoutPopWindow, false); // 顶部弹出窗口加载标记
+        mapLoadProcess.put(LOAD_TopLayoutSave, false); // 顶部保存菜单加载标记
+        mapLoadProcess.put(LOAD_TopLayoutSaveWave, false); // 顶部保存波形加载标记
+//        mapLoadProcess.put(LOAD_TopLayoutTrigger, false); // 已废弃：触发总布局
+//        mapLoadProcess.put(LOAD_TopLayoutTriggerCommon, false); // 已废弃：触发通用
+//        mapLoadProcess.put(LOAD_TopLayoutTriggerEdge, false); // 已废弃：边沿触发
+//        mapLoadProcess.put(LOAD_TopLayoutTriggerLogic, false); // 已废弃：逻辑触发
+//        mapLoadProcess.put(LOAD_TopLayoutTriggerNEdge, false); // 已废弃：N边沿触发
+//        mapLoadProcess.put(LOAD_TopLayoutTriggerPulsewidth, false); // 已废弃：脉宽触发
+//        mapLoadProcess.put(LOAD_TopLayoutTriggerRunt, false); // 已废弃：矮脉冲触发
+//        mapLoadProcess.put(LOAD_TopLayoutTriggerSerials, false); // 已废弃：串口触发
+//        mapLoadProcess.put(LOAD_TopLayoutTriggerSerialsBaseDetail, false); // 已废弃：串口触发详情
+//        mapLoadProcess.put(LOAD_TopLayoutTriggerSlope, false); // 已废弃：斜率触发
+//        mapLoadProcess.put(LOAD_TopLayoutTriggerTimeout, false); // 已废弃：超时触发
+//        mapLoadProcess.put(LOAD_TopLayoutTriggerVideo, false); // 已废弃：视频触发
+        mapLoadProcess.put(LOAD_TopLayoutUserset, false); // 顶部用户设置加载标记
+        mapLoadProcess.put(LOAD_TopLayoutUsersetDepth, false); // 顶部用户设置深度加载标记
+        // mapLoadProcess.put(LOAD_TopLayoutUsersetSaveRecovery, false); // 已废弃：保存恢复
+        mapLoadProcess.put(LOAD_WaveManage, false); // 波形管理加载标记
+        mapLoadProcess.put(LOAD_WaveZoneDisplayManage, false); // 波形区域显示管理加载标记
     }
 
     /**
-     * 可见的界面加载完成
-     *
-     * @return
+     * 设置指定UI模块的参数加载完成状态
+     * 各UI模块在完成自身参数加载后调用此方法，将对应标志位置为true
+     * @param key 模块标识，对应LOAD_*常量
+     * @param isComplete true表示该模块参数已加载完成，false表示未完成
+     */
+    public void setLoadMenuState(String key, boolean isComplete) {
+        mapLoadProcess.put(key, isComplete); // 更新指定模块的加载状态
+    }
+
+    /**
+     * 判断可见的基础界面模块是否加载完成
+     * 当前实现始终返回false，此方法为预留接口，未来可用于判断核心UI模块是否就绪
+     * @return true表示基础模块加载完成（当前始终返回false）
      */
     public boolean isLoadCompleteBaseModule() {
-
-
-        return false;
+        return false; // 预留接口，当前始终返回false
     }
 
     /**
-     * 所有全部加载完成
-     *
-     * @return
+     * 判断所有UI模块的参数是否全部加载完成
+     * 遍历mapLoadProcess中所有模块的加载状态，只要有一个未完成就返回false。
+     * 当所有模块都加载完成时，将loadComplete标志置为true并返回true。
+     * 方法使用synchronized修饰，保证多线程调用时的原子性。
+     * @return true表示所有模块参数已加载完成，false表示至少有一个模块未完成
      */
     public synchronized boolean isLoadParamComplete() {
-        for (Iterator<String> iterator = mapLoadProcess.keySet().iterator(); iterator.hasNext(); ) {
-            String key = iterator.next();
-            if (mapLoadProcess.get(key) == false) {
-                Logger.d(TAG, "isLoadParamComplete:" + key);
-                return false;
+        for (Iterator<String> iterator = mapLoadProcess.keySet().iterator(); iterator.hasNext(); ) { // 遍历所有模块
+            String key = iterator.next(); // 获取模块标识
+            if (mapLoadProcess.get(key) == false) { // 检查该模块是否未加载完成
+                Logger.d(TAG, "isLoadParamComplete:" + key); // 打印未完成的模块名
+                return false; // 有模块未完成，返回false
             }
         }
-        loadComplete = true;
-        return true;
+        loadComplete = true; // 所有模块加载完成，设置全局标志
+        return true; // 全部加载完成
     }
 
     //endregion
+
+    /**
+     * 应用启动初始化
+     * 将运行/停止状态设置为"运行"（true），确保示波器启动时处于运行状态
+     */
     public void startUp() {
-        CacheUtil.get().putMap(CacheUtil.MAIN_LEFT_RUNSTOP, String.valueOf(true), true);
+        CacheUtil.get().putMap(CacheUtil.MAIN_LEFT_RUNSTOP, String.valueOf(true), true); // 强制设置为运行状态
     }
 
     //region 检验参数合法性
-    public void checkCacheParam() {
 
-        checkLoadRefFile();
-        MemDepthFactory.getMemDepth().setMemDepthItem(CacheUtil.get().getInt(CacheUtil.TOP_SLIP_SAMPLE_DEPTH));
+    /**
+     * 校验缓存参数的合法性
+     * 在加载持久化参数后调用，检查并修正不合法的参数状态：
+     * 1. 检查REF文件是否存在，不存在的Ref通道将被关闭
+     * 2. 设置存储深度
+     * 3. 设置当前激活通道
+     * 4. 初始化水平轴参数（时基档位）
+     * 5. 检查滚屏模式与Zoom模式的冲突
+     */
+    public void checkCacheParam() {
+        checkLoadRefFile(); // 检查REF文件合法性
+        MemDepthFactory.getMemDepth().setMemDepthItem(CacheUtil.get().getInt(CacheUtil.TOP_SLIP_SAMPLE_DEPTH)); // 设置存储深度
 
         //设置当前通道
-        ChannelFactory.chActivate(CacheUtil.get().getInt(CacheUtil.MAIN_CENTER_CHANNELS_SELECT));
+        ChannelFactory.chActivate(CacheUtil.get().getInt(CacheUtil.MAIN_CENTER_CHANNELS_SELECT)); // 激活当前选中通道
         //设置档位的初始值
-        HorizontalAxis horizontalAxis = HorizontalAxis.getInstance();
-        horizontalAxis.initXAxis();
-        double normalScale = TBookUtil.getSFromTime(CacheUtil.get().getString(CacheUtil.MAIN_BOTTOM_TIMEBASE_NORMAL_SCALE));
-        horizontalAxis.setTimeScaleIdOfView(HorizontalAxis.WPI_STANDARD, horizontalAxis.timeValtoTimeScaleId(normalScale));
-        double zoomLargeScale = TBookUtil.getSFromTime(CacheUtil.get().getString(CacheUtil.ZOOM_BOTTOM_TIMEBASE_LARGE_SCALE));
-        horizontalAxis.setTimeScaleIdOfView(HorizontalAxis.WPI_LARGE, horizontalAxis.timeValtoTimeScaleId(zoomLargeScale));
-        int roll = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_DISPLAY_COMMON_ROLL);
-        boolean runStop = CacheUtil.get().getBoolean(CacheUtil.MAIN_LEFT_RUNSTOP);
-        if (horizontalAxis.isGreater100ms()
-                && roll == 0
-                && runStop) {
-
+        HorizontalAxis horizontalAxis = HorizontalAxis.getInstance(); // 获取水平轴单例
+        horizontalAxis.initXAxis(); // 初始化X轴
+        double normalScale = TBookUtil.getSFromTime(CacheUtil.get().getString(CacheUtil.MAIN_BOTTOM_TIMEBASE_NORMAL_SCALE)); // 读取普通时基档位值
+        horizontalAxis.setTimeScaleIdOfView(HorizontalAxis.WPI_STANDARD, horizontalAxis.timeValtoTimeScaleId(normalScale)); // 设置普通视图时基
+        double zoomLargeScale = TBookUtil.getSFromTime(CacheUtil.get().getString(CacheUtil.ZOOM_BOTTOM_TIMEBASE_LARGE_SCALE)); // 读取Zoom时基档位值
+        horizontalAxis.setTimeScaleIdOfView(HorizontalAxis.WPI_LARGE, horizontalAxis.timeValtoTimeScaleId(zoomLargeScale)); // 设置Zoom视图时基
+        int roll = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_DISPLAY_COMMON_ROLL); // 读取滚屏模式
+        boolean runStop = CacheUtil.get().getBoolean(CacheUtil.MAIN_LEFT_RUNSTOP); // 读取运行/停止状态
+        if (horizontalAxis.isGreater100ms() // 时基大于100ms
+                && roll == 0 // 滚屏模式关闭
+                && runStop) { // 且处于运行状态
             // zoom 不能滚屏
             //设置zoom标记
-            CacheUtil.get().putMap(CacheUtil.MAIN_BOTTOM_SLIP_ZOOM, String.valueOf(false), true);
+            CacheUtil.get().putMap(CacheUtil.MAIN_BOTTOM_SLIP_ZOOM, String.valueOf(false), true); // 强制关闭Zoom模式
         }
-        Scope.getInstance().setZoom(CacheUtil.get().getBoolean(CacheUtil.MAIN_BOTTOM_SLIP_ZOOM), false);
+        Scope.getInstance().setZoom(CacheUtil.get().getBoolean(CacheUtil.MAIN_BOTTOM_SLIP_ZOOM), false); // 设置Zoom状态
         //设置timeBasePos位置
 //        TriggerTimebase.getInstance().setCache();
     }
 
-
+    /**
+     * 检查MSS存储中的Ref通道映射
+     * 对于已开启的Ref通道，将其数据来源设置为MSS标签，类型重置为WAV(0)
+     * 用于MSS（Mico Storage System）存储恢复后的Ref通道状态修正
+     */
     public void checkMSSStoreMap(){
-
-        TChan.foreachRef(refChan -> {
-           boolean b = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_REF_CHECK + refChan);
-           if(b){
-               putMapBeforeLoadParam(CacheUtil.RIGHT_SLIP_REF_DATA_SELECT_CURRENT + refChan, SaveRecoverySession.MSS_REF_TAG);
-               putMapBeforeLoadParam(CacheUtil.RIGHT_SLIP_REF_TYPE + refChan, "0");
+        TChan.foreachRef(refChan -> { // 遍历所有Ref通道
+           boolean b = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_REF_CHECK + refChan); // 检查Ref通道是否开启
+           if(b){ // 如果Ref通道已开启
+               putMapBeforeLoadParam(CacheUtil.RIGHT_SLIP_REF_DATA_SELECT_CURRENT + refChan, SaveRecoverySession.MSS_REF_TAG); // 设置数据来源为MSS标签
+               putMapBeforeLoadParam(CacheUtil.RIGHT_SLIP_REF_TYPE + refChan, "0"); // 重置Ref类型为WAV
            }
         });
     }
+
     /**
      * 检验加载的REF文件是否合法
+     * 遍历所有Ref通道，检查其引用的文件是否存在：
+     * - 如果文件不存在且不是MSS标签，则关闭该Ref通道并清除引用路径
+     * - 如果所有Ref通道都被关闭，则关闭Ref总开关
+     * - 如果当前选中通道是已关闭的Ref通道，则自动切换到其他可用通道
      */
     private void checkLoadRefFile() {
-        boolean ref = CacheUtil.get().getBoolean((CacheUtil.MAIN_RIGHT_REF));
-        boolean r1Check = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_REF_CHECK + TChan.R1);
-        boolean r2Check = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_REF_CHECK + TChan.R2);
-        boolean r3Check = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_REF_CHECK + TChan.R3);
-        boolean r4Check = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_REF_CHECK + TChan.R4);
-        boolean r5Check = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_REF_CHECK + TChan.R5);
-        boolean r6Check = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_REF_CHECK + TChan.R6);
-        boolean r7Check = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_REF_CHECK + TChan.R7);
-        boolean r8Check = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_REF_CHECK + TChan.R8);
-        boolean[] refChecks = {r1Check, r2Check, r3Check, r4Check, r5Check, r6Check, r7Check, r8Check};
+        boolean ref = CacheUtil.get().getBoolean((CacheUtil.MAIN_RIGHT_REF)); // 读取Ref总开关
+        boolean r1Check = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_REF_CHECK + TChan.R1); // R1通道开关
+        boolean r2Check = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_REF_CHECK + TChan.R2); // R2通道开关
+        boolean r3Check = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_REF_CHECK + TChan.R3); // R3通道开关
+        boolean r4Check = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_REF_CHECK + TChan.R4); // R4通道开关
+        boolean r5Check = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_REF_CHECK + TChan.R5); // R5通道开关
+        boolean r6Check = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_REF_CHECK + TChan.R6); // R6通道开关
+        boolean r7Check = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_REF_CHECK + TChan.R7); // R7通道开关
+        boolean r8Check = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_REF_CHECK + TChan.R8); // R8通道开关
+        boolean[] refChecks = {r1Check, r2Check, r3Check, r4Check, r5Check, r6Check, r7Check, r8Check}; // 封装为数组便于遍历
 
-        TChan.foreachRef(refChan -> {
-            int refType = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_REF_TYPE + refChan);
-            String refFilePath = CacheUtil.get().getString(CacheUtil.RIGHT_SLIP_REF_DATA_SELECT_CURRENT + refChan);
-            File file = new File(refFilePath);
-            if (!file.exists()) {
-                if(SaveRecoverySession.MSS_REF_TAG.equals(refFilePath)) {
-                    putMapBeforeLoadParam(CacheUtil.RIGHT_SLIP_REF_DATA_SELECT_CURRENT + refChan, SaveRecoverySession.MSS_REF_TAG);
-                    putMapBeforeLoadParam(CacheUtil.RIGHT_SLIP_REF_TYPE + refChan, "0");
-                }else{
-                    refChecks[refChan - TChan.R1] = false;
-                    CacheUtil.get().putMapBeforeLoadParam(CacheUtil.RIGHT_SLIP_REF_CHECK + refChan, String.valueOf(false));
-                    CacheUtil.get().putMapBeforeLoadParam(CacheUtil.RIGHT_SLIP_REF_DATA_SELECT_CURRENT + refChan, "");
-                    String closeSave = CacheUtil.get().getString(CacheUtil.RIGHT_SLIP_REF_CLOSE_SAVE + refChan);
-                    if (closeSave.contains((refChan - ChannelFactory.MATH_MAX) + "")) {
-                        CacheUtil.get().putMap(CacheUtil.RIGHT_SLIP_REF_CLOSE_SAVE + refChan, closeSave.replace((refChan - ChannelFactory.MATH_MAX) + "", ""));
+        TChan.foreachRef(refChan -> { // 遍历所有Ref通道
+            int refType = CacheUtil.get().getInt(CacheUtil.RIGHT_SLIP_REF_TYPE + refChan); // 读取Ref类型
+            String refFilePath = CacheUtil.get().getString(CacheUtil.RIGHT_SLIP_REF_DATA_SELECT_CURRENT + refChan); // 读取Ref文件路径
+            File file = new File(refFilePath); // 创建文件对象
+            if (!file.exists()) { // 文件不存在
+                if(SaveRecoverySession.MSS_REF_TAG.equals(refFilePath)) { // 如果是MSS标签路径
+                    putMapBeforeLoadParam(CacheUtil.RIGHT_SLIP_REF_DATA_SELECT_CURRENT + refChan, SaveRecoverySession.MSS_REF_TAG); // 保留MSS标签
+                    putMapBeforeLoadParam(CacheUtil.RIGHT_SLIP_REF_TYPE + refChan, "0"); // 类型重置为WAV
+                }else{ // 普通文件不存在
+                    refChecks[refChan - TChan.R1] = false; // 标记该Ref通道为关闭
+                    CacheUtil.get().putMapBeforeLoadParam(CacheUtil.RIGHT_SLIP_REF_CHECK + refChan, String.valueOf(false)); // 关闭该Ref通道
+                    CacheUtil.get().putMapBeforeLoadParam(CacheUtil.RIGHT_SLIP_REF_DATA_SELECT_CURRENT + refChan, ""); // 清空文件路径
+                    String closeSave = CacheUtil.get().getString(CacheUtil.RIGHT_SLIP_REF_CLOSE_SAVE + refChan); // 读取关闭保存记录
+                    if (closeSave.contains((refChan - ChannelFactory.MATH_MAX) + "")) { // 如果关闭保存记录中包含该通道
+                        CacheUtil.get().putMap(CacheUtil.RIGHT_SLIP_REF_CLOSE_SAVE + refChan, closeSave.replace((refChan - ChannelFactory.MATH_MAX) + "", "")); // 从关闭保存记录中移除该通道
                     }
                 }
             }
         });
 
-        if (!(r1Check || r2Check || r3Check || r4Check || r5Check || r6Check || r7Check || r8Check)) {
-            ref = false;
-            CacheUtil.get().putMapBeforeLoadParam(CacheUtil.MAIN_RIGHT_REF, String.valueOf(false));
+        if (!(r1Check || r2Check || r3Check || r4Check || r5Check || r6Check || r7Check || r8Check)) { // 如果所有Ref通道都被关闭
+            ref = false; // 关闭Ref总开关
+            CacheUtil.get().putMapBeforeLoadParam(CacheUtil.MAIN_RIGHT_REF, String.valueOf(false)); // 写入缓存
         }
-        int channelSelect = CacheUtil.get().getInt(CacheUtil.MAIN_CENTER_CHANNELS_SELECT);
-        if (!refChecks[0] && channelSelect == ChannelFactory.REF1 || !refChecks[1] && channelSelect == ChannelFactory.REF2
+        int channelSelect = CacheUtil.get().getInt(CacheUtil.MAIN_CENTER_CHANNELS_SELECT); // 读取当前选中通道
+        if (!refChecks[0] && channelSelect == ChannelFactory.REF1 || !refChecks[1] && channelSelect == ChannelFactory.REF2 // 如果当前选中通道是已关闭的Ref通道
                 || !refChecks[2] && channelSelect == ChannelFactory.REF3 || !refChecks[3] && channelSelect == ChannelFactory.REF4
                 || !refChecks[4] && channelSelect == ChannelFactory.REF5 || !refChecks[5] && channelSelect == ChannelFactory.REF6
                 || !refChecks[6] && channelSelect == ChannelFactory.REF7 || !refChecks[7] && channelSelect == ChannelFactory.REF8
         ) {
-            AtomicBoolean hasSet = new AtomicBoolean(false);
-            TChan.foreachChan(chan -> {
-                if (CacheUtil.get().getBoolean(MAIN_CHANNEL_OPEN_STATE + chan)) {
-                    CacheUtil.get().putMapBeforeLoadParam(CacheUtil.MAIN_CENTER_CHANNELS_SELECT, String.valueOf(TChan.toFpgaChNo(chan)));
-                    CacheUtil.get().putMapBeforeLoadParam(CacheUtil.MAIN_CENTER_CHANNELS_SELECT_UNXY, String.valueOf(TChan.toFpgaChNo(chan)));
-                    hasSet.set(true);
+            AtomicBoolean hasSet = new AtomicBoolean(false); // 是否已找到替代通道
+            TChan.foreachChan(chan -> { // 遍历所有物理通道
+                if (CacheUtil.get().getBoolean(MAIN_CHANNEL_OPEN_STATE + chan)) { // 如果该物理通道已开启
+                    CacheUtil.get().putMapBeforeLoadParam(CacheUtil.MAIN_CENTER_CHANNELS_SELECT, String.valueOf(TChan.toFpgaChNo(chan))); // 切换到该物理通道
+                    CacheUtil.get().putMapBeforeLoadParam(CacheUtil.MAIN_CENTER_CHANNELS_SELECT_UNXY, String.valueOf(TChan.toFpgaChNo(chan))); // 同步更新非XY模式选中通道
+                    hasSet.set(true); // 标记已找到替代通道
                 }
             });
-            TChan.foreachMath((mathChan) -> {
-                boolean mathCheck = CacheUtil.get().getBoolean(CacheUtil.MAIN_RIGHT_MATH + mathChan);
-                boolean mathAddByUser = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_ADD_BY_USER_MATH + mathChan);
-                if (mathCheck && mathAddByUser) {
-                    CacheUtil.get().putMapBeforeLoadParam(CacheUtil.MAIN_CENTER_CHANNELS_SELECT, String.valueOf(TChan.toFpgaChNo(mathChan)));
-                    CacheUtil.get().putMapBeforeLoadParam(CacheUtil.MAIN_CENTER_CHANNELS_SELECT_UNXY, String.valueOf(TChan.toFpgaChNo(mathChan)));
-                    hasSet.set(true);
+            TChan.foreachMath((mathChan) -> { // 遍历所有Math通道
+                boolean mathCheck = CacheUtil.get().getBoolean(CacheUtil.MAIN_RIGHT_MATH + mathChan); // Math通道开关
+                boolean mathAddByUser = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_ADD_BY_USER_MATH + mathChan); // 用户手动添加标记
+                if (mathCheck && mathAddByUser) { // Math通道开启且用户手动添加
+                    CacheUtil.get().putMapBeforeLoadParam(CacheUtil.MAIN_CENTER_CHANNELS_SELECT, String.valueOf(TChan.toFpgaChNo(mathChan))); // 切换到该Math通道
+                    CacheUtil.get().putMapBeforeLoadParam(CacheUtil.MAIN_CENTER_CHANNELS_SELECT_UNXY, String.valueOf(TChan.toFpgaChNo(mathChan))); // 同步更新
+                    hasSet.set(true); // 标记已找到替代通道
                 }
             });
-            TChan.foreachRef((refChan) -> {
-                boolean refCheck = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_REF_CHECK + refChan);
-                boolean refAddByUser = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_ADD_BY_USER_REF + refChan);
-                if (refCheck && refAddByUser) {
-                    CacheUtil.get().putMapBeforeLoadParam(CacheUtil.MAIN_CENTER_CHANNELS_SELECT, String.valueOf(TChan.toFpgaChNo(refChan)));
-                    CacheUtil.get().putMapBeforeLoadParam(CacheUtil.MAIN_CENTER_CHANNELS_SELECT_UNXY, String.valueOf(TChan.toFpgaChNo(refChan)));
-                    hasSet.set(true);
+            TChan.foreachRef((refChan) -> { // 遍历所有Ref通道
+                boolean refCheck = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_REF_CHECK + refChan); // Ref通道开关
+                boolean refAddByUser = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_ADD_BY_USER_REF + refChan); // 用户手动添加标记
+                if (refCheck && refAddByUser) { // Ref通道开启且用户手动添加
+                    CacheUtil.get().putMapBeforeLoadParam(CacheUtil.MAIN_CENTER_CHANNELS_SELECT, String.valueOf(TChan.toFpgaChNo(refChan))); // 切换到该Ref通道
+                    CacheUtil.get().putMapBeforeLoadParam(CacheUtil.MAIN_CENTER_CHANNELS_SELECT_UNXY, String.valueOf(TChan.toFpgaChNo(refChan))); // 同步更新
+                    hasSet.set(true); // 标记已找到替代通道
                 }
             });
-//            TChan.foreachSerial(serialsChan -> {
+//            TChan.foreachSerial(serialsChan -> { // 已废弃：串口通道遍历
 //                boolean serialsCheck = CacheUtil.get().getBoolean(CacheUtil.MAIN_RIGHT_SERIAL + TChan.toSerialNumber(serialsChan));
 //                boolean serialsAddByUser = CacheUtil.get().getBoolean(CacheUtil.RIGHT_SLIP_ADD_BY_USER_SERIALS + serialsChan);
 //                if (serialsCheck && serialsAddByUser) {
@@ -4312,9 +4637,9 @@ public class CacheUtil {
 //                    hasSet.set(true);
 //                }
 //            });
-            if (!hasSet.get()) {
-                CacheUtil.get().putMapBeforeLoadParam(CacheUtil.MAIN_CENTER_CHANNELS_SELECT, String.valueOf(MainCenterMsgChannels.CH_NULL));
-                CacheUtil.get().putMapBeforeLoadParam(CacheUtil.MAIN_CENTER_CHANNELS_SELECT_UNXY, String.valueOf(MainCenterMsgChannels.CH_NULL));
+            if (!hasSet.get()) { // 如果没有找到任何可用通道
+                CacheUtil.get().putMapBeforeLoadParam(CacheUtil.MAIN_CENTER_CHANNELS_SELECT, String.valueOf(MainCenterMsgChannels.CH_NULL)); // 设置为空通道
+                CacheUtil.get().putMapBeforeLoadParam(CacheUtil.MAIN_CENTER_CHANNELS_SELECT_UNXY, String.valueOf(MainCenterMsgChannels.CH_NULL)); // 同步更新
             }
         }
     }

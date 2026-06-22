@@ -14,106 +14,301 @@ import com.micsig.tbook.ui.R;
 import com.micsig.tbook.ui.util.BitmapUtil;
 
 /**
- * Created by yangj on 2017/11/22.
+ * ╔══════════════════════════════════════════════════════════════════════════════╗
+ *                              电池指示器视图
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * 【模块定位】
+ * 状态栏电池图标控件，显示当前电池电量和充电状态，支持动态更新和充电动画效果。
+ *
+ * 【核心职责】
+ * 1. 显示电池图标和电量百分比
+ * 2. 区分充电状态和放电状态的显示样式
+ * 3. 支持充电时的动态更新动画
+ * 4. 绘制电量条形指示
+ *
+ * 【架构设计】
+ * ┌─────────────────────────────────────────────────────────────────┐
+ * │                      BatteryView                                │
+ * ├─────────────────────────────────────────────────────────────────┤
+ * │  资源层: bitmapEmpty / bitmapCharge / bitmapSupply             │
+ * │  状态层: level / curBattery / bCharge                          │
+ * │  绘制层: onDraw() / setLevel() / setIcon() / selfUpdate()      │
+ * └─────────────────────────────────────────────────────────────────┘
+ *
+ * 【数据流向】
+ * 外部设置电量 → setLevel() → 计算curBattery → invalidate() → onDraw() → 渲染
+ *
+ * 【状态转换图】
+ * ┌──────────────┐     setIcon(true)      ┌──────────────┐
+ * │  放电状态    │ ─────────────────────> │  充电状态    │
+ * │ (bitmapEmpty)│                        │(bitmapCharge)│
+ * └──────────────┘ <───────────────────── └──────────────┘
+ *                  setIcon(false)
+ *
+ * 【依赖关系】
+ * ┌──────────────┐     ┌──────────────────────┐
+ * │ BitmapUtil   │────>│ 位图工具类           │
+ * └──────────────┘     └──────────────────────┘
+ * ┌──────────────┐     ┌──────────────────────┐
+ * │ R.drawable   │────>│ 电池图标资源         │
+ * └──────────────┘     └──────────────────────┘
+ *
+ * 【使用示例】
+ * BatteryView batteryView = findViewById(R.id.battery);
+ * batteryView.setLevel(80);        // 设置电量80%
+ * batteryView.setIcon(true);       // 设置充电状态
+ * batteryView.selfUpdate();        // 充电动画更新
+ *
+ * 【注意事项】
+ * 1. 电量范围：0~100
+ * 2. 充电时调用selfUpdate()实现动态效果
+ * 3. 电量条使用bitmapSupply绘制，高度根据电量百分比计算
+ *
+ * @author yangj
+ * @since 2017/11/22
+ * ╚══════════════════════════════════════════════════════════════════════════════╝
  */
-
 public class BatteryView extends View {
+    // ═════════════════════════════════════════════════════════════════════════════
+    // 成员变量 - 位图资源
+    // ═════════════════════════════════════════════════════════════════════════════
+
+    /** 当前显示的电池图标 */
     private Bitmap bitmap;
+
+    /** 空电池图标（放电状态） */
     private Bitmap bitmapEmpty;
+
+    /** 充电中图标 */
     private Bitmap bitmapCharge;
+
+    /** 电量条图标（用于绘制电量） */
     private Bitmap bitmapSupply;
-    private int level;//0~100
+
+    // ═════════════════════════════════════════════════════════════════════════════
+    // 成员变量 - 状态
+    // ═════════════════════════════════════════════════════════════════════════════
+
+    /** 电池电量（0~100） */
+    private int level;
+
+    /** 电量条颜色 */
     private int color;
+
+    /** 画笔 */
     private Paint paint;
+
+    /** 满电量时的高度（像素） */
     private int fullBattery;
+
+    /** 当前电量高度（像素） */
     private int curBattery;
+
+    /** 是否处于充电状态 */
     private boolean bCharge = false;
 
+    // ═════════════════════════════════════════════════════════════════════════════
+    // 构造方法
+    // ═════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 构造方法 - 单参数
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 【功能说明】
+     * 创建BatteryView实例，仅传入Context。
+     *
+     * 【参数说明】
+     * @param context 上下文对象
+     * ═══════════════════════════════════════════════════════════════════════════
+     */
     public BatteryView(Context context) {
         this(context, null);
     }
 
+    /**
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 构造方法 - XML属性
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 【功能说明】
+     * 创建BatteryView实例，支持XML属性。
+     *
+     * 【参数说明】
+     * @param context 上下文对象
+     * @param attrs   XML属性集
+     * ═══════════════════════════════════════════════════════════════════════════
+     */
     public BatteryView(Context context, @Nullable AttributeSet attrs) {
         this(context, attrs, 0);
     }
 
+    /**
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 构造方法 - 完整参数
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 【功能说明】
+     * 创建BatteryView实例，初始化所有资源。
+     *
+     * 【参数说明】
+     * @param context      上下文对象
+     * @param attrs        XML属性集
+     * @param defStyleAttr 默认样式属性
+     *
+     * 【初始化流程】
+     * 1. 加载电池图标资源
+     * 2. 设置默认电量和颜色
+     * 3. 计算满电量高度
+     * ═══════════════════════════════════════════════════════════════════════════
+     */
     public BatteryView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
+        // 加载空电池图标（从Drawable资源）
         bitmapEmpty = BitmapUtil.getBitmapFromDrawable(context, R.drawable.state_battery_empty);
+        // 加载充电中图标（从Drawable资源）
         bitmapCharge = BitmapUtil.getBitmapFromDrawable(context, R.drawable.state_battery_charge);
+        // 加载电量条图标（从Bitmap资源）
         bitmapSupply=BitmapFactory.decodeResource(getResources(),R.drawable.battery_supply);
 
+        // 默认显示空电池图标
         bitmap = bitmapEmpty;
+        // 默认电量40%
         level = 40;
+        // 默认颜色（灰色）
         color = 0xFF808080;
+        // 创建画笔
         paint = new Paint();
+        // 设置画笔颜色
         paint.setColor(color);
+        // 计算满电量高度（电池高度减去边距）
         fullBattery = bitmap.getHeight() - 4;
     }
 
+    // ═════════════════════════════════════════════════════════════════════════════
+    // 绘制方法
+    // ═════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 绘制方法
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 【功能说明】
+     * 绘制电池图标和电量指示条。
+     *
+     * 【绘制流程】
+     * 1. 如果是放电状态（bitmapEmpty），绘制电量条
+     * 2. 绘制电池图标轮廓
+     *
+     * 【参数说明】
+     * @param canvas 画布对象
+     * ═══════════════════════════════════════════════════════════════════════════
+     */
     @Override
     protected void onDraw(Canvas canvas) {
+        // 如果是放电状态（空电池图标），绘制电量条
         if (bitmap == bitmapEmpty) {
+            // 从底部向上绘制电量条
             for (int i = 0; i < curBattery; i++) {
+                // 绘制电量条像素，位置在电池内部底部向上
                 canvas.drawBitmap(bitmapSupply, 1, bitmapEmpty.getHeight() - 2 - i, null);
             }
         }
+        // 绘制电池图标轮廓
         canvas.drawBitmap(bitmap, 0, 0, null);
-
-        //canvas.drawRect(2, 3 + fullBattery - curBattery, bitmap.getWidth() - 2, bitmap.getHeight() - 1, paint);
-        //canvas.drawRect(2 + fullBattery - curBattery, 2, bitmap.getWidth() - 4, bitmap.getHeight() - 1, paint);
-//        canvas.drawRect(2,2+fullBattery-curBattery,bitmap.getWidth() - 4, bitmap.getHeight() - 1, paint);
-//        canvas.drawBitmap(bitmap, 0, 0, null);
-
-
-//        if(!bCharge){
-//            Paint textPaint = new Paint();
-//            textPaint.setColor(Color.RED);
-//            textPaint.setTextAlign(Paint.Align.CENTER);
-//            textPaint.setTextSize(9);
-//            Rect rect = new Rect();
-//            this.getLocalVisibleRect(rect);
-//
-//            Paint.FontMetrics fontMetrics=textPaint.getFontMetrics();
-//            float distance=(fontMetrics.bottom - fontMetrics.top)/2 - fontMetrics.bottom;
-//            float baseline=rect.centerY() + distance;
-//
-//            canvas.rotate(-90,rect.centerX(),rect.centerY());
-//
-//            canvas.drawText("" + level + "", (float) rect.centerX()-1.5f, (float) baseline+0.5f, textPaint);
-//            canvas.rotate(90,rect.centerX(),rect.centerY());
-//        }
-
     }
 
+    // ═════════════════════════════════════════════════════════════════════════════
+    // 公共方法
+    // ═════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 设置电量
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 【功能说明】
+     * 设置电池电量百分比，并触发重绘。
+     *
+     * 【参数说明】
+     * @param level 电量百分比（0~100）
+     *
+     * 【计算公式】
+     * curBattery = fullBattery * level / 100
+     * ═══════════════════════════════════════════════════════════════════════════
+     */
     public void setLevel(int level) {
+        // 保存电量值
         this.level = level;
+        // 计算当前电量高度（像素）
         curBattery = (int) (fullBattery * level * 1.0 / 100);
-        invalidate();
-    }
-
-    public int getLevel() {
-        return level;
-    }
-
-    public void setIcon(boolean charge) {
-        bCharge = charge;
-        if (charge) {
-            bitmap = bitmapCharge;
-        } else {
-            bitmap = bitmapEmpty;
-        }
+        // 触发重绘
         invalidate();
     }
 
     /**
-     * 充电时的页面自动更新，这儿只负责显示，重复的操作在上一层handler中实现
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 获取电量
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 【功能说明】
+     * 获取当前电池电量百分比。
+     *
+     * 【返回值】
+     * @return 电量百分比（0~100）
+     * ═══════════════════════════════════════════════════════════════════════════
+     */
+    public int getLevel() {
+        return level;
+    }
+
+    /**
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 设置图标状态
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 【功能说明】
+     * 设置电池的充电/放电状态，切换显示的图标。
+     *
+     * 【参数说明】
+     * @param charge true表示充电状态，false表示放电状态
+     *
+     * 【状态切换】
+     * charge=true  -> 显示充电图标（bitmapCharge）
+     * charge=false -> 显示空电池图标（bitmapEmpty）
+     * ═══════════════════════════════════════════════════════════════════════════
+     */
+    public void setIcon(boolean charge) {
+        // 保存充电状态
+        bCharge = charge;
+        if (charge) {
+            // 充电状态：显示充电图标
+            bitmap = bitmapCharge;
+        } else {
+            // 放电状态：显示空电池图标
+            bitmap = bitmapEmpty;
+        }
+        // 触发重绘
+        invalidate();
+    }
+
+    /**
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 自更新方法
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 【功能说明】
+     * 充电时的页面自动更新，实现充电动画效果。
+     * 此方法只负责显示，重复的操作在上一层handler中实现。
+     *
+     * 【动画原理】
+     * 每次调用curBattery递增，超过满电量后重置到实际电量值，
+     * 形成循环滚动效果。
+     * ═══════════════════════════════════════════════════════════════════════════
      */
     public void selfUpdate() {
+        // 电量高度递增
         curBattery++;
+        // 超过满电量后重置
         if (curBattery > fullBattery) {
+            // 重置到实际电量值
             curBattery = (int) (fullBattery * level * 1.0 / 100);
         }
+        // 触发重绘
         invalidate();
     }
 }

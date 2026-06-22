@@ -1,30 +1,113 @@
-package com.micsig.tbook.ui;
-
-
-import androidx.annotation.IntDef;
-
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+package com.micsig.tbook.ui; // UI组件库根包，包含示波器自定义UI控件
 
 /**
- * Created by liwb on 2017/4/5.
+ * ╔══════════════════════════════════════════════════════════════════════════════╗
+ * ║                      MScopePublicConst - 示波器公共常量定义                     ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║ 【模块定位】                                                                  ║
+ * ║   UI组件库 > 常量定义 > 通道常量                                               ║
+ * ║   MHO系列示波器软件核心常量定义                                                ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║ 【核心职责】                                                                  ║
+ * ║   1. 定义示波器通道相关的常量标识                                              ║
+ * ║   2. 提供通道类型的注解约束                                                   ║
+ * ║   3. 统一管理通道相关的魔法数字                                               ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║ 【架构设计】                                                                  ║
+ * ║   设计模式: 常量类模式                                                        ║
+ * ║   类型安全: 使用@IntDef注解确保类型安全                                        ║
+ * ║   命名规范: 全大写字母，单词间用下划线分隔                                      ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║ 【通道类型说明】                                                              ║
+ * ║   Ch1~Ch4: 模拟通道1-4                                                       ║
+ * ║   Math: 数学运算通道                                                         ║
+ * ║   Ref: 参考通道                                                              ║
+ * ║   S1~S2: 串行解码通道1-2                                                      ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║ 【使用示例】                                                                  ║
+ * ║   // 使用通道常量                                                            ║
+ * ║   int channel = MScopePublicConst.Ch1;                                        ║
+ * ║   // 方法参数使用注解约束                                                     ║
+ * ║   public void setChannel(@MScopePublicConst.Ch int channel) { ... }           ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║ 【注意事项】                                                                  ║
+ * ║   1. 此类不可实例化                                                          ║
+ * ║   2. 所有常量使用@IntDef注解进行类型约束                                      ║
+ * ║   3. 修改常量值需谨慎，可能影响多处代码                                        ║
+ * ╚══════════════════════════════════════════════════════════════════════════════╝
+ * 
+ * @author liwb
+ * @date 2017/4/5
+ * @version 1.0
  */
+
+import androidx.annotation.IntDef; // 整型注解定义，用于类型约束
+
+import java.lang.annotation.Retention; // 注解保留策略
+import java.lang.annotation.RetentionPolicy; // 注解保留策略枚举
 
 public class MScopePublicConst {
 
-    //region 通道常量定义
-    public static final int Ch1=0x01;
-    public static final int Ch2=0x02;
-    public static final int Ch3=0x03;
-    public static final int Ch4=0x04;
-    public static final int Math=0x05;
-    public static final int Ref=0x06;
-    public static final int S1=0x07;
-    public static final int S2=0x08;
-    @IntDef({Ch1,Ch2,Ch3,Ch4,Math,Ref,S1,S2})
-    @Retention(RetentionPolicy.SOURCE)
-    public @interface Ch{}
+    // ================================ 通道常量定义 ================================
+    
+    /**
+     * 模拟通道1标识
+     * 用于标识示波器的第一个模拟输入通道
+     */
+    public static final int Ch1=0x01; // 通道1标识，值为1
+    
+    /**
+     * 模拟通道2标识
+     * 用于标识示波器的第二个模拟输入通道
+     */
+    public static final int Ch2=0x02; // 通道2标识，值为2
+    
+    /**
+     * 模拟通道3标识
+     * 用于标识示波器的第三个模拟输入通道
+     */
+    public static final int Ch3=0x03; // 通道3标识，值为3
+    
+    /**
+     * 模拟通道4标识
+     * 用于标识示波器的第四个模拟输入通道
+     */
+    public static final int Ch4=0x04; // 通道4标识，值为4
+    
+    /**
+     * 数学运算通道标识
+     * 用于标识示波器的数学运算结果通道
+     */
+    public static final int Math=0x05; // 数学通道标识，值为5
+    
+    /**
+     * 参考通道标识
+     * 用于标识示波器的参考波形通道
+     */
+    public static final int Ref=0x06; // 参考通道标识，值为6
+    
+    /**
+     * 串行解码通道1标识
+     * 用于标识示波器的第一个串行解码通道
+     */
+    public static final int S1=0x07; // 串行解码通道1标识，值为7
+    
+    /**
+     * 串行解码通道2标识
+     * 用于标识示波器的第二个串行解码通道
+     */
+    public static final int S2=0x08; // 串行解码通道2标识，值为8
+    
+    /**
+     * 通道类型注解定义
+     * 用于约束方法参数只能是预定义的通道常量
+     * 
+     * 使用示例:
+     * public void setChannel(@Ch int channel) { ... }
+     */
+    @IntDef({Ch1,Ch2,Ch3,Ch4,Math,Ref,S1,S2}) // 定义允许的整型值
+    @Retention(RetentionPolicy.SOURCE) // 注解仅在源码级别保留
+    public @interface Ch{} // 通道类型注解接口
     //endregion
-
 
 }

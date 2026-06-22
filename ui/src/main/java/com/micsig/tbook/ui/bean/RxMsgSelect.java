@@ -1,19 +1,82 @@
-package com.micsig.tbook.ui.bean;
+package com.micsig.tbook.ui.bean; // UI组件库bean子包，包含数据模型类
 
-import java.io.Serializable;
+import java.io.Serializable; // 序列化接口
 
 /**
- * Created by yangj on 2017/5/22.
+ * ╔══════════════════════════════════════════════════════════════════════════════╗
+ * ║                      RxMsgSelect - 响应式消息选择基类                          ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║ 【模块定位】                                                                  ║
+ * ║   UI组件库 > bean > 数据模型 > 响应式数据                                      ║
+ * ║   MHO系列示波器软件数据模型基类                                                ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║ 【核心职责】                                                                  ║
+ * ║   1. 提供消息选择状态的基类实现                                               ║
+ * ║   2. 支持序列化，便于数据传输                                                 ║
+ * ║   3. 作为RxBooleanWithSelect、RxIntWithSelect、RxStringWithSelect的父类       ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║ 【架构设计】                                                                  ║
+ * ║   继承关系: RxMsgSelect implements Serializable                               ║
+ * ║   子类: RxBooleanWithSelect, RxIntWithSelect, RxStringWithSelect              ║
+ * ║   设计模式: 模板方法模式，提供通用的选择状态管理                                ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║ 【使用场景】                                                                  ║
+ * ║   1. 示波器通道选择状态管理                                                   ║
+ * ║   2. 菜单选项的选中状态                                                       ║
+ * ║   3. 需要值和选择状态组合的数据结构                                           ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║ 【使用示例】                                                                  ║
+ * ║   // 通常使用子类                                                            ║
+ * ║   RxBooleanWithSelect boolSelect = new RxBooleanWithSelect(true);             ║
+ * ║   boolSelect.setRxMsgSelect(true);                                            ║
+ * ║   if (boolSelect.isCurSelectTrue()) { ... }                                   ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║ 【注意事项】                                                                  ║
+ * ║   1. 此类为抽象基类，通常使用其子类                                           ║
+ * ║   2. rxMsgSelect字段为protected，子类可直接访问                               ║
+ * ║   3. 实现了Serializable接口，支持序列化传输                                   ║
+ * ╚══════════════════════════════════════════════════════════════════════════════╝
+ * 
+ * @author yangj
+ * @date 2017/5/22
+ * @version 1.0
  */
 
-public class RxMsgSelect implements Serializable {
-    protected boolean rxMsgSelect = false;
+public class RxMsgSelect implements Serializable { // 响应式消息选择基类，实现序列化接口
+    // ================================ 成员变量定义 ================================
+    
+    /**
+     * 消息选择状态标志
+     * true=当前项被选中，false=当前项未被选中
+     * 使用protected修饰，允许子类直接访问
+     */
+    protected boolean rxMsgSelect = false; // 消息选择状态，默认为false
 
-    public boolean isRxMsgSelect() {
-        return rxMsgSelect;
+    /**
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 方法：isRxMsgSelect
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 【功能说明】
+     *   获取消息选择状态
+     * 
+     * 【返回值】
+     *   @return true如果被选中，false否则
+     */
+    public boolean isRxMsgSelect() { // 获取消息选择状态
+        return rxMsgSelect; // 返回选择状态
     }
 
-    public void setRxMsgSelect(boolean rxMsgSelect) {
-        this.rxMsgSelect = rxMsgSelect;
+    /**
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 方法：setRxMsgSelect
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 【功能说明】
+     *   设置消息选择状态
+     * 
+     * 【参数说明】
+     *   @param rxMsgSelect true=选中，false=未选中
+     */
+    public void setRxMsgSelect(boolean rxMsgSelect) { // 设置消息选择状态
+        this.rxMsgSelect = rxMsgSelect; // 更新选择状态
     }
 }

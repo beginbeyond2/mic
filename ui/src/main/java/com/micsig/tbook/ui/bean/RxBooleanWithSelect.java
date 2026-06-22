@@ -1,38 +1,131 @@
-package com.micsig.tbook.ui.bean;
+package com.micsig.tbook.ui.bean; // UI组件库bean子包，包含数据模型类
 
-import java.io.Serializable;
+import java.io.Serializable; // 序列化接口
 
 /**
- * Created by yangj on 2017/5/22.
+ * ╔══════════════════════════════════════════════════════════════════════════════╗
+ * ║                  RxBooleanWithSelect - 布尔值选择数据模型                       ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║ 【模块定位】                                                                  ║
+ * ║   UI组件库 > bean > 数据模型 > 响应式数据                                      ║
+ * ║   MHO系列示波器软件数据模型之一                                                ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║ 【核心职责】                                                                  ║
+ * ║   1. 存储布尔值和选择状态的组合                                               ║
+ * ║   2. 提供判断当前选择是否为true的便捷方法                                      ║
+ * ║   3. 支持序列化，便于数据传输                                                 ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║ 【架构设计】                                                                  ║
+ * ║   继承关系: RxBooleanWithSelect extends RxMsgSelect                           ║
+ * ║   设计模式: 值对象模式，封装布尔值和选择状态                                    ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║ 【使用场景】                                                                  ║
+ * ║   1. 示波器通道开关状态管理                                                   ║
+ * ║   2. 功能启用/禁用状态                                                        ║
+ * ║   3. 需要同时管理布尔值和选择状态的场景                                        ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║ 【使用示例】                                                                  ║
+ * ║   RxBooleanWithSelect boolSelect = new RxBooleanWithSelect(true);             ║
+ * ║   boolSelect.setRxMsgSelect(true);                                            ║
+ * ║   if (boolSelect.isCurSelectTrue()) {                                         ║
+ * ║       // 当前选择且值为true                                                   ║
+ * ║   }                                                                           ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║ 【注意事项】                                                                  ║
+ * ║   1. isCurSelectTrue方法同时检查值和选择状态                                  ║
+ * ║   2. 继承自RxMsgSelect，拥有选择状态管理能力                                  ║
+ * ╚══════════════════════════════════════════════════════════════════════════════╝
+ * 
+ * @author yangj
+ * @date 2017/5/22
+ * @version 1.0
  */
 
-public class RxBooleanWithSelect extends RxMsgSelect {
-    private boolean value;
+public class RxBooleanWithSelect extends RxMsgSelect { // 布尔值选择数据模型，继承自RxMsgSelect
+    // ================================ 成员变量定义 ================================
+    
+    /**
+     * 布尔值
+     * 存储实际的布尔状态
+     */
+    private boolean value; // 布尔值
 
-    public boolean isValue() {
-        return value;
-    }
-
-    public void setValue(boolean value) {
-        this.value = value;
-    }
-
-    public RxBooleanWithSelect(boolean value) {
-        this.value = value;
+    /**
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 方法：isValue
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 【功能说明】
+     *   获取布尔值
+     * 
+     * 【返回值】
+     *   @return 当前布尔值
+     */
+    public boolean isValue() { // 获取布尔值
+        return value; // 返回布尔值
     }
 
     /**
-     * 既是当前选择，又是选择的打开
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 方法：setValue
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 【功能说明】
+     *   设置布尔值
+     * 
+     * 【参数说明】
+     *   @param value 新的布尔值
      */
-    public boolean isCurSelectTrue() {
-        return value && rxMsgSelect;
+    public void setValue(boolean value) { // 设置布尔值
+        this.value = value; // 更新布尔值
     }
 
+    /**
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 构造方法
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 【功能说明】
+     *   创建RxBooleanWithSelect实例
+     * 
+     * 【参数说明】
+     *   @param value 初始布尔值
+     */
+    public RxBooleanWithSelect(boolean value) { // 构造方法
+        this.value = value; // 设置初始布尔值
+    }
+
+    /**
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 方法：isCurSelectTrue
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 【功能说明】
+     *   判断当前是否为选中状态且值为true
+     *   这是一个组合判断方法，同时检查值和选择状态
+     * 
+     * 【返回值】
+     *   @return true如果当前被选中且值为true，false否则
+     * 
+     * 【业务含义】
+     *   既是当前选择，又是选择的打开
+     *   用于判断某个选项是否处于激活选中状态
+     */
+    public boolean isCurSelectTrue() { // 判断是否选中且值为true
+        return value && rxMsgSelect; // 返回布尔值和选择状态的与运算结果
+    }
+
+    /**
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 方法：toString
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 【功能说明】
+     *   返回对象的字符串表示，用于调试和日志输出
+     * 
+     * 【返回值】
+     *   @return 格式化的字符串表示
+     */
     @Override
-    public String toString() {
-        return "RxBooleanWithSelect{" +
-                "value=" + value +
-                "rxMsgSelect=" + rxMsgSelect +
-                '}';
+    public String toString() { // 转换为字符串
+        return "RxBooleanWithSelect{" + // 类名
+                "value=" + value + // 布尔值
+                "rxMsgSelect=" + rxMsgSelect + // 选择状态
+                '}'; // 结束括号
     }
 }

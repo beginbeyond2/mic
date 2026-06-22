@@ -1,36 +1,135 @@
-package com.micsig.tbook.ui.bean;
+package com.micsig.tbook.ui.bean; // UI组件库bean子包，包含数据模型类
 
-import java.io.Serializable;
+import java.io.Serializable; // 序列化接口
 
 /**
- * Created by yangj on 2017/5/22.
+ * ╔══════════════════════════════════════════════════════════════════════════════╗
+ * ║                   RxStringWithSelect - 字符串选择数据模型                      ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║ 【模块定位】                                                                  ║
+ * ║   UI组件库 > bean > 数据模型 > 响应式数据                                      ║
+ * ║   MHO系列示波器软件数据模型之一                                                ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║ 【核心职责】                                                                  ║
+ * ║   1. 存储字符串值和选择状态的组合                                             ║
+ * ║   2. 继承RxMsgSelect的选择状态管理能力                                        ║
+ * ║   3. 支持克隆和序列化，便于数据复制和传输                                      ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║ 【架构设计】                                                                  ║
+ * ║   继承关系: RxStringWithSelect extends RxMsgSelect implements Cloneable       ║
+ * ║   设计模式: 值对象模式，封装字符串值和选择状态                                  ║
+ * ║   可克隆性: 实现Cloneable接口，支持对象克隆                                    ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║ 【使用场景】                                                                  ║
+ * ║   1. 示波器通道名称选择                                                       ║
+ * ║   2. 文本选项的选中状态管理                                                   ║
+ * ║   3. 需要同时管理字符串值和选择状态的场景                                      ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║ 【使用示例】                                                                  ║
+ * ║   RxStringWithSelect strSelect = new RxStringWithSelect("CH1");               ║
+ * ║   strSelect.setRxMsgSelect(true);                                             ║
+ * ║   // 克隆对象                                                                ║
+ * ║   RxStringWithSelect cloned = (RxStringWithSelect) strSelect.clone();         ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║ 【注意事项】                                                                  ║
+ * ║   1. 继承自RxMsgSelect，拥有选择状态管理能力                                  ║
+ * ║   2. 实现了Cloneable接口，支持对象克隆                                        ║
+ * ║   3. 实现了Serializable接口，支持序列化传输                                   ║
+ * ╚══════════════════════════════════════════════════════════════════════════════╝
+ * 
+ * @author yangj
+ * @date 2017/5/22
+ * @version 1.0
  */
 
-public class RxStringWithSelect extends RxMsgSelect implements Cloneable, Serializable {
-    private String value;
+public class RxStringWithSelect extends RxMsgSelect implements Cloneable, Serializable { // 字符串选择数据模型，继承自RxMsgSelect，实现克隆和序列化接口
+    // ================================ 成员变量定义 ================================
+    
+    /**
+     * 字符串值
+     * 存储实际的字符串内容
+     */
+    private String value; // 字符串值
 
+    /**
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 方法：clone
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 【功能说明】
+     *   克隆当前对象
+     *   创建一个与当前对象相同的新实例
+     * 
+     * 【返回值】
+     *   @return 克隆后的对象实例
+     * 
+     * 【异常说明】
+     *   @throws CloneNotSupportedException 如果对象不支持克隆
+     * 
+     * 【覆写说明】
+     *   重写Object.clone方法，实现浅拷贝
+     */
     @Override
-    public Object clone() throws CloneNotSupportedException {
-        return super.clone();
+    public Object clone() throws CloneNotSupportedException { // 克隆对象
+        return super.clone(); // 调用父类克隆方法
     }
 
-    public String getValue() {
-        return value;
+    /**
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 方法：getValue
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 【功能说明】
+     *   获取字符串值
+     * 
+     * 【返回值】
+     *   @return 当前字符串值
+     */
+    public String getValue() { // 获取字符串值
+        return value; // 返回字符串值
     }
 
-    public void setValue(String value) {
-        this.value = value;
+    /**
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 方法：setValue
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 【功能说明】
+     *   设置字符串值
+     * 
+     * 【参数说明】
+     *   @param value 新的字符串值
+     */
+    public void setValue(String value) { // 设置字符串值
+        this.value = value; // 更新字符串值
     }
 
-    public RxStringWithSelect(String value) {
-        this.value = value;
+    /**
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 构造方法
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 【功能说明】
+     *   创建RxStringWithSelect实例
+     * 
+     * 【参数说明】
+     *   @param value 初始字符串值
+     */
+    public RxStringWithSelect(String value) { // 构造方法
+        this.value = value; // 设置初始字符串值
     }
 
+    /**
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 方法：toString
+     * ═══════════════════════════════════════════════════════════════════════════
+     * 【功能说明】
+     *   返回对象的字符串表示，用于调试和日志输出
+     * 
+     * 【返回值】
+     *   @return 格式化的字符串表示
+     */
     @Override
-    public String toString() {
-        return "RxStringWithSelect{" +
-                "value='" + value + '\'' +
-                "rxMsgSelect='" + rxMsgSelect + '\'' +
-                '}';
+    public String toString() { // 转换为字符串
+        return "RxStringWithSelect{" + // 类名
+                "value='" + value + '\'' + // 字符串值
+                "rxMsgSelect='" + rxMsgSelect + '\'' + // 选择状态
+                '}'; // 结束括号
     }
 }
