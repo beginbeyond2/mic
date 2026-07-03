@@ -1,37 +1,65 @@
-package com.micsig.tbook.tbookscope.top.layout.trigger.serials.bean;
+package com.micsig.tbook.tbookscope.top.layout.trigger.serials.bean; // 串行详情Bean子包声明
 
 /**
+ * ╔═══════════════════════════════════════════════════════════════════════════╗
+ * ║            SerialsDetailCanDataId（CAN数据帧ID触发详情）                       ║
+ * ╠═══════════════════════════════════════════════════════════════════════════╣
+ * ║ 模块定位: serials/bean/SerialsDetailCanDataId.java                         ║
+ * ║ 核心职责: 封装CAN数据帧ID触发条件的详情数据                                      ║
+ * ║ 架构设计: 实现ISerialsDetail标记接口，持有1个DataBean字段                       ║
+ * ║ 数据流向: 详情Fragment → 此Bean → Command下发                                ║
+ * ║ 依赖关系: 聚合DataBean，实现ISerialsDetail                                    ║
+ * ║ 使用场景: CAN数据帧ID触发时传递ID值                                           ║
+ * ╚═══════════════════════════════════════════════════════════════════════════╝
+ *
  * Created by yangj on 2017/5/17.
  */
 
-public class SerialsDetailCanDataId implements ISerialsDetail {
-    private DataBean canDataIdEdit;
-    private String canDataIdEditTitle;
+public class SerialsDetailCanDataId implements ISerialsDetail { // CAN数据帧ID触发详情，实现ISerialsDetail
+    private DataBean canDataIdEdit; // CAN数据帧ID值
+    private String canDataIdEditTitle; // ID字段标题
 
-    public String getCanDataIdEditTitle() {
-        return canDataIdEditTitle;
+    /**
+     * 获取ID字段标题
+     * @return 标题字符串
+     */
+    public String getCanDataIdEditTitle() { // 获取ID标题
+        return canDataIdEditTitle; // 返回标题
     }
 
-    public void setCanDataIdEditTitle(String canDataIdEditTitle) {
-        this.canDataIdEditTitle = canDataIdEditTitle;
+    /**
+     * 设置ID字段标题
+     * @param canDataIdEditTitle 标题字符串
+     */
+    public void setCanDataIdEditTitle(String canDataIdEditTitle) { // 设置ID标题
+        this.canDataIdEditTitle = canDataIdEditTitle; // 赋值标题
     }
 
-    public DataBean getCanDataIdEdit() {
-        return canDataIdEdit;
+    /**
+     * 获取CAN数据帧ID值
+     * @return DataBean ID对象
+     */
+    public DataBean getCanDataIdEdit() { // 获取ID值
+        return canDataIdEdit; // 返回DataBean
     }
 
-    public void setCanDataIdEdit(int digits, String value) {
-        if (this.canDataIdEdit == null) {
-            this.canDataIdEdit = new DataBean();
+    /**
+     * 设置CAN数据帧ID值（懒初始化）
+     * @param digits 进制
+     * @param value 值
+     */
+    public void setCanDataIdEdit(int digits, String value) { // 设置ID值
+        if (this.canDataIdEdit == null) { // 如果DataBean为空
+            this.canDataIdEdit = new DataBean(); // 懒初始化创建DataBean
         }
-        this.canDataIdEdit.setDigits(digits);
-        this.canDataIdEdit.setValue(value);
+        this.canDataIdEdit.setDigits(digits); // 设置进制
+        this.canDataIdEdit.setValue(value); // 设置值
     }
 
     @Override
-    public String toString() {
-        return "SerialsDetailCanDataId{" +
-                "canDataIdEdit='" + canDataIdEdit + '\'' +
-                '}';
+    public String toString() { // 重写toString方法
+        return "SerialsDetailCanDataId{" + // 开始构建字符串
+                "canDataIdEdit='" + canDataIdEdit + '\'' + // 拼接ID字段
+                '}'; // 结束字符串构建
     }
 }

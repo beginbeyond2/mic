@@ -1,84 +1,133 @@
 package com.micsig.tbook.tbookscope.scpi;
 
-import android.os.Build;
-import android.os.SharedMemory;
-import android.system.ErrnoException;
-import android.util.Log;
+import android.os.Build; // Android版本判断(用于SharedMemory兼容性)
+import android.os.SharedMemory; // Android共享内存(用于波形数据高效传输)
+import android.system.ErrnoException; // 共享内存创建可能抛出的系统错误
+import android.util.Log; // Android日志
 
-import com.micsig.base.Logger;
-import com.micsig.tbook.tbookscope.services.SCPI.client.ScpiOnBindService;
-import com.micsig.tbook.ui.util.StrUtil;
+import com.micsig.base.Logger; // 应用日志工具
+import com.micsig.tbook.tbookscope.services.SCPI.client.ScpiOnBindService; // SCPI服务绑定接口(用于消息回传)
+import com.micsig.tbook.ui.util.StrUtil; // 字符串工具(判空)
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.nio.ByteBuffer;
+import java.lang.reflect.InvocationTargetException; // 反射调用异常
+import java.lang.reflect.Method; // 反射方法(用于动态调用SCPI_xxx命令处理方法)
+import java.nio.ByteBuffer; // NIO字节缓冲区(用于共享内存读写)
 
 /**
  * Created by liwb on 2018/1/11.
  */
 
+/*******************************************************************************
+ *   +-----------------------------------------------------------------------+   *
+ *   |          SCPICommandDeal - SCPI命令分发核心引擎                          |   *
+ *   +-----------------------------------------------------------------------+   *
+ *   |  模块定位: SCPI命令体系的Java层中枢，连接C层JNI解析与Java层各SCPI_xxx命令处理类 |   *
+ *   |  核心职责: 维护SCPI命令映射表，接收JNI解析回调，通过反射分发给对应命令处理方法   |   *
+ *   |  架构设计: 单例模式(静态内部类持有者)，命令表为SCPICommandStruct数组，            |   *
+ *   |           每条命令映射(命令字符串,类名,方法名)，deal()通过反射调用              |   *
+ *   |  数据流向: 上位机SCPI命令 → scpiParser() → JNI.scpiCommand() → deal()          |   *
+ *   |           → 反射调用SCPI_xxx方法 → 结果返回 → sendMessage() → 上位机            |   *
+ *   |  依赖关系: 依赖SCPIParam(参数)、所有SCPI_xxx命令处理类(反射调用)、               |   *
+ *   |           ScpiOnBindService(消息回传)、SharedMemory(波形数据传输)              |   *
+ *   |  使用场景: 上位机通过USB/LAN/Socket发送SCPI命令，经C层JNI解析后由本类分发执行   |   *
+ *   +-----------------------------------------------------------------------+   *
+ ******************************************************************************/
 public class SCPICommandDeal {
-    private static final String TAG="SCPICommandDeal";
-   static {System.loadLibrary("SCPI");}
+    private static final String TAG="SCPICommandDeal"; // 日志标签
+   static {System.loadLibrary("SCPI");} // 加载C层SCPI解析JNI库(libSCPI.so)
 
     //region 单例
+    /** 静态内部类持有者模式实现单例，保证线程安全的延迟初始化 */
     private static class SCPICommandDealHolder {
-        private static final SCPICommandDeal instance = new SCPICommandDeal();
+        private static final SCPICommandDeal instance = new SCPICommandDeal(); // 单例实例
     }
 
+    /**
+     * 获取SCPICommandDeal单例实例。
+     * @return 全局唯一的SCPICommandDeal实例
+     */
     public static final SCPICommandDeal getInstance() {
-        return SCPICommandDealHolder.instance;
+        return SCPICommandDealHolder.instance; // 返回静态内部类持有的单例
     }
     //endregion
 
-    private ScpiOnBindService scpiService;
-    private SCPIParam param;
+    private ScpiOnBindService scpiService; // SCPI服务绑定接口，用于向客户端回传命令执行结果
+    private SCPIParam param; // SCPI参数对象，每条命令解析后填充此对象
 
-    public static final int SHARED_MEM_SIZE = 10 * 1024 * 1024;
+    /** 共享内存大小：10MB，用于波形数据的高效传输 */
+    public static final int SHARED_MEM_SIZE = 10 * 1024 * 1024; // 10MB共享内存
+
+    /**
+     * 私有构造函数(单例模式)。
+     * 初始化SCPIParam参数对象，并在Android 8.1+上创建共享内存区域。
+     */
     public SCPICommandDeal(){
-        param=new SCPIParam();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+        param=new SCPIParam(); // 创建SCPI参数对象
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) { // Android 8.1+才支持SharedMemory
             try {
-                sharedMem= SharedMemory.create("wave_tran",SHARED_MEM_SIZE);
+                sharedMem= SharedMemory.create("wave_tran",SHARED_MEM_SIZE); // 创建10MB共享内存，名称"wave_tran"
             } catch (ErrnoException e) {
-                e.printStackTrace();
+                e.printStackTrace(); // 共享内存创建失败时打印异常
             }
         }
     }
 
+    /**
+     * 初始化SCPI服务绑定接口。
+     * 在SCPI服务启动时调用，设置消息回传通道。
+     * @param scpiService SCPI服务绑定接口
+     */
     public void init(ScpiOnBindService scpiService){
-        this.scpiService=scpiService;
+        this.scpiService=scpiService; // 保存SCPI服务引用，用于后续sendMessage回传结果
     }
 
+    /**
+     * SCPI命令映射结构体。
+     * 每个实例对应一条SCPI命令的映射关系：
+     * command = SCPI命令字符串(如":CHANnel:DISPlay")
+     * clasz  = 命令处理类名(如"SCPI_Channel")
+     * method = 命令处理方法名(如"Display")
+     */
     class SCPICommandStruct{
-        private String command;
-        private  String clasz;
-        private String method;
+        private String command; // SCPI命令字符串
+        private  String clasz; // 命令处理类名(在com.micsig.tbook.tbookscope.scpi包下)
+        private String method; // 命令处理方法名
 
+        /**
+         * 构造SCPI命令映射结构体。
+         * @param command SCPI命令字符串
+         * @param clasz   命令处理类名
+         * @param method  命令处理方法名
+         */
         public SCPICommandStruct(String command,String clasz,String method){
-             this.command=command;
-            this.clasz=clasz;
-            this.method=method;
+             this.command=command; // 保存命令字符串
+            this.clasz=clasz; // 保存处理类名
+            this.method=method; // 保存处理方法名
         }
     }
 
     //region scpi_commands
 
+    /**
+     * SCPI命令映射表：命令字符串 → (处理类名, 处理方法名)
+     * C层JNI解析SCPI命令后返回commandIndex，本数组通过索引定位对应的处理类和方法。
+     * 数组索引与C层scpi_commands数组的索引必须一一对应。
+     */
     private SCPICommandStruct[] scpi_commands = {
             //公有命令
-            new SCPICommandStruct("*CLS","SCPI_Common","CLS"),//
-            new SCPICommandStruct("*ESE","SCPI_Common","ESE"),//
-            new SCPICommandStruct("*ESE?","SCPI_Common","ESEQ"),//
-            new SCPICommandStruct("*ESR","SCPI_Common","ESR"),//
-            new SCPICommandStruct("*IDN?","SCPI_Common","IDNQ"),//
-            new SCPICommandStruct("*OPC","SCPI_Common","OPC"),//
-            new SCPICommandStruct("*OPC?","SCPI_Common","OPCQ"),//
-            new SCPICommandStruct("*RST","SCPI_Common","RST"),//
-            new SCPICommandStruct("*SRE","SCPI_Common","SRE"),//
-            new SCPICommandStruct("*SRE?","SCPI_Common","SREQ"),//
-            new SCPICommandStruct("*STB?","SCPI_Common","STBQ"),//
-            new SCPICommandStruct("*TST?","SCPI_Common","TSTQ"),//
-            new SCPICommandStruct("*WAI","SCPI_Common","WAI"),//
+            new SCPICommandStruct("*CLS","SCPI_Common","CLS"),//清除状态
+            new SCPICommandStruct("*ESE","SCPI_Common","ESE"),//设置事件使能寄存器
+            new SCPICommandStruct("*ESE?","SCPI_Common","ESEQ"),//查询事件使能寄存器
+            new SCPICommandStruct("*ESR","SCPI_Common","ESR"),//设置事件状态寄存器
+            new SCPICommandStruct("*IDN?","SCPI_Common","IDNQ"),//查询设备标识
+            new SCPICommandStruct("*OPC","SCPI_Common","OPC"),//设置操作完成
+            new SCPICommandStruct("*OPC?","SCPI_Common","OPCQ"),//查询操作完成
+            new SCPICommandStruct("*RST","SCPI_Common","RST"),//复位设备
+            new SCPICommandStruct("*SRE","SCPI_Common","SRE"),//设置服务请求使能
+            new SCPICommandStruct("*SRE?","SCPI_Common","SREQ"),//查询服务请求使能
+            new SCPICommandStruct("*STB?","SCPI_Common","STBQ"),//查询状态字节
+            new SCPICommandStruct("*TST?","SCPI_Common","TSTQ"),//自检查询
+            new SCPICommandStruct("*WAI","SCPI_Common","WAI"),//等待操作完成
 
             //菜单功能命令
 //            new SCPICommandStruct(":AUTO","SCPI_FunctionMenu","Auto"),
@@ -463,8 +512,8 @@ public class SCPICommandDeal {
             new SCPICommandStruct(":DISPlay:HORRef?","SCPI_Display","HorRefQ"),//查询屏幕水平展开中心模式
             new SCPICommandStruct(":DISPlay:ZOOM","SCPI_Display","Zoom"),//打开或关闭ZOOM
             new SCPICommandStruct(":DISPlay:ZOOM?","SCPI_Display","ZoomQ"),//查询ZOOM打开或关闭
-            new SCPICommandStruct(":DISPlay:CCT","SCPI_Display","CCT"),//打开或关闭ZOOM
-            new SCPICommandStruct(":DISPlay:CCT?","SCPI_Display","CCTQ"),//查询ZOOM打开或关闭
+            new SCPICommandStruct(":DISPlay:CCT","SCPI_Display","CCT"),//打开或关闭CCT
+            new SCPICommandStruct(":DISPlay:CCT?","SCPI_Display","CCTQ"),//查询CCT打开或关闭
             //测量命令 MEAS
             new SCPICommandStruct(":MEASure:PERiod?","SCPI_Measure","PeriodQ"),//查询指定通道波形的周期测量值
             new SCPICommandStruct(":MEASure:FREQuency?","SCPI_Measure","FreQuencyQ"),//查询指定通道波形的频率测量值
@@ -528,13 +577,13 @@ public class SCPICommandDeal {
             new SCPICommandStruct(":MEASure:STATistic:DEV?","SCPI_Measure_Statistic","DevQ"),//查询打开状态
             new SCPICommandStruct(":MEASure:STATistic:COUNt","SCPI_Measure_Statistic","Count"),//打开或关闭平均值
             new SCPICommandStruct(":MEASure:STATistic:COUNt?","SCPI_Measure_Statistic","CountQ"),//查询打开状态
-            new SCPICommandStruct(":MEASure:STATistic:VIEW?","SCPI_Measure_Statistic","ViewQ"), //询问统计羡慕的所有数值
-            new SCPICommandStruct(":MEASure:STATistic:MEAN:VIEW?","SCPI_Measure_Statistic","Mean_ViewQ"), //询问统计羡慕的所有数值
-            new SCPICommandStruct(":MEASure:STATistic:MAX:VIEW?","SCPI_Measure_Statistic","Max_ViewQ"), //询问统计羡慕的所有数值
-            new SCPICommandStruct(":MEASure:STATistic:MIN:VIEW?","SCPI_Measure_Statistic","Min_ViewQ"), //询问统计羡慕的所有数值
-            new SCPICommandStruct(":MEASure:STATistic:DEV:VIEW?","SCPI_Measure_Statistic","Dev_ViewQ"), //询问统计羡慕的所有数值
-            new SCPICommandStruct(":MEASure:STATistic:COUNt:VIEW?","SCPI_Measure_Statistic","Count_ViewQ"), //询问统计羡慕的所有数值
-            new SCPICommandStruct(":MEASure:STATistic:CURRent:VIEW?","SCPI_Measure_Statistic","Current_ViewQ"), //询问统计羡慕的所有数值
+            new SCPICommandStruct(":MEASure:STATistic:VIEW?","SCPI_Measure_Statistic","ViewQ"), //询问统计项目数值
+            new SCPICommandStruct(":MEASure:STATistic:MEAN:VIEW?","SCPI_Measure_Statistic","Mean_ViewQ"), //询问统计项目数值
+            new SCPICommandStruct(":MEASure:STATistic:MAX:VIEW?","SCPI_Measure_Statistic","Max_ViewQ"), //询问统计项目数值
+            new SCPICommandStruct(":MEASure:STATistic:MIN:VIEW?","SCPI_Measure_Statistic","Min_ViewQ"), //询问统计项目数值
+            new SCPICommandStruct(":MEASure:STATistic:DEV:VIEW?","SCPI_Measure_Statistic","Dev_ViewQ"), //询问统计项目数值
+            new SCPICommandStruct(":MEASure:STATistic:COUNt:VIEW?","SCPI_Measure_Statistic","Count_ViewQ"), //询问统计项目数值
+            new SCPICommandStruct(":MEASure:STATistic:CURRent:VIEW?","SCPI_Measure_Statistic","Current_ViewQ"), //询问统计项目数值
             // 测量 setting 未实现
             new SCPICommandStruct(":MEASure:SETTing:INDicator","SCPI_Measure_Statistic","Indicator"), //
             new SCPICommandStruct(":MEASure:SETTing:INDicator?","SCPI_Measure_Statistic","IndicatorQ"), //
@@ -697,8 +746,8 @@ public class SCPICommandDeal {
             new SCPICommandStruct(":TRIGger:TIMeout:POLarity?","SCPI_Trigger_Timeout","PolarityQ"),//查询超时触发极性
             new SCPICommandStruct(":TRIGger:TIMeout:TIME","SCPI_Trigger_Timeout","Time"),//设置超时触发的超时时间
             new SCPICommandStruct(":TRIGger:TIMeout:TIME?","SCPI_Trigger_Timeout","TimeQ"),//查询超时触发的超时时间
-            new SCPICommandStruct(":TRIGger:TIMeout:LEVel","SCPI_Trigger_Timeout","Level"),
-            new SCPICommandStruct(":TRIGger:TIMeout:LEVel?","SCPI_Trigger_Timeout","LevelQ"),
+            new SCPICommandStruct(":TRIGger:TIMeout:LEVel","SCPI_Trigger_Timeout","Level"),//设置超时触发电平
+            new SCPICommandStruct(":TRIGger:TIMeout:LEVel?","SCPI_Trigger_Timeout","LevelQ"),//查询超时触发电平
 
             //Trigger nedge
             new SCPICommandStruct(":TRIGger:NEDGe:SOURce","SCPI_Trigger_Nedge","Source"),//设置第N边沿触发的触发源
@@ -742,8 +791,8 @@ public class SCPICommandDeal {
             new SCPICommandStruct(":TRIGger:VIDeo:FREQuence?","SCPI_Trigger_Video","AfrequenceQ"),//查询触发标准为720P、1080I时视频触发的信号频率
             new SCPICommandStruct(":TRIGger:VIDeo:BFRequence","SCPI_Trigger_Video","Bfrequence"),//设置触发标准为1080P时视频触发的信号频率
             new SCPICommandStruct(":TRIGger:VIDeo:BFRequence?","SCPI_Trigger_Video","BfrequenceQ"),//查询触发标准为1080P时视频触发的信号频率
-            new SCPICommandStruct(":TRIGger:VIDeo:LINE","SCPI_Trigger_Video","Line"),
-            new SCPICommandStruct(":TRIGger:VIDeo:LINE?","SCPI_Trigger_Video","LineQ"),
+            new SCPICommandStruct(":TRIGger:VIDeo:LINE","SCPI_Trigger_Video","Line"),//设置视频触发行号
+            new SCPICommandStruct(":TRIGger:VIDeo:LINE?","SCPI_Trigger_Video","LineQ"),//查询视频触发行号
             //Trigger uart
             new SCPICommandStruct(":TRIGger:UART:SOURce","SCPI_Trigger_Uart","Source"),//设置UART触发的触发源
             new SCPICommandStruct(":TRIGger:UART:SOURce?","SCPI_Trigger_Uart","SourceQ"),//查询UART触发的触发源
@@ -803,28 +852,28 @@ public class SCPICommandDeal {
             new SCPICommandStruct(":TRIGger:1553B:SOURce?","SCPI_Trigger_1553B","SourceQ"),//查询1553B触发的触发源
             new SCPICommandStruct(":TRIGger:1553B:TYPE","SCPI_Trigger_1553B","Type"),//设置1553B触发条件
             new SCPICommandStruct(":TRIGger:1553B:TYPE?","SCPI_Trigger_1553B","TypeQ"),//查询1553B触发条件
-            new SCPICommandStruct(":TRIGger:1553B:CSWOrd","SCPI_Trigger_1553B","CsWord"),
-            new SCPICommandStruct(":TRIGger:1553B:CSWOrd?","SCPI_Trigger_1553B","CsWordQ"),
-            new SCPICommandStruct(":TRIGger:1553B:DWORd","SCPI_Trigger_1553B","DWord"),
-            new SCPICommandStruct(":TRIGger:1553B:DWORd?","SCPI_Trigger_1553B","DWordQ"),
-            new SCPICommandStruct(":TRIGger:1553B:RTADdress","SCPI_Trigger_1553B","RtAddress"),
-            new SCPICommandStruct(":TRIGger:1553B:RTADdress?","SCPI_Trigger_1553B","RtAddressQ"),
+            new SCPICommandStruct(":TRIGger:1553B:CSWOrd","SCPI_Trigger_1553B","CsWord"),//设置1553B命令字
+            new SCPICommandStruct(":TRIGger:1553B:CSWOrd?","SCPI_Trigger_1553B","CsWordQ"),//查询1553B命令字
+            new SCPICommandStruct(":TRIGger:1553B:DWORd","SCPI_Trigger_1553B","DWord"),//设置1553B数据字
+            new SCPICommandStruct(":TRIGger:1553B:DWORd?","SCPI_Trigger_1553B","DWordQ"),//查询1553B数据字
+            new SCPICommandStruct(":TRIGger:1553B:RTADdress","SCPI_Trigger_1553B","RtAddress"),//设置1553B RT地址
+            new SCPICommandStruct(":TRIGger:1553B:RTADdress?","SCPI_Trigger_1553B","RtAddressQ"),//查询1553B RT地址
 
             //Trigger arinc429
-            new SCPICommandStruct(":TRIGger:429:SOURce","SCPI_Trigger_429","Source"),
-            new SCPICommandStruct(":TRIGger:429:SOURce?","SCPI_Trigger_429","SourceQ"),
-            new SCPICommandStruct(":TRIGger:429:TYPE","SCPI_Trigger_429","Type"),
-            new SCPICommandStruct(":TRIGger:429:TYPE?","SCPI_Trigger_429","TypeQ"),
-            new SCPICommandStruct(":TRIGger:429:WORD","SCPI_Trigger_429","Word"),
-            new SCPICommandStruct(":TRIGger:429:WORD?","SCPI_Trigger_429","WordQ"),
-            new SCPICommandStruct(":TRIGger:429:LABEl","SCPI_Trigger_429","Label"),
-            new SCPICommandStruct(":TRIGger:429:LABEl?","SCPI_Trigger_429","LabelQ"),
-            new SCPICommandStruct(":TRIGger:429:SDI","SCPI_Trigger_429","Sdi"),
-            new SCPICommandStruct(":TRIGger:429:SDI?","SCPI_Trigger_429","SdiQ"),
-            new SCPICommandStruct(":TRIGger:429:DATA","SCPI_Trigger_429","data"),
-            new SCPICommandStruct(":TRIGger:429:DATA?","SCPI_Trigger_429","dataQ"),
-            new SCPICommandStruct(":TRIGger:429:SSM","SCPI_Trigger_429","Ssm"),
-            new SCPICommandStruct(":TRIGger:429:SSM?","SCPI_Trigger_429","SsmQ"),
+            new SCPICommandStruct(":TRIGger:429:SOURce","SCPI_Trigger_429","Source"),//设置429触发的触发源
+            new SCPICommandStruct(":TRIGger:429:SOURce?","SCPI_Trigger_429","SourceQ"),//查询429触发的触发源
+            new SCPICommandStruct(":TRIGger:429:TYPE","SCPI_Trigger_429","Type"),//设置429触发条件
+            new SCPICommandStruct(":TRIGger:429:TYPE?","SCPI_Trigger_429","TypeQ"),//查询429触发条件
+            new SCPICommandStruct(":TRIGger:429:WORD","SCPI_Trigger_429","Word"),//设置429触发字
+            new SCPICommandStruct(":TRIGger:429:WORD?","SCPI_Trigger_429","WordQ"),//查询429触发字
+            new SCPICommandStruct(":TRIGger:429:LABEl","SCPI_Trigger_429","Label"),//设置429标签
+            new SCPICommandStruct(":TRIGger:429:LABEl?","SCPI_Trigger_429","LabelQ"),//查询429标签
+            new SCPICommandStruct(":TRIGger:429:SDI","SCPI_Trigger_429","Sdi"),//设置429 SDI
+            new SCPICommandStruct(":TRIGger:429:SDI?","SCPI_Trigger_429","SdiQ"),//查询429 SDI
+            new SCPICommandStruct(":TRIGger:429:DATA","SCPI_Trigger_429","data"),//设置429数据
+            new SCPICommandStruct(":TRIGger:429:DATA?","SCPI_Trigger_429","dataQ"),//查询429数据
+            new SCPICommandStruct(":TRIGger:429:SSM","SCPI_Trigger_429","Ssm"),//设置429 SSM
+            new SCPICommandStruct(":TRIGger:429:SSM?","SCPI_Trigger_429","SsmQ"),//查询429 SSM
 
 
             //时基命令 TIMebase
@@ -842,27 +891,27 @@ public class SCPICommandDeal {
             new SCPICommandStruct(":TIMebase:OFFSet","SCPI_Timebase","Offset"),//设置波形显示的水平偏移
             new SCPICommandStruct(":TIMebase:PLUS:OFFSet","SCPI_Timebase","Plus_Offset"),//设置波形显示的水平偏移
             new SCPICommandStruct(":TIMebase:PLUS:POSition","SCPI_Timebase","Plus_Position"),//设置波形显示的水平偏移
-            new SCPICommandStruct(":TIMebase:POSition?","SCPI_Timebase","PositionQ"),//设置波形显示的水平偏移
+            new SCPICommandStruct(":TIMebase:POSition?","SCPI_Timebase","PositionQ"),//查询波形显示的水平偏移
             new SCPICommandStruct(":TIMebase:OFFSet?","SCPI_Timebase","OffsetQ"),//查询波形显示的水平偏移
-            new SCPICommandStruct(":TIMebase:ZOOm:SCAle","SCPI_Timebase","Scale"),
-            new SCPICommandStruct(":TIMebase:ZOOm:SCAle?","SCPI_Timebase","ScaleQ"),
-            new SCPICommandStruct(":TIMebase:LIST?","SCPI_Timebase","ListQ"),
+            new SCPICommandStruct(":TIMebase:ZOOm:SCAle","SCPI_Timebase","Scale"),//设置ZOOM缩放
+            new SCPICommandStruct(":TIMebase:ZOOm:SCAle?","SCPI_Timebase","ScaleQ"),//查询ZOOM缩放
+            new SCPICommandStruct(":TIMebase:LIST?","SCPI_Timebase","ListQ"),//查询时基列表
 
             //存储命令 STORage
             new SCPICommandStruct(":STORage:SAVE","SCPI_Storage","Save"),//存储指定通道的波形到指定位置
             new SCPICommandStruct(":STORage:LOAD","SCPI_Storage","Load"),//载入ref
             new SCPICommandStruct(":STORage:CAPTure","SCPI_Storage","Capture"),//屏幕截图
-            new SCPICommandStruct(":STORage:CAPTure:TIME","SCPI_Storage","Capture_Time"),//屏幕截图
-            new SCPICommandStruct(":STORage:CAPTure:TIME?","SCPI_Storage","Capture_TimeQ"),//屏幕截图
-            new SCPICommandStruct(":STORage:CAPTure:INCOlor","SCPI_Storage","Capture_Incolor"),//屏幕截图
-            new SCPICommandStruct(":STORage:CAPTure:INCOlorQ","SCPI_Storage","Capture_IncolorQ"),//屏幕截图
-            new SCPICommandStruct(":STORage:CAPTure:THUMbnail","SCPI_Storage","Capture_Thumbnail"),//屏幕截图
-            new SCPICommandStruct(":STORage:CAPTure:THUMbnail?","SCPI_Storage","Capture_ThumbnailQ"),//屏幕截图
-            new SCPICommandStruct(":STORage:CAPTure:STARt","SCPI_Storage","Capture_Start"),//屏幕截图
+            new SCPICommandStruct(":STORage:CAPTure:TIME","SCPI_Storage","Capture_Time"),//屏幕截图延时
+            new SCPICommandStruct(":STORage:CAPTure:TIME?","SCPI_Storage","Capture_TimeQ"),//查询屏幕截图延时
+            new SCPICommandStruct(":STORage:CAPTure:INCOlor","SCPI_Storage","Capture_Incolor"),//屏幕截图反色
+            new SCPICommandStruct(":STORage:CAPTure:INCOlorQ","SCPI_Storage","Capture_IncolorQ"),//查询屏幕截图反色
+            new SCPICommandStruct(":STORage:CAPTure:THUMbnail","SCPI_Storage","Capture_Thumbnail"),//屏幕截图缩略图
+            new SCPICommandStruct(":STORage:CAPTure:THUMbnail?","SCPI_Storage","Capture_ThumbnailQ"),//查询屏幕截图缩略图
+            new SCPICommandStruct(":STORage:CAPTure:STARt","SCPI_Storage","Capture_Start"),//开始屏幕截图
             new SCPICommandStruct(":STORage:DEPTh","SCPI_Storage","Depth"),//设置示波器存储深度
             new SCPICommandStruct(":STORage:DEPTh?","SCPI_Storage","DepthQ"),//查询示波器存储深度
             new SCPICommandStruct(":STORage:CONSave:FILename","SCPI_Storage","ConSave"),//存储示波器设置
-            new SCPICommandStruct(":STORage:CONSave:STARt","SCPI_Storage","ConSave_start"),//存储示波器设置
+            new SCPICommandStruct(":STORage:CONSave:STARt","SCPI_Storage","ConSave_start"),//开始存储示波器设置
             new SCPICommandStruct(":STORage:CONLoad:FILename","SCPI_Storage","ConLoad"),//调用示波器设置
             new SCPICommandStruct(":STORage:RECord","SCPI_Storage","Record"),//设置示波器录制功能的打开与关闭
             new SCPICommandStruct(":STORage:RECord?","SCPI_Storage","RecordQ"),//查询示波器录制功能的打开与关闭
@@ -872,23 +921,23 @@ public class SCPICommandDeal {
             new SCPICommandStruct(":STORage:PLAY:SPEed?","SCPI_Storage","Play_SpeedQ"),//查询示波器回放快进选项
             new SCPICommandStruct(":STORage:PLAY:BACK","SCPI_Storage","Play_Back"),//设置示波器回放后退选项
             new SCPICommandStruct(":STORage:PLAY:BACK?","SCPI_Storage","Play_backQ"),//查询示波器回放后退选项
-            new SCPICommandStruct(":STORage:SAVE:SOURce", "SCPI_Storage","Save_Source"),
-            new SCPICommandStruct(":STORage:SAVE:SOURce?", "SCPI_Storage","Save_SourceQ"),
-            new SCPICommandStruct(":STORage:SAVE:LOCAtion", "SCPI_Storage","Save_Location"),
-            new SCPICommandStruct(":STORage:SAVE:LOCAtion?", "SCPI_Storage","Save_LocationQ"),
-            new SCPICommandStruct(":STORage:SAVE:TYPE", "SCPI_Storage","Save_Type"),
-            new SCPICommandStruct(":STORage:SAVE:TYPE?", "SCPI_Storage","Save_TypeQ"),
-            new SCPICommandStruct(":STORage:SAVE:FILename","SCPI_Storage","Save_Filename"),
-            new SCPICommandStruct(":STORage:SAVE:FILename?", "SCPI_Storage","Save_FilenameQ"),
-            new SCPICommandStruct(":STORage:SAVE:START", "SCPI_Storage","Save_Start"),
-            new SCPICommandStruct(":STORage:SAVE:ALLSegments", "SCPI_Storage","Save_ALLSegments"),
-            new SCPICommandStruct(":STORage:SAVE:ALLSegments?", "SCPI_Storage","Save_ALLSegmentsQ"),
+            new SCPICommandStruct(":STORage:SAVE:SOURce", "SCPI_Storage","Save_Source"),//设置存储源
+            new SCPICommandStruct(":STORage:SAVE:SOURce?", "SCPI_Storage","Save_SourceQ"),//查询存储源
+            new SCPICommandStruct(":STORage:SAVE:LOCAtion", "SCPI_Storage","Save_Location"),//设置存储位置
+            new SCPICommandStruct(":STORage:SAVE:LOCAtion?", "SCPI_Storage","Save_LocationQ"),//查询存储位置
+            new SCPICommandStruct(":STORage:SAVE:TYPE", "SCPI_Storage","Save_Type"),//设置存储类型
+            new SCPICommandStruct(":STORage:SAVE:TYPE?", "SCPI_Storage","Save_TypeQ"),//查询存储类型
+            new SCPICommandStruct(":STORage:SAVE:FILename","SCPI_Storage","Save_Filename"),//设置存储文件名
+            new SCPICommandStruct(":STORage:SAVE:FILename?", "SCPI_Storage","Save_FilenameQ"),//查询存储文件名
+            new SCPICommandStruct(":STORage:SAVE:START", "SCPI_Storage","Save_Start"),//开始存储
+            new SCPICommandStruct(":STORage:SAVE:ALLSegments", "SCPI_Storage","Save_ALLSegments"),//存储所有分段
+            new SCPICommandStruct(":STORage:SAVE:ALLSegments?", "SCPI_Storage","Save_ALLSegmentsQ"),//查询存储所有分段
 
-            new SCPICommandStruct(":STORage:Data:Type", "SCPI_Storage","Save_DataType"),
-            new SCPICommandStruct(":STORage:Data:Status?", "SCPI_Storage","Save_DataStatusQ"),
-            new SCPICommandStruct(":STORage:Data:CSV?", "SCPI_Storage","Save_DataCSVQ"),
-            new SCPICommandStruct(":STORage:Data:PNG?", "SCPI_Storage","Save_DataPNGQ"),
-            new SCPICommandStruct(":STORage:Data:MSS?", "SCPI_Storage","Save_DataMSSQ"),
+            new SCPICommandStruct(":STORage:Data:Type", "SCPI_Storage","Save_DataType"),//设置数据类型
+            new SCPICommandStruct(":STORage:Data:Status?", "SCPI_Storage","Save_DataStatusQ"),//查询数据存储状态
+            new SCPICommandStruct(":STORage:Data:CSV?", "SCPI_Storage","Save_DataCSVQ"),//查询CSV数据
+            new SCPICommandStruct(":STORage:Data:PNG?", "SCPI_Storage","Save_DataPNGQ"),//查询PNG截图数据
+            new SCPICommandStruct(":STORage:Data:MSS?", "SCPI_Storage","Save_DataMSSQ"),//查询MSS截图数据
 
 
             //PASS/FAIL命令 MASK
@@ -899,18 +948,18 @@ public class SCPICommandDeal {
             new SCPICommandStruct(":MASK:STATistic","SCPI_Mask","Statistic"),//打开或关闭pass/fail测试时的统计功能状态，统计信息包括通过、失败、和总的测试帧数
             new SCPICommandStruct(":MASK:STATistic?","SCPI_Mask","StatisticQ"),//查询pass/fail测试时的统计功能状态打开或关闭
             new SCPICommandStruct(":MASK:RESet","SCPI_Mask","Reset"),//复位模板测试统计信息
-            new SCPICommandStruct(":MASK:SOOutput","SCPI_Mask","SoOutput"),//打开或关闭“输出即停
-            new SCPICommandStruct(":MASK:SOOutput?","SCPI_Mask","SoOutputQ"),//查询“输出即停 打开或关闭
+            new SCPICommandStruct(":MASK:SOOutput","SCPI_Mask","SoOutput"),//打开或关闭"输出即停"
+            new SCPICommandStruct(":MASK:SOOutput?","SCPI_Mask","SoOutputQ"),//查询"输出即停"打开或关闭
             new SCPICommandStruct(":MASK:AUXout","SCPI_Mask","AuxOut"),//打开模板测试的完成响应
             new SCPICommandStruct(":MASK:AUXout?","SCPI_Mask","AuxOutQ"),//查询模板测试的完成响应
             new SCPICommandStruct(":MASK:ENABle","SCPI_Mask","Enable"),//打开或关闭模板测试
             new SCPICommandStruct(":MASK:ENABle?","SCPI_Mask","EnableQ"),//查询模板测试打开或关闭
             new SCPICommandStruct(":MASK:OPERate","SCPI_Mask","Operate"),//控制pass/fail测试的运行和停止
             new SCPICommandStruct(":MASK:OPERate?","SCPI_Mask","OperateQ"),//查询pass/fail测试的运行和停止
-            new SCPICommandStruct(":MASK:X","SCPI_Mask","X"),//设置pass/fail测试的规则中的“水平调整”参数
-            new SCPICommandStruct(":MASK:X?","SCPI_Mask","XQ"),//查询pass/fail测试的规则中的“水平调整”参数
-            new SCPICommandStruct(":MASK:Y","SCPI_Mask","Y"),//设置pass/fail测试的规则中的“垂直调整”参数
-            new SCPICommandStruct(":MASK:Y?","SCPI_Mask","YQ"),//查询pass/fail测试的规则中的“垂直调整”参数
+            new SCPICommandStruct(":MASK:X","SCPI_Mask","X"),//设置pass/fail测试的规则中的"水平调整"参数
+            new SCPICommandStruct(":MASK:X?","SCPI_Mask","XQ"),//查询pass/fail测试的规则中的"水平调整"参数
+            new SCPICommandStruct(":MASK:Y","SCPI_Mask","Y"),//设置pass/fail测试的规则中的"垂直调整"参数
+            new SCPICommandStruct(":MASK:Y?","SCPI_Mask","YQ"),//查询pass/fail测试的规则中的"垂直调整"参数
 
             //参考波形命令 REF
             new SCPICommandStruct(":REFerence:DISPlay","SCPI_Reference","Display"),//打开或关闭REF功能
@@ -924,8 +973,8 @@ public class SCPICommandDeal {
             new SCPICommandStruct(":REFerence:PLUS:VSCale","SCPI_Reference","Plus_Vscale"),//设置参考通道的垂直档位
             new SCPICommandStruct(":REFerence:VSCale?","SCPI_Reference","VscaleQ"),//查询参考通道的垂直档位
             new SCPICommandStruct(":REFerence:CURRent","SCPI_Reference","Current"),//选择当前参考通道
-            new SCPICommandStruct(":REFerence:PLUS:HOFFset","SCPI_Reference","Plus_Hoffset"),//选择当前参考通道
-            new SCPICommandStruct(":REFerence:PLUS:VOFFset","SCPI_Reference","Plus_Voffset"),//选择当前参考通道
+            new SCPICommandStruct(":REFerence:PLUS:HOFFset","SCPI_Reference","Plus_Hoffset"),//设置水平偏移
+            new SCPICommandStruct(":REFerence:PLUS:VOFFset","SCPI_Reference","Plus_Voffset"),//设置垂直偏移
             //1.1新添加 2016.12.8
             new SCPICommandStruct(":REFerence:POSition","SCPI_Reference","Position"),//设置垂直偏移
             new SCPICommandStruct(":REFerence:POSition?","SCPI_Reference","PositionQ"),//查询垂直偏移
@@ -935,7 +984,7 @@ public class SCPICommandDeal {
             new SCPICommandStruct(":REFerence:PLUS:POSition","SCPI_Reference","Plus_position"),//设置垂直偏移
             new SCPICommandStruct(":REF:SRATe?","SCPI_Reference","REF_SRateQ"),//查询采样率
             new SCPICommandStruct(":REF:MDEPth?","SCPI_Reference","REF_MDepthQ"),//查询存储深度
-            new SCPICommandStruct(":CURRent:REFerence?","SCPI_Reference","Curr_ref"),//选择当前通道
+            new SCPICommandStruct(":CURRent:REFerence?","SCPI_Reference","Curr_ref"),//查询当前参考通道
             //ref# 2022.8.10
             new SCPICommandStruct(":REFerence#:ENABle","SCPI_Reference","Enable"),//打开或关闭指定的参考通道
             new SCPICommandStruct(":REFerence#:ENABle?","SCPI_Reference","EnableQ"),//查询指定的参考通道打开或关闭
@@ -973,120 +1022,121 @@ public class SCPICommandDeal {
             new SCPICommandStruct(":AUTO:RANge:LEVel?","SCPI_Auto","Range_LevelQ"),//查询自动量程
 
             //bus
-            new SCPICommandStruct(":BUS#:DISPlay","SCPI_Bus","Display"),
-            new SCPICommandStruct(":BUS#:DISPlay?","SCPI_Bus","DisplayQ"), //
-            new SCPICommandStruct(":BUS#:TYPE","SCPI_Bus","Type"),
-            new SCPICommandStruct(":BUS#:TYPE?","SCPI_Bus","TypeQ"),
-            new SCPICommandStruct(":BUS#:MODE","SCPI_Bus","Mode"),
-            new SCPICommandStruct(":BUS#:MODE?","SCPI_Bus","ModeQ"),
-            new SCPICommandStruct(":BUS#:LEVel","SCPI_Bus","Level"),
-            new SCPICommandStruct(":BUS#:LEVel?","SCPI_Bus","LevelQ"),
-            new SCPICommandStruct(":BUS#:HLEVel","SCPI_Bus","HLevel"),
-            new SCPICommandStruct(":BUS#:HLEVel?","SCPI_Bus","HLevelQ"),
-            new SCPICommandStruct(":BUS#:LLEVel","SCPI_Bus","LLevel"),
-            new SCPICommandStruct(":BUS#:LLEVel?","SCPI_Bus","LLevelQ"),
-            new SCPICommandStruct(":BUS#:Data?","SCPI_Bus","DataQ"),
+            new SCPICommandStruct(":BUS#:DISPlay","SCPI_Bus","Display"),//设置总线显示
+            new SCPICommandStruct(":BUS#:DISPlay?","SCPI_Bus","DisplayQ"), //查询总线显示
+            new SCPICommandStruct(":BUS#:TYPE","SCPI_Bus","Type"),//设置总线类型
+            new SCPICommandStruct(":BUS#:TYPE?","SCPI_Bus","TypeQ"),//查询总线类型
+            new SCPICommandStruct(":BUS#:MODE","SCPI_Bus","Mode"),//设置总线模式
+            new SCPICommandStruct(":BUS#:MODE?","SCPI_Bus","ModeQ"),//查询总线模式
+            new SCPICommandStruct(":BUS#:LEVel","SCPI_Bus","Level"),//设置总线触发电平
+            new SCPICommandStruct(":BUS#:LEVel?","SCPI_Bus","LevelQ"),//查询总线触发电平
+            new SCPICommandStruct(":BUS#:HLEVel","SCPI_Bus","HLevel"),//设置总线高触发电平
+            new SCPICommandStruct(":BUS#:HLEVel?","SCPI_Bus","HLevelQ"),//查询总线高触发电平
+            new SCPICommandStruct(":BUS#:LLEVel","SCPI_Bus","LLevel"),//设置总线低触发电平
+            new SCPICommandStruct(":BUS#:LLEVel?","SCPI_Bus","LLevelQ"),//查询总线低触发电平
+            new SCPICommandStruct(":BUS#:Data?","SCPI_Bus","DataQ"),//查询总线解码数据
 
-            new SCPICommandStruct(":BUS#:UART:RX","SCPI_Bus_Uart","Rx"),
-            new SCPICommandStruct(":BUS#:UART:RX?","SCPI_Bus_Uart","RxQ"),
-            new SCPICommandStruct(":BUS#:UART:IDLElvl","SCPI_Bus_Uart","IdLevel"),
-            new SCPICommandStruct(":BUS#:UART:IDLElvl?","SCPI_Bus_Uart","IdLevelQ"),
-            new SCPICommandStruct(":BUS#:UART:BAUDrate","SCPI_Bus_Uart","BaudRate"),
-            new SCPICommandStruct(":BUS#:UART:BAUDrate?","SCPI_Bus_Uart","BaudRateQ"),
-            new SCPICommandStruct(":BUS#:UART:CHECK","SCPI_Bus_Uart","Check"),
-            new SCPICommandStruct(":BUS#:UART:CHECK?","SCPI_Bus_Uart","CheckQ"),
-            new SCPICommandStruct(":BUS#:UART:USERbaud","SCPI_Bus_Uart","UserBaud"),
-            new SCPICommandStruct(":BUS#:UART:USERbaud?","SCPI_Bus_Uart","UserBaudQ"),
-            new SCPICommandStruct(":BUS#:UART:WIDTh","SCPI_Bus_Uart","Width"),
-            new SCPICommandStruct(":BUS#:UART:WIDTh?","SCPI_Bus_Uart","WidthQ"),
-            new SCPICommandStruct(":BUS#:UART:DISPlay","SCPI_Bus_Uart","Display"),
-            new SCPICommandStruct(":BUS#:UART:DISPlay?","SCPI_Bus_Uart","DisplayQ"),
+            new SCPICommandStruct(":BUS#:UART:RX","SCPI_Bus_Uart","Rx"),//设置UART RX通道
+            new SCPICommandStruct(":BUS#:UART:RX?","SCPI_Bus_Uart","RxQ"),//查询UART RX通道
+            new SCPICommandStruct(":BUS#:UART:IDLElvl","SCPI_Bus_Uart","IdLevel"),//设置UART空闲电平
+            new SCPICommandStruct(":BUS#:UART:IDLElvl?","SCPI_Bus_Uart","IdLevelQ"),//查询UART空闲电平
+            new SCPICommandStruct(":BUS#:UART:BAUDrate","SCPI_Bus_Uart","BaudRate"),//设置UART波特率
+            new SCPICommandStruct(":BUS#:UART:BAUDrate?","SCPI_Bus_Uart","BaudRateQ"),//查询UART波特率
+            new SCPICommandStruct(":BUS#:UART:CHECK","SCPI_Bus_Uart","Check"),//设置UART校验方式
+            new SCPICommandStruct(":BUS#:UART:CHECK?","SCPI_Bus_Uart","CheckQ"),//查询UART校验方式
+            new SCPICommandStruct(":BUS#:UART:USERbaud","SCPI_Bus_Uart","UserBaud"),//设置UART自定义波特率
+            new SCPICommandStruct(":BUS#:UART:USERbaud?","SCPI_Bus_Uart","UserBaudQ"),//查询UART自定义波特率
+            new SCPICommandStruct(":BUS#:UART:WIDTh","SCPI_Bus_Uart","Width"),//设置UART数据位宽度
+            new SCPICommandStruct(":BUS#:UART:WIDTh?","SCPI_Bus_Uart","WidthQ"),//查询UART数据位宽度
+            new SCPICommandStruct(":BUS#:UART:DISPlay","SCPI_Bus_Uart","Display"),//设置UART显示格式
+            new SCPICommandStruct(":BUS#:UART:DISPlay?","SCPI_Bus_Uart","DisplayQ"),//查询UART显示格式
             new SCPICommandStruct(":BUS#:UART:LEVel","SCPI_Trigger_Uart","Level"),//设置UART触发时的触发电平
             new SCPICommandStruct(":BUS#:UART:LEVel?","SCPI_Trigger_Uart","LevelQ"),//查询UART触发时的触发电平
 
-            new SCPICommandStruct(":BUS#:LIN:CHANnel","SCPI_Bus_Lin","Channel"),
-            new SCPICommandStruct(":BUS#:LIN:CHANnel?","SCPI_Bus_Lin","ChannelQ"),
-            new SCPICommandStruct(":BUS#:LIN:IDLElvl","SCPI_Bus_Lin","IdLevel"),
-            new SCPICommandStruct(":BUS#:LIN:IDLElvl?","SCPI_Bus_Lin","IdLevelQ"),
-            new SCPICommandStruct(":BUS#:LIN:BAUDrate","SCPI_Bus_Lin","BaudRate"),
-            new SCPICommandStruct(":BUS#:LIN:BAUDrate?","SCPI_Bus_Lin","BaudRateQ"),
-            new SCPICommandStruct(":BUS#:LIN:USERbaud","SCPI_Bus_Lin","UserBaud"),
-            new SCPICommandStruct(":BUS#:LIN:USERbaud?","SCPI_Bus_Lin","UserBaudQ"),
+            new SCPICommandStruct(":BUS#:LIN:CHANnel","SCPI_Bus_Lin","Channel"),//设置LIN通道
+            new SCPICommandStruct(":BUS#:LIN:CHANnel?","SCPI_Bus_Lin","ChannelQ"),//查询LIN通道
+            new SCPICommandStruct(":BUS#:LIN:IDLElvl","SCPI_Bus_Lin","IdLevel"),//设置LIN空闲电平
+            new SCPICommandStruct(":BUS#:LIN:IDLElvl?","SCPI_Bus_Lin","IdLevelQ"),//查询LIN空闲电平
+            new SCPICommandStruct(":BUS#:LIN:BAUDrate","SCPI_Bus_Lin","BaudRate"),//设置LIN波特率
+            new SCPICommandStruct(":BUS#:LIN:BAUDrate?","SCPI_Bus_Lin","BaudRateQ"),//查询LIN波特率
+            new SCPICommandStruct(":BUS#:LIN:USERbaud","SCPI_Bus_Lin","UserBaud"),//设置LIN自定义波特率
+            new SCPICommandStruct(":BUS#:LIN:USERbaud?","SCPI_Bus_Lin","UserBaudQ"),//查询LIN自定义波特率
             new SCPICommandStruct(":BUS#:LIN:LEVel","SCPI_Trigger_Lin","Level"),//设置LIN触发时的触发电平
             new SCPICommandStruct(":BUS#:LIN:LEVel?","SCPI_Trigger_Lin","LevelQ"),//查询LIN触发时的触发电平
 
-            new SCPICommandStruct(":BUS#:SPI:CLK","SCPI_Bus_Spi","Clk"),
-            new SCPICommandStruct(":BUS#:SPI:CLK?","SCPI_Bus_Spi","ClkQ"),
-            new SCPICommandStruct(":BUS#:SPI:DATA","SCPI_Bus_Spi","Data"),
-            new SCPICommandStruct(":BUS#:SPI:DATA?","SCPI_Bus_Spi","DataQ"),
-            new SCPICommandStruct(":BUS#:SPI:WIDTh","SCPI_Bus_Spi","Width"),
-            new SCPICommandStruct(":BUS#:SPI:WIDTh?","SCPI_Bus_Spi","WidthQ"),
-            new SCPICommandStruct(":BUS#:SPI:IDLElvl","SCPI_Bus_Spi","IdLevel"),
-            new SCPICommandStruct(":BUS#:SPI:IDLElvl?","SCPI_Bus_Spi","IdLevelQ"),
-            new SCPICommandStruct(":BUS#:SPI:SLOPe","SCPI_Bus_Spi","Slope"),
-            new SCPICommandStruct(":BUS#:SPI:SLOPe?","SCPI_Bus_Spi","SlopeQ"),
-            new SCPICommandStruct(":BUS#:SPI:CS","SCPI_Bus_Spi","CS"),
-            new SCPICommandStruct(":BUS#:SPI:CS?","SCPI_Bus_Spi","CSQ"),
-            new SCPICommandStruct(":BUS#:SPI:CS:SOURce","SCPI_Bus_Spi","Source"),
-            new SCPICommandStruct(":BUS#:SPI:CS:SOURce?","SCPI_Bus_Spi","SourceQ"),
-            new SCPICommandStruct(":BUS#:SPI:CS:IDLElvl","SCPI_Bus_Spi","Idlelvl"),
-            new SCPICommandStruct(":BUS#:SPI:CS:IDLElvl?","SCPI_Bus_Spi","IdlelvlQ"),
-            new SCPICommandStruct(":BUS#:SPI:CLKLevel","SCPI_Trigger_SPI","LevelCLK"),//设置SPI触发时的触发电平
-            new SCPICommandStruct(":BUS#:SPI:CLKLevel?","SCPI_Trigger_SPI","LevelCLKQ"),//查询SPI触发时的触发电平
-            new SCPICommandStruct(":BUS#:SPI:DATLevel","SCPI_Trigger_SPI","LevelData"),//设置SPI触发时的触发电平
-            new SCPICommandStruct(":BUS#:SPI:DATLevel?","SCPI_Trigger_SPI","LevelDataQ"),//查询SPI触发时的触发电平
-            new SCPICommandStruct(":BUS#:SPI:CSLEvel","SCPI_Trigger_SPI","LevelCS"),//设置SPI触发时的触发电平
-            new SCPICommandStruct(":BUS#:SPI:CSLEvel?","SCPI_Trigger_SPI","LevelCSQ"),//查询SPI触发时的触发电平
+            new SCPICommandStruct(":BUS#:SPI:CLK","SCPI_Bus_Spi","Clk"),//设置SPI时钟通道
+            new SCPICommandStruct(":BUS#:SPI:CLK?","SCPI_Bus_Spi","ClkQ"),//查询SPI时钟通道
+            new SCPICommandStruct(":BUS#:SPI:DATA","SCPI_Bus_Spi","Data"),//设置SPI数据通道
+            new SCPICommandStruct(":BUS#:SPI:DATA?","SCPI_Bus_Spi","DataQ"),//查询SPI数据通道
+            new SCPICommandStruct(":BUS#:SPI:WIDTh","SCPI_Bus_Spi","Width"),//设置SPI位宽
+            new SCPICommandStruct(":BUS#:SPI:WIDTh?","SCPI_Bus_Spi","WidthQ"),//查询SPI位宽
+            new SCPICommandStruct(":BUS#:SPI:IDLElvl","SCPI_Bus_Spi","IdLevel"),//设置SPI空闲电平
+            new SCPICommandStruct(":BUS#:SPI:IDLElvl?","SCPI_Bus_Spi","IdLevelQ"),//查询SPI空闲电平
+            new SCPICommandStruct(":BUS#:SPI:SLOPe","SCPI_Bus_Spi","Slope"),//设置SPI边沿
+            new SCPICommandStruct(":BUS#:SPI:SLOPe?","SCPI_Bus_Spi","SlopeQ"),//查询SPI边沿
+            new SCPICommandStruct(":BUS#:SPI:CS","SCPI_Bus_Spi","CS"),//设置SPI片选使能
+            new SCPICommandStruct(":BUS#:SPI:CS?","SCPI_Bus_Spi","CSQ"),//查询SPI片选使能
+            new SCPICommandStruct(":BUS#:SPI:CS:SOURce","SCPI_Bus_Spi","Source"),//设置SPI片选源
+            new SCPICommandStruct(":BUS#:SPI:CS:SOURce?","SCPI_Bus_Spi","SourceQ"),//查询SPI片选源
+            new SCPICommandStruct(":BUS#:SPI:CS:IDLElvl","SCPI_Bus_Spi","Idlelvl"),//设置SPI片选空闲电平
+            new SCPICommandStruct(":BUS#:SPI:CS:IDLElvl?","SCPI_Bus_Spi","IdlelvlQ"),//查询SPI片选空闲电平
+            new SCPICommandStruct(":BUS#:SPI:CLKLevel","SCPI_Trigger_SPI","LevelCLK"),//设置SPI触发时的时钟触发电平
+            new SCPICommandStruct(":BUS#:SPI:CLKLevel?","SCPI_Trigger_SPI","LevelCLKQ"),//查询SPI触发时的时钟触发电平
+            new SCPICommandStruct(":BUS#:SPI:DATLevel","SCPI_Trigger_SPI","LevelData"),//设置SPI触发时的数据触发电平
+            new SCPICommandStruct(":BUS#:SPI:DATLevel?","SCPI_Trigger_SPI","LevelDataQ"),//查询SPI触发时的数据触发电平
+            new SCPICommandStruct(":BUS#:SPI:CSLEvel","SCPI_Trigger_SPI","LevelCS"),//设置SPI触发时的片选触发电平
+            new SCPICommandStruct(":BUS#:SPI:CSLEvel?","SCPI_Trigger_SPI","LevelCSQ"),//查询SPI触发时的片选触发电平
 
-            new SCPICommandStruct(":BUS#:CAN:CHANnel","SCPI_Bus_Can","Channel"),
-            new SCPICommandStruct(":BUS#:CAN:CHANnel?","SCPI_Bus_Can","ChannelQ"),
-            new SCPICommandStruct(":BUS#:CAN:SIGNal","SCPI_Bus_Can","Signal"),
-            new SCPICommandStruct(":BUS#:CAN:SIGNal?","SCPI_Bus_Can","SignalQ"),
-            new SCPICommandStruct(":BUS#:CAN:BAUDrate","SCPI_Bus_Can","BaudRate"),
-            new SCPICommandStruct(":BUS#:CAN:BAUDrate?","SCPI_Bus_Can","BaudRateQ"),
-            new SCPICommandStruct(":BUS#:CAN:USERbaud","SCPI_Bus_Can","UserBaud"),
-            new SCPICommandStruct(":BUS#:CAN:USERbaud?","SCPI_Bus_Can","UserBaudQ"),
-            new SCPICommandStruct(":BUS#:CAN:SAMPlepoint","SCPI_Bus_Can","SAMPlepoint"),
-            new SCPICommandStruct(":BUS#:CAN:SAMPlepoint?","SCPI_Bus_Can","SAMPlepointQ"),
-            new SCPICommandStruct(":BUS#:CAN:FDBAudrate","SCPI_Bus_Can","FDBAudrate"),
-            new SCPICommandStruct(":BUS#:CAN:FDBAudrate?","SCPI_Bus_Can","FDBAudrateQ"),
-            new SCPICommandStruct(":BUS#:CAN:FDUSerbaud","SCPI_Bus_Can","FDUSerbaud"),
-            new SCPICommandStruct(":BUS#:CAN:FDUSerbaud?","SCPI_Bus_Can","FDUSerbaudQ"),
-            new SCPICommandStruct(":BUS#:CAN:FDSAmplepoint","SCPI_Bus_Can","FDSAmplepoint"),
-            new SCPICommandStruct(":BUS#:CAN:FDSAmplepoint?","SCPI_Bus_Can","FDSAmplepointQ"),
+            new SCPICommandStruct(":BUS#:CAN:CHANnel","SCPI_Bus_Can","Channel"),//设置CAN通道
+            new SCPICommandStruct(":BUS#:CAN:CHANnel?","SCPI_Bus_Can","ChannelQ"),//查询CAN通道
+            new SCPICommandStruct(":BUS#:CAN:SIGNal","SCPI_Bus_Can","Signal"),//设置CAN信号线
+            new SCPICommandStruct(":BUS#:CAN:SIGNal?","SCPI_Bus_Can","SignalQ"),//查询CAN信号线
+            new SCPICommandStruct(":BUS#:CAN:BAUDrate","SCPI_Bus_Can","BaudRate"),//设置CAN波特率
+            new SCPICommandStruct(":BUS#:CAN:BAUDrate?","SCPI_Bus_Can","BaudRateQ"),//查询CAN波特率
+            new SCPICommandStruct(":BUS#:CAN:USERbaud","SCPI_Bus_Can","UserBaud"),//设置CAN自定义波特率
+            new SCPICommandStruct(":BUS#:CAN:USERbaud?","SCPI_Bus_Can","UserBaudQ"),//查询CAN自定义波特率
+            new SCPICommandStruct(":BUS#:CAN:SAMPlepoint","SCPI_Bus_Can","SAMPlepoint"),//设置CAN采样点
+            new SCPICommandStruct(":BUS#:CAN:SAMPlepoint?","SCPI_Bus_Can","SAMPlepointQ"),//查询CAN采样点
+            new SCPICommandStruct(":BUS#:CAN:FDBAudrate","SCPI_Bus_Can","FDBAudrate"),//设置CAN FD波特率
+            new SCPICommandStruct(":BUS#:CAN:FDBAudrate?","SCPI_Bus_Can","FDBAudrateQ"),//查询CAN FD波特率
+            new SCPICommandStruct(":BUS#:CAN:FDUSerbaud","SCPI_Bus_Can","FDUSerbaud"),//设置CAN FD自定义波特率
+            new SCPICommandStruct(":BUS#:CAN:FDUSerbaud?","SCPI_Bus_Can","FDUSerbaudQ"),//查询CAN FD自定义波特率
+            new SCPICommandStruct(":BUS#:CAN:FDSAmplepoint","SCPI_Bus_Can","FDSAmplepoint"),//设置CAN FD采样点
+            new SCPICommandStruct(":BUS#:CAN:FDSAmplepoint?","SCPI_Bus_Can","FDSAmplepointQ"),//查询CAN FD采样点
             new SCPICommandStruct(":BUS#:CAN:LEVel","SCPI_Trigger_Can","Level"),//设置CAN触发时的触发电平
             new SCPICommandStruct(":BUS#:CAN:LEVel?","SCPI_Trigger_Can","LevelQ"),//查询CAN触发时的触发电平
             new SCPICommandStruct(":BUS#:CAN:ISO","SCPI_Bus_Can","ISO"),//设置CAN的ISO
             new SCPICommandStruct(":BUS#:CAN:ISO?","SCPI_Bus_Can","ISOQ"),//查询CAN的ISO
 
-            new SCPICommandStruct(":BUS#:IIC:SDA","SCPI_Bus_IIC","SDA"),
-            new SCPICommandStruct(":BUS#:IIC:SDA?","SCPI_Bus_IIC","SDAQ"),
-            new SCPICommandStruct(":BUS#:IIC:SCL","SCPI_Bus_IIC","SCL"),
-            new SCPICommandStruct(":BUS#:IIC:SCL?","SCPI_Bus_IIC","SCLQ"),
-            new SCPICommandStruct(":BUS#:IIC:CLKLevel","SCPI_Trigger_IIC","LevelClock"),//设置IIC触发时的触发电平
-            new SCPICommandStruct(":BUS#:IIC:CLKLevel?","SCPI_Trigger_IIC","LevelClockQ"),//查询IIC触发时的触发电平
-            new SCPICommandStruct(":BUS#:IIC:DATLevel","SCPI_Trigger_IIC","LevelData"),//设置IIC触发时的触发电平
-            new SCPICommandStruct(":BUS#:IIC:DATLevel?","SCPI_Trigger_IIC","LevelDataQ"),//查询IIC触发时的触发电平
+            new SCPICommandStruct(":BUS#:IIC:SDA","SCPI_Bus_IIC","SDA"),//设置IIC SDA通道
+            new SCPICommandStruct(":BUS#:IIC:SDA?","SCPI_Bus_IIC","SDAQ"),//查询IIC SDA通道
+            new SCPICommandStruct(":BUS#:IIC:SCL","SCPI_Bus_IIC","SCL"),//设置IIC SCL通道
+            new SCPICommandStruct(":BUS#:IIC:SCL?","SCPI_Bus_IIC","SCLQ"),//查询IIC SCL通道
+            new SCPICommandStruct(":BUS#:IIC:CLKLevel","SCPI_Trigger_IIC","LevelClock"),//设置IIC触发时的时钟触发电平
+            new SCPICommandStruct(":BUS#:IIC:CLKLevel?","SCPI_Trigger_IIC","LevelClockQ"),//查询IIC触发时的时钟触发电平
+            new SCPICommandStruct(":BUS#:IIC:DATLevel","SCPI_Trigger_IIC","LevelData"),//设置IIC触发时的数据触发电平
+            new SCPICommandStruct(":BUS#:IIC:DATLevel?","SCPI_Trigger_IIC","LevelDataQ"),//查询IIC触发时的数据触发电平
 
-            new SCPICommandStruct(":BUS#:1553B:SOURce","SCPI_Bus_1553B","Channel"),
-            new SCPICommandStruct(":BUS#:1553B:SOURce?","SCPI_Bus_1553B","ChannelQ"),
-            new SCPICommandStruct(":BUS#:1553B:DISPlay","SCPI_Bus_1553B","Display"),
-            new SCPICommandStruct(":BUS#:1553B:DISPlay?","SCPI_Bus_1553B","DisplayQ"),
-            new SCPICommandStruct(":BUS#:1553B:LEVEl","SCPI_Trigger_1553B","Level"),
-            new SCPICommandStruct(":BUS#:1553B:LEVEl?","SCPI_Trigger_1553B","LevelQ"),
+            new SCPICommandStruct(":BUS#:1553B:SOURce","SCPI_Bus_1553B","Channel"),//设置1553B通道源
+            new SCPICommandStruct(":BUS#:1553B:SOURce?","SCPI_Bus_1553B","ChannelQ"),//查询1553B通道源
+            new SCPICommandStruct(":BUS#:1553B:DISPlay","SCPI_Bus_1553B","Display"),//设置1553B显示格式
+            new SCPICommandStruct(":BUS#:1553B:DISPlay?","SCPI_Bus_1553B","DisplayQ"),//查询1553B显示格式
+            new SCPICommandStruct(":BUS#:1553B:LEVEl","SCPI_Trigger_1553B","Level"),//设置1553B触发电平
+            new SCPICommandStruct(":BUS#:1553B:LEVEl?","SCPI_Trigger_1553B","LevelQ"),//查询1553B触发电平
 
-            new SCPICommandStruct(":BUS#:429:SOURce","SCPI_Bus_429","Source"),
-            new SCPICommandStruct(":BUS#:429:SOURce?","SCPI_Bus_429","SourceQ"),
-            new SCPICommandStruct(":BUS#:429:FORMat","SCPI_Bus_429","Format"),
-            new SCPICommandStruct(":BUS#:429:FORMat?","SCPI_Bus_429","FormatQ"),
-            new SCPICommandStruct(":BUS#:429:DISPlay","SCPI_Bus_429","Display"),
-            new SCPICommandStruct(":BUS#:429:DISPlay?","SCPI_Bus_429","DisplayQ"),
-            new SCPICommandStruct(":BUS#:429:BANDrate","SCPI_Bus_429","BandRate"),
-            new SCPICommandStruct(":BUS#:429:BANDrate?","SCPI_Bus_429","BandRateQ"),
-            new SCPICommandStruct(":BUS#:429:HLEVel","SCPI_Trigger_429","LevelHigh"),
-            new SCPICommandStruct(":BUS#:429:HLEVel?","SCPI_Trigger_429","LevelHighQ"),
-            new SCPICommandStruct(":BUS#:429:LLEVel","SCPI_Trigger_429","LevelLow"),
-            new SCPICommandStruct(":BUS#:429:LLEVel?","SCPI_Trigger_429","LevelLowQ"),
+            //429总线命令
+            new SCPICommandStruct(":BUS#:429:SOURce","SCPI_Bus_429","Source"),//设置429通道源
+            new SCPICommandStruct(":BUS#:429:SOURce?","SCPI_Bus_429","SourceQ"),//查询429通道源
+            new SCPICommandStruct(":BUS#:429:FORMat","SCPI_Bus_429","Format"),//设置429格式
+            new SCPICommandStruct(":BUS#:429:FORMat?","SCPI_Bus_429","FormatQ"),//查询429格式
+            new SCPICommandStruct(":BUS#:429:DISPlay","SCPI_Bus_429","Display"),//设置429显示格式
+            new SCPICommandStruct(":BUS#:429:DISPlay?","SCPI_Bus_429","DisplayQ"),//查询429显示格式
+            new SCPICommandStruct(":BUS#:429:BANDrate","SCPI_Bus_429","BandRate"),//设置429波特率
+            new SCPICommandStruct(":BUS#:429:BANDrate?","SCPI_Bus_429","BandRateQ"),//查询429波特率
+            new SCPICommandStruct(":BUS#:429:HLEVel","SCPI_Trigger_429","LevelHigh"),//设置429高触发电平
+            new SCPICommandStruct(":BUS#:429:HLEVel?","SCPI_Trigger_429","LevelHighQ"),//查询429高触发电平
+            new SCPICommandStruct(":BUS#:429:LLEVel","SCPI_Trigger_429","LevelLow"),//设置429低触发电平
+            new SCPICommandStruct(":BUS#:429:LLEVel?","SCPI_Trigger_429","LevelLowQ"),//查询429低触发电平
 
             //生产校准SCPI
             new SCPICommandStruct(":ware","SCPI_Production","Ware"), //固件烧写
@@ -1104,7 +1154,7 @@ public class SCPICommandDeal {
             new SCPICommandStruct("PRIVate:STATe?","SCPI_Production","StarQ"),//查询状态
             new SCPICommandStruct("PRIVate:STOP","SCPI_Production","Stop"), //关闭私有
             new SCPICommandStruct("PRIVate:BANDwidth","SCPI_Production","BandWidth"), //设置带宽
-            new SCPICommandStruct("PRIVate:SETTing:CLEar","SCPI_Production","SettingClear"),//清楚设置
+            new SCPICommandStruct("PRIVate:SETTing:CLEar","SCPI_Production","SettingClear"),//清除设置
             new SCPICommandStruct(":PRIVate:SYSID?","SCPI_Production","SysIdQ"), //查询SN
             new SCPICommandStruct("INTeface:TIME","SCPI_Production","Time"), //设置系统时间
             new SCPICommandStruct("INTeface:CLEAn","SCPI_Production","Clean"),//恢复系统设置
@@ -1114,149 +1164,210 @@ public class SCPICommandDeal {
             new SCPICommandStruct("INTeface:WAKEup","SCPI_Production","Wakeup"),//唤醒
             new SCPICommandStruct("INTeface:LOCK","SCPI_Production","Lock"),//锁屏
             new SCPICommandStruct("INTeface:UNLock","SCPI_Production","Unlock"),//解锁
-            new SCPICommandStruct(":SYS:Temperature?","SCPI_Production","SysTemperatureQ"),//解锁
-            new SCPICommandStruct(":SYS:FPGA:Temperature?","SCPI_Production","FpgaTemperatureQ"),//fpga温度
-            new SCPICommandStruct(":SYS:FPGA:Status?","SCPI_Production","SysFpgaStatusQ"),//fpga温度
+            new SCPICommandStruct(":SYS:Temperature?","SCPI_Production","SysTemperatureQ"),//查询系统温度
+            new SCPICommandStruct(":SYS:FPGA:Temperature?","SCPI_Production","FpgaTemperatureQ"),//查询FPGA温度
+            new SCPICommandStruct(":SYS:FPGA:Status?","SCPI_Production","SysFpgaStatusQ"),//查询FPGA状态
 
     };
 
     //endregion
 
-    private String curCommand="";
-    private int commandCount=0;
-    private int commandIdx=0;
-    private StringBuilder sb=new StringBuilder();
-    private SharedMemory sharedMem;
+    /** 当前正在处理的SCPI命令字符串 */
+    private String curCommand=""; // 当前命令
+    /** 当前批量命令的总数(分号分隔) */
+    private int commandCount=0; // 命令总数
+    /** 当前命令在批量命令中的索引(0-based) */
+    private int commandIdx=0; // 当前命令索引
+    /** 命令结果拼接缓冲区，多条命令的结果用分号拼接 */
+    private StringBuilder sb=new StringBuilder(); // 结果缓冲区
+    /** Android共享内存句柄，用于波形数据的高效传输(10MB) */
+    private SharedMemory sharedMem; // 共享内存
+
+    /**
+     * 获取共享内存句柄(线程安全)。
+     * 波形数据查询时，SCPI_Waveform通过此方法获取共享内存进行数据写入。
+     * @return 共享内存对象
+     */
     public synchronized SharedMemory getSharedMem(){
-        return sharedMem;
+        return sharedMem; // 返回共享内存句柄
     }
+
+    /**
+     * 将波形数据写入共享内存(线程安全)。
+     * 数据格式: [4字节长度][SCPI结果字符串][波形二进制数据][\r\n]
+     * @param sb          SCPI结果字符串的StringBuilder
+     * @param waveLen     波形数据长度(点数)
+     * @param waveBak     波形二进制数据的ByteBuffer
+     * @param dotLength   每个数据点的字节数
+     */
     public synchronized void writeShareMem(StringBuilder sb, int waveLen, ByteBuffer waveBak, final int dotLength){
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O_MR1) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O_MR1) { // Android 8.1+才支持SharedMemory
             try {
-                ByteBuffer bf= sharedMem.mapReadWrite();
+                ByteBuffer bf= sharedMem.mapReadWrite(); // 映射共享内存为可读写ByteBuffer
                 //Log.d("Tag.Debug", String.format("SCPICommandDeal.writeShareMem: bf.cap:%s ,wave:limit:%s",bf.capacity(),waveBak.limit() ));
 
-                bf.putInt(waveLen*dotLength+13);
-                bf.put(sb.toString().getBytes());
-                if (waveLen>0) {
-                    bf.put(waveBak);
+                bf.putInt(waveLen*dotLength+13); // 写入总长度(波形字节数+13字节头部)
+                bf.put(sb.toString().getBytes()); // 写入SCPI结果字符串
+                if (waveLen>0) { // 有波形数据时
+                    bf.put(waveBak); // 写入波形二进制数据
                 }
-                bf.put("\r\n".getBytes());
-                SharedMemory.unmap(bf);
+                bf.put("\r\n".getBytes()); // 写入结束标记\r\n
+                SharedMemory.unmap(bf); // 解除共享内存映射
             } catch (ErrnoException e) {
-                e.printStackTrace();
+                e.printStackTrace(); // 共享内存操作异常时打印堆栈
             }
         }
     }
 
+    /**
+     * SCPI命令解析入口(线程安全)。
+     * 将SCPI命令字符串按分号分隔为多条子命令，逐条交给C层JNI解析。
+     * JNI解析完成后会回调deal()方法进行命令分发。
+     * @param command SCPI命令字符串(多条命令用分号分隔)
+     */
     public synchronized void scpiParser(String command){
 
-        sb.setLength(0);
-        String[] commands= command.split(";");
-        commandCount=commands.length;
+        sb.setLength(0); // 清空结果缓冲区
+        String[] commands= command.split(";"); // 按分号分隔多条命令
+        commandCount=commands.length; // 记录命令总数
         //Log.d("Tag.Debug", String.format("SCPICommandDeal.scpiParser count:%s",commandCount));
-        for(int i=0;i<commands.length;i++) {
-            commandIdx=i;
-            this.curCommand = commands[i];
+        for(int i=0;i<commands.length;i++) { // 逐条处理每条子命令
+            commandIdx=i; // 记录当前命令索引
+            this.curCommand = commands[i]; // 保存当前命令字符串
             //Log.d("Tag.Debug", String.format("SCPICommandDeal.scpiParser: %s", curCommand));
-            param.clearData();
-            scpiCommand(curCommand+"\n", param);
+            param.clearData(); // 清空参数对象(重置为默认值)
+            scpiCommand(curCommand+"\n", param); // 调用C层JNI解析命令(末尾加换行符)
         }
     }
 
+    /**
+     * C层SCPI解析JNI方法。
+     * 该方法由C层libSCPI.so实现，解析SCPI命令字符串后回调deal()方法。
+     * @param command SCPI命令字符串(含换行符)
+     * @param param   SCPI参数对象，C层解析后填充此对象
+     */
     public native void scpiCommand(String command,SCPIParam param);
 
+    /**
+     * SCPI命令分发核心方法 - 由C层JNI回调。
+     * 根据C层解析得到的commandIndex，从scpi_commands数组查找对应的命令映射，
+     * 通过Java反射机制调用SCPI_xxx命令处理类的静态方法。
+     *
+     * 错误处理:
+     *   commandIndex=-1: 命令语法错误
+     *   commandIndex=-2: 命令参数错误
+     *   其他负值: 未知错误
+     *
+     * 结果处理:
+     *   返回StringBuilder: 包含波形数据，sendMessage("",true)
+     *   返回其他对象: 普通字符串结果，sendMessage(o.toString(),false)
+     *   返回null: 命令执行成功但无返回值(如设置命令)
+     *
+     * @param param C层解析后填充的SCPI参数对象
+     */
     public void deal(SCPIParam param) {
-        if (param.commandIndex < 0){
-            Logger.i(TAG,"ErrorEnum:SCPI command: "+ param.commandIndex + "," + curCommand);
-            switch (param.commandIndex){
-                case -1:{
-                    Logger.i(TAG,"Error:SCPI Command Error! " );
-                    if (curCommand.contains("?")) {
+        if (param.commandIndex < 0){ // C层返回负值表示解析错误
+            Logger.i(TAG,"ErrorEnum:SCPI command: "+ param.commandIndex + "," + curCommand); // 记录错误日志
+            switch (param.commandIndex){ // 根据错误码分类处理
+                case -1:{ // 命令语法错误
+                    Logger.i(TAG,"Error:SCPI Command Error! " ); // 记录命令错误日志
+                    if (curCommand.contains("?")) { // 查询命令错误时返回错误信息
 //                        scpiService.sendMessage("Error:SCPI Command error!\r\n");
-                        sendMessage("Error:SCPI Command error!",false);
-                    }else {
+                        sendMessage("Error:SCPI Command error!",false); // 发送命令错误响应
+                    }else { // 设置命令错误时发送空响应
 //                        scpiService.sendMessage("");fa
-                        sendMessage(null,false);
+                        sendMessage(null,false); // 发送空响应
                     }
                 }break;
-                case -2:{
-                    Logger.i(TAG,"Error:SCPI Param Error!" );
-                    if (curCommand.contains("?")) {
+                case -2:{ // 命令参数错误
+                    Logger.i(TAG,"Error:SCPI Param Error!" ); // 记录参数错误日志
+                    if (curCommand.contains("?")) { // 查询命令参数错误时返回错误信息
 //                        scpiService.sendMessage("Error:SCPI param error!\r\n");
-                        sendMessage("Error:SCPI param error!",false);
-                    }else {
+                        sendMessage("Error:SCPI param error!",false); // 发送参数错误响应
+                    }else { // 设置命令参数错误时发送空响应
 //                        scpiService.sendMessage("");
-                        sendMessage(null,false);
+                        sendMessage(null,false); // 发送空响应
                     }
                 }break;
-                default:{
+                default:{ // 其他未知错误
 //                    scpiService.sendMessage("");
-                    sendMessage(null,false);
+                    sendMessage(null,false); // 发送空响应
                 }break;
             }
 
-            return;
+            return; // 错误处理后直接返回，不执行命令
         }
-        Logger.i(TAG,"deal commandIndex:"+param.commandIndex+"  command:"+scpi_commands[param.commandIndex].command);
-        SCPICommandStruct scpiCommand=scpi_commands[param.commandIndex];
-        Logger.i(TAG,"class:"+scpiCommand.clasz+" method:"+scpiCommand.method);
-        Class threadClazz = null;
+        Logger.i(TAG,"deal commandIndex:"+param.commandIndex+"  command:"+scpi_commands[param.commandIndex].command); // 记录命令分发日志
+        SCPICommandStruct scpiCommand=scpi_commands[param.commandIndex]; // 根据索引获取命令映射结构体
+        Logger.i(TAG,"class:"+scpiCommand.clasz+" method:"+scpiCommand.method); // 记录反射调用目标
+        Class threadClazz = null; // 反射目标类引用
         try {
-            threadClazz = Class.forName("com.micsig.tbook.tbookscope.scpi."+scpiCommand.clasz);
-            Method method = threadClazz.getMethod(scpiCommand.method, SCPIParam.class);
-            Object o= method.invoke(null,param);
-            if (o!=null) {
+            threadClazz = Class.forName("com.micsig.tbook.tbookscope.scpi."+scpiCommand.clasz); // 反射加载命令处理类
+            Method method = threadClazz.getMethod(scpiCommand.method, SCPIParam.class); // 反射获取命令处理方法
+            Object o= method.invoke(null,param); // 反射调用静态方法(传入SCPIParam参数)
+            if (o!=null) { // 方法返回非空结果
 //                Logger.i(TAG, "object :" + o.toString());
                 //发送出去
-                if(o instanceof StringBuilder){
+                if(o instanceof StringBuilder){ // 返回StringBuilder表示包含波形数据
 //                    scpiService.sendMessage(o.toString());
-                    if ( ((StringBuilder)o).length()==0 ){
-                        sendMessage("",true);
-                    }else {
-                        sendMessage(o.toString(),false);
+                        sendMessage("",true); // 发送波形数据(空字符串头+波形标记true)
+                    }else { // 返回普通对象(字符串)
+                        sendMessage(o.toString(),false); // 发送普通字符串结果
                     }
-                }else {
+                }else { // 方法返回null(设置命令通常无返回值)
 //                    scpiService.sendMessage(o.toString() + "\r\n");
-                    sendMessage(o.toString(),false);
+                    sendMessage(o.toString(),false); // 发送"null"字符串
                 }
-            }else {
+            }else { // 反射调用返回null(不应该发生)
 //                scpiService.sendMessage("");
-                sendMessage(null,false);
+                sendMessage(null,false); // 发送空响应
             }
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (NoSuchMethodException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            e.printStackTrace();
+        } catch (ClassNotFoundException e) { // 命令处理类未找到
+            e.printStackTrace(); // 打印异常堆栈
+        } catch (NoSuchMethodException e) { // 命令处理方法未找到
+            e.printStackTrace(); // 打印异常堆栈
+        } catch (IllegalAccessException e) { // 反射访问权限不足
+            e.printStackTrace(); // 打印异常堆栈
+        } catch (InvocationTargetException e) { // 反射调用目标方法抛出异常
+            e.printStackTrace(); // 打印异常堆栈
         }
     }
 
+    /**
+     * SCPI命令结果发送方法(内部使用)。
+     * 负责将单条命令的执行结果拼接到结果缓冲区sb中，
+     * 当所有命令处理完毕(最后一条命令)时，通过scpiService一次性发送给客户端。
+     *
+     * 拼接规则:
+     *   多条命令结果之间用分号";"分隔
+     *   最后一条命令结果后追加\r\n(普通响应)或分号(波形响应)
+     *   微符号"渭"替换为"u"(编码兼容处理)
+     *
+     * @param result            命令执行结果字符串(null表示空响应)
+     * @param isContainWaveForm 是否包含波形数据(来自SharedMemory)
+     */
     private void sendMessage(String result,boolean isContainWaveForm){
         //Log.d("Tag.Debug", String.format("SCPICommandDeal.sendMessage: %s",commandIdx ));
-        if (StrUtil.isEmpty(result) == false) {
-            if (sb.length() >= 1) {
-                sb.append(";");
+        if (StrUtil.isEmpty(result) == false) { // 结果非空时拼接
+            if (sb.length() >= 1) { // 缓冲区已有内容时加分号分隔
+                sb.append(";"); // 多条命令结果间加分号
             }
-            sb.append(result);
+            sb.append(result); // 拼接当前命令结果
         }
-        if (commandIdx== commandCount-1){
-            if (sb.length()==0){
-                sb.append("");
-                scpiService.sendMessage(sb.toString(),isContainWaveForm);
-                if (isContainWaveForm) return;
+        if (commandIdx== commandCount-1){ // 最后一条命令时发送全部结果
+            if (sb.length()==0){ // 缓冲区为空(所有命令均无返回值)
+                sb.append(""); // 追加空字符串
+                scpiService.sendMessage(sb.toString(),isContainWaveForm); // 发送空响应
+                if (isContainWaveForm) return; // 波形数据已发送，直接返回
                 //Log.d("Tag.Debug", String.format("SCPICommandDeal.sendMessage: %s",sb.toString() ));
-            }else {
-                if (isContainWaveForm){
-                    sb.append(";");
-                }else {
-                    sb.append("\r\n");
+            }else { // 缓冲区有内容
+                if (isContainWaveForm){ // 包含波形数据
+                    sb.append(";"); // 波形响应末尾加分号
+                }else { // 普通文本响应
+                    sb.append("\r\n"); // 追加SCPI标准结束标记\r\n
                 }
-                String content= sb.toString().replace("μ","u");
-                scpiService.sendMessage(content,isContainWaveForm);
+                String content= sb.toString().replace("渭","u"); // 微符号"渭"替换为"u"(编码兼容)
+                scpiService.sendMessage(content,isContainWaveForm); // 通过SCPI服务发送最终结果
                 //Log.d("Tag.Debug", String.format("SCPICommandDeal.sendMessage: %s",sb.toString() ));
             }
         }

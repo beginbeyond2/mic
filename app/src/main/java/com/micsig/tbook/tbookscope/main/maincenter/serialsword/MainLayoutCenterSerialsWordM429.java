@@ -34,23 +34,72 @@ import java.util.concurrent.LinkedBlockingQueue;
 import io.reactivex.rxjava3.functions.Consumer;
 
 
+/**
+ * ***********************************************************************************
+ * * ARINC429总线文本显示Fragment类
+ * ***********************************************************************************
+ * *
+ * * 【模块定位】
+ * *   主界面中心区域 - ARINC429航空数据总线协议解码文本数据的显示和统计模块
+ * *
+ * * 【核心职责】
+ * *   1. 显示ARINC429总线解码后的文本数据列表（标签、数据、SDI、时间戳等）
+ * *   2. 统计并显示ARINC429总线帧总数、错误帧数及错误率
+ * *   3. 支持运行模式实时刷新和停止模式历史查看
+ * *   4. 实现触摸滚动和外部按键滚动功能
+ * *   5. 提供时间显示格式切换（毫秒显示开关）
+ * *   6. 支持清空缓存数据功能
+ * *
+ * * 【架构设计】
+ * *   继承Fragment，实现IForceRefreshUI强制刷新接口：
+ * *   - 使用RecyclerView显示全屏数据列表（停止模式）
+ * *   - 使用自定义SingleScreenTextView显示单屏数据（运行模式）
+ * *   - 通过LinkedBlockingQueue获取线程安全的ARINC429数据队列
+ * *   - 利用RxBus订阅缓存加载事件
+ * *   - 采用自适应滚动条显示数据位置
+ * *
+ * * 【数据流向】
+ * *   输入：
+ * *     → SerialBusManage获取ARINC429数据队列和缓冲区
+ * *     → CacheUtil读取运行状态和通道类型
+ * *     → RxBus接收LoadCache缓存加载事件
+ * *     → 用户触摸事件触发滚动
+ * *   输出：
+ * *     → RecyclerView/SingleScreenTextView显示ARINC429文本列表
+ * *     → TextView显示帧统计信息（总数、错误帧）
+ * *     → SerialBusManage清空缓冲区
+ * *
+ * * 【依赖关系】
+ * *   上层依赖：MainLayoutCenterSerialsWordDetail父容器Fragment
+ * *   下层依赖：MainAdapterCenterSerialsWordM429适配器、SerialBusManage数据管理
+ * *   平级依赖：CacheUtil、RxBus、PlaySound、Tools等工具类
+ * *
+ * * 【使用场景】
+ * *   当用户配置通道为ARINC429协议时，显示ARINC429总线解码的文本数据
+ * *   在Run模式实时刷新显示最新数据，在Stop模式支持滚动查看历史数据
+ * ***********************************************************************************
+ */
 public class MainLayoutCenterSerialsWordM429 extends Fragment implements SerialBusManage.IForceRefreshUI {
-    private Button btnClear;
-    private TextView tvMsgM429WordTitle, tvMsgM429ErrorTitle;
-    private TextView tvMsgM429WordDetail, tvMsgM429ErrorDetail;
-    private TextView time;
-    private UnFlingRecyclerView allScreenView;
-    private LinearLayoutManager allScreenLayoutManager;
-    private MainAdapterCenterSerialsWordM429 allScreenAdapter;
-    private ArrayList<SerialBusTxtStruct.Arinc429Struct> allScreenList;
-    private View singleScreenScrollBar;
-    private SerialsWordM429SingleScreenTextView singleScreenView;
-    private ArrayList<SerialBusTxtStruct.Arinc429Struct> singleScreenList;
+    private Button btnClear;  // 清空按钮，用于清除所有ARINC429数据缓存
+    private TextView tvMsgM429WordTitle, tvMsgM429ErrorTitle;  // M429帧统计标题文本控件
+    private TextView tvMsgM429WordDetail, tvMsgM429ErrorDetail;  // M429帧统计详情数值文本控件
+    private TextView time;  // 时间显示控件，点击切换毫秒显示开关
+    private UnFlingRecyclerView allScreenView;  // 全屏数据列表视图，用于Stop模式显示所有历史数据
+    private LinearLayoutManager allScreenLayoutManager;  // 线性布局管理器，管理RecyclerView布局
+    private MainAdapterCenterSerialsWordM429 allScreenAdapter;  // M429数据适配器，绑定数据到视图
+    private ArrayList<SerialBusTxtStruct.Arinc429Struct> allScreenList;  // 全屏数据列表，存储所有ARINC429帧数据
+    private View singleScreenScrollBar;  // 单屏模式滚动条视图，显示数据位置指示
+    private SerialsWordM429SingleScreenTextView singleScreenView;  // 单屏数据视图，用于Run模式高效显示
+    private ArrayList<SerialBusTxtStruct.Arinc429Struct> singleScreenList;  // 单屏数据列表，存储当前显示的ARINC429帧数据
 
-    private int chType = ISerialsWord.TYPE_S1;
+    private int chType = ISerialsWord.TYPE_S1;  // 通道类型，默认为S1通道
 
+    /**
+     * 设置通道类型
+     * @param chType 通道类型常量（TYPE_S1/TYPE_S2/TYPE_S3/TYPE_S4/TYPE_S12）
+     */
     public void setChType(int chType) {
-        this.chType = chType;
+        this.chType = chType;  // 保存通道类型到成员变量
     }
 
     @Nullable

@@ -39,36 +39,93 @@ import java.util.concurrent.LinkedBlockingQueue;
 import io.reactivex.rxjava3.functions.Consumer;
 
 
+/**
+ * ***********************************************************************************
+ * * UART串口文本显示Fragment类
+ * ***********************************************************************************
+ * *
+ * * 【模块定位】
+ * *   主界面中心区域 - UART串口协议解码文本数据的显示和统计模块
+ * *
+ * * 【核心职责】
+ * *   1. 显示UART串口解码后的文本数据列表（数据、时间戳等）
+ * *   2. 支持多种显示格式（HEX十六进制、BIN二进制、ASCII字符）
+ * *   3. 统计并显示UART串口数据总数、错误数据数及错误率
+ * *   4. 支持运行模式实时刷新和停止模式历史查看
+ * *   5. 实现触摸滚动和外部按键滚动功能
+ * *   6. 提供S12组合通道配置一致性检查和提示
+ * *   7. 支持清空缓存数据功能
+ * *
+ * * 【架构设计】
+ * *   继承Fragment，实现IForceRefreshUI强制刷新接口：
+ * *   - 使用RecyclerView显示全屏数据列表（停止模式）
+ * *   - 使用自定义SingleScreenTextView显示单屏数据（运行模式）
+ * *   - 通过LinkedBlockingQueue获取线程安全的UART数据队列
+ * *   - 利用RxBus订阅缓存加载、串口配置、组合通道变更等事件
+ * *   - 采用自适应滚动条显示数据位置
+ * *   - 实现多格式显示适配（HEX/BIN/ASCII）和校验位配置
+ * *
+ * * 【数据流向】
+ * *   输入：
+ * *     → SerialBusManage获取UART数据队列和缓冲区
+ * *     → CacheUtil读取运行状态、通道类型、显示格式、校验位配置
+ * *     → RxBus接收LoadCache、RightMsgSerials、TopMsgDisplay等消息
+ * *     → 用户触摸事件触发滚动
+ * *   输出：
+ * *     → RecyclerView/SingleScreenTextView显示UART文本列表
+ * *     → TextView显示帧统计信息（总数、错误数据）
+ * *     → SerialBusManage清空缓冲区
+ * *     → TipLayout显示配置不一致提示
+ * *
+ * * 【依赖关系】
+ * *   上层依赖：MainLayoutCenterSerialsWordDetail父容器Fragment
+ * *   下层依赖：MainAdapterCenterSerialsWordUart适配器、SerialBusManage数据管理
+ * *   平级依赖：CacheUtil、RxBus、PlaySound、Tools等工具类
+ * *
+ * * 【使用场景】
+ * *   当用户配置通道为UART协议时，显示UART串口解码的文本数据
+ * *   支持HEX/BIN/ASCII三种显示格式，根据用户配置动态切换
+ * *   在Run模式实时刷新显示最新数据，在Stop模式支持滚动查看历史数据
+ * *   在S12组合通道时检查各通道配置一致性，不一致则显示提示页面
+ * ***********************************************************************************
+ */
 public class MainLayoutCenterSerialsWordUart extends Fragment implements SerialBusManage.IForceRefreshUI {
-    private static final String TAG = "MainLayoutCenterSerialsWordUart";
-    private Button btnClear;
-    private TextView tipLayout;
-    private RelativeLayout dataLayout;
-    private View dividerX;
-    private TextView title1, title2, title3;
-    private TextView tvMsgUartFrameTitle, tvMsgUartErrorTitle;
-    private TextView tvMsgUartFrameDetail, tvMsgUartErrorDetail;
-    private UnFlingRecyclerView allScreenView;
-    private LinearLayoutManager allScreenLayoutManager;
-    private MainAdapterCenterSerialsWordUart allScreenAdapter;
-    private ArrayList<ArrayList<SerialBusTxtStruct.UartStruct>> allScreenList;
-    private View singleScreenScrollBar;
-    private SerialsWordUartSingleScreenTextView singleScreenView;
-    private ArrayList<SerialBusTxtStruct.UartStruct> singleScreenList;
+    private static final String TAG = "MainLayoutCenterSerialsWordUart";  // 日志标签常量
+    private Button btnClear;  // 清空按钮，用于清除所有UART数据缓存
+    private TextView tipLayout;  // 提示布局文本控件，显示S12配置不一致提示
+    private RelativeLayout dataLayout;  // 数据布局容器，显示UART数据列表
+    private View dividerX;  // 分隔线视图，用于HEX/BIN格式分列显示
+    private TextView title1, title2, title3;  // 列标题文本控件，用于HEX/BIN/ASCII显示格式
+    private TextView tvMsgUartFrameTitle, tvMsgUartErrorTitle;  // UART帧统计标题文本控件
+    private TextView tvMsgUartFrameDetail, tvMsgUartErrorDetail;  // UART帧统计详情数值文本控件
+    private UnFlingRecyclerView allScreenView;  // 全屏数据列表视图，用于Stop模式显示所有历史数据
+    private LinearLayoutManager allScreenLayoutManager;  // 线性布局管理器，管理RecyclerView布局
+    private MainAdapterCenterSerialsWordUart allScreenAdapter;  // UART数据适配器，绑定数据到视图
+    private ArrayList<ArrayList<SerialBusTxtStruct.UartStruct>> allScreenList;  // 全屏数据列表，按行分组存储UART数据
+    private View singleScreenScrollBar;  // 单屏模式滚动条视图，显示数据位置指示
+    private SerialsWordUartSingleScreenTextView singleScreenView;  // 单屏数据视图，用于Run模式高效显示
+    private ArrayList<SerialBusTxtStruct.UartStruct> singleScreenList;  // 单屏数据列表，存储当前显示的UART数据
 
-    private int chType = ISerialsWord.TYPE_S1;
-    private String title = "";
-    private HashMap<String, Integer> checkMap = new HashMap<String, Integer>();
-    private HashMap<String, Integer> bitsMap = new HashMap<String, Integer>();
-    private HashMap<String, Integer> displayMap = new HashMap<String, Integer>();
+    private int chType = ISerialsWord.TYPE_S1;  // 通道类型，默认为S1通道
+    private String title = "";  // 通道标题，用于S12组合通道判断一致性
+    private HashMap<String, Integer> checkMap = new HashMap<String, Integer>();  // 校验位配置映射表，用于S12组合判断
+    private HashMap<String, Integer> bitsMap = new HashMap<String, Integer>();  // 数据位配置映射表，用于S12组合判断
+    private HashMap<String, Integer> displayMap = new HashMap<String, Integer>();  // 显示格式映射表，用于S12组合判断
 
-
+    /**
+     * 设置通道类型
+     * @param chType 通道类型常量（TYPE_S1/TYPE_S2/TYPE_S3/TYPE_S4/TYPE_S12）
+     */
     public void setChType(int chType) {
-        this.chType = chType;
+        this.chType = chType;  // 保存通道类型到成员变量
     }
 
+    /**
+     * 设置通道标题，用于S12组合通道的一致性判断
+     * @param title 通道标题字符串，S12组合通道格式为"S1&S2"等
+     */
     public void setTitle(String title) {
-        this.title = title;
+        this.title = title;  // 保存标题到成员变量
     }
 
     @Nullable

@@ -1,6 +1,25 @@
-package com.micsig.tbook.tbookscope.top.layout.save;
+package com.micsig.tbook.tbookscope.top.layout.save; // 保存功能模块的包声明
 
-import com.micsig.tbook.tbookscope.top.layout.measure.IMeasureDetail;
+import com.micsig.tbook.tbookscope.top.layout.measure.IMeasureDetail; // 导入测量详情接口
 
-public class TopMsgSaveTxt implements IMeasureDetail {
+/**
+ * ┌─────────────────────────────────────────────────────────────────────────────┐
+ * │ 模块定位：保存/调用功能 → 顶部布局 → 消息对象 → 文本保存消息（Txt Msg）       │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 核心职责：作为文本保存功能的消息标记类，实现IMeasureDetail接口，               │
+ * │          用于在保存流程中标识当前操作为文本保存类型                             │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 架构设计：空实现标记类，实现IMeasureDetail接口，无额外字段，                   │
+ * │          仅作为类型标识在消息传递中区分保存类型                                 │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 数据流向：TopLayoutSaveTxt(创建) → TopMsgSave(封装) →                        │
+ * │          RxBus(事件传递) → TopLayoutSave(类型判断)                             │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 依赖组件：IMeasureDetail                                                     │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 使用场景：用户在文本保存页面操作时，通过此消息对象标识当前为文本保存类型         │
+ * │          （当前为预留功能，TopLayoutSaveTxt尚未实现完整保存逻辑）               │
+ * └─────────────────────────────────────────────────────────────────────────────┘
+ */
+public class TopMsgSaveTxt implements IMeasureDetail { // 实现测量详情接口的文本保存消息类
 }

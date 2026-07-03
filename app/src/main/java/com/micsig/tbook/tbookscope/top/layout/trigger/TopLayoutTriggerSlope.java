@@ -1,469 +1,590 @@
-package com.micsig.tbook.tbookscope.top.layout.trigger;
 
-import android.content.Context;
-import android.os.Bundle;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.LinearLayout;
-import android.widget.TextView;
+package com.micsig.tbook.tbookscope.top.layout.trigger; // 触发布局包
 
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
+import android.content.Context; // 上下文类
+import android.os.Bundle; // Fragment参数Bundle
+import android.view.LayoutInflater; // 布局填充器
+import android.view.View; // 视图基类
+import android.view.ViewGroup; // 视图组基类
+import android.widget.LinearLayout; // 线性布局控件
+import android.widget.TextView; // 文本视图控件
 
-import com.micsig.tbook.scope.Event.EventBase;
-import com.micsig.tbook.scope.Event.EventFactory;
-import com.micsig.tbook.scope.Event.EventUIObserver;
-import com.micsig.tbook.scope.Trigger.Trigger;
-import com.micsig.tbook.scope.Trigger.TriggerFactory;
-import com.micsig.tbook.scope.Trigger.TriggerSlope;
-import com.micsig.tbook.tbookscope.GlobalVar;
-import com.micsig.tbook.tbookscope.LoadCache;
-import com.micsig.tbook.tbookscope.MainActivity;
-import com.micsig.tbook.tbookscope.MainViewGroup;
-import com.micsig.tbook.tbookscope.R;
-import com.micsig.tbook.tbookscope.main.mainright.MainHolderTriggerLevel;
-import com.micsig.tbook.tbookscope.main.mainright.MainMsgTriggerLevel;
-import com.micsig.tbook.tbookscope.middleware.command.Command;
-import com.micsig.tbook.tbookscope.middleware.command.CommandMsgToUI;
-import com.micsig.tbook.tbookscope.rightslipmenu.RightMsgLevel;
-import com.micsig.tbook.tbookscope.rxjava.RxBus;
-import com.micsig.tbook.tbookscope.rxjava.RxEnum;
-import com.micsig.tbook.tbookscope.tools.PlaySound;
-import com.micsig.tbook.tbookscope.top.OnDetailSendMsgListener;
-import com.micsig.tbook.tbookscope.top.popwindow.TopDialogScale;
-import com.micsig.tbook.tbookscope.util.CacheUtil;
-import com.micsig.tbook.ui.top.view.channel.TopBeanChannel;
-import com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup;
-import com.micsig.tbook.ui.top.view.scale.TopUtilScale;
-import com.micsig.tbook.ui.util.ScreenUtil;
-import com.micsig.tbook.ui.util.TBookUtil;
+import androidx.annotation.Nullable; // 可空注解
+import androidx.fragment.app.Fragment; // Fragment基类
 
-import io.reactivex.rxjava3.annotations.NonNull;
-import io.reactivex.rxjava3.functions.Consumer;
+import com.micsig.tbook.scope.Event.EventBase; // 事件基类
+import com.micsig.tbook.scope.Event.EventFactory; // 事件工厂
+import com.micsig.tbook.scope.Event.EventUIObserver; // 事件UI观察者
+import com.micsig.tbook.scope.Trigger.Trigger; // 触发器基类
+import com.micsig.tbook.scope.Trigger.TriggerFactory; // 触发器工厂
+import com.micsig.tbook.scope.Trigger.TriggerSlope; // 斜率触发器模型
+import com.micsig.tbook.tbookscope.GlobalVar; // 全局变量
+import com.micsig.tbook.tbookscope.LoadCache; // 缓存加载消息
+import com.micsig.tbook.tbookscope.MainActivity; // 主Activity
+import com.micsig.tbook.tbookscope.MainViewGroup; // 主视图组
+import com.micsig.tbook.tbookscope.R; // 资源ID
+import com.micsig.tbook.tbookscope.main.mainright.MainHolderTriggerLevel; // 触发电平持有者
+import com.micsig.tbook.tbookscope.main.mainright.MainMsgTriggerLevel; // 触发电平消息
+import com.micsig.tbook.tbookscope.middleware.command.Command; // 硬件指令中间件
+import com.micsig.tbook.tbookscope.middleware.command.CommandMsgToUI; // 指令到UI的消息
+import com.micsig.tbook.tbookscope.rightslipmenu.RightMsgLevel; // 右侧滑菜单电平消息
+import com.micsig.tbook.tbookscope.rxjava.RxBus; // RxJava事件总线
+import com.micsig.tbook.tbookscope.rxjava.RxEnum; // RxJava事件枚举
+import com.micsig.tbook.tbookscope.tools.PlaySound; // 按键音效工具
+import com.micsig.tbook.tbookscope.top.OnDetailSendMsgListener; // 详情发送消息监听器
+import com.micsig.tbook.tbookscope.top.popwindow.TopDialogScale; // 刻度弹窗
+import com.micsig.tbook.tbookscope.util.CacheUtil; // 缓存工具
+import com.micsig.tbook.ui.top.view.channel.TopBeanChannel; // 通道数据Bean
+import com.micsig.tbook.ui.top.view.radioGroup.TopViewRadioGroup; // 自定义单选按钮组
+import com.micsig.tbook.ui.top.view.scale.TopUtilScale; // 刻度工具
+import com.micsig.tbook.ui.util.ScreenUtil; // 屏幕工具
+import com.micsig.tbook.ui.util.TBookUtil; // TBook工具类
 
+import io.reactivex.rxjava3.annotations.NonNull; // 非空注解
+import io.reactivex.rxjava3.functions.Consumer; // RxJava消费者接口
+/*
+ * ╔══════════════════════════════════════════════════════════════════════════╗
+ * ║  模块定位：Micsig MHO系列示波器 - 触发系统 - 斜率(Slope)触发配置界面        ║
+ * ║  文件名称：TopLayoutTriggerSlope.java                                    ║
+ * ╠══════════════════════════════════════════════════════════════════════════╣
+ * ║  核心职责：                                                              ║
+ * ║    1. 提供斜率(Slope)触发模式的参数配置UI（触发源、边沿、条件、高/低时间）    ║
+ * ║    2. 将用户操作同步到硬件Command、缓存CacheUtil、触发模型TriggerSlope       ║
+ * ║    3. 响应外部事件（RxBus/EventBus）更新UI状态                            ║
+ * ║    4. 维护高时间/低时间的联动约束（高时间必须小于低时间）                    ║
+ * ╠══════════════════════════════════════════════════════════════════════════╣
+ * ║  架构设计：                                                              ║
+ * ║    - Fragment子类，由TopLayoutTrigger通过FragmentTransaction管理显示/隐藏  ║
+ * ║    - 采用观察者模式：RxBus订阅 + EventFactory事件监听                     ║
+ * ║    - 数据流向：UI → Command(硬件) + CacheUtil(缓存) + Trigger(模型)      ║
+ * ║    - 反向同步：EventBus/RxBus → UI更新                                   ║
+ * ╠══════════════════════════════════════════════════════════════════════════╣
+ * ║  依赖关系：                                                              ║
+ * ║    - TriggerSlope : 斜率触发数据模型                                      ║
+ * ║    - Command : 硬件指令发送中间件                                          ║
+ * ║    - CacheUtil : 参数缓存持久化                                           ║
+ * ║    - RxBus/EventFactory : 事件总线                                        ║
+ * ║    - TopDialogScale : 时间刻度弹窗                                        ║
+ * ║    - TopViewRadioGroup : 自定义单选按钮组                                 ║
+ * ║    - TopMatchTrigger : 触发条件映射工具                                   ║
+ * ╠══════════════════════════════════════════════════════════════════════════╣
+ * ║  使用场景：                                                              ║
+ * ║    用户在顶部触发菜单选择"斜率"触发类型时，显示此Fragment进行参数配置        ║
+ * ║    斜率触发用于检测信号上升/下降沿的斜率超过或低于指定阈值的信号             ║
+ * ╚══════════════════════════════════════════════════════════════════════════╝
+ */
 
 /**
- * Created by Administrator on 2017/4/10.
+ * 斜率(Slope)触发配置Fragment
+ * <p>
+ * 提供斜率触发模式的参数配置界面，包括触发源选择、边沿方向、触发条件（大于/小于/范围内）
+ * 以及高时间和低时间参数。当信号边沿斜率满足指定条件时触发采集。
+ * </p>
+ * <p>Created by Administrator on 2017/4/10.</p>
  */
-public class TopLayoutTriggerSlope extends Fragment {
-    private Context context;
-    private TopViewRadioGroup rgSource;
-    private TopViewRadioGroup rgEdge;
-    private TopViewRadioGroup rgCondition;
-    private TextView tvTimeHigh;
-    private TextView tvTimeLow;
-    private LinearLayout layoutTimeHigh;
-    private LinearLayout layoutTimeLow;
-    private TopDialogScale scaleDialog;
+public class TopLayoutTriggerSlope extends Fragment { // 斜率触发配置Fragment
+    private Context context; // 上下文引用
+    private TopViewRadioGroup rgSource; // 触发源单选按钮组
+    private TopViewRadioGroup rgEdge; // 边沿方向单选按钮组
+    private TopViewRadioGroup rgCondition; // 触发条件单选按钮组
+    private TextView tvTimeHigh; // 高时间文本视图
+    private TextView tvTimeLow; // 低时间文本视图
+    private LinearLayout layoutTimeHigh; // 高时间布局容器
+    private LinearLayout layoutTimeLow; // 低时间布局容器
+    private TopDialogScale scaleDialog; // 时间刻度弹窗
 
-    private TopMsgTriggerSlope msgTriggerDetail;
-    private OnDetailSendMsgListener onDetailSendMsgListener;
+    private TopMsgTriggerSlope msgTriggerDetail; // 斜率触发详情消息
+    private OnDetailSendMsgListener onDetailSendMsgListener; // 详情消息发送监听器
 
-    private TriggerSlope triggerSlope;
+    private TriggerSlope triggerSlope; // 斜率触发器数据模型
 
+    /**
+     * 创建Fragment视图
+     * @param inflater 布局填充器
+     * @param container 父容器
+     * @param savedInstanceState 保存的实例状态
+     * @return 填充后的视图
+     */
     @Nullable
     @Override
-    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.layout_triggerslope, container, false);
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) { // 创建视图回调
+        return inflater.inflate(R.layout.layout_triggerslope, container, false); // 填充斜率触发布局
     }
 
+    /**
+     * 视图创建完成后的初始化
+     * @param view 创建的视图
+     * @param savedInstanceState 保存的实例状态
+     */
     @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
-        this.context = getActivity();
-        initView(view);
-        initData();
-        initControl();
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) { // 视图创建完成回调
+        this.context = getActivity(); // 获取Activity上下文
+        initView(view); // 初始化视图控件
+        initData(); // 初始化数据
+        initControl(); // 初始化事件监听
     }
 
-    private void initView(View view) {
-        rgSource = (TopViewRadioGroup) view.findViewById(R.id.triggerSource);
-        rgSource.setData(getResources().getString(R.string.triggerSource), GlobalVar.get().getChannelsName(), onCheckChangedListener);
-        rgEdge = (TopViewRadioGroup) view.findViewById(R.id.edge);
-        rgEdge.setData(R.string.triggerSlopeEdge, R.array.triggerSlopeEdge, onCheckChangedListener);
-        rgCondition = (TopViewRadioGroup) view.findViewById(R.id.condition);
-        rgCondition.setData(R.string.triggerSlopeCondition, R.array.triggerSlopeCondition, onCheckChangedListener);
-        tvTimeHigh = (TextView) view.findViewById(R.id.slopeTimeHighDetail);
-        tvTimeLow = (TextView) view.findViewById(R.id.slopeTimeLowDetail);
-        layoutTimeHigh = (LinearLayout) view.findViewById(R.id.layoutSlopeTimeHigh);
-        layoutTimeLow = (LinearLayout) view.findViewById(R.id.layoutSlopeTimeLow);
-        tvTimeHigh.setOnClickListener(onClickListener);
-        tvTimeLow.setOnClickListener(onClickListener);
-        scaleDialog = (TopDialogScale) ((MainActivity) context).findViewById(R.id.dialogTopScale);
+    /**
+     * 初始化所有视图控件并绑定数据
+     * @param view 根视图
+     */
+    private void initView(View view) { // 初始化视图
+        rgSource = (TopViewRadioGroup) view.findViewById(R.id.triggerSource); // 查找触发源按钮组
+        rgSource.setData(getResources().getString(R.string.triggerSource), GlobalVar.get().getChannelsName(), onCheckChangedListener); // 设置触发源数据
+        rgEdge = (TopViewRadioGroup) view.findViewById(R.id.edge); // 查找边沿方向按钮组
+        rgEdge.setData(R.string.triggerSlopeEdge, R.array.triggerSlopeEdge, onCheckChangedListener); // 设置边沿方向数据
+        rgCondition = (TopViewRadioGroup) view.findViewById(R.id.condition); // 查找触发条件按钮组
+        rgCondition.setData(R.string.triggerSlopeCondition, R.array.triggerSlopeCondition, onCheckChangedListener); // 设置触发条件数据
+        tvTimeHigh = (TextView) view.findViewById(R.id.slopeTimeHighDetail); // 查找高时间文本视图
+        tvTimeLow = (TextView) view.findViewById(R.id.slopeTimeLowDetail); // 查找低时间文本视图
+        layoutTimeHigh = (LinearLayout) view.findViewById(R.id.layoutSlopeTimeHigh); // 查找高时间布局容器
+        layoutTimeLow = (LinearLayout) view.findViewById(R.id.layoutSlopeTimeLow); // 查找低时间布局容器
+        tvTimeHigh.setOnClickListener(onClickListener); // 设置高时间点击监听
+        tvTimeLow.setOnClickListener(onClickListener); // 设置低时间点击监听
+        scaleDialog = (TopDialogScale) ((MainActivity) context).findViewById(R.id.dialogTopScale); // 从MainActivity获取刻度弹窗
 
-        triggerSlope = (TriggerSlope) TriggerFactory.getInstance().getTrigger(Trigger.TRIG_TYPE_SLOPE);
+        triggerSlope = (TriggerSlope) TriggerFactory.getInstance().getTrigger(Trigger.TRIG_TYPE_SLOPE); // 从触发器工厂获取斜率触发器实例
     }
 
-    private void initData() {
-        msgTriggerDetail = new TopMsgTriggerSlope();
-        msgTriggerDetail.setTriggerSource(rgSource.getSelected());
-        msgTriggerDetail.setEdge(rgEdge.getSelected());
-        msgTriggerDetail.setCondition(rgCondition.getSelected());
-        msgTriggerDetail.setSlopeTimeHighDetail(tvTimeHigh.getText().toString());
-        msgTriggerDetail.setSlopeTimeLowDetail(tvTimeLow.getText().toString());
+    /**
+     * 初始化触发详情消息对象，从UI控件读取当前值
+     */
+    private void initData() { // 初始化数据
+        msgTriggerDetail = new TopMsgTriggerSlope(); // 创建斜率触发消息对象
+        msgTriggerDetail.setTriggerSource(rgSource.getSelected()); // 设置触发源
+        msgTriggerDetail.setEdge(rgEdge.getSelected()); // 设置边沿方向
+        msgTriggerDetail.setCondition(rgCondition.getSelected()); // 设置触发条件
+        msgTriggerDetail.setSlopeTimeHighDetail(tvTimeHigh.getText().toString()); // 设置高时间
+        msgTriggerDetail.setSlopeTimeLowDetail(tvTimeLow.getText().toString()); // 设置低时间
     }
 
-    private void initControl() {
-        RxBus.getInstance().getObservable(RxEnum.TOPTRIGGER_CHANNEL).subscribe(consumerTriggerChannel);
-        RxBus.getInstance().getObservable(RxEnum.MAIN_LOAD_CACHE).subscribe(consumerLoadCache);
-        RxBus.getInstance().getObservable(RxEnum.RIGHTLAYOUT_LEVEL).subscribe(consumerRightLevel);
-        RxBus.getInstance().getObservable(RxEnum.MAIN_TRIGGERLEVEL_TRIGGERCHANNEL).subscribe(consumerTriggerLevel);
-        RxBus.getInstance().getObservable(RxEnum.COMMAND_TO_UI).subscribe(consumerCommandToUI);
+    /**
+     * 注册RxBus事件订阅和EventFactory事件观察者
+     */
+    private void initControl() { // 初始化事件控制
+        RxBus.getInstance().getObservable(RxEnum.TOPTRIGGER_CHANNEL).subscribe(consumerTriggerChannel); // 订阅触发通道变更事件
+        RxBus.getInstance().getObservable(RxEnum.MAIN_LOAD_CACHE).subscribe(consumerLoadCache); // 订阅缓存加载事件
+        RxBus.getInstance().getObservable(RxEnum.RIGHTLAYOUT_LEVEL).subscribe(consumerRightLevel); // 订阅右侧电平变更事件
+        RxBus.getInstance().getObservable(RxEnum.MAIN_TRIGGERLEVEL_TRIGGERCHANNEL).subscribe(consumerTriggerLevel); // 订阅触发电平通道变更事件
+        RxBus.getInstance().getObservable(RxEnum.COMMAND_TO_UI).subscribe(consumerCommandToUI); // 订阅指令到UI事件
 
-        RxBus.getInstance().getObservable(RxEnum.EXTERNALKEYS_EDGE).subscribe(consumerExternalkeysEdge);
-        EventFactory.addEventObserver(EventFactory.EVENT_TRIGGER_PARAM, eventUITriggerParam);
+        RxBus.getInstance().getObservable(RxEnum.EXTERNALKEYS_EDGE).subscribe(consumerExternalkeysEdge); // 订阅外部按键边沿事件
+        EventFactory.addEventObserver(EventFactory.EVENT_TRIGGER_PARAM, eventUITriggerParam); // 注册触发参数事件观察者
     }
 
-    private void setCache() {
-        int source = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_TRIGGER_SOURCE);
-        int edge = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_TRIGGER_SLOPE_EDGE);
-        int condition = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_TRIGGER_SLOPE_CONDITION);
-        String timeHigh = CacheUtil.get().getString(CacheUtil.TOP_SLIP_TRIGGER_SLOPE_TIME_HIGH);
-        String timeLow = CacheUtil.get().getString(CacheUtil.TOP_SLIP_TRIGGER_SLOPE_TIME_LOW);
+    /**
+     * 从缓存恢复斜率触发参数，并同步到硬件和模型
+     */
+    private void setCache() { // 设置缓存数据
+        int source = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_TRIGGER_SOURCE); // 从缓存读取触发源索引
+        int edge = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_TRIGGER_SLOPE_EDGE); // 从缓存读取边沿方向索引
+        int condition = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_TRIGGER_SLOPE_CONDITION); // 从缓存读取触发条件索引
+        String timeHigh = CacheUtil.get().getString(CacheUtil.TOP_SLIP_TRIGGER_SLOPE_TIME_HIGH); // 从缓存读取高时间
+        String timeLow = CacheUtil.get().getString(CacheUtil.TOP_SLIP_TRIGGER_SLOPE_TIME_LOW); // 从缓存读取低时间
 
-        rgSource.setSelectedIndex(source);
-        rgEdge.setSelectedIndex(edge);
-        rgCondition.setSelectedIndex(condition);
-        tvTimeHigh.setText(timeHigh);
-        tvTimeLow.setText(timeLow);
-        switch (condition) {
-            case 0:
-                layoutTimeHigh.setVisibility(View.VISIBLE);
-                layoutTimeLow.setVisibility(View.INVISIBLE);
-                break;
-            case 1:
-                layoutTimeHigh.setVisibility(View.INVISIBLE);
-                layoutTimeLow.setVisibility(View.VISIBLE);
-                break;
-            case 2:
-                layoutTimeHigh.setVisibility(View.VISIBLE);
-                layoutTimeLow.setVisibility(View.VISIBLE);
-                break;
+        rgSource.setSelectedIndex(source); // 设置触发源选中项
+        rgEdge.setSelectedIndex(edge); // 设置边沿方向选中项
+        rgCondition.setSelectedIndex(condition); // 设置触发条件选中项
+        tvTimeHigh.setText(timeHigh); // 设置高时间文本
+        tvTimeLow.setText(timeLow); // 设置低时间文本
+        switch (condition) { // 根据触发条件控制时间布局可见性
+            case 0: // 条件0：大于
+                layoutTimeHigh.setVisibility(View.VISIBLE); // 显示高时间
+                layoutTimeLow.setVisibility(View.INVISIBLE); // 隐藏低时间
+                break; // 跳出
+            case 1: // 条件1：小于
+                layoutTimeHigh.setVisibility(View.INVISIBLE); // 隐藏高时间
+                layoutTimeLow.setVisibility(View.VISIBLE); // 显示低时间
+                break; // 跳出
+            case 2: // 条件2：范围内
+                layoutTimeHigh.setVisibility(View.VISIBLE); // 显示高时间
+                layoutTimeLow.setVisibility(View.VISIBLE); // 显示低时间
+                break; // 跳出
         }
 
-        msgTriggerDetail.setTriggerSource(rgSource.getSelected());
-        msgTriggerDetail.setEdge(this.rgEdge.getSelected());
-        msgTriggerDetail.setCondition(this.rgCondition.getSelected());
-        msgTriggerDetail.setSlopeTimeHighDetail(timeHigh);
-        msgTriggerDetail.setSlopeTimeLowDetail(timeLow);
-        sendMsg(false);
+        msgTriggerDetail.setTriggerSource(rgSource.getSelected()); // 更新消息中的触发源
+        msgTriggerDetail.setEdge(this.rgEdge.getSelected()); // 更新消息中的边沿方向
+        msgTriggerDetail.setCondition(this.rgCondition.getSelected()); // 更新消息中的触发条件
+        msgTriggerDetail.setSlopeTimeHighDetail(timeHigh); // 更新消息中的高时间
+        msgTriggerDetail.setSlopeTimeLowDetail(timeLow); // 更新消息中的低时间
+        sendMsg(false); // 发送消息（非EventBus来源）
 
-        Command.get().getTrigger_slope().Source(source, false);
-        Command.get().getTrigger_slope().Edge(edge, false);
-        Command.get().getTrigger_slope().Condition(condition, false);
-        Command.get().getTrigger_slope().HTime(TBookUtil.getSFromTime(timeHigh), false);
-        Command.get().getTrigger_dwart().LTime(TBookUtil.getSFromTime(timeLow), false);
+        Command.get().getTrigger_slope().Source(source, false); // 发送触发源指令到硬件
+        Command.get().getTrigger_slope().Edge(edge, false); // 发送边沿方向指令到硬件
+        Command.get().getTrigger_slope().Condition(condition, false); // 发送触发条件指令到硬件
+        Command.get().getTrigger_slope().HTime(TBookUtil.getSFromTime(timeHigh), false); // 发送高时间指令到硬件
+        Command.get().getTrigger_dwart().LTime(TBookUtil.getSFromTime(timeLow), false); // 发送低时间指令到硬件（注意：使用dwart命令）
 
-        triggerSlope.setTriggerSource(source);
-        triggerSlope.setEdge(edge);
-        triggerSlope.setCondition(TopMatchTrigger.triggerConditionToScope(condition));
-        triggerSlope.setTimeHigh(TBookUtil.getPsFromTime(timeHigh) / 1000);
-        triggerSlope.setTimeLow(TBookUtil.getPsFromTime(timeLow) / 1000);
+        triggerSlope.setTriggerSource(source); // 更新模型中的触发源
+        triggerSlope.setEdge(edge); // 更新模型中的边沿方向
+        triggerSlope.setCondition(TopMatchTrigger.triggerConditionToScope(condition)); // 更新模型中的触发条件（UI索引转示波器索引）
+        triggerSlope.setTimeHigh(TBookUtil.getPsFromTime(timeHigh) / 1000); // 更新模型中的高时间（ps转ns）
+        triggerSlope.setTimeLow(TBookUtil.getPsFromTime(timeLow) / 1000); // 更新模型中的低时间（ps转ns）
     }
 
-    public TopMsgTriggerSlope getMsgTriggerDetail() {
-        return msgTriggerDetail;
+    /**
+     * 获取斜率触发详情消息
+     * @return 斜率触发详情消息对象
+     */
+    public TopMsgTriggerSlope getMsgTriggerDetail() { // 获取触发详情消息
+        return msgTriggerDetail; // 返回消息对象
     }
 
-    public void setOnDetailSendMsgListener(OnDetailSendMsgListener onDetailSendMsgListener) {
-        this.onDetailSendMsgListener = onDetailSendMsgListener;
+    /**
+     * 设置详情消息发送监听器
+     * @param onDetailSendMsgListener 详情消息发送监听器
+     */
+    public void setOnDetailSendMsgListener(OnDetailSendMsgListener onDetailSendMsgListener) { // 设置消息发送监听器
+        this.onDetailSendMsgListener = onDetailSendMsgListener; // 保存监听器引用
     }
 
-    private void sendMsg(boolean isFromEventBus) {
-        if (onDetailSendMsgListener != null) {
-            onDetailSendMsgListener.onClick(this, isFromEventBus);
+    /**
+     * 发送触发详情消息给父Fragment
+     * @param isFromEventBus 是否来自EventBus事件
+     */
+    private void sendMsg(boolean isFromEventBus) { // 发送消息
+        if (onDetailSendMsgListener != null) { // 监听器不为空时
+            onDetailSendMsgListener.onClick(this, isFromEventBus); // 调用监听器回调
         }
     }
-    private Consumer<Boolean> consumerExternalkeysEdge = new Consumer<Boolean>() {
+
+    /**
+     * 外部按键边沿事件消费者，循环切换边沿方向
+     */
+    private Consumer<Boolean> consumerExternalkeysEdge = new Consumer<Boolean>() { // 外部按键边沿消费者
         @Override
-        public void accept(Boolean aBoolean) throws Exception {
-            if(TriggerFactory.getTriggerType() == triggerSlope.getTriggerType()){
-                int idx = rgEdge.getSelected().getIndex() + 1;
-                if(idx >= rgEdge.getArray().length){
-                    idx = 0;
+        public void accept(Boolean aBoolean) throws Exception { // 接收事件
+            if(TriggerFactory.getTriggerType() == triggerSlope.getTriggerType()){ // 当前触发类型为斜率时
+                int idx = rgEdge.getSelected().getIndex() + 1; // 获取下一个边沿方向索引
+                if(idx >= rgEdge.getArray().length){ // 超出数组范围时
+                    idx = 0; // 回到第一个
                 }
-                rgEdge.setSelectedIndex(idx);
-                onCheckChanged(rgEdge, rgEdge.getSelected(), false);
-            }
-        }
-    };
-    private Consumer<TopMsgTriggerChannel> consumerTriggerChannel = new Consumer<TopMsgTriggerChannel>() {
-        @Override
-        public void accept(TopMsgTriggerChannel topMsgTriggerChannel) throws Exception {
-            if (topMsgTriggerChannel.getTriggerType() != TopLayoutTrigger.DETAIL_SLOPE) {
-                if (rgSource.getSelected().getIndex() != topMsgTriggerChannel.getChNumber()) {
-                    rgSource.setSelectedIndex(topMsgTriggerChannel.getChNumber());
-                    CacheUtil.get().putMap(CacheUtil.TOP_SLIP_TRIGGER_SOURCE, String.valueOf(topMsgTriggerChannel.getChNumber()));
-                    msgTriggerDetail.setTriggerSource(rgSource.getSelected());
-                    Command.get().getTrigger_slope().Source(rgSource.getSelected().getIndex(),false);
-                }
-            }
-        }
-    };
-
-    private Consumer<LoadCache> consumerLoadCache = new Consumer<LoadCache>() {
-        @Override
-        public void accept(@NonNull LoadCache loadCache) throws Exception {
-            setCache();
-            CacheUtil.get().setLoadMenuState(CacheUtil.LOAD_TopLayoutTriggerSlope, true);
-        }
-    };
-
-    private Consumer<RightMsgLevel> consumerRightLevel = new Consumer<RightMsgLevel>() {
-        @Override
-        public void accept(@NonNull RightMsgLevel msgLevel) throws Exception {
-            int triggerIndex = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_TRIGGER);
-            if (triggerIndex == TopLayoutTrigger.DETAIL_SLOPE) {
-                if (msgLevel.getBottomSelect() != rgSource.getSelected().getIndex()) {
-                    rgSource.setSelectedIndex(msgLevel.getBottomSelect());
-                    onCheckChanged(rgSource, rgSource.getSelected(), false);
-                }
-                if (msgLevel.getTopSelect() != rgEdge.getSelected().getIndex()) {
-                    rgEdge.setSelectedIndex(msgLevel.getTopSelect());
-                    onCheckChanged(rgEdge, rgEdge.getSelected(), false);
-                }
+                rgEdge.setSelectedIndex(idx); // 设置选中索引
+                onCheckChanged(rgEdge, rgEdge.getSelected(), false); // 触发选中变更处理
             }
         }
     };
 
-    private Consumer<MainMsgTriggerLevel> consumerTriggerLevel = new Consumer<MainMsgTriggerLevel>() {
+    /**
+     * 触发通道变更事件消费者，同步触发源选择
+     */
+    private Consumer<TopMsgTriggerChannel> consumerTriggerChannel = new Consumer<TopMsgTriggerChannel>() { // 触发通道消费者
         @Override
-        public void accept(@NonNull MainMsgTriggerLevel msgTriggerLevel) throws Exception {
-            if (msgTriggerLevel.isOnlyModifyNumber()) return;
-            if (MainHolderTriggerLevel.LEVEL_TRIGGER_SLOPE.equals(msgTriggerLevel.getCurLevel())) {
-                if (rgSource.getSelected().getIndex() != msgTriggerLevel.getCurCh() - 1) {
-                    rgSource.setSelectedIndex(msgTriggerLevel.getCurCh() - 1);
-                    onCheckChanged(rgSource, rgSource.getSelected(), msgTriggerLevel.isFromEventBus());
+        public void accept(TopMsgTriggerChannel topMsgTriggerChannel) throws Exception { // 接收事件
+            if (topMsgTriggerChannel.getTriggerType() != TopLayoutTrigger.DETAIL_SLOPE) { // 非本Fragment触发的通道变更
+                if (rgSource.getSelected().getIndex() != topMsgTriggerChannel.getChNumber()) { // 触发源索引不同时
+                    rgSource.setSelectedIndex(topMsgTriggerChannel.getChNumber()); // 更新触发源选中项
+                    CacheUtil.get().putMap(CacheUtil.TOP_SLIP_TRIGGER_SOURCE, String.valueOf(topMsgTriggerChannel.getChNumber())); // 更新缓存
+                    msgTriggerDetail.setTriggerSource(rgSource.getSelected()); // 更新消息中的触发源
+                    Command.get().getTrigger_slope().Source(rgSource.getSelected().getIndex(),false); // 发送触发源指令
                 }
             }
         }
     };
 
-    private Consumer<CommandMsgToUI> consumerCommandToUI = new Consumer<CommandMsgToUI>() {
+    /**
+     * 缓存加载事件消费者，恢复缓存参数
+     */
+    private Consumer<LoadCache> consumerLoadCache = new Consumer<LoadCache>() { // 缓存加载消费者
         @Override
-        public void accept(CommandMsgToUI commandMsgToUI) throws Exception {
-            switch (commandMsgToUI.getFlag()) {
-                case CommandMsgToUI.FLAG_TRIGGERSLOPE_SOURCE:
-                    if (rgSource.getSelected().getIndex() != Integer.parseInt(commandMsgToUI.getParam())) {
-                        rgSource.setSelectedIndex(Integer.parseInt(commandMsgToUI.getParam()));
-                        onCheckChanged(rgSource, rgSource.getSelected(), false);
+        public void accept(@NonNull LoadCache loadCache) throws Exception { // 接收事件
+            setCache(); // 从缓存恢复参数
+            CacheUtil.get().setLoadMenuState(CacheUtil.LOAD_TopLayoutTriggerSlope, true); // 标记本Fragment缓存已加载
+        }
+    };
+
+    /**
+     * 右侧电平变更事件消费者，同步触发源和边沿方向
+     */
+    private Consumer<RightMsgLevel> consumerRightLevel = new Consumer<RightMsgLevel>() { // 右侧电平消费者
+        @Override
+        public void accept(@NonNull RightMsgLevel msgLevel) throws Exception { // 接收事件
+            int triggerIndex = CacheUtil.get().getInt(CacheUtil.TOP_SLIP_TRIGGER); // 获取当前触发类型索引
+            if (triggerIndex == TopLayoutTrigger.DETAIL_SLOPE) { // 当前为斜率触发时
+                if (msgLevel.getBottomSelect() != rgSource.getSelected().getIndex()) { // 触发源不同时
+                    rgSource.setSelectedIndex(msgLevel.getBottomSelect()); // 更新触发源
+                    onCheckChanged(rgSource, rgSource.getSelected(), false); // 触发变更处理
+                }
+                if (msgLevel.getTopSelect() != rgEdge.getSelected().getIndex()) { // 边沿方向不同时
+                    rgEdge.setSelectedIndex(msgLevel.getTopSelect()); // 更新边沿方向
+                    onCheckChanged(rgEdge, rgEdge.getSelected(), false); // 触发变更处理
+                }
+            }
+        }
+    };
+
+    /**
+     * 触发电平通道变更事件消费者，同步触发源
+     */
+    private Consumer<MainMsgTriggerLevel> consumerTriggerLevel = new Consumer<MainMsgTriggerLevel>() { // 触发电平消费者
+        @Override
+        public void accept(@NonNull MainMsgTriggerLevel msgTriggerLevel) throws Exception { // 接收事件
+            if (msgTriggerLevel.isOnlyModifyNumber()) return; // 仅修改数值时不处理
+            if (MainHolderTriggerLevel.LEVEL_TRIGGER_SLOPE.equals(msgTriggerLevel.getCurLevel())) { // 当前为斜率触发电平时
+                if (rgSource.getSelected().getIndex() != msgTriggerLevel.getCurCh() - 1) { // 通道不同时
+                    rgSource.setSelectedIndex(msgTriggerLevel.getCurCh() - 1); // 更新触发源（通道号从1开始）
+                    onCheckChanged(rgSource, rgSource.getSelected(), msgTriggerLevel.isFromEventBus()); // 触发变更处理
+                }
+            }
+        }
+    };
+
+    /**
+     * 指令到UI事件消费者，处理远程指令同步UI
+     */
+    private Consumer<CommandMsgToUI> consumerCommandToUI = new Consumer<CommandMsgToUI>() { // 指令到UI消费者
+        @Override
+        public void accept(CommandMsgToUI commandMsgToUI) throws Exception { // 接收事件
+            switch (commandMsgToUI.getFlag()) { // 根据指令标志分发
+                case CommandMsgToUI.FLAG_TRIGGERSLOPE_SOURCE: // 触发源变更指令
+                    if (rgSource.getSelected().getIndex() != Integer.parseInt(commandMsgToUI.getParam())) { // 触发源不同时
+                        rgSource.setSelectedIndex(Integer.parseInt(commandMsgToUI.getParam())); // 更新触发源
+                        onCheckChanged(rgSource, rgSource.getSelected(), false); // 触发变更处理
                     }
-                    break;
-                case CommandMsgToUI.FLAG_TRIGGERSLOPE_EDGE:
-                    if (rgEdge.getSelected().getIndex() != Integer.parseInt(commandMsgToUI.getParam())) {
-                        rgEdge.setSelectedIndex(Integer.parseInt(commandMsgToUI.getParam()));
-                        onCheckChanged(rgEdge, rgEdge.getSelected(), false);
+                    break; // 跳出
+                case CommandMsgToUI.FLAG_TRIGGERSLOPE_EDGE: // 边沿方向变更指令
+                    if (rgEdge.getSelected().getIndex() != Integer.parseInt(commandMsgToUI.getParam())) { // 边沿方向不同时
+                        rgEdge.setSelectedIndex(Integer.parseInt(commandMsgToUI.getParam())); // 更新边沿方向
+                        onCheckChanged(rgEdge, rgEdge.getSelected(), false); // 触发变更处理
                     }
-                    break;
-                case CommandMsgToUI.FLAG_TRIGGERSLOPE_CONDITION:
-                    if (rgCondition.getSelected().getIndex() != Integer.parseInt(commandMsgToUI.getParam())) {
-                        rgCondition.setSelectedIndex(Integer.parseInt(commandMsgToUI.getParam()));
-                        onCheckChanged(rgCondition, rgCondition.getSelected(), false);
+                    break; // 跳出
+                case CommandMsgToUI.FLAG_TRIGGERSLOPE_CONDITION: // 触发条件变更指令
+                    if (rgCondition.getSelected().getIndex() != Integer.parseInt(commandMsgToUI.getParam())) { // 触发条件不同时
+                        rgCondition.setSelectedIndex(Integer.parseInt(commandMsgToUI.getParam())); // 更新触发条件
+                        onCheckChanged(rgCondition, rgCondition.getSelected(), false); // 触发变更处理
                     }
-                    break;
-                case CommandMsgToUI.FLAG_TRIGGERSLOPE_HTIME:
-                    double checkBeforeHigh = Double.parseDouble(commandMsgToUI.getParam());
-                    long checkTimeHigh = TopUtilScale.checkTime((long) (checkBeforeHigh * TopUtilScale.TIME_S2NS)
-                            , TopUtilScale.TIME_SLOPE_MIN, TopUtilScale.TIME_SLOPE_MAX);
-                    String timeHigh = TBookUtil.getTimeFromS(checkTimeHigh * 1.0 / TopUtilScale.TIME_S2NS);
-                    onTextChanged(tvTimeHigh, timeHigh, false);
-                    break;
-                case CommandMsgToUI.FLAG_TRIGGERSLOPE_LTIME:
-                    double checkBeforeLow = Double.parseDouble(commandMsgToUI.getParam());
-                    long checkTimeLow = TopUtilScale.checkTime((long) (checkBeforeLow * TopUtilScale.TIME_S2NS)
-                            , TopUtilScale.TIME_SLOPE_MIN, TopUtilScale.TIME_SLOPE_MAX);
-                    String timeLow = TBookUtil.getTimeFromS(checkTimeLow * 1.0 / TopUtilScale.TIME_S2NS);
-                    onTextChanged(tvTimeLow, timeLow, false);
-                    break;
-                case CommandMsgToUI.FLAG_TRIGGERSLOPE_BTIME:
-                    String[] params = commandMsgToUI.getParam().split(CommandMsgToUI.PARAM_SPLIT);
-                    double checkBeforeBHigh = Double.parseDouble(params[0]);
-                    long checkTimeBHigh = TopUtilScale.checkTime((long) (checkBeforeBHigh * TopUtilScale.TIME_S2NS)
-                            , TopUtilScale.TIME_SLOPE_MIN, TopUtilScale.TIME_SLOPE_MAX);
-                    String timeBHigh = TBookUtil.getTimeFromS(checkTimeBHigh * 1.0 / TopUtilScale.TIME_S2NS);
-                    double checkBeforeBLow = Double.parseDouble(params[1]);
-                    long checkTimeBLow = TopUtilScale.checkTime((long) (checkBeforeBLow * TopUtilScale.TIME_S2NS)
-                            , TopUtilScale.TIME_SLOPE_MIN, TopUtilScale.TIME_SLOPE_MAX);
-                    String timeBLow = TBookUtil.getTimeFromS(checkTimeBLow * 1.0 / TopUtilScale.TIME_S2NS);
-                    onTextChanged(tvTimeHigh, timeBHigh, false);
-                    onTextChanged(tvTimeLow, timeBLow, false);
-                    break;
+                    break; // 跳出
+                case CommandMsgToUI.FLAG_TRIGGERSLOPE_HTIME: // 高时间变更指令
+                    double checkBeforeHigh = Double.parseDouble(commandMsgToUI.getParam()); // 解析参数为秒数
+                    long checkTimeHigh = TopUtilScale.checkTime((long) (checkBeforeHigh * TopUtilScale.TIME_S2NS) // 转换为纳秒并检查范围
+                            , TopUtilScale.TIME_SLOPE_MIN, TopUtilScale.TIME_SLOPE_MAX); // 限制在斜率时间范围内
+                    String timeHigh = TBookUtil.getTimeFromS(checkTimeHigh * 1.0 / TopUtilScale.TIME_S2NS); // 转换为时间字符串
+                    onTextChanged(tvTimeHigh, timeHigh, false); // 触发文本变更处理
+                    break; // 跳出
+                case CommandMsgToUI.FLAG_TRIGGERSLOPE_LTIME: // 低时间变更指令
+                    double checkBeforeLow = Double.parseDouble(commandMsgToUI.getParam()); // 解析参数为秒数
+                    long checkTimeLow = TopUtilScale.checkTime((long) (checkBeforeLow * TopUtilScale.TIME_S2NS) // 转换为纳秒并检查范围
+                            , TopUtilScale.TIME_SLOPE_MIN, TopUtilScale.TIME_SLOPE_MAX); // 限制在斜率时间范围内
+                    String timeLow = TBookUtil.getTimeFromS(checkTimeLow * 1.0 / TopUtilScale.TIME_S2NS); // 转换为时间字符串
+                    onTextChanged(tvTimeLow, timeLow, false); // 触发文本变更处理
+                    break; // 跳出
+                case CommandMsgToUI.FLAG_TRIGGERSLOPE_BTIME: // 高低时间同时变更指令
+                    String[] params = commandMsgToUI.getParam().split(CommandMsgToUI.PARAM_SPLIT); // 拆分参数（高时间;低时间）
+                    double checkBeforeBHigh = Double.parseDouble(params[0]); // 解析高时间秒数
+                    long checkTimeBHigh = TopUtilScale.checkTime((long) (checkBeforeBHigh * TopUtilScale.TIME_S2NS) // 转换为纳秒并检查范围
+                            , TopUtilScale.TIME_SLOPE_MIN, TopUtilScale.TIME_SLOPE_MAX); // 限制在斜率时间范围内
+                    String timeBHigh = TBookUtil.getTimeFromS(checkTimeBHigh * 1.0 / TopUtilScale.TIME_S2NS); // 转换为时间字符串
+                    double checkBeforeBLow = Double.parseDouble(params[1]); // 解析低时间秒数
+                    long checkTimeBLow = TopUtilScale.checkTime((long) (checkBeforeBLow * TopUtilScale.TIME_S2NS) // 转换为纳秒并检查范围
+                            , TopUtilScale.TIME_SLOPE_MIN, TopUtilScale.TIME_SLOPE_MAX); // 限制在斜率时间范围内
+                    String timeBLow = TBookUtil.getTimeFromS(checkTimeBLow * 1.0 / TopUtilScale.TIME_S2NS); // 转换为时间字符串
+                    onTextChanged(tvTimeHigh, timeBHigh, false); // 触发高时间文本变更处理
+                    onTextChanged(tvTimeLow, timeBLow, false); // 触发低时间文本变更处理
+                    break; // 跳出
             }
         }
     };
 
-    private EventUIObserver eventUITriggerParam = new EventUIObserver() {
+    /**
+     * 触发参数事件观察者，从EventBus同步触发模型参数到UI
+     */
+    private EventUIObserver eventUITriggerParam = new EventUIObserver() { // 触发参数事件观察者
         @Override
-        public void update(Object data) {
-            EventBase eventBase = (EventBase) data;
-            if (eventBase.getId() == EventFactory.EVENT_TRIGGER_PARAM) {
-                int source = triggerSlope.getTriggerSource();
-                if (rgSource.getSelected().getIndex() != source) {
-                    rgSource.setSelectedIndex(source);
-                    onCheckChanged(rgSource, rgSource.getSelected(), true);
+        public void update(Object data) { // 事件更新回调
+            EventBase eventBase = (EventBase) data; // 转换为事件基类
+            if (eventBase.getId() == EventFactory.EVENT_TRIGGER_PARAM) { // 触发参数事件时
+                int source = triggerSlope.getTriggerSource(); // 从模型获取触发源
+                if (rgSource.getSelected().getIndex() != source) { // 触发源不同时
+                    rgSource.setSelectedIndex(source); // 更新触发源
+                    onCheckChanged(rgSource, rgSource.getSelected(), true); // 触发变更处理（来自EventBus）
                 }
-                int edge = triggerSlope.getEdge();
-                if (rgEdge.getSelected().getIndex() != edge) {
-                    rgEdge.setSelectedIndex(edge);
-                    onCheckChanged(rgEdge, rgEdge.getSelected(), true);
+                int edge = triggerSlope.getEdge(); // 从模型获取边沿方向
+                if (rgEdge.getSelected().getIndex() != edge) { // 边沿方向不同时
+                    rgEdge.setSelectedIndex(edge); // 更新边沿方向
+                    onCheckChanged(rgEdge, rgEdge.getSelected(), true); // 触发变更处理（来自EventBus）
                 }
-                int condition = TopMatchTrigger.triggerConditionFromScope(triggerSlope.getCondition());
-                if (rgCondition.getSelected().getIndex() != condition) {
-                    rgCondition.setSelectedIndex(condition);
-                    onCheckChanged(rgCondition, rgCondition.getSelected(), true);
+                int condition = TopMatchTrigger.triggerConditionFromScope(triggerSlope.getCondition()); // 从模型获取触发条件（示波器索引转UI索引）
+                if (rgCondition.getSelected().getIndex() != condition) { // 触发条件不同时
+                    rgCondition.setSelectedIndex(condition); // 更新触发条件
+                    onCheckChanged(rgCondition, rgCondition.getSelected(), true); // 触发变更处理（来自EventBus）
                 }
-                long checkTimeHigh = TopUtilScale.checkTime(triggerSlope.getTimeHigh()
-                        , TopUtilScale.TIME_SLOPE_MIN, TopUtilScale.TIME_SLOPE_MAX);
-                String timeHigh = TBookUtil.getTime3FromPs(checkTimeHigh * 1000 * 10);
-                if (!tvTimeHigh.getText().toString().equals(timeHigh)) {
-                    onTextChanged(tvTimeHigh, timeHigh, true);
+                long checkTimeHigh = TopUtilScale.checkTime(triggerSlope.getTimeHigh() // 从模型获取高时间并检查范围
+                        , TopUtilScale.TIME_SLOPE_MIN, TopUtilScale.TIME_SLOPE_MAX); // 限制在斜率时间范围内
+                String timeHigh = TBookUtil.getTime3FromPs(checkTimeHigh * 1000 * 10); // 转换为时间字符串
+                if (!tvTimeHigh.getText().toString().equals(timeHigh)) { // 高时间不同时
+                    onTextChanged(tvTimeHigh, timeHigh, true); // 触发文本变更处理（来自EventBus）
                 }
-                long checkTimeLow = TopUtilScale.checkTime(triggerSlope.getTimeLow()
-                        , TopUtilScale.TIME_SLOPE_MIN, TopUtilScale.TIME_SLOPE_MAX);
-                String timeLow = TBookUtil.getTime3FromPs(checkTimeLow * 1000 * 10);
-                if (!tvTimeLow.getText().toString().equals(timeLow)) {
-                    onTextChanged(tvTimeLow, timeLow, true);
+                long checkTimeLow = TopUtilScale.checkTime(triggerSlope.getTimeLow() // 从模型获取低时间并检查范围
+                        , TopUtilScale.TIME_SLOPE_MIN, TopUtilScale.TIME_SLOPE_MAX); // 限制在斜率时间范围内
+                String timeLow = TBookUtil.getTime3FromPs(checkTimeLow * 1000 * 10); // 转换为时间字符串
+                if (!tvTimeLow.getText().toString().equals(timeLow)) { // 低时间不同时
+                    onTextChanged(tvTimeLow, timeLow, true); // 触发文本变更处理（来自EventBus）
                 }
             }
         }
     };
 
-    private View.OnClickListener onClickListener = new View.OnClickListener() {
+    /**
+     * 点击事件监听器，处理高时间和低时间的点击弹窗
+     */
+    private View.OnClickListener onClickListener = new View.OnClickListener() { // 点击监听器
         @Override
-        public void onClick(View v) {
-            PlaySound.getInstance().playButton();
-            ScreenUtil.getViewLocation(v);
-            switch (v.getId()) {
-                case R.id.slopeTimeHighDetail:
-                    scaleDialog.setValue(context.getString(R.string.triggerslope_timehighhead), tvTimeHigh.getText().toString(),
-                            TopUtilScale.TIME_SLOPE_MIN, TopUtilScale.TIME_SLOPE_MAX, onHighDismissListener);
-                    break;
-                case R.id.slopeTimeLowDetail:
-                    scaleDialog.setValue(context.getString(R.string.triggerslope_timelowhead), tvTimeLow.getText().toString(),
-                            TopUtilScale.TIME_SLOPE_MIN, TopUtilScale.TIME_SLOPE_MAX, onLowDismissListener);
-                    break;
+        public void onClick(View v) { // 点击回调
+            PlaySound.getInstance().playButton(); // 播放按键音效
+            ScreenUtil.getViewLocation(v); // 获取视图屏幕位置
+            switch (v.getId()) { // 根据点击视图ID分发
+                case R.id.slopeTimeHighDetail: // 点击高时间时
+                    scaleDialog.setValue(context.getString(R.string.triggerslope_timehighhead), tvTimeHigh.getText().toString(), // 设置刻度弹窗标题和当前值
+                            TopUtilScale.TIME_SLOPE_MIN, TopUtilScale.TIME_SLOPE_MAX, onHighDismissListener); // 设置时间范围和关闭监听
+                    break; // 跳出
+                case R.id.slopeTimeLowDetail: // 点击低时间时
+                    scaleDialog.setValue(context.getString(R.string.triggerslope_timelowhead), tvTimeLow.getText().toString(), // 设置刻度弹窗标题和当前值
+                            TopUtilScale.TIME_SLOPE_MIN, TopUtilScale.TIME_SLOPE_MAX, onLowDismissListener); // 设置时间范围和关闭监听
+                    break; // 跳出
             }
         }
     };
 
-    private TopDialogScale.OnDismissListener onHighDismissListener = new TopDialogScale.OnDismissListener() {
+    /**
+     * 高时间刻度弹窗关闭监听器，将选择结果应用到高时间
+     */
+    private TopDialogScale.OnDismissListener onHighDismissListener = new TopDialogScale.OnDismissListener() { // 高时间弹窗关闭监听
         @Override
-        public void onDismiss(String result) {
-            onTextChanged(tvTimeHigh, result, false);
+        public void onDismiss(String result) { // 弹窗关闭回调
+            onTextChanged(tvTimeHigh, result, false); // 更新高时间
         }
     };
 
-    private TopDialogScale.OnDismissListener onLowDismissListener = new TopDialogScale.OnDismissListener() {
+    /**
+     * 低时间刻度弹窗关闭监听器，将选择结果应用到低时间
+     */
+    private TopDialogScale.OnDismissListener onLowDismissListener = new TopDialogScale.OnDismissListener() { // 低时间弹窗关闭监听
         @Override
-        public void onDismiss(String result) {
-            onTextChanged(tvTimeLow, result, false);
+        public void onDismiss(String result) { // 弹窗关闭回调
+            onTextChanged(tvTimeLow, result, false); // 更新低时间
         }
     };
 
 
-    private TopViewRadioGroup.OnCheckChangedListener onCheckChangedListener = new TopViewRadioGroup.OnCheckChangedListener() {
+    /**
+     * 单选按钮组变更监听器，处理选中项变更的音效和回调
+     */
+    private TopViewRadioGroup.OnCheckChangedListener onCheckChangedListener = new TopViewRadioGroup.OnCheckChangedListener() { // 单选变更监听器
         @Override
-        public void onClickSound(boolean isCheckedSuccess) {
-            PlaySound.getInstance().playButton();
+        public void onClickSound(boolean isCheckedSuccess) { // 点击音效回调
+            PlaySound.getInstance().playButton(); // 播放按键音效
         }
 
         @Override
-        public void onPrompt(TopViewRadioGroup view) {
+        public void onPrompt(TopViewRadioGroup view) { // 提示回调（空实现）
 
         }
 
         @Override
-        public void onClick(TopViewRadioGroup view, TopBeanChannel item) {
-            onCheckChanged(view, item, false);
+        public void onClick(TopViewRadioGroup view, TopBeanChannel item) { // 点击回调
+            onCheckChanged(view, item, false); // 触发选中变更处理（非EventBus来源）
         }
     };
 
-    private void onCheckChanged(TopViewRadioGroup view, TopBeanChannel item, boolean isFromEventBus) {
-        if (view.getId() == R.id.triggerSource) {
-            Command.get().getTrigger_slope().Source(item.getIndex(), false);
-            CacheUtil.get().putMap(CacheUtil.TOP_SLIP_TRIGGER_SOURCE, String.valueOf(item.getIndex()));
-            if (!isFromEventBus) {
-                triggerSlope.setTriggerSource(item.getIndex());
+    /**
+     * 处理单选按钮组选中项变更，同步到硬件/缓存/模型
+     * @param view 变更的单选按钮组
+     * @param item 选中的项
+     * @param isFromEventBus 是否来自EventBus事件
+     */
+    private void onCheckChanged(TopViewRadioGroup view, TopBeanChannel item, boolean isFromEventBus) { // 选中变更处理
+        if (view.getId() == R.id.triggerSource) { // 触发源变更时
+            Command.get().getTrigger_slope().Source(item.getIndex(), false); // 发送触发源指令到硬件
+            CacheUtil.get().putMap(CacheUtil.TOP_SLIP_TRIGGER_SOURCE, String.valueOf(item.getIndex())); // 更新缓存
+            if (!isFromEventBus) { // 非EventBus来源时
+                triggerSlope.setTriggerSource(item.getIndex()); // 更新模型中的触发源
             }
-            msgTriggerDetail.setTriggerSource(item);
-            sendMsg(isFromEventBus);
-            RxBus.getInstance().post(RxEnum.TOPTRIGGER_CHANNEL,
-                    new TopMsgTriggerChannel(TopLayoutTrigger.DETAIL_SLOPE, item.getIndex()));
-        } else if (view.getId() == R.id.edge) {
-            Command.get().getTrigger_slope().Edge(item.getIndex(), false);
-            CacheUtil.get().putMap(CacheUtil.TOP_SLIP_TRIGGER_SLOPE_EDGE, String.valueOf(item.getIndex()));
-            if (!isFromEventBus) {
-                triggerSlope.setEdge(item.getIndex());
+            msgTriggerDetail.setTriggerSource(item); // 更新消息中的触发源
+            sendMsg(isFromEventBus); // 发送消息
+            RxBus.getInstance().post(RxEnum.TOPTRIGGER_CHANNEL, // 发送触发通道变更事件
+                    new TopMsgTriggerChannel(TopLayoutTrigger.DETAIL_SLOPE, item.getIndex())); // 携带斜率类型和通道索引
+        } else if (view.getId() == R.id.edge) { // 边沿方向变更时
+            Command.get().getTrigger_slope().Edge(item.getIndex(), false); // 发送边沿方向指令到硬件
+            CacheUtil.get().putMap(CacheUtil.TOP_SLIP_TRIGGER_SLOPE_EDGE, String.valueOf(item.getIndex())); // 更新缓存
+            if (!isFromEventBus) { // 非EventBus来源时
+                triggerSlope.setEdge(item.getIndex()); // 更新模型中的边沿方向
             }
-            msgTriggerDetail.setEdge(item);
-            sendMsg(isFromEventBus);
-        } else if (view.getId() == R.id.condition) {
-            Command.get().getTrigger_slope().Condition(item.getIndex(), false);
-            CacheUtil.get().putMap(CacheUtil.TOP_SLIP_TRIGGER_SLOPE_CONDITION, String.valueOf(item.getIndex()));
-            if (!isFromEventBus) {
-                triggerSlope.setCondition(TopMatchTrigger.triggerConditionToScope(item.getIndex()));
+            msgTriggerDetail.setEdge(item); // 更新消息中的边沿方向
+            sendMsg(isFromEventBus); // 发送消息
+        } else if (view.getId() == R.id.condition) { // 触发条件变更时
+            Command.get().getTrigger_slope().Condition(item.getIndex(), false); // 发送触发条件指令到硬件
+            CacheUtil.get().putMap(CacheUtil.TOP_SLIP_TRIGGER_SLOPE_CONDITION, String.valueOf(item.getIndex())); // 更新缓存
+            if (!isFromEventBus) { // 非EventBus来源时
+                triggerSlope.setCondition(TopMatchTrigger.triggerConditionToScope(item.getIndex())); // 更新模型中的触发条件（UI索引转示波器索引）
             }
-            msgTriggerDetail.setCondition(item);
-            sendMsg(isFromEventBus);
-            switch (item.getIndex()) {
-                case 0:
-                    layoutTimeHigh.setVisibility(View.VISIBLE);
-                    layoutTimeLow.setVisibility(View.INVISIBLE);
-                    break;
-                case 1:
-                    layoutTimeHigh.setVisibility(View.INVISIBLE);
-                    layoutTimeLow.setVisibility(View.VISIBLE);
-                    break;
-                case 2:
-                    layoutTimeHigh.setVisibility(View.VISIBLE);
-                    layoutTimeLow.setVisibility(View.VISIBLE);
-                    break;
+            msgTriggerDetail.setCondition(item); // 更新消息中的触发条件
+            sendMsg(isFromEventBus); // 发送消息
+            switch (item.getIndex()) { // 根据触发条件控制时间布局可见性
+                case 0: // 条件0：大于
+                    layoutTimeHigh.setVisibility(View.VISIBLE); // 显示高时间
+                    layoutTimeLow.setVisibility(View.INVISIBLE); // 隐藏低时间
+                    break; // 跳出
+                case 1: // 条件1：小于
+                    layoutTimeHigh.setVisibility(View.INVISIBLE); // 隐藏高时间
+                    layoutTimeLow.setVisibility(View.VISIBLE); // 显示低时间
+                    break; // 跳出
+                case 2: // 条件2：范围内
+                    layoutTimeHigh.setVisibility(View.VISIBLE); // 显示高时间
+                    layoutTimeLow.setVisibility(View.VISIBLE); // 显示低时间
+                    break; // 跳出
             }
-            RxBus.getInstance().post(RxEnum.CONTROLS_VISIBLE_CHANGED, MainViewGroup.VISIBLE_TOPTRIGGER_SLOPE_HIGH);
+            RxBus.getInstance().post(RxEnum.CONTROLS_VISIBLE_CHANGED, MainViewGroup.VISIBLE_TOPTRIGGER_SLOPE_HIGH); // 发送控件可见性变更事件
         }
     }
 
-    private void onTextChanged(TextView tv, String result, boolean isFromEventBus) {
-        if (tv.getId() == tvTimeHigh.getId()) {
-            long ht = TBookUtil.getPsFromTime(result) / 1000;
-            long lt = TBookUtil.getPsFromTime(tvTimeLow.getText().toString()) / 1000;
-            if (ht < lt) {
-                Command.get().getTrigger_dwart().LTime(TBookUtil.getSFromTime(result), false);
-                CacheUtil.get().putMap(CacheUtil.TOP_SLIP_TRIGGER_SLOPE_TIME_LOW, result);
-                if (!isFromEventBus) {
-                    triggerSlope.setTimeLow(ht);
+    /**
+     * 处理文本变更，同步高时间或低时间到硬件/缓存/模型
+     * 维护高时间必须小于低时间的约束
+     * @param tv 变更的文本视图
+     * @param result 新的文本值
+     * @param isFromEventBus 是否来自EventBus事件
+     */
+    private void onTextChanged(TextView tv, String result, boolean isFromEventBus) { // 文本变更处理
+        if (tv.getId() == tvTimeHigh.getId()) { // 高时间变更时
+            long ht = TBookUtil.getPsFromTime(result) / 1000; // 将高时间转换为ns
+            long lt = TBookUtil.getPsFromTime(tvTimeLow.getText().toString()) / 1000; // 将低时间转换为ns
+            if (ht < lt) { // 高时间小于低时间时，需要联动调整低时间
+                Command.get().getTrigger_dwart().LTime(TBookUtil.getSFromTime(result), false); // 发送低时间指令到硬件（联动）
+                CacheUtil.get().putMap(CacheUtil.TOP_SLIP_TRIGGER_SLOPE_TIME_LOW, result); // 更新低时间缓存
+                if (!isFromEventBus) { // 非EventBus来源时
+                    triggerSlope.setTimeLow(ht); // 更新模型中的低时间
                 }
-                tvTimeLow.setText(result);
-                msgTriggerDetail.setSlopeTimeLowDetail(result);
+                tvTimeLow.setText(result); // 更新低时间UI文本
+                msgTriggerDetail.setSlopeTimeLowDetail(result); // 更新消息中的低时间
             }
-            Command.get().getTrigger_slope().HTime(TBookUtil.getSFromTime(result), false);
-            CacheUtil.get().putMap(CacheUtil.TOP_SLIP_TRIGGER_SLOPE_TIME_HIGH, result);
-            if (!isFromEventBus) {
-                triggerSlope.setTimeHigh(TBookUtil.getPsFromTime(result) / 1000);
+            Command.get().getTrigger_slope().HTime(TBookUtil.getSFromTime(result), false); // 发送高时间指令到硬件
+            CacheUtil.get().putMap(CacheUtil.TOP_SLIP_TRIGGER_SLOPE_TIME_HIGH, result); // 更新高时间缓存
+            if (!isFromEventBus) { // 非EventBus来源时
+                triggerSlope.setTimeHigh(TBookUtil.getPsFromTime(result) / 1000); // 更新模型中的高时间
             }
-            tvTimeHigh.setText(result);
-            msgTriggerDetail.setSlopeTimeHighDetail(result);
-            sendMsg(isFromEventBus);
-        } else if (tv.getId() == tvTimeLow.getId()) {
-            long lt = TBookUtil.getPsFromTime(result) / 1000;
-            long ht = TBookUtil.getPsFromTime(tvTimeHigh.getText().toString()) / 1000;
-            if (ht < lt) {
-                Command.get().getTrigger_dwart().HTime(TBookUtil.getSFromTime(result), false);
-                CacheUtil.get().putMap(CacheUtil.TOP_SLIP_TRIGGER_SLOPE_TIME_HIGH, result);
-                if (!isFromEventBus) {
-                    triggerSlope.setTimeHigh(ht);
+            tvTimeHigh.setText(result); // 更新高时间UI文本
+            msgTriggerDetail.setSlopeTimeHighDetail(result); // 更新消息中的高时间
+            sendMsg(isFromEventBus); // 发送消息
+        } else if (tv.getId() == tvTimeLow.getId()) { // 低时间变更时
+            long lt = TBookUtil.getPsFromTime(result) / 1000; // 将低时间转换为ns
+            long ht = TBookUtil.getPsFromTime(tvTimeHigh.getText().toString()) / 1000; // 将高时间转换为ns
+            if (ht < lt) { // 高时间小于低时间时，需要联动调整高时间
+                Command.get().getTrigger_dwart().HTime(TBookUtil.getSFromTime(result), false); // 发送高时间指令到硬件（联动）
+                CacheUtil.get().putMap(CacheUtil.TOP_SLIP_TRIGGER_SLOPE_TIME_HIGH, result); // 更新高时间缓存
+                if (!isFromEventBus) { // 非EventBus来源时
+                    triggerSlope.setTimeHigh(ht); // 更新模型中的高时间
                 }
-                tvTimeHigh.setText(result);
-                msgTriggerDetail.setSlopeTimeHighDetail(result);
+                tvTimeHigh.setText(result); // 更新高时间UI文本
+                msgTriggerDetail.setSlopeTimeHighDetail(result); // 更新消息中的高时间
             }
-            Command.get().getTrigger_slope().LTime(TBookUtil.getSFromTime(result), false);
-            CacheUtil.get().putMap(CacheUtil.TOP_SLIP_TRIGGER_SLOPE_TIME_LOW, result);
-            if (!isFromEventBus) {
-                triggerSlope.setTimeLow(TBookUtil.getPsFromTime(result) / 1000);
+            Command.get().getTrigger_slope().LTime(TBookUtil.getSFromTime(result), false); // 发送低时间指令到硬件
+            CacheUtil.get().putMap(CacheUtil.TOP_SLIP_TRIGGER_SLOPE_TIME_LOW, result); // 更新低时间缓存
+            if (!isFromEventBus) { // 非EventBus来源时
+                triggerSlope.setTimeLow(TBookUtil.getPsFromTime(result) / 1000); // 更新模型中的低时间
             }
-            tvTimeLow.setText(result);
-            msgTriggerDetail.setSlopeTimeLowDetail(result);
-            sendMsg(isFromEventBus);
+            tvTimeLow.setText(result); // 更新低时间UI文本
+            msgTriggerDetail.setSlopeTimeLowDetail(result); // 更新消息中的低时间
+            sendMsg(isFromEventBus); // 发送消息
         }
     }
 }

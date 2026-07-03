@@ -35,6 +35,44 @@ import io.reactivex.rxjava3.functions.Consumer;
 
 
 /**
+ * ┌──────────────────────────────────────────────────────────────────────────────┐
+ * │                 MainBottomOtherChannels - 底部其他通道管理组件                   │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ 【模块定位】                                                                   │
+ * │   主界面底部其他通道（Math/Ref/Serials）的管理和显示组件                          │
+ * │   用于控制数学通道、参考通道和串口通道的添加和切换                                │
+ * │                                                                              │
+ * │ 【核心职责】                                                                   │
+ * │   1. 管理Math/Ref/Serials通道的添加按钮                                       │
+ * │   2. 检查通道添加的可用性和限制条件                                             │
+ * │   3. 处理通道滑出菜单的显示和切换                                               │
+ * │   4. 响应工作模式变化控制组件可见性                                             │
+ * │   5. 维护通道添加状态和菜单开关状态                                             │
+ * │                                                                              │
+ * │ 【架构设计】                                                                   │
+ * │   RecyclerView.ViewHolder的子类，作为列表项视图持有者                           │
+ * │   通过RxBus订阅多个消息源，实现响应式更新                                        │
+ * │   使用ChannelFactory获取通道实例，判断通道可用性                                 │
+ * │   内置多个Consumer处理不同类型的消息                                           │
+ * │                                                                              │
+ * │ 【数据流向】                                                                   │
+ * │   用户点击 → MainBottomOtherChannels → RxBus → 右侧滑出菜单                    │
+ * │   ChannelFactory → 可用性检查 → 界面按钮状态                                   │
+ * │   WorkModeManage → 工作模式变化 → 组件可见性                                   │
+ * │                                                                              │
+ * │ 【依赖关系】                                                                   │
+ * │   被依赖：MainViewGroup                                                       │
+ * │   依赖：ChannelFactory（通道工厂）、RxBus（消息总线）、WorkModeManage（工作模式）  │
+ * │         CacheUtil（缓存工具）、TChan（通道工具）、MainHolderRightOthers（右侧组件）│
+ * │                                                                              │
+ * │ 【使用场景】                                                                   │
+ * │   1. YT模式下显示其他通道按钮                                                  │
+ * │   2. XY模式下隐藏其他通道按钮                                                  │
+ * │   3. 点击Math/Ref/Bus按钮打开对应通道设置                                      │
+ * │   4. 检查通道是否达到最大限制                                                  │
+ * │   5. 处理键盘快捷键打开通道菜单                                                │
+ * └──────────────────────────────────────────────────────────────────────────────┘
+ * 
  * @Description: bottom other channel view (Math Ref Serials)
  * @Author: lmh
  * @CreateDate: 2024/3/11 15:53

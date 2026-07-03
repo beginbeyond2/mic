@@ -1,75 +1,181 @@
-package com.micsig.tbook.tbookscope.main.mainright;
+package com.micsig.tbook.tbookscope.main.mainright; // 定义包路径，属于主界面右侧功能模块
 
-import com.micsig.tbook.tbookscope.R;
-import com.micsig.tbook.tbookscope.util.App;
+import com.micsig.tbook.tbookscope.R; // 导入应用资源类，用于访问字符串数组资源
+import com.micsig.tbook.tbookscope.util.App; // 导入应用上下文工具类，用于获取Application实例
 
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.util.Locale;
+import java.text.DecimalFormat; // 导入数字格式化类，用于格式化输出数值
+import java.text.DecimalFormatSymbols; // 导入数字格式化符号类，用于设置格式化参数
+import java.util.Locale; // 导入地区类，用于设置本地化格式
 
 /**
+ * +=============================================================================================+
+ * |  模块定位：示波器主界面右侧面板 - 通道单位计算工具类                                           |
+ * +=============================================================================================+
+ * |  核心职责：                                                                                  |
+ * |  1. 根据探头倍数和垂直灵敏度档位计算每个格子的实际单位大小                                   |
+ * |  2. 处理单位前缀（k、m、μ、n）的自动转换和显示                                               |
+ * |  3. 提供标准化的单位字符串格式化输出                                                         |
+ * +=============================================================================================+
+ * |  架构设计：                                                                                  |
+ * |  - 工具类设计模式（静态方法为主）                                                            |
+ * |  - 单一职责：仅负责单位计算和格式化                                                          |
+ * |  - 无状态类：除初始化配置外，不维护业务状态                                                  |
+ * +=============================================================================================+
+ * |  数据流向：                                                                                  |
+ * |  输入：探头倍数索引 + 档位索引 → 资源文件字符串 → 数值计算 → 单位前缀转换                   |
+ * |  输出：格式化的单位字符串（如"2mV"、"5kA"等）                                                 |
+ * +=============================================================================================+
+ * |  依赖关系：                                                                                  |
+ * |  - App：获取Application上下文以访问资源                                                      |
+ * |  - R.array.channelProbeTypeMultiple：探头倍数字符串数组资源                                  |
+ * |  - R.array.channelProbeEvery：垂直灵敏度档位字符串数组资源                                   |
+ * +=============================================================================================+
+ * |  使用场景：                                                                                  |
+ * |  1. 通道垂直灵敏度显示计算                                                                   |
+ * |  2. 探头配置变更后的单位更新                                                                 |
+ * |  3. UI界面单位标签生成                                                                       |
+ * +=============================================================================================+
  * Created by yangj on 2017/6/5.
  */
 
-public class ChannelLevelUtil {
-    private static final int k = 1000;
-    private static final double m = 0.001;
-    private static final double u = m * m;
+public class ChannelLevelUtil { // 通道单位计算工具类定义
 
+    // ==================== 单位前缀常量定义 ====================
+    private static final int k = 1000; // 千倍单位前缀常量（kilo），用于单位放大
+    private static final double m = 0.001; // 毫倍单位前缀常量（milli），用于单位缩小
+    private static final double u = m * m; // 微倍单位前缀常量（micro），等于毫的平方，即0.000001
+
+    // ==================== 配置数组成员变量 ====================
     //倍数
-    private static String[] multiples;
+    private static String[] multiples; // 探头倍数字符串数组，如"1X"、"10X"、"100X"等
     //档位
-    private static String[] everys;
+    private static String[] everys; // 垂直灵敏度档位字符串数组，如"1mV"、"2mV"、"5V"等
 
-    public ChannelLevelUtil() {
-        multiples = App.get().getResources().getStringArray(R.array.channelProbeTypeMultiple);
-        everys = App.get().getResources().getStringArray(R.array.channelProbeEvery);
-    }
+    /**
+     * +-----------------------------------------------------------------------------------------+
+     * |  构造函数：初始化单位计算配置                                                            |
+     * +-----------------------------------------------------------------------------------------+
+     * |  功能描述：                                                                              |
+     * |  从应用资源文件中加载探头倍数和垂直灵敏度档位的字符串数组，为后续单位计算提供基础数据    |
+     * +-----------------------------------------------------------------------------------------+
+     * |  参数说明：无参数                                                                        |
+     * +-----------------------------------------------------------------------------------------+
+     * |  返回值：无返回值                                                                        |
+     * +-----------------------------------------------------------------------------------------+
+     * |  业务逻辑：                                                                              |
+     * |  1. 通过App.get()获取Application实例                                                     |
+     * |  2. 访问Resources对象获取字符串数组资源                                                  |
+     * |  3. 将资源数组赋值给静态成员变量multiples和everys                                        |
+     * +-----------------------------------------------------------------------------------------+
+     */
+    public ChannelLevelUtil() { // 构造函数开始
+        multiples = App.get().getResources().getStringArray(R.array.channelProbeTypeMultiple); // 从资源文件加载探头倍数数组
+        everys = App.get().getResources().getStringArray(R.array.channelProbeEvery); // 从资源文件加载垂直灵敏度档位数组
+    } // 构造函数结束
 
+    /**
+     * +-----------------------------------------------------------------------------------------+
+     * |  方法：getUnit - 根据索引获取单位字符串                                                  |
+     * +-----------------------------------------------------------------------------------------+
+     * |  功能描述：                                                                              |
+     * |  根据探头倍数索引和垂直灵敏度档位索引，计算并返回每个格子代表的单位大小字符串            |
+     * |  返回的String不包含A/V单位标识（由调用者根据业务场景添加）                               |
+     * +-----------------------------------------------------------------------------------------+
+     * |  参数说明：                                                                              |
+     * |  @param multipleIndex  探头倍数索引，对应multiples数组的位置                             |
+     * |  @param everyIndex     垂直灵敏度档位索引，对应everys数组的位置                          |
+     * +-----------------------------------------------------------------------------------------+
+     * |  返回值：                                                                                |
+     * |  @return String  格式化的单位字符串，如"2m"、"5k"等（不含A/V）                           |
+     * +-----------------------------------------------------------------------------------------+
+     * |  业务逻辑：                                                                              |
+     * |  1. 从数组中获取对应的倍数和档位字符串                                                   |
+     * |  2. 调用重载方法getUnit(String, String)进行实际计算                                     |
+     * +-----------------------------------------------------------------------------------------+
+     */
     //每个格子代表的单位大小,返回的String不包含A/V
-    public static String getUnit(int multipleIndex, int everyIndex) {
-        String multiple = multiples[multipleIndex];
-        String every = everys[everyIndex];
-        return getUnit(multiple, every);
-    }
+    public static String getUnit(int multipleIndex, int everyIndex) { // 静态方法，根据索引计算单位字符串
+        String multiple = multiples[multipleIndex]; // 从倍数数组中获取指定索引的倍数字符串
+        String every = everys[everyIndex]; // 从档位数组中获取指定索引的档位字符串
+        return getUnit(multiple, every); // 调用重载方法，传入字符串参数进行单位计算
+    } // 方法结束
 
-    public static String getUnit(String multiple, String every) {
-        int a = Integer.parseInt(multiple.replace("X", "").replace("m", "").replace("k", ""));
-        int b = Integer.parseInt(every.replace("u", "").replace("m", "").replace("A", "").replace("V", ""));
-        String d = "";
-        if (every.contains("A")) {
-            d = "A";
-        } else if (every.contains("V")) {
-            d = "V";
-        } else {
-            d = "";
+    /**
+     * +-----------------------------------------------------------------------------------------+
+     * |  方法：getUnit - 根据字符串参数计算单位                                                  |
+     * +-----------------------------------------------------------------------------------------+
+     * |  功能描述：                                                                              |
+     * |  解析探头倍数字符串和垂直灵敏度档位字符串，计算实际单位数值，并根据大小自动选择合适      |
+     * |  的单位前缀（k、m、μ、n）进行格式化输出                                                  |
+     * +-----------------------------------------------------------------------------------------+
+     * |  参数说明：                                                                              |
+     * |  @param multiple  探头倍数字符串，如"1X"、"10X"、"100mX"等                               |
+     * |  @param every     垂直灵敏度档位字符串，如"1mV"、"2uA"、"5V"等                           |
+     * +-----------------------------------------------------------------------------------------+
+     * |  返回值：                                                                                |
+     * |  @return String  格式化的单位字符串，如"2mV"、"5kA"、"100nV"等                           |
+     * +-----------------------------------------------------------------------------------------+
+     * |  业务逻辑：                                                                              |
+     * |  1. 解析倍数字符串，提取数值部分并识别单位前缀（k或m）                                    |
+     * |  2. 解析档位字符串，提取数值部分、单位前缀和单位类型（A或V）                              |
+     * |  3. 计算实际单位值：倍数 × 档位 × 单位前缀系数                                            |
+     * |  4. 根据数值大小范围，自动选择合适的单位前缀进行格式化                                    |
+     * |    - ≥1000: 使用k（千）                                                                  |
+     * |    - ≥1: 直接显示数值                                                                    |
+     * |    - ≥0.001: 使用m（毫）                                                                 |
+     * |    - ≥0.000001: 使用u（微）                                                              |
+     * |    - <0.000001: 使用n（纳）                                                              |
+     * |  5. 特殊处理：0.5值保留小数点显示                                                         |
+     * +-----------------------------------------------------------------------------------------+
+     */
+    public static String getUnit(String multiple, String every) { // 静态方法，根据字符串参数计算单位
+        // ==================== 第一阶段：字符串解析 ====================
+        int a = Integer.parseInt(multiple.replace("X", "").replace("m", "").replace("k", "")); // 解析倍数数值，移除"X"、"m"、"k"字符后转为整数
+        int b = Integer.parseInt(every.replace("u", "").replace("m", "").replace("A", "").replace("V", "")); // 解析档位数值，移除所有单位前缀和单位类型后转为整数
+
+        // ==================== 第二阶段：单位类型识别 ====================
+        String d = ""; // 单位类型变量初始化为空字符串
+        if (every.contains("A")) { // 判断档位字符串是否包含"A"（电流单位）
+            d = "A"; // 设置单位类型为安培
+        } else if (every.contains("V")) { // 判断档位字符串是否包含"V"（电压单位）
+            d = "V"; // 设置单位类型为伏特
+        } else { // 其他情况（无单位标识）
+            d = ""; // 保持单位类型为空
         }
-        double c = 1;
-        if (multiple.contains("m")) {
-            c = c * m;
-        } else if (multiple.contains("k")) {
-            c = c * k;
+
+        // ==================== 第三阶段：单位前缀系数计算 ====================
+        double c = 1; // 单位前缀系数初始化为1（基准单位）
+        if (multiple.contains("m")) { // 判断倍数字符串是否包含"m"（毫倍）
+            c = c * m; // 将系数乘以毫倍常数（缩小1000倍）
+        } else if (multiple.contains("k")) { // 判断倍数字符串是否包含"k"（千倍）
+            c = c * k; // 将系数乘以千倍常数（放大1000倍）
         }
-        if (every.contains("u")) {
-            c = c * u;
-        } else if (every.contains("m")) {
-            c = c * m;
+
+        if (every.contains("u")) { // 判断档位字符串是否包含"u"（微单位）
+            c = c * u; // 将系数乘以微单位常数（进一步缩小1000倍）
+        } else if (every.contains("m")) { // 判断档位字符串是否包含"m"（毫单位）
+            c = c * m; // 将系数乘以毫单位常数（缩小1000倍）
         }
-        double x = a * b * c;
-        DecimalFormat df = new DecimalFormat("0", new DecimalFormatSymbols(Locale.CHINA));
-        if (x >= k) {
-            return df.format(x / k) + "k" + d;
-        } else if (x >= 1) {
-            if (String.valueOf(x).contains(".5")) {
-                return x + d;
+
+        // ==================== 第四阶段：实际单位值计算 ====================
+        double x = a * b * c; // 计算实际单位值：倍数数值 × 档位数值 × 单位前缀系数
+
+        // ==================== 第五阶段：数值格式化与单位前缀选择 ====================
+        DecimalFormat df = new DecimalFormat("0", new DecimalFormatSymbols(Locale.CHINA)); // 创建数字格式化器，使用中国地区设置，格式化为整数
+
+        if (x >= k) { // 判断单位值是否大于等于1000（千级别）
+            return df.format(x / k) + "k" + d; // 返回千倍单位字符串，数值除以1000，添加"k"前缀和单位类型
+        } else if (x >= 1) { // 判断单位值是否大于等于1（基准单位级别）
+            if (String.valueOf(x).contains(".5")) { // 特殊情况：判断数值是否包含".5"（半值）
+                return x + d; // 直接返回原始数值和单位类型（保留小数点）
             }
-            return df.format(x) + d;
-        } else if (x >= m) {
-            return df.format(x * k) + "m" + d;
-        } else if (x >= u) {
-            return df.format(x * k * k) + "u" + d;
-        } else {
-            return df.format(x * k * k * k) + "n" + d;
+            return df.format(x) + d; // 返回基准单位字符串，格式化为整数，添加单位类型
+        } else if (x >= m) { // 判断单位值是否大于等于0.001（毫级别）
+            return df.format(x * k) + "m" + d; // 返回毫单位字符串，数值乘以1000，添加"m"前缀和单位类型
+        } else if (x >= u) { // 判断单位值是否大于等于0.000001（微级别）
+            return df.format(x * k * k) + "u" + d; // 返回微单位字符串，数值乘以1000000，添加"u"前缀和单位类型
+        } else { // 其他情况（纳级别，小于0.000001）
+            return df.format(x * k * k * k) + "n" + d; // 返回纳单位字符串，数值乘以1000000000，添加"n"前缀和单位类型
         }
-    }
-}
+    } // 方法结束
+} // 类定义结束

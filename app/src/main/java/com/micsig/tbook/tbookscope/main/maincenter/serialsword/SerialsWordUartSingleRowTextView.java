@@ -20,118 +20,182 @@ import com.micsig.tbook.ui.wavezone.TChan;
 
 import java.util.ArrayList;
 
+/**
+ * ┌─────────────────────────────────────────────────────────────────────────────┐
+ * │                   SerialsWordUartSingleRowTextView                          │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 【模块定位】                                                                │
+ * │ UART串口总线单行文本显示视图，负责单个UART数据帧的可视化呈现                   │
+ * │                                                                             │
+ * │ 【核心职责】                                                                │
+ * │ 1. 显示单个UART数据帧的十六进制、二进制或ASCII格式数据                        │
+ * │ 2. 支持多种显示格式切换（HEX、BIN、ASCII）                                   │
+ * │ 3. 根据通道类型（S1/S2/S12）应用不同的颜色显示策略                            │
+ * │                                                                             │
+ * │ 【架构设计】                                                                │
+ * │ 继承自Android View基类，采用自定义绘制方式实现数据可视化                      │
+ * │ ┌──────────────────────────────────────────────────────────────┐             │
+ * │ │  ┌──────┬──────┬──────┬──────┬──────┬──────┐                │             │
+ * │ │  │ 0xFF │ 0xAB │ 0xCD │ 0xEF │ 0x01 │ ...  │ (HEX格式)      │             │
+ * │ │  ├──────┼──────┼──────┼──────┼──────┼──────┤                │             │
+ * │ │  │ 255  │ 171  │ 205  │ 239  │  1   │ ...  │ (ASCII格式)    │             │
+ * │ │  └──────────────────────────────────────────┘                │             │
+ * │ └──────────────────────────────────────────────────────────────┘             │
+ * │                                                                             │
+ * │ 【数据流向】                                                                │
+ * │ ArrayList<UartStruct> -> setList() -> invalidate() -> onDraw()              │
+ * │                                                                             │
+ * │ 【依赖关系】                                                                │
+ * │ - SerialBusTxtStruct.UartStruct: UART数据结构体                             │
+ * │ - SerialBusTxtStructParse: 数据解析工具类                                    │
+ * │ - Tools: 工具类，提供ASCII转换方法                                           │
+ * │ - TChan: 通道颜色管理工具                                                    │
+ * │                                                                             │
+ * │ 【使用场景】                                                                │
+ * │ 在UART串口解码功能中，用于显示单个数据帧的详细信息，支持多种显示格式          │
+ * └─────────────────────────────────────────────────────────────────────────────┘
+ */
 public class SerialsWordUartSingleRowTextView extends View {
-    private static final String TAGG = "SerialsWordUartSingleRowTextView";
+    private static final String TAGG = "SerialsWordUartSingleRowTextView"; // 日志标签
 
-    public static final String TYPE_AXCII = "0";
-    public static final String TYPE_BIN = "00000000";
-    public static final String TYPE_HEX_NINE = "0F0";
-    public static final String TYPE_HEX_OTHER = "FF";
+    public static final String TYPE_AXCII = "0";                       // ASCII显示类型常量
+    public static final String TYPE_BIN = "00000000";                  // 二进制显示类型常量
+    public static final String TYPE_HEX_NINE = "0F0";                  // 9位十六进制显示类型常量
+    public static final String TYPE_HEX_OTHER = "FF";                  // 其他位十六进制显示类型常量
 
-    private Context context;
-    private Paint paint;
-    private int padding = 10;
-    private ArrayList<SerialBusTxtStruct.UartStruct> list = new ArrayList<>();
-    private String showType = TYPE_HEX_OTHER;
-    private int chType = ISerialsWord.TYPE_S1;
-    private int s1Color, s2Color;
-    private int bits, check;
+    private Context context;                                          // 上下文对象
+    private Paint paint;                                              // 绘画画笔对象
+    private int padding = 10;                                         // 左侧内边距
+    private ArrayList<SerialBusTxtStruct.UartStruct> list = new ArrayList<>(); // UART数据列表
+    private String showType = TYPE_HEX_OTHER;                         // 显示类型
+    private int chType = ISerialsWord.TYPE_S1;                        // 通道类型
+    private int s1Color, s2Color;                                     // S1/S2通道颜色
+    private int bits, check;                                          // 数据位宽和校验位
 
+    /**
+     * 单参数构造函数
+     * @param context 上下文对象
+     */
     public SerialsWordUartSingleRowTextView(Context context) {
-        this(context, null);
+        this(context, null);                                           // 调用双参数构造函数
     }
 
+    /**
+     * 双参数构造函数
+     * @param context 上下文对象
+     * @param attrs 属性集
+     */
     public SerialsWordUartSingleRowTextView(Context context, @Nullable AttributeSet attrs) {
-        this(context, attrs, 0);
+        this(context, attrs, 0);                                       // 调用三参数构造函数
     }
 
+    /**
+     * 三参数构造函数（完整构造函数）
+     * 初始化画笔、颜色等属性
+     * @param context 上下文对象
+     * @param attrs 属性集
+     * @param defStyleAttr 默认样式属性
+     */
     public SerialsWordUartSingleRowTextView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
-        this.context = context;
-        paint = new Paint();
-        paint.setTextSize(context.getResources().getDimension(R.dimen.textSizeCur));
-        paint.setAntiAlias(true);
-        paint.setTypeface(Typeface.SANS_SERIF);
-        s1Color = getResources().getColor(com.micsig.tbook.ui.R.color.color_S1);
-        s2Color = getResources().getColor(com.micsig.tbook.ui.R.color.color_S2);
+        super(context, attrs, defStyleAttr);                           // 调用父类构造函数
+        this.context = context;                                       // 保存上下文引用
+        paint = new Paint();                                          // 创建画笔对象
+        paint.setTextSize(context.getResources().getDimension(R.dimen.textSizeCur)); // 设置文本大小
+        paint.setAntiAlias(true);                                     // 启用抗锯齿
+        paint.setTypeface(Typeface.SANS_SERIF);                       // 设置字体类型
+        s1Color = getResources().getColor(com.micsig.tbook.ui.R.color.color_S1); // 获取S1颜色
+        s2Color = getResources().getColor(com.micsig.tbook.ui.R.color.color_S2); // 获取S2颜色
     }
 
+    /**
+     * 设置UART数据列表并刷新视图
+     * @param bits 数据位宽
+     * @param check 校验位类型
+     * @param showType 显示类型
+     * @param chType 通道类型
+     * @param list UART数据列表
+     */
     public void setList(int bits, int check, String showType, int chType, ArrayList<SerialBusTxtStruct.UartStruct> list) {
-        this.bits = bits;
-        this.check = check;
-        this.showType = showType;
-        this.chType = chType;
-        this.list = list;
-        invalidate();
+        this.bits = bits;                                             // 保存数据位宽
+        this.check = check;                                           // 保存校验位类型
+        this.showType = showType;                                     // 保存显示类型
+        this.chType = chType;                                         // 保存通道类型
+        this.list = list;                                             // 保存UART数据列表
+        invalidate();                                                 // 触发视图重绘
     }
 
+    /**
+     * 视图绘制方法
+     * 负责绘制UART数据帧的十六进制、二进制或ASCII格式数据
+     * @param canvas 画布对象
+     */
     @Override
     protected void onDraw(Canvas canvas) {
-        super.onDraw(canvas);
-        if (list != null) {
-            int height = getMeasuredHeight();
-            int textLeftWidth = showType.equals(TYPE_HEX_OTHER) || showType.equals(TYPE_HEX_NINE) ? 16 : showType.equals(TYPE_BIN) ? 95 : 10;
-            int textLeftHeight = 11;
-            int textRightWidth = 10;
-            int leftListWidth;
-            if (showType.equals(TYPE_HEX_OTHER)) {
-                leftListWidth = (int) getResources().getDimension(R.dimen.uart_hex_bitOther_width);
-            } else if (showType.equals(TYPE_HEX_NINE)) {
-                leftListWidth = (int) getResources().getDimension(R.dimen.uart_hex_bit9_width);
-            } else if (showType.equals(TYPE_BIN)) {
-                leftListWidth = (int) getResources().getDimension(R.dimen.uart_bin_width);
-            } else {
-                leftListWidth = GlobalVar.get().getMainWave().x;
+        super.onDraw(canvas);                                          // 调用父类绘制方法
+        if (list != null) {                                           // 数据列表不为空
+            int height = getMeasuredHeight();                         // 获取视图高度
+            int textLeftWidth = showType.equals(TYPE_HEX_OTHER) || showType.equals(TYPE_HEX_NINE) ? 16 : showType.equals(TYPE_BIN) ? 95 : 10; // 计算左侧文本宽度
+            int textLeftHeight = 11;                                  // 设置左侧文本高度
+            int textRightWidth = 10;                                  // 设置右侧文本宽度
+            int leftListWidth;                                        // 左侧列表宽度
+            if (showType.equals(TYPE_HEX_OTHER)) {                    // HEX_OTHER类型
+                leftListWidth = (int) getResources().getDimension(R.dimen.uart_hex_bitOther_width); // 获取HEX_OTHER宽度
+            } else if (showType.equals(TYPE_HEX_NINE)) {              // HEX_NINE类型
+                leftListWidth = (int) getResources().getDimension(R.dimen.uart_hex_bit9_width); // 获取HEX_NINE宽度
+            } else if (showType.equals(TYPE_BIN)) {                   // BIN类型
+                leftListWidth = (int) getResources().getDimension(R.dimen.uart_bin_width); // 获取BIN宽度
+            } else {                                                   // ASCII类型
+                leftListWidth = GlobalVar.get().getMainWave().x;      // 使用波形区域宽度
             }
-            for (int i = 0; i < list.size(); i++) {
+            for (int i = 0; i < list.size(); i++) {                   // 遍历数据列表
                 int xLeft = i * (textLeftWidth + (TYPE_AXCII.equals(showType) ? 10
                         : TYPE_HEX_NINE.equals(showType) ? 25
-                        : TYPE_BIN.equals(showType) ? 20 : 15)) + padding;
-                String s;
-                int bitWidth = this.check == 0 ? this.bits : this.bits - 1;
-                bitWidth += 5;
-                if (TYPE_BIN.equals(showType)) {
+                        : TYPE_BIN.equals(showType) ? 20 : 15)) + padding; // 计算左侧X坐标
+                String s;                                              // 格式化后的数据字符串
+                int bitWidth = this.check == 0 ? this.bits : this.bits - 1; // 计算有效数据位宽
+                bitWidth += 5;                                        // 增加显示位宽
+                if (TYPE_BIN.equals(showType)) {                      // 二进制格式
 //                    s = Integer.toBinaryString(list.get(i).Data & 0xFF);
 //                    s = String.format("%08d", Integer.valueOf(s));
-                    s = SerialBusTxtStructParse.getEncoding(ICharacterEncoding.Binary, list.get(i).Data, bitWidth);
-                } else if (TYPE_HEX_OTHER.equals(showType)) {
+                    s = SerialBusTxtStructParse.getEncoding(ICharacterEncoding.Binary, list.get(i).Data, bitWidth); // 解析为二进制字符串
+                } else if (TYPE_HEX_OTHER.equals(showType)) {         // HEX_OTHER格式
 //                    s = Integer.toHexString(list.get(i).Data & 0xFF).toUpperCase();
 //                    s = s.length() < 2 ? "0" + s : s;
-                    s = SerialBusTxtStructParse.getEncoding(ICharacterEncoding.Hex, list.get(i).Data, bitWidth);
-                } else if (TYPE_HEX_NINE.equals(showType)) {
+                    s = SerialBusTxtStructParse.getEncoding(ICharacterEncoding.Hex, list.get(i).Data, bitWidth); // 解析为十六进制字符串
+                } else if (TYPE_HEX_NINE.equals(showType)) {          // HEX_NINE格式
 //                    s = Integer.toHexString(list.get(i).Data & 0xFFF).toUpperCase();
 //                    s = s.length() < 2 ? "00" + s : (s.length() < 3 ? "0" + s : s);
-                    s = SerialBusTxtStructParse.getEncoding(ICharacterEncoding.Hex, list.get(i).Data, 9);
-                } else {
-                    s = Tools.getASCIIFromInt(list.get(i).Data, " ");
+                    s = SerialBusTxtStructParse.getEncoding(ICharacterEncoding.Hex, list.get(i).Data, 9); // 解析为9位十六进制字符串
+                } else {                                               // ASCII格式
+                    s = Tools.getASCIIFromInt(list.get(i).Data, " "); // 转换为ASCII字符串
                 }
-                if (chType != ISerialsWord.TYPE_S12) {
-                    paint.setColor(list.get(i).Color);
-                    canvas.drawText(s, xLeft, height / 2 + textLeftHeight / 2, paint);
-                } else {
-                    int color= TChan.getChannelColor(context, list.get(i).Ch);
-                    paint.setColor(color);
-                    paint.setAlpha(200);
-                    Rect textRect = Tools.getTextRect(s, paint);
-                    canvas.drawRect(xLeft, 2, xLeft + textRect.width() + 4, height - 2, paint);
-                    paint.setColor(list.get(i).Color);
-                    paint.setAlpha(255);
-                    canvas.drawText(s, xLeft, height / 2 + textLeftHeight / 2, paint);
+                if (chType != ISerialsWord.TYPE_S12) {                // 非S12双通道模式
+                    paint.setColor(list.get(i).Color);                // 设置数据颜色
+                    canvas.drawText(s, xLeft, height / 2 + textLeftHeight / 2, paint); // 绘制左侧数据文本
+                } else {                                               // S12双通道模式
+                    int color= TChan.getChannelColor(context, list.get(i).Ch); // 获取通道颜色
+                    paint.setColor(color);                            // 设置通道颜色
+                    paint.setAlpha(200);                              // 设置透明度
+                    Rect textRect = Tools.getTextRect(s, paint);      // 测量文本边界
+                    canvas.drawRect(xLeft, 2, xLeft + textRect.width() + 4, height - 2, paint); // 绘制背景矩形
+                    paint.setColor(list.get(i).Color);                // 设置数据颜色
+                    paint.setAlpha(255);                              // 设置透明度
+                    canvas.drawText(s, xLeft, height / 2 + textLeftHeight / 2, paint); // 绘制左侧数据文本
                 }
-                if (!TYPE_AXCII.equals(showType)) {
-                    int xRight = i * (textRightWidth + 10) + padding + leftListWidth;
+                if (!TYPE_AXCII.equals(showType)) {                   // 非ASCII格式（显示右侧ASCII）
+                    int xRight = i * (textRightWidth + 10) + padding + leftListWidth; // 计算右侧X坐标
 
-                    if (chType != ISerialsWord.TYPE_S12) {
-                        paint.setColor(list.get(i).Color);
-                        canvas.drawText(Tools.getASCIIFromInt(list.get(i).Data, "."), xRight, height / 2 + textLeftHeight / 2, paint);
-                    } else {
-                        int color= TChan.getChannelColor(context, list.get(i).Ch);
-                        paint.setColor(color);
-                        paint.setAlpha(200);
-                        canvas.drawRect(xRight - 2, 2, xRight + 15, height - 2, paint);
-                        paint.setColor(list.get(i).Color);
-                        paint.setAlpha(255);
-                        canvas.drawText(Tools.getASCIIFromInt(list.get(i).Data, "."), xRight, height / 2 + textLeftHeight / 2, paint);
+                    if (chType != ISerialsWord.TYPE_S12) {            // 非S12双通道模式
+                        paint.setColor(list.get(i).Color);            // 设置数据颜色
+                        canvas.drawText(Tools.getASCIIFromInt(list.get(i).Data, "."), xRight, height / 2 + textLeftHeight / 2, paint); // 绘制右侧ASCII文本
+                    } else {                                           // S12双通道模式
+                        int color= TChan.getChannelColor(context, list.get(i).Ch); // 获取通道颜色
+                        paint.setColor(color);                        // 设置通道颜色
+                        paint.setAlpha(200);                          // 设置透明度
+                        canvas.drawRect(xRight - 2, 2, xRight + 15, height - 2, paint); // 绘制背景矩形
+                        paint.setColor(list.get(i).Color);            // 设置数据颜色
+                        paint.setAlpha(255);                          // 设置透明度
+                        canvas.drawText(Tools.getASCIIFromInt(list.get(i).Data, "."), xRight, height / 2 + textLeftHeight / 2, paint); // 绘制右侧ASCII文本
                     }
                 }
             }

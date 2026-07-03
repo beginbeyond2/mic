@@ -33,23 +33,70 @@ import java.util.concurrent.LinkedBlockingQueue;
 import io.reactivex.rxjava3.functions.Consumer;
 
 
+/**
+ * ***********************************************************************************
+ * * MIL-STD-1553B总线文本显示Fragment类
+ * ***********************************************************************************
+ * *
+ * * 【模块定位】
+ * *   主界面中心区域 - MIL-STD-1553B军用航空总线协议解码文本数据的显示模块
+ * *
+ * * 【核心职责】
+ * *   1. 显示1553B总线解码后的文本数据列表（命令字、数据字、状态字、时间戳等）
+ * *   2. 支持运行模式实时刷新和停止模式历史查看
+ * *   3. 实现触摸滚动和外部按键滚动功能
+ * *   4. 提供时间显示格式切换（毫秒显示开关）
+ * *   5. 支持清空缓存数据功能
+ * *
+ * * 【架构设计】
+ * *   继承Fragment，实现IForceRefreshUI强制刷新接口：
+ * *   - 使用RecyclerView显示全屏数据列表（停止模式）
+ * *   - 使用自定义SingleScreenTextView显示单屏数据（运行模式）
+ * *   - 通过LinkedBlockingQueue获取线程安全的1553B数据队列
+ * *   - 利用RxBus订阅缓存加载事件
+ * *   - 采用自适应滚动条显示数据位置
+ * *
+ * * 【数据流向】
+ * *   输入：
+ * *     → SerialBusManage获取1553B数据队列和缓冲区
+ * *     → CacheUtil读取运行状态和通道类型
+ * *     → RxBus接收LoadCache缓存加载事件
+ * *     → 用户触摸事件触发滚动
+ * *   输出：
+ * *     → RecyclerView/SingleScreenTextView显示1553B文本列表
+ * *     → SerialBusManage清空缓冲区
+ * *
+ * * 【依赖关系】
+ * *   上层依赖：MainLayoutCenterSerialsWordDetail父容器Fragment
+ * *   下层依赖：MainAdapterCenterSerialsWordM1553b适配器、SerialBusManage数据管理
+ * *   平级依赖：CacheUtil、RxBus、PlaySound、Tools等工具类
+ * *
+ * * 【使用场景】
+ * *   当用户配置通道为1553B协议时，显示MIL-STD-1553B总线解码的文本数据
+ * *   在Run模式实时刷新显示最新数据，在Stop模式支持滚动查看历史数据
+ * ***********************************************************************************
+ */
 public class MainLayoutCenterSerialsWordM1553b extends Fragment implements SerialBusManage.IForceRefreshUI {
-    private static final String TAG = "MainLayoutCenterSerialsWordM1553b";
-    private Button btnClear;
-    private TextView tvMsg;
-    private TextView time;
-    private UnFlingRecyclerView allScreenView;
-    private LinearLayoutManager allScreenLayoutManager;
-    private MainAdapterCenterSerialsWordM1553b allScreenAdapter;
-    private ArrayList<SerialBusTxtStruct.MilSTD1553bStruct> allScreenList;
-    private View singleScreenScrollBar;
-    private SerialsWordM1553bSingleScreenTextView singleScreenView;
-    private ArrayList<SerialBusTxtStruct.MilSTD1553bStruct> singleScreenList;
+    private static final String TAG = "MainLayoutCenterSerialsWordM1553b";  // 日志标签常量
+    private Button btnClear;  // 清空按钮，用于清除所有1553B数据缓存
+    private TextView tvMsg;  // 消息显示控件（已弃用）
+    private TextView time;  // 时间显示控件，点击切换毫秒显示开关
+    private UnFlingRecyclerView allScreenView;  // 全屏数据列表视图，用于Stop模式显示所有历史数据
+    private LinearLayoutManager allScreenLayoutManager;  // 线性布局管理器，管理RecyclerView布局
+    private MainAdapterCenterSerialsWordM1553b allScreenAdapter;  // 1553B数据适配器，绑定数据到视图
+    private ArrayList<SerialBusTxtStruct.MilSTD1553bStruct> allScreenList;  // 全屏数据列表，存储所有1553B帧数据
+    private View singleScreenScrollBar;  // 单屏模式滚动条视图，显示数据位置指示
+    private SerialsWordM1553bSingleScreenTextView singleScreenView;  // 单屏数据视图，用于Run模式高效显示
+    private ArrayList<SerialBusTxtStruct.MilSTD1553bStruct> singleScreenList;  // 单屏数据列表，存储当前显示的1553B帧数据
 
-    private int chType = ISerialsWord.TYPE_S1;
+    private int chType = ISerialsWord.TYPE_S1;  // 通道类型，默认为S1通道
 
+    /**
+     * 设置通道类型
+     * @param chType 通道类型常量（TYPE_S1/TYPE_S2/TYPE_S3/TYPE_S4/TYPE_S12）
+     */
     public void setChType(int chType) {
-        this.chType = chType;
+        this.chType = chType;  // 保存通道类型到成员变量
     }
 
     @Nullable

@@ -1,12 +1,33 @@
-package com.micsig.tbook.tbookscope.top.layout;
+package com.micsig.tbook.tbookscope.top.layout; // 顶部面板布局相关接口所在包
 
 
-import androidx.fragment.app.Fragment;
+import androidx.fragment.app.Fragment; // 导入Fragment基类，用于界面片段管理
 
 /**
+ * ┌─────────────────────────────────────────────────────────────────────────────┐
+ * │ 模块定位：通道项选中状态变化监听器接口                                        │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 核心职责：定义通道选项切换时的回调契约                                        │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 架构设计：观察者模式中的回调接口，当通道选中项变化时通知监听者                    │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 数据流向：通道UI组件 → OnChannelItemListener → 业务逻辑层                    │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 依赖关系：被通道选择相关的Fragment或Adapter实现和调用                          │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 使用场景：当用户在通道选择器中切换选中通道时触发回调                            │
+ * └─────────────────────────────────────────────────────────────────────────────┘
+ *
  * Created by yangj on 2017/8/23.
  */
 
-public interface OnChannelItemListener {
-    void checkChanged(Fragment fragment, int checkedIndex);
+public interface OnChannelItemListener { // 通道项选中状态变化监听器接口
+
+    /**
+     * 当通道选中项发生变化时回调此方法
+     *
+     * @param fragment     触发回调的Fragment实例，用于识别消息来源
+     * @param checkedIndex 新选中的通道索引，从0开始计数
+     */
+    void checkChanged(Fragment fragment, int checkedIndex); // 通道选中项变化回调，传递来源Fragment和新选中索引
 }

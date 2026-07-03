@@ -1,297 +1,397 @@
-package com.micsig.tbook.tbookscope.top.layout.save;
+package com.micsig.tbook.tbookscope.top.layout.save; // 保存功能模块的包声明
 
-import android.content.Context;
-import android.graphics.Color;
-import android.graphics.PixelFormat;
-import android.graphics.drawable.Drawable;
-import android.os.Bundle;
-import android.util.Log;
-import android.view.Gravity;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.view.WindowManager;
-import android.widget.Button;
-import android.widget.CheckBox;
-import android.widget.CompoundButton;
-import android.widget.TextView;
+import android.content.Context; // 导入上下文类
+import android.graphics.Color; // 导入颜色类
+import android.graphics.PixelFormat; // 导入像素格式类
+import android.graphics.drawable.Drawable; // 导入Drawable图形类
+import android.os.Bundle; // 导入Bundle状态保存类
+import android.util.Log; // 导入日志类
+import android.view.Gravity; // 导入对齐方式类
+import android.view.LayoutInflater; // 导入布局填充器类
+import android.view.View; // 导入视图基类
+import android.view.ViewGroup; // 导入视图组基类
+import android.view.WindowManager; // 导入窗口管理器类
+import android.widget.Button; // 导入按钮控件类
+import android.widget.CheckBox; // 导入复选框控件类
+import android.widget.CompoundButton; // 导入复合按钮基类
+import android.widget.TextView; // 导入文本视图控件类
 
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
+import androidx.annotation.Nullable; // 导入Nullable注解
+import androidx.fragment.app.Fragment; // 导入Fragment基类
 
-import com.micsig.base.Logger;
-import com.micsig.base.Utils;
-import com.micsig.tbook.scope.Data.SaveRecoverySession;
-import com.micsig.tbook.scope.Scope;
-import com.micsig.tbook.tbookscope.LoadCache;
-import com.micsig.tbook.tbookscope.MainActivity;
-import com.micsig.tbook.tbookscope.MainViewGroup;
-import com.micsig.tbook.tbookscope.R;
-import com.micsig.tbook.tbookscope.main.dialog.DialogOk;
-import com.micsig.tbook.tbookscope.main.dialog.DialogOkCancel;
-import com.micsig.tbook.tbookscope.middleware.command.Command;
-import com.micsig.tbook.tbookscope.middleware.command.Command_Sample;
-import com.micsig.tbook.tbookscope.rxjava.RxBus;
-import com.micsig.tbook.tbookscope.rxjava.RxEnum;
-import com.micsig.tbook.tbookscope.tools.FileUtils;
-import com.micsig.tbook.tbookscope.tools.PlaySound;
-import com.micsig.tbook.tbookscope.tools.SaveManage;
-import com.micsig.tbook.tbookscope.tools.ScreenControls;
-import com.micsig.tbook.tbookscope.tools.Tools;
-import com.micsig.tbook.tbookscope.top.OnDetailSendMsgListener;
-import com.micsig.tbook.tbookscope.top.popwindow.keyboardnumber.IDigits;
-import com.micsig.tbook.tbookscope.top.popwindow.keyboardnumber.KeyBoardNumberUtil;
-import com.micsig.tbook.tbookscope.top.popwindow.keyboardnumber.TopDialogNumberKeyBoard;
-import com.micsig.tbook.tbookscope.top.popwindow.keyboardtext.TopDialogTextKeyBoard;
-import com.micsig.tbook.tbookscope.util.CacheUtil;
-import com.micsig.tbook.tbookscope.util.DToast;
-import com.micsig.tbook.tbookscope.util.FileSelector;
-import com.micsig.tbook.ui.FixedSizeHashSet;
-import com.micsig.tbook.ui.top.view.TopViewEdit;
-import com.micsig.tbook.ui.top.view.TopViewSpinner;
-import com.micsig.tbook.ui.util.FileBeanToStr;
-import com.micsig.tbook.ui.util.StrUtil;
-import com.molihuan.pathselector.PathSelector;
-import com.molihuan.pathselector.dao.SelectConfigData;
-import com.molihuan.pathselector.entity.FileBean;
-import com.molihuan.pathselector.entity.FontBean;
-import com.molihuan.pathselector.fragment.BasePathSelectFragment;
-import com.molihuan.pathselector.listener.CommonItemListener;
-import com.molihuan.pathselector.service.impl.ConfigDataBuilderImpl;
-import com.molihuan.pathselector.utils.DToastDialog;
-import com.molihuan.pathselector.utils.MConstants;
+import com.micsig.base.Logger; // 导入日志工具类
+import com.micsig.base.Utils; // 导入基础工具类
+import com.micsig.tbook.scope.Data.SaveRecoverySession; // 导入会话保存恢复类
+import com.micsig.tbook.scope.Scope; // 导入示波器核心类
+import com.micsig.tbook.tbookscope.LoadCache; // 导入缓存加载事件类
+import com.micsig.tbook.tbookscope.MainActivity; // 导入主Activity类
+import com.micsig.tbook.tbookscope.MainViewGroup; // 导入主视图组类
+import com.micsig.tbook.tbookscope.R; // 导入资源引用类
+import com.micsig.tbook.tbookscope.main.dialog.DialogOk; // 导入确认对话框类
+import com.micsig.tbook.tbookscope.main.dialog.DialogOkCancel; // 导入确认取消对话框类
+import com.micsig.tbook.tbookscope.middleware.command.Command; // 导入命令中间件类
+import com.micsig.tbook.tbookscope.middleware.command.Command_Sample; // 导入采样命令类
+import com.micsig.tbook.tbookscope.rxjava.RxBus; // 导入RxBus事件总线类
+import com.micsig.tbook.tbookscope.rxjava.RxEnum; // 导入Rx事件枚举类
+import com.micsig.tbook.tbookscope.tools.FileUtils; // 导入文件工具类
+import com.micsig.tbook.tbookscope.tools.PlaySound; // 导入按键音效类
+import com.micsig.tbook.tbookscope.tools.SaveManage; // 导入保存管理类
+import com.micsig.tbook.tbookscope.tools.ScreenControls; // 导入屏幕控制类
+import com.micsig.tbook.tbookscope.tools.Tools; // 导入通用工具类
+import com.micsig.tbook.tbookscope.top.OnDetailSendMsgListener; // 导入详情消息发送监听器
+import com.micsig.tbook.tbookscope.top.popwindow.keyboardnumber.IDigits; // 导入数字位数接口
+import com.micsig.tbook.tbookscope.top.popwindow.keyboardnumber.KeyBoardNumberUtil; // 导入数字键盘工具类
+import com.micsig.tbook.tbookscope.top.popwindow.keyboardnumber.TopDialogNumberKeyBoard; // 导入数字键盘对话框类
+import com.micsig.tbook.tbookscope.top.popwindow.keyboardtext.TopDialogTextKeyBoard; // 导入文本键盘对话框类
+import com.micsig.tbook.tbookscope.util.CacheUtil; // 导入缓存工具类
+import com.micsig.tbook.tbookscope.util.DToast; // 导入自定义Toast类
+import com.micsig.tbook.tbookscope.util.FileSelector; // 导入文件选择器类
+import com.micsig.tbook.ui.FixedSizeHashSet; // 导入固定大小HashSet类
+import com.micsig.tbook.ui.top.view.TopViewEdit; // 导入自定义编辑框类
+import com.micsig.tbook.ui.top.view.TopViewSpinner; // 导入自定义下拉框类
+import com.micsig.tbook.ui.util.FileBeanToStr; // 导入文件Bean转字符串工具类
+import com.micsig.tbook.ui.util.StrUtil; // 导入字符串工具类
+import com.molihuan.pathselector.PathSelector; // 导入路径选择器类
+import com.molihuan.pathselector.dao.SelectConfigData; // 导入选择配置数据类
+import com.molihuan.pathselector.entity.FileBean; // 导入文件Bean实体类
+import com.molihuan.pathselector.entity.FontBean; // 导入字体Bean实体类
+import com.molihuan.pathselector.fragment.BasePathSelectFragment; // 导入基础路径选择Fragment类
+import com.molihuan.pathselector.listener.CommonItemListener; // 导入通用项监听器类
+import com.molihuan.pathselector.service.impl.ConfigDataBuilderImpl; // 导入配置数据构建器实现类
+import com.molihuan.pathselector.utils.DToastDialog; // 导入路径选择器Toast对话框类
+import com.molihuan.pathselector.utils.MConstants; // 导入路径选择器常量类
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.io.File; // 导入文件类
+import java.util.ArrayList; // 导入动态数组类
+import java.util.HashMap; // 导入哈希映射类
+import java.util.List; // 导入列表接口类
 
-import io.reactivex.rxjava3.annotations.NonNull;
-import io.reactivex.rxjava3.functions.Consumer;
+import io.reactivex.rxjava3.annotations.NonNull; // 导入RxJava非空注解
+import io.reactivex.rxjava3.functions.Consumer; // 导入RxJava消费者接口
 
+/**
+ * ┌─────────────────────────────────────────────────────────────────────────────┐
+ * │ 模块定位：保存/调用功能 → 顶部布局 → 保存子页面 → 会话保存（Session Save）    │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 核心职责：提供会话（Session）保存功能的UI界面和逻辑控制，包括保存路径的选择     │
+ * │          与管理，文件名的编辑与序号递增，会话数据的保存与进度显示，             │
+ * │          磁盘空间检查与FAT32限制处理，保存前停止运行/保存后恢复运行状态         │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 架构设计：继承Fragment，通过TopViewSpinner管理保存路径列表，                  │
+ * │          通过TopViewEdit编辑文件名，通过SaveRecoverySession执行会话保存，      │
+ * │          通过ScreenControls锁定/解锁屏幕显示保存进度，                        │
+ * │          通过Command中间件控制示波器运行/停止状态                              │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 数据流向：CacheUtil(缓存恢复) → UI控件(初始化状态) →                        │
+ * │          用户点击保存 → saveState(检查文件) → doSaveSession(执行保存) →       │
+ * │          Command.Stop(停止运行) → SaveRecoverySession.store(保存数据) →      │
+ * │          ScreenControls(进度显示) → Command.Run(恢复运行) →                  │
+ * │          autoAddSuffixNum(序号递增)                                           │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 依赖组件：TopViewSpinner, TopViewEdit, FileSelector, CacheUtil,             │
+ * │          SaveRecoverySession, ScreenControls, Command, SaveManage,          │
+ * │          RxBus, TopDialogTextKeyBoard, TopDialogNumberKeyBoard,             │
+ * │          DialogOkCancel, DialogOk, FileUtils, Scope                         │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 使用场景：用户在保存菜单选择"会话"Tab时显示此页面，                            │
+ * │          配置保存路径和文件名后点击保存按钮执行会话保存操作                      │
+ * └─────────────────────────────────────────────────────────────────────────────┘
+ */
 public class TopLayoutSaveSession extends Fragment {
-    private static final String TAG = "TopLayoutSaveSession";
-    private Context context;
-    private TopViewSpinner spinner;
-    private TopViewEdit saveNameEdit;
-    private CheckBox fileNameAdd;
-    private TextView txtSuffixNum;
-    private Button btnSave, btnBrowse;
-    private final FixedSizeHashSet<FileBean> sessionPathSet = new FixedSizeHashSet<>(10);
-    private TopDialogTextKeyBoard layoutTextKeyBoard,fileSelectorTextKeyBoard;
-    private String toastStr = "";
-    protected TopDialogNumberKeyBoard dialogKeyBoard;
-    private DialogOkCancel dialogOk;
-    private DialogOk dialogOnlyOk;
-    private boolean selectIsFast32 = false;
+    /** 日志标签 */
+    private static final String TAG = "TopLayoutSaveSession"; // 日志标签字符串
+    /** Fragment所在的上下文环境 */
+    private Context context; // Activity上下文
+    /** 保存路径下拉框控件 */
+    private TopViewSpinner spinner; // 路径选择下拉框
+    /** 文件名编辑框控件 */
+    private TopViewEdit saveNameEdit; // 保存名称编辑框
+    /** 文件名添加序号复选框 */
+    private CheckBox fileNameAdd; // 文件名添加序号复选框
+    /** 序号显示文本控件 */
+    private TextView txtSuffixNum; // 序号文本显示
+    /** 保存按钮和浏览按钮 */
+    private Button btnSave, btnBrowse; // 保存按钮和浏览按钮
+    /** 会话保存路径集合，固定大小为10，用于MRU路径列表 */
+    private final FixedSizeHashSet<FileBean> sessionPathSet = new FixedSizeHashSet<>(10); // 固定大小路径集合
+    /** 文本键盘对话框和文件选择器文本键盘对话框 */
+    private TopDialogTextKeyBoard layoutTextKeyBoard,fileSelectorTextKeyBoard; // 文本键盘对话框引用
+    /** Toast提示字符串 */
+    private String toastStr = ""; // Toast提示文本
+    /** 数字键盘对话框 */
+    protected TopDialogNumberKeyBoard dialogKeyBoard; // 数字键盘对话框引用
+    /** 确认取消对话框 */
+    private DialogOkCancel dialogOk; // 确认取消对话框引用
+    /** 仅确认对话框 */
+    private DialogOk dialogOnlyOk; // 仅确认对话框引用
+    /** 当前选中路径是否为FAT32文件系统 */
+    private boolean selectIsFast32 = false; // 是否为FAT32文件系统标志
 
-    public DToastDialog dToastdialog = new DToastDialog();
+    /** 路径选择器Toast对话框 */
+    public DToastDialog dToastdialog = new DToastDialog(); // 路径选择器Toast
 
-    private WindowManager windowManager;
+    /** 窗口管理器，用于动态添加/移除键盘视图 */
+    private WindowManager windowManager; // 窗口管理器
 
-    private FileSelector fileSelector ;
+    /** 文件选择器，用于浏览和选择保存路径 */
+    private FileSelector fileSelector ; // 文件选择器实例
 
+    /**
+     * 创建Fragment的视图
+     * @param inflater 布局填充器
+     * @param container 父视图容器
+     * @param savedInstanceState 保存的实例状态
+     * @return 填充后的会话保存布局视图
+     */
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.layout_save_session, container, false);
+        return inflater.inflate(R.layout.layout_save_session, container, false); // 填充会话保存布局
     }
 
+    /**
+     * 视图创建完成后的初始化
+     * @param view 创建的视图
+     * @param savedInstanceState 保存的实例状态
+     */
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
-        this.context = getActivity();
-        initView(view);
-        initControl();
+        this.context = getActivity(); // 获取所在Activity作为上下文
+        initView(view); // 初始化视图控件
+        initControl(); // 初始化事件控制
     }
 
+    /**
+     * 初始化事件控制，订阅RxBus缓存加载事件
+     */
     private void initControl() {
-        RxBus.getInstance().getObservable(RxEnum.MAIN_LOAD_CACHE).subscribe(consumerLoadCache);
+        RxBus.getInstance().getObservable(RxEnum.MAIN_LOAD_CACHE).subscribe(consumerLoadCache); // 订阅缓存加载事件
 
     }
 
+    /**
+     * 初始化所有视图控件，绑定监听器
+     * @param view 根视图
+     */
     private void initView(View view) {
-        spinner = view.findViewById(R.id.topSpinner);
-        saveNameEdit = view.findViewById(R.id.saveName);
-        fileNameAdd = view.findViewById(R.id.check_file_name_add);
-        Drawable drawable = context.getResources().getDrawable(R.drawable.btn_select_channel_all);
-        fileNameAdd.setBackground(null);
-        fileNameAdd.setButtonDrawable(null);
-        drawable.setBounds(0, 0, 22, 22);
-        fileNameAdd.setCompoundDrawables(drawable, null, null, null);
+        spinner = view.findViewById(R.id.topSpinner); // 获取路径下拉框控件
+        saveNameEdit = view.findViewById(R.id.saveName); // 获取文件名编辑框控件
+        fileNameAdd = view.findViewById(R.id.check_file_name_add); // 获取序号复选框控件
+        Drawable drawable = context.getResources().getDrawable(R.drawable.btn_select_channel_all); // 获取全选图标Drawable
+        fileNameAdd.setBackground(null); // 清除复选框背景
+        fileNameAdd.setButtonDrawable(null); // 清除复选框默认按钮图标
+        drawable.setBounds(0, 0, 22, 22); // 设置图标边界大小
+        fileNameAdd.setCompoundDrawables(drawable, null, null, null); // 将图标设置到左侧
 
-        txtSuffixNum = view.findViewById(R.id.txt_index_num);
-        btnSave = view.findViewById(R.id.btn_save);
-        btnBrowse = view.findViewById(R.id.btn_browse);
+        txtSuffixNum = view.findViewById(R.id.txt_index_num); // 获取序号文本控件
+        btnSave = view.findViewById(R.id.btn_save); // 获取保存按钮
+        btnBrowse = view.findViewById(R.id.btn_browse); // 获取浏览按钮
 
-        spinner.setData(context.getResources().getString(R.string.top_save_wave_directory),
-                getSessionPathList(), R.layout.layout_item_for_save_directory, onItemSelectListener);
-        layoutTextKeyBoard = (TopDialogTextKeyBoard) ((MainActivity) context).findViewById(R.id.dialogTextKeyBoard);
+        spinner.setData(context.getResources().getString(R.string.top_save_wave_directory), // 设置下拉框标题
+                getSessionPathList(), R.layout.layout_item_for_save_directory, onItemSelectListener); // 设置路径数据和监听器
+        layoutTextKeyBoard = (TopDialogTextKeyBoard) ((MainActivity) context).findViewById(R.id.dialogTextKeyBoard); // 获取文本键盘对话框
 
-        btnBrowse.setOnClickListener(onClickListener);
-        btnSave.setOnClickListener(onClickListener);
-        txtSuffixNum.setOnClickListener(onClickListener);
-        saveNameEdit.setOnClickEditListener(onClickEditListener);
-        fileNameAdd.setOnCheckedChangeListener(onCheckBoxChangedListener);
+        btnBrowse.setOnClickListener(onClickListener); // 设置浏览按钮点击监听器
+        btnSave.setOnClickListener(onClickListener); // 设置保存按钮点击监听器
+        txtSuffixNum.setOnClickListener(onClickListener); // 设置序号文本点击监听器
+        saveNameEdit.setOnClickEditListener(onClickEditListener); // 设置文件名编辑框点击监听器
+        fileNameAdd.setOnCheckedChangeListener(onCheckBoxChangedListener); // 设置复选框选中变化监听器
 
-        dialogKeyBoard = (TopDialogNumberKeyBoard) ((MainActivity) context).findViewById(R.id.dialogNumberKeyBoard);
-        dialogOk = (DialogOkCancel) ((MainActivity) context).getMainViewGroup().getDialog(MainViewGroup.DIALOG_OKCANCEL);
-        dialogOnlyOk = (DialogOk) ((MainActivity) context).getMainViewGroup().getDialog(MainViewGroup.DIALOG_OK);
-        fileSelector = new FileSelector(context,(selectedPath) -> {
-            addSelectToPathSet(selectedPath);
+        dialogKeyBoard = (TopDialogNumberKeyBoard) ((MainActivity) context).findViewById(R.id.dialogNumberKeyBoard); // 获取数字键盘对话框
+        dialogOk = (DialogOkCancel) ((MainActivity) context).getMainViewGroup().getDialog(MainViewGroup.DIALOG_OKCANCEL); // 获取确认取消对话框
+        dialogOnlyOk = (DialogOk) ((MainActivity) context).getMainViewGroup().getDialog(MainViewGroup.DIALOG_OK); // 获取仅确认对话框
+        fileSelector = new FileSelector(context,(selectedPath) -> { // 创建文件选择器
+            addSelectToPathSet(selectedPath); // 选中路径后添加到路径集合
         });
     }
 
 
+    /**
+     * 获取会话保存路径列表（逆序，最近使用的在前）
+     * @return 路径列表
+     */
     private ArrayList<FileBean> getSessionPathList() {
-        return sessionPathSet.getReverseList();
+        return sessionPathSet.getReverseList(); // 返回逆序路径列表
     }
 
+    /**
+     * 将选中的路径添加到路径集合，并更新UI和缓存
+     * @param pathStr 选中的文件路径Bean
+     */
     private void addSelectToPathSet(FileBean pathStr) {
-        handleAddPath(pathStr);
-        sessionPathSet.add(pathStr);
-        spinner.updateDataList(getSessionPathList(), null);
-        saveSessionPathToCache();
+        handleAddPath(pathStr); // 处理路径添加（去重）
+        sessionPathSet.add(pathStr); // 添加到路径集合
+        spinner.updateDataList(getSessionPathList(), null); // 更新下拉框数据
+        saveSessionPathToCache(); // 保存路径到缓存
     }
 
+    /**
+     * 处理路径添加逻辑，如果路径已存在则先移除旧的再添加新的（实现MRU效果）
+     * @param pathStr 要添加的文件路径Bean
+     * @return true表示路径是新添加的，false表示路径已存在（已移除旧的）
+     */
     private boolean handleAddPath(FileBean pathStr) {
-        boolean canAdd = true;
-        FileBean temp = null;
-        for (FileBean fileBean : sessionPathSet) {
-            if (fileBean.getPath().equals(pathStr.getPath())) {
-                canAdd = false;
-                temp = fileBean;
-                break;
+        boolean canAdd = true; // 是否可以添加标志
+        FileBean temp = null; // 临时保存已存在的路径Bean
+        for (FileBean fileBean : sessionPathSet) { // 遍历路径集合
+            if (fileBean.getPath().equals(pathStr.getPath())) { // 如果路径相同
+                canAdd = false; // 标记不可添加
+                temp = fileBean; // 保存已存在的Bean
+                break; // 跳出循环
             }
         }
-        if (temp != null) {
-            sessionPathSet.remove(temp);
+        if (temp != null) { // 如果找到已存在的路径
+            sessionPathSet.remove(temp); // 移除旧的路径
         }
-        return canAdd;
+        return canAdd; // 返回是否为新路径
     }
 
 
+    /**
+     * 将会话保存路径信息保存到缓存
+     */
     public void saveSessionPathToCache() {
-        CacheUtil.get().putOtherMap(CacheUtil.TOP_SLIP_SAVE_SESSION_PATH,
-                StrUtil.getStringFromList(FileBeanToStr.getDisPlayStrList(sessionPathSet.getPositiveList()), CacheUtil.WAVE_STORE_PATH_SLIP));
+        CacheUtil.get().putOtherMap(CacheUtil.TOP_SLIP_SAVE_SESSION_PATH, // 保存显示名称路径列表
+                StrUtil.getStringFromList(FileBeanToStr.getDisPlayStrList(sessionPathSet.getPositiveList()), CacheUtil.WAVE_STORE_PATH_SLIP)); // 转换为字符串保存
 
-        CacheUtil.get().putOtherMap(CacheUtil.TOP_SLIP_SAVE_SESSION_ABSOLUTE_PATH,
-                StrUtil.getStringFromList(FileBeanToStr.getAbsoluteStrList(sessionPathSet.getPositiveList()), CacheUtil.WAVE_STORE_PATH_SLIP));
+        CacheUtil.get().putOtherMap(CacheUtil.TOP_SLIP_SAVE_SESSION_ABSOLUTE_PATH, // 保存绝对路径列表
+                StrUtil.getStringFromList(FileBeanToStr.getAbsoluteStrList(sessionPathSet.getPositiveList()), CacheUtil.WAVE_STORE_PATH_SLIP)); // 转换为字符串保存
 
-        CacheUtil.get().putOtherMap(CacheUtil.TOP_SLIP_SAVE_SESSION_PATH_CURRENT, spinner.getSelectItem());
+        CacheUtil.get().putOtherMap(CacheUtil.TOP_SLIP_SAVE_SESSION_PATH_CURRENT, spinner.getSelectItem()); // 保存当前选中路径
     }
 
+    /**
+     * 设置详情消息发送监听器（此页面未使用）
+     * @param onDetailSendMsgListener 消息发送监听器
+     */
     public void setOnDetailSendMsgListener(OnDetailSendMsgListener onDetailSendMsgListener) {
 
     }
 
+    /**
+     * 获取保存详情（此页面未实现，返回null）
+     * @return null
+     */
     public ISaveDetail getSaveDetail() {
-        return null;
+        return null; // 返回null
     }
 
-    TopViewSpinner.onItemSelectListener onItemSelectListener = fileBean -> {
-        CacheUtil.get().putOtherMap(CacheUtil.TOP_SLIP_SAVE_SESSION_PATH_CURRENT, fileBean.getPath());
+    /** 路径下拉框选中监听器，选中路径后更新缓存和路径集合 */
+    TopViewSpinner.onItemSelectListener onItemSelectListener = fileBean -> { // Lambda表达式
+        CacheUtil.get().putOtherMap(CacheUtil.TOP_SLIP_SAVE_SESSION_PATH_CURRENT, fileBean.getPath()); // 保存当前选中路径到缓存
 //        DToast.get().show(str);
-        addSelectToPathSet(fileBean);
+        addSelectToPathSet(fileBean); // 添加到路径集合并更新UI
     };
 
 
-    private Consumer<LoadCache> consumerLoadCache = new Consumer<LoadCache>() {
+    /** 缓存加载事件的RxJava消费者，恢复缓存状态 */
+    private Consumer<LoadCache> consumerLoadCache = new Consumer<LoadCache>() { // 创建消费者
         @Override
-        public void accept(@NonNull LoadCache loadCache) throws Exception {
-            setCache();
+        public void accept(@NonNull LoadCache loadCache) throws Exception { // 接收到缓存加载事件
+            setCache(); // 恢复缓存状态
         }
     };
 
 
+    /**
+     * 从缓存恢复所有UI控件状态
+     */
     private void setCache() {
-        sessionPathSet.clear();
-        String pathCacheStr = CacheUtil.get().getOtherString(CacheUtil.TOP_SLIP_SAVE_SESSION_PATH);
-        String abPathCacheStr = CacheUtil.get().getOtherString(CacheUtil.TOP_SLIP_SAVE_SESSION_ABSOLUTE_PATH);
-        String currentPath = CacheUtil.get().getOtherString(CacheUtil.TOP_SLIP_SAVE_SESSION_PATH_CURRENT);
-        ArrayList<String> pathCacheList = StrUtil.getListFromString(pathCacheStr, CacheUtil.WAVE_STORE_PATH_SLIP);
-        ArrayList<String> abPathCacheList = StrUtil.getListFromString(abPathCacheStr, CacheUtil.WAVE_STORE_PATH_SLIP);
+        sessionPathSet.clear(); // 清空路径集合
+        String pathCacheStr = CacheUtil.get().getOtherString(CacheUtil.TOP_SLIP_SAVE_SESSION_PATH); // 从缓存读取显示名称路径字符串
+        String abPathCacheStr = CacheUtil.get().getOtherString(CacheUtil.TOP_SLIP_SAVE_SESSION_ABSOLUTE_PATH); // 从缓存读取绝对路径字符串
+        String currentPath = CacheUtil.get().getOtherString(CacheUtil.TOP_SLIP_SAVE_SESSION_PATH_CURRENT); // 从缓存读取当前选中路径
+        ArrayList<String> pathCacheList = StrUtil.getListFromString(pathCacheStr, CacheUtil.WAVE_STORE_PATH_SLIP); // 解析显示名称路径列表
+        ArrayList<String> abPathCacheList = StrUtil.getListFromString(abPathCacheStr, CacheUtil.WAVE_STORE_PATH_SLIP); // 解析绝对路径列表
 
-        ArrayList<FileBean> dataList = new ArrayList<>();
-        FileBean currentBean = new FileBean();
-        for (int i = 0; i < abPathCacheList.size(); i++) {
-            FileBean fileBean = new FileBean();
-            fileBean.setPath(abPathCacheList.get(i));
-            fileBean.setDisplayName(pathCacheList.get(i));
-            if(abPathCacheList.get(i).equals(currentPath)) {
-                currentBean.setPath(abPathCacheList.get(i));
-                currentBean.setDisplayName(pathCacheList.get(i));
+        ArrayList<FileBean> dataList = new ArrayList<>(); // 创建文件Bean列表
+        FileBean currentBean = new FileBean(); // 创建当前选中路径Bean
+        for (int i = 0; i < abPathCacheList.size(); i++) { // 遍历绝对路径列表
+            FileBean fileBean = new FileBean(); // 创建文件Bean
+            fileBean.setPath(abPathCacheList.get(i)); // 设置绝对路径
+            fileBean.setDisplayName(pathCacheList.get(i)); // 设置显示名称
+            if(abPathCacheList.get(i).equals(currentPath)) { // 如果是当前选中路径
+                currentBean.setPath(abPathCacheList.get(i)); // 设置当前Bean的绝对路径
+                currentBean.setDisplayName(pathCacheList.get(i)); // 设置当前Bean的显示名称
             }
-            dataList.add(fileBean);
+            dataList.add(fileBean); // 添加到列表
         }
 
-        sessionPathSet.addAll(dataList);
-        spinner.updateDataList(getSessionPathList(), null);
+        sessionPathSet.addAll(dataList); // 将所有路径添加到集合
+        spinner.updateDataList(getSessionPathList(), null); // 更新下拉框数据
 
-        String sessionName = CacheUtil.get().getOtherString(CacheUtil.TOP_SLIP_SAVE_SESSION_NAME);
-        if (sessionName.isEmpty()) {
-            sessionName = Tools.generateName();
+        String sessionName = CacheUtil.get().getOtherString(CacheUtil.TOP_SLIP_SAVE_SESSION_NAME); // 从缓存读取会话名称
+        if (sessionName.isEmpty()) { // 如果名称为空
+            sessionName = Tools.generateName(); // 自动生成名称
         }
-        saveNameEdit.setText(sessionName);
+        saveNameEdit.setText(sessionName); // 设置文件名编辑框文本
 
-        boolean isFileNumAddCheck = CacheUtil.get().getOtherBoolean(CacheUtil.TOP_SLIP_SAVE_SESSION_SUFFIX_CHECK);
-        String suffixNum = CacheUtil.get().getOtherString(CacheUtil.TOP_SLIP_SAVE_SESSION_SUFFIX_CHECK_NUM);
-        txtSuffixNum.setEnabled(isFileNumAddCheck);
-        txtSuffixNum.setText(suffixNum);
-        if (fileNameAdd.isChecked() != isFileNumAddCheck) {
-            fileNameAdd.setChecked(isFileNumAddCheck);
-        } else {
-            onCheckBoxChangedListener.onCheckedChanged(fileNameAdd, isFileNumAddCheck);
+        boolean isFileNumAddCheck = CacheUtil.get().getOtherBoolean(CacheUtil.TOP_SLIP_SAVE_SESSION_SUFFIX_CHECK); // 从缓存读取序号复选框状态
+        String suffixNum = CacheUtil.get().getOtherString(CacheUtil.TOP_SLIP_SAVE_SESSION_SUFFIX_CHECK_NUM); // 从缓存读取序号值
+        txtSuffixNum.setEnabled(isFileNumAddCheck); // 设置序号文本是否可用
+        txtSuffixNum.setText(suffixNum); // 设置序号文本值
+        if (fileNameAdd.isChecked() != isFileNumAddCheck) { // 如果复选框状态与缓存不一致
+            fileNameAdd.setChecked(isFileNumAddCheck); // 设置复选框状态（会触发监听器）
+        } else { // 如果状态一致
+            onCheckBoxChangedListener.onCheckedChanged(fileNameAdd, isFileNumAddCheck); // 手动触发监听器
         }
     }
 
-    private View.OnClickListener onClickListener = new View.OnClickListener() {
+    /** 按钮点击事件监听器，处理浏览、保存、序号输入 */
+    private View.OnClickListener onClickListener = new View.OnClickListener() { // 创建点击监听器
         @Override
-        public void onClick(View v) {
-            PlaySound.getInstance().playButton();
-            if (v.getId() == btnBrowse.getId()) {
-                handleBrowseClick();
-            } else if (v.getId() == btnSave.getId()) {
-                String spinnerSelectPath = spinner.getSelectItem();
-                selectIsFast32 = fileSelector.isFAT32(spinnerSelectPath);
-                saveState();
-            } else if (v.getId() == txtSuffixNum.getId()) {
-                dialogKeyBoard.setDecimalData(3, IDigits.DIGITS_10, onNumSubFixListener);
+        public void onClick(View v) { // 点击回调
+            PlaySound.getInstance().playButton(); // 播放按键音效
+            if (v.getId() == btnBrowse.getId()) { // 如果点击浏览按钮
+                handleBrowseClick(); // 处理浏览点击
+            } else if (v.getId() == btnSave.getId()) { // 如果点击保存按钮
+                String spinnerSelectPath = spinner.getSelectItem(); // 获取当前选中路径
+                selectIsFast32 = fileSelector.isFAT32(spinnerSelectPath); // 检查是否为FAT32文件系统
+                saveState(); // 执行保存状态
+            } else if (v.getId() == txtSuffixNum.getId()) { // 如果点击序号文本
+                dialogKeyBoard.setDecimalData(3, IDigits.DIGITS_10, onNumSubFixListener); // 弹出数字键盘输入序号
             }
         }
     };
 
-    private TopDialogNumberKeyBoard.OnDismissListener onNumSubFixListener = new TopDialogNumberKeyBoard.OnDismissListener() {
+    /** 数字键盘关闭监听器，将输入结果设置到序号文本 */
+    private TopDialogNumberKeyBoard.OnDismissListener onNumSubFixListener = new TopDialogNumberKeyBoard.OnDismissListener() { // 创建关闭监听器
         @Override
-        public void onDismiss(String result) {
-            onTextListener(result);
+        public void onDismiss(String result) { // 键盘关闭回调
+            onTextListener(result); // 处理输入结果
         }
     };
 
 
+    /**
+     * 处理序号文本输入结果，更新UI和缓存
+     * @param text 输入的序号文本
+     */
     private void onTextListener(String text) {
-        txtSuffixNum.setText(text);
-        CacheUtil.get().putOtherMap(CacheUtil.TOP_SLIP_SAVE_SESSION_SUFFIX_CHECK_NUM, text);
+        txtSuffixNum.setText(text); // 设置序号文本
+        CacheUtil.get().putOtherMap(CacheUtil.TOP_SLIP_SAVE_SESSION_SUFFIX_CHECK_NUM, text); // 保存序号到缓存
     }
 
 
 
-    private TopViewEdit.OnClickEditListener onClickEditListener = new TopViewEdit.OnClickEditListener() {
+    /** 文件名编辑框点击监听器，弹出文本键盘编辑文件名 */
+    private TopViewEdit.OnClickEditListener onClickEditListener = new TopViewEdit.OnClickEditListener() { // 创建监听器
         @Override
-        public void onClickEdit(TopViewEdit v, String text) {
-            PlaySound.getInstance().playButton();
-            if (v.getId() == saveNameEdit.getId()) {
-                String suffixNum = CacheUtil.get().getOtherString(CacheUtil.TOP_SLIP_SAVE_SESSION_SUFFIX_CHECK_NUM);
-                String suffix = "_" + suffixNum;
-                if (text.endsWith(suffix)) {
-                    text = text.substring(0, text.length() - suffix.length());
+        public void onClickEdit(TopViewEdit v, String text) { // 点击编辑回调
+            PlaySound.getInstance().playButton(); // 播放按键音效
+            if (v.getId() == saveNameEdit.getId()) { // 如果是文件名编辑框
+                String suffixNum = CacheUtil.get().getOtherString(CacheUtil.TOP_SLIP_SAVE_SESSION_SUFFIX_CHECK_NUM); // 从缓存读取序号
+                String suffix = "_" + suffixNum; // 构建序号后缀
+                if (text.endsWith(suffix)) { // 如果文件名以序号后缀结尾
+                    text = text.substring(0, text.length() - suffix.length()); // 去除序号后缀
                 }
-                layoutTextKeyBoard.setData(text, TopDialogTextKeyBoard.HANDLE_TYPE_SAVE_SESSION, TopDialogTextKeyBoard.INPUT_TYPE_ALL_BUT_SYMBOL, 64, new TopDialogTextKeyBoard.OnDialogDismissListener() {
+                layoutTextKeyBoard.setData(text, TopDialogTextKeyBoard.HANDLE_TYPE_SAVE_SESSION, TopDialogTextKeyBoard.INPUT_TYPE_ALL_BUT_SYMBOL, 64, new TopDialogTextKeyBoard.OnDialogDismissListener() { // 设置文本键盘数据
                     @Override
-                    public void onDismiss(String result) {
-                        saveNameEdit.setText(result);
-                        txtSuffixNum.setText("000");
-                        CacheUtil.get().putOtherMap(CacheUtil.TOP_SLIP_SAVE_SESSION_NAME, result);
-                        CacheUtil.get().putOtherMap(CacheUtil.TOP_SLIP_SAVE_SESSION_SUFFIX_CHECK_NUM, "000");
+                    public void onDismiss(String result) { // 键盘关闭回调
+                        saveNameEdit.setText(result); // 设置编辑框文本
+                        txtSuffixNum.setText("000"); // 重置序号为000
+                        CacheUtil.get().putOtherMap(CacheUtil.TOP_SLIP_SAVE_SESSION_NAME, result); // 保存文件名到缓存
+                        CacheUtil.get().putOtherMap(CacheUtil.TOP_SLIP_SAVE_SESSION_SUFFIX_CHECK_NUM, "000"); // 保存序号到缓存
                     }
                 });
             }
@@ -299,232 +399,280 @@ public class TopLayoutSaveSession extends Fragment {
     };
 
 
-    private CompoundButton.OnCheckedChangeListener onCheckBoxChangedListener = new CompoundButton.OnCheckedChangeListener() {
+    /** 序号复选框选中变化监听器 */
+    private CompoundButton.OnCheckedChangeListener onCheckBoxChangedListener = new CompoundButton.OnCheckedChangeListener() { // 创建监听器
         @Override
-        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-            if (buttonView.getId() == fileNameAdd.getId()) {
-                CacheUtil.get().putOtherMap(CacheUtil.TOP_SLIP_SAVE_SESSION_SUFFIX_CHECK, String.valueOf(isChecked));
-                txtSuffixNum.setEnabled(isChecked);
-                RxBus.getInstance().post(RxEnum.MQ_MSG_SAVE_OR_INVOKE_SUFFIX_NUM_UPDATE, CacheUtil.SAVE_TYPE_SESSION + CacheUtil.WAVE_STORE_PATH_SLIP + isChecked);
+        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) { // 选中状态变化回调
+            if (buttonView.getId() == fileNameAdd.getId()) { // 如果是序号复选框
+                CacheUtil.get().putOtherMap(CacheUtil.TOP_SLIP_SAVE_SESSION_SUFFIX_CHECK, String.valueOf(isChecked)); // 保存复选框状态到缓存
+                txtSuffixNum.setEnabled(isChecked); // 设置序号文本是否可用
+                RxBus.getInstance().post(RxEnum.MQ_MSG_SAVE_OR_INVOKE_SUFFIX_NUM_UPDATE, CacheUtil.SAVE_TYPE_SESSION + CacheUtil.WAVE_STORE_PATH_SLIP + isChecked); // 发送序号更新事件
             }
         }
     };
 
+    /**
+     * 处理浏览按钮点击，打开文件选择器浏览保存路径
+     */
     private void handleBrowseClick() {
-        String spinnerSelectPath= spinner.getSelectItem();
-        String disPlay = spinner.getDisPlaySelectItem();
-        File file = new File(spinnerSelectPath);
+        String spinnerSelectPath= spinner.getSelectItem(); // 获取当前选中的路径
+        String disPlay = spinner.getDisPlaySelectItem(); // 获取当前选中路径的显示名称
+        File file = new File(spinnerSelectPath); // 创建文件对象
 
-        if(!file.exists() || !file.isDirectory()){
-            spinnerSelectPath = "/storage/emulated/0";
-            disPlay = context.getResources().getString(R.string.internal_storage);
+        if(!file.exists() || !file.isDirectory()){ // 如果路径不存在或不是目录
+            spinnerSelectPath = "/storage/emulated/0"; // 使用默认内部存储路径
+            disPlay = context.getResources().getString(R.string.internal_storage); // 使用内部存储显示名称
         }
 
-        fileSelector.buildSaveFileSelector(spinnerSelectPath, disPlay, this, context);
+        fileSelector.buildSaveFileSelector(spinnerSelectPath, disPlay, this, context); // 构建并显示文件选择器
     }
 
 
+    /**
+     * 执行保存会话操作，检查文件是否存在后决定是否覆盖
+     */
     private void saveState() {
 
-        if (StrUtil.isEmpty(spinner.getSelectItem())) {
-            DToast.get().show(R.string.top_slip_directory_save_to);
-            return;
+        if (StrUtil.isEmpty(spinner.getSelectItem())) { // 如果选中路径为空
+            DToast.get().show(R.string.top_slip_directory_save_to); // 提示选择保存目录
+            return; // 返回
         }
 
-        final String path = spinner.getSelectItem() + File.separator + getFinaleName() + ".mss";
-        if (SaveManage.getInstance().checkFileExists(path)) {
+        final String path = spinner.getSelectItem() + File.separator + getFinaleName() + ".mss"; // 构建完整文件路径
+        if (SaveManage.getInstance().checkFileExists(path)) { // 如果文件已存在
 //            DToast.get().show(String.format(getString(R.string.msgTopSaveNameExisted), saveNameEdit.getText() + ".mss"));
 //            autoAddSuffixNum();
-            dialogOk.setData(btnSave, R.string.top_slip_save_file_exists, path, null, onOkCancelClickListener);
-        } else {
-            doSaveSession(path);
+            dialogOk.setData(btnSave, R.string.top_slip_save_file_exists, path, null, onOkCancelClickListener); // 弹出覆盖确认对话框
+        } else { // 如果文件不存在
+            doSaveSession(path); // 直接执行保存
         }
     }
 
+    /**
+     * 获取最终文件名（含序号后缀）
+     * @return 完整文件名
+     */
     private String getFinaleName() {
-        String finalName = saveNameEdit.getText();
-        if(fileNameAdd.isChecked()) {
-            finalName = finalName + "_" + txtSuffixNum.getText();
+        String finalName = saveNameEdit.getText(); // 获取编辑框中的文件名
+        if(fileNameAdd.isChecked()) { // 如果勾选了添加序号
+            finalName = finalName + "_" + txtSuffixNum.getText(); // 拼接序号后缀
         }
-        return finalName;
+        return finalName; // 返回最终文件名
     }
 
 
-    boolean bSaveSession = false;
-    synchronized boolean isSaveSession(){
-        return bSaveSession;
+    /** 保存会话进行标志，防止重复保存 */
+    boolean bSaveSession = false; // 保存会话标志
+    /**
+     * 线程安全地获取保存会话标志
+     * @return 是否正在保存会话
+     */
+    synchronized boolean isSaveSession(){ // 同步方法
+        return bSaveSession; // 返回保存标志
     }
-    synchronized void setSaveSession(boolean bSave){
-        this.bSaveSession = bSave;
+    /**
+     * 线程安全地设置保存会话标志
+     * @param bSave 是否正在保存
+     */
+    synchronized void setSaveSession(boolean bSave){ // 同步方法
+        this.bSaveSession = bSave; // 设置保存标志
     }
+    /**
+     * 实际执行会话保存操作，停止运行→保存数据→恢复运行
+     * @param filePath 保存文件路径
+     */
     private void doSaveSession(String filePath) {
-        if(isSaveSession()){
-            return;
+        if(isSaveSession()){ // 如果正在保存
+            return; // 直接返回
         }
-        if (!FileUtils.checkFolderExists(spinner.getSelectItem(),context.getResources().getString(R.string.internal_storage))) {
-            DToast.get().show(R.string.top_slip_save_wave_path_unable);
-            return;
+        if (!FileUtils.checkFolderExists(spinner.getSelectItem(),context.getResources().getString(R.string.internal_storage))) { // 检查保存目录是否存在
+            DToast.get().show(R.string.top_slip_save_wave_path_unable); // 提示路径不可用
+            return; // 返回
         }
-        setSaveSession(true);
+        setSaveSession(true); // 标记正在保存
 
-        Scope scope = Scope.getInstance();
-        boolean oldIsRun = scope.isRun();
-        if (scope.isRun()) {
+        Scope scope = Scope.getInstance(); // 获取示波器实例
+        boolean oldIsRun = scope.isRun(); // 记录当前运行状态
+        if (scope.isRun()) { // 如果示波器正在运行
             //scope.setRun(false);
-            Command.get().getFunctionMenu().Stop(true);
-        }else{
-            Command.get().getSample().SegmentedStop(true);
+            Command.get().getFunctionMenu().Stop(true); // 停止运行
+        }else{ // 如果示波器未运行
+            Command.get().getSample().SegmentedStop(true); // 停止分段采集
         }
-        int channelSelect = CacheUtil.get().getInt(CacheUtil.MAIN_CENTER_CHANNELS_SELECT);
-        CacheUtil.get().putMapInForce(CacheUtil.MAIN_RECOVERY_CHANNEL_SELECT + "-1", String.valueOf(channelSelect));
-        new Thread(() -> {
-            ms_sleep(1000);
-            SaveRecoverySession saveRecoverySession = SaveRecoverySession.getInstance();
-            long needSize = saveRecoverySession.estimateStorage();
-            boolean canSave = Utils.isDiskAvaiable(new File(filePath), needSize);
-            Logger.i(TAG, "SaveSessionNeedSize= " + needSize + " ,canSave= " + canSave + " ,selectIsFast32= " + selectIsFast32);
-            if (selectIsFast32) {
-                if (needSize >= 4 * 1024 * 1024 * 1024L) {
-                    noEnoughSpace(true, scope, oldIsRun, filePath);
-                    return;
+        int channelSelect = CacheUtil.get().getInt(CacheUtil.MAIN_CENTER_CHANNELS_SELECT); // 获取当前通道选择
+        CacheUtil.get().putMapInForce(CacheUtil.MAIN_RECOVERY_CHANNEL_SELECT + "-1", String.valueOf(channelSelect)); // 保存通道选择到缓存
+        new Thread(() -> { // 创建新线程执行保存
+            ms_sleep(1000); // 等待1秒确保停止完成
+            SaveRecoverySession saveRecoverySession = SaveRecoverySession.getInstance(); // 获取会话保存恢复实例
+            long needSize = saveRecoverySession.estimateStorage(); // 估算保存所需空间
+            boolean canSave = Utils.isDiskAvaiable(new File(filePath), needSize); // 检查磁盘空间是否足够
+            Logger.i(TAG, "SaveSessionNeedSize= " + needSize + " ,canSave= " + canSave + " ,selectIsFast32= " + selectIsFast32); // 打印日志
+            if (selectIsFast32) { // 如果是FAT32文件系统
+                if (needSize >= 4 * 1024 * 1024 * 1024L) { // 如果需要空间超过4GB（FAT32单文件限制）
+                    noEnoughSpace(true, scope, oldIsRun, filePath); // 提示FAT32空间不足
+                    return; // 返回
                 }
             }
-            if (!canSave) {
-                noEnoughSpace(false, scope, oldIsRun, filePath);
-                return;
+            if (!canSave) { // 如果磁盘空间不足
+                noEnoughSpace(false, scope, oldIsRun, filePath); // 提示空间不足
+                return; // 返回
             }
-            HashMap<String, HashMap<String, String>> map = new HashMap<>();
-            map.put(CacheUtil.DefaultSaveName, CacheUtil.get().getCurrMap());
-            map.put(CacheUtil.OtherDefaultSaveName, CacheUtil.get().getCurrOtherMap());
-            saveRecoverySession.store(map, filePath);
-            while (!saveRecoverySession.isDone()) {
-                ms_sleep(100);
-                Log.d("SaveRecoverySession", "store progress:" + saveRecoverySession.getSaveRecoveryProgress());
-                showSaveProgress(saveRecoverySession.getSaveRecoveryProgress());
-            }
-
-            toastStr = context.getResources().getString(R.string.top_slip_save_session_success);
-            boolean saveSuccess = true;
-            if (saveRecoverySession.getStatus() == SaveRecoverySession.S_FAIL) {
-                toastStr = context.getResources().getString(R.string.top_slip_save_session_failed);
-                saveSuccess = false;
-                showSaveProgress(100);
+            HashMap<String, HashMap<String, String>> map = new HashMap<>(); // 创建缓存映射
+            map.put(CacheUtil.DefaultSaveName, CacheUtil.get().getCurrMap()); // 放入默认缓存
+            map.put(CacheUtil.OtherDefaultSaveName, CacheUtil.get().getCurrOtherMap()); // 放入其他缓存
+            saveRecoverySession.store(map, filePath); // 执行会话保存
+            while (!saveRecoverySession.isDone()) { // 等待保存完成
+                ms_sleep(100); // 每100ms检查一次
+                Log.d("SaveRecoverySession", "store progress:" + saveRecoverySession.getSaveRecoveryProgress()); // 打印进度日志
+                showSaveProgress(saveRecoverySession.getSaveRecoveryProgress()); // 显示保存进度
             }
 
-            boolean finalSaveSuccess = saveSuccess;
-            boolean finalOldState = oldIsRun;
-            requireActivity().runOnUiThread(new Runnable() {
+            toastStr = context.getResources().getString(R.string.top_slip_save_session_success); // 默认提示保存成功
+            boolean saveSuccess = true; // 保存成功标志
+            if (saveRecoverySession.getStatus() == SaveRecoverySession.S_FAIL) { // 如果保存失败
+                toastStr = context.getResources().getString(R.string.top_slip_save_session_failed); // 提示保存失败
+                saveSuccess = false; // 标记保存失败
+                showSaveProgress(100); // 显示进度100%
+            }
+
+            boolean finalSaveSuccess = saveSuccess; // 最终保存成功标志
+            boolean finalOldState = oldIsRun; // 最终旧运行状态
+            requireActivity().runOnUiThread(new Runnable() { // 切换到UI线程
                 @Override
-                public void run() {
-                    Log.d("SaveRecoverySession", toastStr);
-                    ScreenControls screenControls = ScreenControls.getInstance();
-                    if (screenControls.isLockScreen(ScreenControls.LOCK_PROGRESS)) {
-                        screenControls.unLockScreen(ScreenControls.LOCK_PROGRESS);
+                public void run() { // UI线程执行
+                    Log.d("SaveRecoverySession", toastStr); // 打印日志
+                    ScreenControls screenControls = ScreenControls.getInstance(); // 获取屏幕控制实例
+                    if (screenControls.isLockScreen(ScreenControls.LOCK_PROGRESS)) { // 如果屏幕被锁定
+                        screenControls.unLockScreen(ScreenControls.LOCK_PROGRESS); // 解锁屏幕
                     }
 //                    if (!scope.isRun()) {
 //                        scope.setRun(true);
 //                    }
-                    if (scope.isRun() != finalOldState) {
+                    if (scope.isRun() != finalOldState) { // 如果运行状态与保存前不同
                         //scope.setRun(finalOldState);
-                        if(finalOldState){
-                            Command.get().getFunctionMenu().Run(true);
-                        }else{
-                            Command.get().getFunctionMenu().Stop(true);
+                        if(finalOldState){ // 如果保存前是运行状态
+                            Command.get().getFunctionMenu().Run(true); // 恢复运行
+                        }else{ // 如果保存前是停止状态
+                            Command.get().getFunctionMenu().Stop(true); // 保持停止
                         }
                     }
                     if (finalSaveSuccess) { //保存成功
-                        autoAddSuffixNum();
-                        FileUtils.deleteFile(filePath + FileUtils.BACKUP_FILE_SUFFIX);
-                        toastStr = "保存成功";
+                        autoAddSuffixNum(); // 自动递增序号
+                        FileUtils.deleteFile(filePath + FileUtils.BACKUP_FILE_SUFFIX); // 删除备份文件
+                        toastStr = "保存成功"; // 设置提示文本
                     } else { //保存失败
-                        FileUtils.restoreFromBakFile(filePath + FileUtils.BACKUP_FILE_SUFFIX);
-                        toastStr = "保存失败";
+                        FileUtils.restoreFromBakFile(filePath + FileUtils.BACKUP_FILE_SUFFIX); // 从备份文件恢复
+                        toastStr = "保存失败"; // 设置提示文本
                     }
-                    DToast.get().show(toastStr);
-                    setSaveSession(false);
+                    DToast.get().show(toastStr); // 显示Toast提示
+                    setSaveSession(false); // 重置保存标志
                 }
             });
-        }).start();
+        }).start(); // 启动线程
     }
 
+    /**
+     * 空间不足提示处理
+     * @param isCausedByFast32 是否由FAT32文件系统限制导致
+     * @param scope 示波器实例
+     * @param oldIsRun 保存前的运行状态
+     * @param filePath 保存文件路径
+     */
     private void noEnoughSpace(boolean isCausedByFast32, Scope scope, boolean oldIsRun, String filePath) {
-        requireActivity().runOnUiThread(() -> {
-            String msg = "";
-            if (isCausedByFast32) {
-                msg = context.getResources().getString(R.string.storage_type_not_avaiable);
-            } else {
-                msg = context.getResources().getString(R.string.no_storage_space);
+        requireActivity().runOnUiThread(() -> { // 切换到UI线程
+            String msg = ""; // 提示消息
+            if (isCausedByFast32) { // 如果是FAT32限制
+                msg = context.getResources().getString(R.string.storage_type_not_avaiable); // 获取FAT32不支持提示
+            } else { // 如果是空间不足
+                msg = context.getResources().getString(R.string.no_storage_space); // 获取空间不足提示
             }
-            dialogOnlyOk.setData(msg, null, null);
-            recoveryScopeState(scope, oldIsRun);
-            FileUtils.restoreFromBakFile(filePath + FileUtils.BACKUP_FILE_SUFFIX);
+            dialogOnlyOk.setData(msg, null, null); // 显示仅确认对话框
+            recoveryScopeState(scope, oldIsRun); // 恢复示波器状态
+            FileUtils.restoreFromBakFile(filePath + FileUtils.BACKUP_FILE_SUFFIX); // 从备份恢复
         });
     }
 
+    /**
+     * 恢复示波器运行状态
+     * @param scope 示波器实例
+     * @param finalOldState 保存前的运行状态
+     */
     private void recoveryScopeState(Scope scope, boolean finalOldState) {
-        if (isSaveSession()) {
-            setSaveSession(false);
+        if (isSaveSession()) { // 如果正在保存
+            setSaveSession(false); // 重置保存标志
         }
-        if (scope.isRun() == finalOldState) return;
-        if (finalOldState) {
-            Command.get().getFunctionMenu().Run(true);
-        } else {
-            Command.get().getFunctionMenu().Stop(true);
+        if (scope.isRun() == finalOldState) return; // 如果状态已一致则返回
+        if (finalOldState) { // 如果保存前是运行状态
+            Command.get().getFunctionMenu().Run(true); // 恢复运行
+        } else { // 如果保存前是停止状态
+            Command.get().getFunctionMenu().Stop(true); // 保持停止
         }
     }
 
+    /**
+     * 文件名序号自动递增
+     */
     private void autoAddSuffixNum() { //文件名序号递增
-        if (!fileNameAdd.isChecked()) return;
-        int oldSuffixNum = Integer.parseInt(txtSuffixNum.getText().toString().trim());
-        String tempNum = KeyBoardNumberUtil.toBits((oldSuffixNum + 1) + "", 3);
-        if (onNumSubFixListener != null) {
-            onNumSubFixListener.onDismiss(tempNum);
+        if (!fileNameAdd.isChecked()) return; // 如果未勾选添加序号则返回
+        int oldSuffixNum = Integer.parseInt(txtSuffixNum.getText().toString().trim()); // 解析当前序号
+        String tempNum = KeyBoardNumberUtil.toBits((oldSuffixNum + 1) + "", 3); // 序号加1并格式化为3位
+        if (onNumSubFixListener != null) { // 如果监听器不为空
+            onNumSubFixListener.onDismiss(tempNum); // 触发监听器更新序号
         }
     }
 
+    /**
+     * 显示保存进度，通过ScreenControls锁定屏幕并更新进度条
+     * @param progress 保存进度（0-100）
+     */
     private void showSaveProgress(int progress) {
-        requireActivity().runOnUiThread(() -> {
-            ScreenControls screenControls = ScreenControls.getInstance();
-            if (progress < 0 || progress >= 100) {
-                if (screenControls.isLockScreen(ScreenControls.LOCK_PROGRESS)) {
-                    screenControls.unLockScreen(ScreenControls.LOCK_PROGRESS);
+        requireActivity().runOnUiThread(() -> { // 切换到UI线程
+            ScreenControls screenControls = ScreenControls.getInstance(); // 获取屏幕控制实例
+            if (progress < 0 || progress >= 100) { // 如果进度完成或无效
+                if (screenControls.isLockScreen(ScreenControls.LOCK_PROGRESS)) { // 如果屏幕被锁定
+                    screenControls.unLockScreen(ScreenControls.LOCK_PROGRESS); // 解锁屏幕
                 }
-            } else {
-                if (!screenControls.isLockScreen(ScreenControls.LOCK_PROGRESS)) {
-                    screenControls.lockScreen(ScreenControls.LOCK_PROGRESS);
+            } else { // 如果进度进行中
+                if (!screenControls.isLockScreen(ScreenControls.LOCK_PROGRESS)) { // 如果屏幕未锁定
+                    screenControls.lockScreen(ScreenControls.LOCK_PROGRESS); // 锁定屏幕
                 }
-                screenControls.setProgressValue(progress);
+                screenControls.setProgressValue(progress); // 更新进度值
             }
         });
     }
 
 
+    /**
+     * 线程休眠指定毫秒数
+     * @param ms 休眠毫秒数
+     */
     private void ms_sleep(long ms) {
-        try {
-            Thread.sleep(ms);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+        try { // 尝试休眠
+            Thread.sleep(ms); // 线程休眠
+        } catch (InterruptedException e) { // 捕获中断异常
+            throw new RuntimeException(e); // 抛出运行时异常
         }
     }
 
 
-    private DialogOkCancel.OnOkCancelClickListener onOkCancelClickListener = new DialogOkCancel.OnOkCancelClickListener() {
+    /** 确认取消对话框的点击监听器，处理文件覆盖确认 */
+    private DialogOkCancel.OnOkCancelClickListener onOkCancelClickListener = new DialogOkCancel.OnOkCancelClickListener() { // 创建监听器
         @Override
-        public void onOkClick(View v, Object data) {
-            Logger.i("Click ok");
-            if (v == null || data == null) return;
-            FileUtils.createBakFile((String) data);
-            doSaveSession((String) data);
+        public void onOkClick(View v, Object data) { // 确认按钮点击回调
+            Logger.i("Click ok"); // 打印日志
+            if (v == null || data == null) return; // 参数为空则返回
+            FileUtils.createBakFile((String) data); // 创建备份文件
+            doSaveSession((String) data); // 执行会话保存
         }
 
         @Override
-        public void onCancelClick(View v, Object data) {
+        public void onCancelClick(View v, Object data) { // 取消按钮点击回调
             //Do nothing
-            Logger.i("Click cancel");
+            Logger.i("Click cancel"); // 打印取消日志
         }
 
         @Override
-        public void onDialogClose(View view) {
+        public void onDialogClose(View view) { // 对话框关闭回调
         }
     };
 

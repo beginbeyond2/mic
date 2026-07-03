@@ -1,12 +1,33 @@
-package com.micsig.tbook.tbookscope.top;
+package com.micsig.tbook.tbookscope.top; // 顶部面板消息监听器接口所在包
 
 
-import androidx.fragment.app.Fragment;
+import androidx.fragment.app.Fragment; // 导入Fragment基类，用于界面片段管理
 
 /**
+ * ┌─────────────────────────────────────────────────────────────────────────────┐
+ * │ 模块定位：顶部面板详情消息发送监听器接口                                      │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 核心职责：定义顶部面板子页面与父页面之间的消息回调契约                          │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 架构设计：观察者模式中的回调接口，子Fragment通过此接口通知父级容器              │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 数据流向：子Fragment → OnDetailSendMsgListener → 父级TopLayoutAuto          │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 依赖关系：被TopLayoutAutoSet、TopLayoutAutoRange等子页面实现和调用            │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │ 使用场景：当顶部面板子页面（自动设置/自动量程）状态变化时，通知父级容器          │
+ * └─────────────────────────────────────────────────────────────────────────────┘
+ *
  * Created by yangj on 2017/5/16.
  */
 
-public interface OnDetailSendMsgListener {
-    void onClick(Fragment fragment, boolean isFromEventBus);
+public interface OnDetailSendMsgListener { // 顶部面板详情消息发送监听器接口
+
+    /**
+     * 当子页面被点击或状态变化时回调此方法
+     *
+     * @param fragment      触发回调的Fragment实例，用于识别消息来源
+     * @param isFromEventBus 是否来自EventBus事件，true表示由外部事件触发
+     */
+    void onClick(Fragment fragment, boolean isFromEventBus); // 点击回调方法，传递来源Fragment和事件来源标识
 }
